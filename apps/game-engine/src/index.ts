@@ -1,4 +1,3 @@
-import { createServer } from 'node:http';
 import { createRedisClient, pingRedis } from '@branchout/service-runtime';
 import { createApp } from './app';
 import { loadConfig } from './config';
@@ -19,21 +18,24 @@ async function main(): Promise<void> {
   console.log(`[game-engine] startup check redis=${cache ? 'ok' : 'unreachable'}`);
 
   const app = createApp({ checkRedis: () => pingRedis(redis) });
-  const server = createServer(app);
-  const sockets = attachGameSocket(server);
 
-  server.listen(config.port, () =>
-    console.log(`[game-engine] listening on :${config.port} (http + ws)`),
-  );
+  // Mount the WebSocket endpoint on Fastify's underlying HTTP server via the transport-agnostic
+  // adapter in @branchout/protocol. Fastify does not handle the HTTP `upgrade` event itself, so
+  // the adapter owns it cleanly; this keeps realtime behind the same swappable interface.
+  const sockets = attachGameSocket(app.server);
 
   const shutdown = (signal: string) => {
     console.log(`[game-engine] ${signal} received, shutting down`);
-    void Promise.allSettled([sockets.close(), redis.quit()]).then(() => {
-      server.close(() => process.exit(0));
-    });
+    void Promise.allSettled([sockets.close(), app.close(), redis.quit()]).then(() =>
+      process.exit(0),
+    );
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
+
+  // Bind 0.0.0.0 so the service is reachable from outside its container.
+  await app.listen({ port: config.port, host: '0.0.0.0' });
+  console.log(`[game-engine] listening on :${config.port} (http + ws)`);
 }
 
 main().catch((error) => {

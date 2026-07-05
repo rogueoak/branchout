@@ -1,4 +1,4 @@
-import express, { type Express } from 'express';
+import Fastify, { type FastifyInstance } from 'fastify';
 
 /** Injected liveness probes so the app is testable without real Postgres or Redis. */
 export interface HealthChecks {
@@ -10,13 +10,13 @@ export interface HealthChecks {
  * Build the control-plane HTTP app. `/health` reports whether the service can reach both
  * Postgres and Redis, and returns 503 if either is down so orchestrators see it as unhealthy.
  */
-export function createApp(checks: HealthChecks): Express {
-  const app = express();
+export function createApp(checks: HealthChecks): FastifyInstance {
+  const app = Fastify();
 
-  app.get('/health', async (_req, res) => {
+  app.get('/health', async (_request, reply) => {
     const [postgres, redis] = await Promise.all([checks.checkPostgres(), checks.checkRedis()]);
     const ok = postgres && redis;
-    res.status(ok ? 200 : 503).json({
+    return reply.code(ok ? 200 : 503).send({
       status: ok ? 'ok' : 'degraded',
       postgres: postgres ? 'ok' : 'unreachable',
       redis: redis ? 'ok' : 'unreachable',

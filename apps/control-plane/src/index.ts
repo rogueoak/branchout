@@ -28,18 +28,16 @@ async function main(): Promise<void> {
     checkRedis: () => pingRedis(redis),
   });
 
-  const server = app.listen(config.port, () =>
-    console.log(`[control-plane] listening on :${config.port}`),
-  );
-
   const shutdown = (signal: string) => {
     console.log(`[control-plane] ${signal} received, shutting down`);
-    server.close(() => {
-      void Promise.allSettled([pool.end(), redis.quit()]).then(() => process.exit(0));
-    });
+    void Promise.allSettled([app.close(), pool.end(), redis.quit()]).then(() => process.exit(0));
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
+
+  // Bind 0.0.0.0 so the service is reachable from outside its container.
+  await app.listen({ port: config.port, host: '0.0.0.0' });
+  console.log(`[control-plane] listening on :${config.port}`);
 }
 
 main().catch((error) => {

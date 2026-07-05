@@ -8,13 +8,13 @@ canopy: pnpm workspaces + Turborepo.
 ```
 apps/
   web            Next.js - marketing site + web game client (uses canopy + Branch out theme)
-  control-plane  Express service - accounts, profiles, purchases, rooms, chat, accounting
-  game-engine    Express + WebSocket service - runs the games, holds live game state
+  control-plane  Fastify service - accounts, profiles, purchases, rooms, chat, accounting
+  game-engine    Fastify + WebSocket service - runs the games, holds live game state
 packages/
   theme          Branch out brand theme built on @rogueoak/roots (the brandable API)
   brand          logo, icon, and favicon assets (from assets/)
   protocol         shared TypeScript types + contracts (control-plane <-> engine <-> web)
-  service-runtime  shared Express-service helpers (env parsing, Redis client)
+  service-runtime  shared Fastify-service helpers (env parsing, Redis client)
   config           shared tsconfig, eslint, prettier
 infra/
   docker-compose.yml   Postgres + Redis + the three apps, runnable end to end locally

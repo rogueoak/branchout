@@ -23,11 +23,11 @@ and Turborepo.
 ```
 apps/
   web            Next.js - marketing site + browser game client
-  control-plane  Express - accounts, rooms, billing (system of record)
-  game-engine    Express + WebSocket - runs games, holds live state
+  control-plane  Fastify - accounts, rooms, billing (system of record)
+  game-engine    Fastify + WebSocket - runs games, holds live state
 packages/
   protocol         shared protocol types + the WebSocket transport adapter
-  service-runtime  shared Express-service helpers (env parsing, Redis client)
+  service-runtime  shared Fastify-service helpers (env parsing, Redis client)
   config           shared tsconfig, ESLint, Prettier
 infra/
   docker-compose.yml   Postgres + Redis + the three apps, end to end

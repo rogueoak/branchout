@@ -2,7 +2,7 @@
   "name": "@branchout/service-runtime",
   "version": "0.0.0",
   "private": true,
-  "description": "Shared runtime helpers for the Branch out Express services (env parsing, Redis).",
+  "description": "Shared runtime helpers for the Branch out Fastify services (env parsing, Redis).",
   "type": "module",
   "sideEffects": false,
   "files": [
