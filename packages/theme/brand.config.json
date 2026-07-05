@@ -1,0 +1,8 @@
+{
+  "name": "confetti",
+  "primitives": "tokens/primitive.json",
+  "semantic": "tokens/semantic.json",
+  "semanticDark": "tokens/semantic.dark.json",
+  "outFile": "dist/brand.css",
+  "scope": null
+}
