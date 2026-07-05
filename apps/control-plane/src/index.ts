@@ -1,7 +1,13 @@
 import { createRedisClient, pingRedis } from '@branchout/service-runtime';
+import { createHasher } from './accounts/hasher';
+import { PostgresAccountRepository } from './accounts/repository';
+import { AccountService } from './accounts/service';
 import { createApp } from './app';
 import { loadConfig } from './config';
 import { createPostgresPool, pingPostgres } from './db';
+import { runMigrations } from './db/migrations';
+import { allMigrations } from './migrations';
+import { RedisSessionStore, type SessionRedis } from './sessions/store';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -15,6 +21,21 @@ async function main(): Promise<void> {
     .connect()
     .catch((error) => console.error('[control-plane] redis connect failed', error));
 
+  // Bring the schema up to date on boot so `docker compose up` needs no separate step. Fail
+  // fast on error: a missing or partial schema will not self-heal, and starting anyway would
+  // 500 every signup/login while /health (a connectivity check) still reports Postgres ok.
+  try {
+    const applied = await runMigrations(pool, allMigrations);
+    console.log(
+      applied.length > 0
+        ? `[control-plane] applied migrations ${applied.join(', ')}`
+        : '[control-plane] schema up to date',
+    );
+  } catch (error) {
+    console.error('[control-plane] migration failed, aborting boot', error);
+    throw error;
+  }
+
   // Prove the wiring on boot so `docker compose up` surfaces a bad connection string early.
   const [postgres, cache] = await Promise.all([pingPostgres(pool), pingRedis(redis)]);
   console.log(
@@ -23,9 +44,26 @@ async function main(): Promise<void> {
     }`,
   );
 
+  const hasher = await createHasher();
+  const accounts = new AccountService(new PostgresAccountRepository(pool), hasher);
+  // Adapt the redis client to the narrow surface the session store needs.
+  const sessionRedis: SessionRedis = {
+    set: (key, value, options) => redis.set(key, value, options),
+    get: (key) => redis.get(key),
+    del: (key) => redis.del(key),
+    expire: (key, seconds) => redis.expire(key, seconds),
+  };
+  const sessions = new RedisSessionStore(sessionRedis, config.cookie.ttlSeconds);
+
   const app = createApp({
-    checkPostgres: () => pingPostgres(pool),
-    checkRedis: () => pingRedis(redis),
+    checks: {
+      checkPostgres: () => pingPostgres(pool),
+      checkRedis: () => pingRedis(redis),
+    },
+    accounts,
+    sessions,
+    cookie: config.cookie,
+    webOrigins: config.webOrigins,
   });
 
   const shutdown = (signal: string) => {

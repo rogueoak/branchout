@@ -12,7 +12,11 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 ## Accounts and profiles
 
-- [ ] Anonymous play and account sign-up; account required only to save progress or host.
+- [x] Anonymous play and account sign-up; account required only to save progress or host
+      (spec `0004`). Email + password sign-up, log in / out, a `me` identity endpoint, editable
+      nickname (defaults to the gamer tag), and a join-by-code path that mints an ephemeral
+      anonymous session with no account row. Redis-backed sessions behind an httpOnly cookie;
+      `/signup` and `/login` pages in `apps/web`.
 - [ ] Public profile - gamer tag (always public), nickname (defaults to gamer tag), avatar from
       a set of cartoon characters, stars badge, recent-plays timeline.
 - [ ] Privacy - profile public / friends-only / private (gamer tag and stars stay public).

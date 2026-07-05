@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup';
 // Bundle our own source into a single ESM entry; leave runtime deps (fastify, pg, redis)
 // external so Node resolves them from node_modules at run time.
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: ['src/index.ts', 'src/migrate.ts'],
   outDir: 'dist',
   format: ['esm'],
   dts: false,

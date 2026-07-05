@@ -34,6 +34,15 @@ The first proof that the whole platform works: a landing page that converts, and
 `0005` and `0009` can build early (they lean on the foundations, not the whole spine). `0008`
 needs `0007` + `0009`; `0010` needs `0006` + `0007` + `0008`.
 
+## Hosting
+
+| Spec | Title | State |
+|---|---|---|
+| `0011` | Hosting + deploy - DigitalOcean droplet, Caddy TLS, private GHCR, GHA CD | drafted |
+
+Builds on the scaffold's Dockerfiles + docker-compose (`0001`); deploys the app once the slice is
+runnable. No droplet address or secret lives in the repo.
+
 ## Platform spine (control-plane)
 
 - Accounts + anonymous play - account model, sign-up, anonymous sessions.

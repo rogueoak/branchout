@@ -54,3 +54,21 @@ Capture durable lessons as they emerge.
   user-facing surface, not just the happy path.** Prove the degraded/error branch and assert the
   styling or output a user actually sees; `getByRole(...)` already throws on a miss, so a
   trailing `toBeDefined()` asserts nothing.
+
+## Auth and security
+
+- **Build the adversarial and degraded partitions with the happy path, not after.** For auth
+  specifically: keep credential checks constant-time (verify against a dummy hash on an unknown
+  user so latency does not enumerate accounts), never let a hash silently truncate input (bcrypt
+  ignores bytes past 72 - pre-hash with SHA-256), and fail fast on un-healable startup state (a
+  failed migration must abort boot, not serve 500s while `/health` reports the DB "ok"). These
+  were all caught in persona review of `0004`, not by the passing happy-path tests. (Feedback
+  `0003`.)
+
+## Module boundaries
+
+- **Place a module by the concern it owns, not the file you were editing.** Service-wide infra
+  (the migration runner) and cross-domain rules (display-name validation) belong in neutral
+  homes (`db/`, `validation/`), not inside the first domain that needed them (`accounts/`) -
+  otherwise sessions and future domains pick up a wrong-direction dependency on accounts.
+  (Feedback `0003`.)
