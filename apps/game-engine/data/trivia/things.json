@@ -829,7 +829,13 @@
     "id": "things-119",
     "category": "Things",
     "prompt": "What handheld device used by police measures the concentration of alcohol in a person's exhaled breath?",
-    "answers": ["breathalyzer", "a breathalyzer", "breathalyser", "a breathalyser", "breath tester"],
+    "answers": [
+      "breathalyzer",
+      "a breathalyzer",
+      "breathalyser",
+      "a breathalyser",
+      "breath tester"
+    ],
     "difficulty": "medium"
   },
   {
@@ -934,7 +940,13 @@
     "id": "things-134",
     "category": "Things",
     "prompt": "What drawing instrument with two hinged legs, one holding a sharp point and the other a pencil or pen, is used to draw circles and arcs?",
-    "answers": ["compass", "drafting compass", "drawing compass", "a compass", "a drafting compass"],
+    "answers": [
+      "compass",
+      "drafting compass",
+      "drawing compass",
+      "a compass",
+      "a drafting compass"
+    ],
     "difficulty": "medium"
   },
   {

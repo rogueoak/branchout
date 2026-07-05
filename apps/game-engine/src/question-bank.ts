@@ -65,12 +65,7 @@ const VALID_DIFFICULTIES: ReadonlySet<string> = new Set(['easy', 'medium', 'hard
  * Resolves paths relative to this module so it works wherever the process is launched from.
  */
 export async function loadQuestionBank(): Promise<TriviaQuestion[]> {
-  const dir = path.join(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '..',
-    'data',
-    'trivia',
-  );
+  const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data', 'trivia');
 
   const perCategory = await Promise.all(
     CATEGORIES.map(async (category) => {
@@ -138,15 +133,11 @@ export function validateQuestionBank(questions: TriviaQuestion[]): void {
 
     // 5. Answers
     if (!Array.isArray(q.answers) || q.answers.length === 0) {
-      throw new Error(
-        `question-bank validation failed: ${pos} has empty answers array`,
-      );
+      throw new Error(`question-bank validation failed: ${pos} has empty answers array`);
     }
     for (const answer of q.answers) {
       if (typeof answer !== 'string' || answer.length === 0) {
-        throw new Error(
-          `question-bank validation failed: ${pos} has a blank answer`,
-        );
+        throw new Error(`question-bank validation failed: ${pos} has a blank answer`);
       }
       if (answer !== answer.toLowerCase()) {
         throw new Error(

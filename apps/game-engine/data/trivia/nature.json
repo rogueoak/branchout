@@ -1,202 +1,1406 @@
 [
-  {"id":"nature-001","category":"Nature","prompt":"What gas do plants absorb from the air during photosynthesis?","answers":["carbon dioxide","co2"],"difficulty":"easy"},
-  {"id":"nature-002","category":"Nature","prompt":"What is the largest ocean on Earth?","answers":["pacific ocean","pacific"],"difficulty":"easy"},
-  {"id":"nature-003","category":"Nature","prompt":"What is the hardest natural mineral on Earth?","answers":["diamond"],"difficulty":"easy"},
-  {"id":"nature-004","category":"Nature","prompt":"How many bones are in the adult human body?","answers":["206","two hundred and six"],"difficulty":"easy"},
-  {"id":"nature-005","category":"Nature","prompt":"What layer of Earth's atmosphere contains the ozone layer?","answers":["stratosphere"],"difficulty":"easy"},
-  {"id":"nature-006","category":"Nature","prompt":"What is the most abundant gas in Earth's atmosphere?","answers":["nitrogen"],"difficulty":"easy"},
-  {"id":"nature-007","category":"Nature","prompt":"What is molten rock called while it remains beneath Earth's surface?","answers":["magma"],"difficulty":"easy"},
-  {"id":"nature-008","category":"Nature","prompt":"What is the name for molten rock after it erupts onto Earth's surface?","answers":["lava"],"difficulty":"easy"},
-  {"id":"nature-009","category":"Nature","prompt":"What is the tallest mountain on Earth measured from sea level?","answers":["mount everest","everest"],"difficulty":"easy"},
-  {"id":"nature-010","category":"Nature","prompt":"What is the world's largest tropical rainforest?","answers":["amazon","amazon rainforest","the amazon"],"difficulty":"easy"},
-  {"id":"nature-011","category":"Nature","prompt":"What is the process called when liquid water changes into water vapor?","answers":["evaporation"],"difficulty":"easy"},
-  {"id":"nature-012","category":"Nature","prompt":"What is the largest animal on Earth?","answers":["blue whale"],"difficulty":"easy"},
-  {"id":"nature-013","category":"Nature","prompt":"What is the largest land animal on Earth?","answers":["african elephant","elephant"],"difficulty":"easy"},
-  {"id":"nature-014","category":"Nature","prompt":"How many chambers does the human heart have?","answers":["four","4"],"difficulty":"easy"},
-  {"id":"nature-015","category":"Nature","prompt":"What substance do bees collect from flowers to produce honey?","answers":["nectar"],"difficulty":"easy"},
-  {"id":"nature-016","category":"Nature","prompt":"What is the process called when a caterpillar transforms into a butterfly?","answers":["metamorphosis"],"difficulty":"easy"},
-  {"id":"nature-017","category":"Nature","prompt":"What gas do humans primarily exhale when breathing?","answers":["carbon dioxide","co2"],"difficulty":"easy"},
-  {"id":"nature-018","category":"Nature","prompt":"What is the outermost solid layer of Earth called?","answers":["crust","earth's crust"],"difficulty":"easy"},
-  {"id":"nature-019","category":"Nature","prompt":"What is the largest continent on Earth?","answers":["asia"],"difficulty":"easy"},
-  {"id":"nature-020","category":"Nature","prompt":"What is the freezing point of water in degrees Celsius?","answers":["zero","0","0 degrees"],"difficulty":"easy"},
-  {"id":"nature-021","category":"Nature","prompt":"What is the boiling point of water in degrees Celsius at standard pressure?","answers":["100","one hundred","100 degrees"],"difficulty":"easy"},
-  {"id":"nature-022","category":"Nature","prompt":"Which organ in the human body produces insulin?","answers":["pancreas"],"difficulty":"easy"},
-  {"id":"nature-023","category":"Nature","prompt":"What is the largest organ of the human body?","answers":["skin"],"difficulty":"easy"},
-  {"id":"nature-024","category":"Nature","prompt":"What type of blood cells help the body fight infection?","answers":["white blood cells","leukocytes","white cells"],"difficulty":"easy"},
-  {"id":"nature-025","category":"Nature","prompt":"What gas makes up approximately 21 percent of Earth's atmosphere?","answers":["oxygen"],"difficulty":"easy"},
-  {"id":"nature-026","category":"Nature","prompt":"What is the term for an animal that eats only plants?","answers":["herbivore"],"difficulty":"easy"},
-  {"id":"nature-027","category":"Nature","prompt":"What is the term for an animal that eats both plants and animals?","answers":["omnivore"],"difficulty":"easy"},
-  {"id":"nature-028","category":"Nature","prompt":"What is the fastest land animal on Earth?","answers":["cheetah"],"difficulty":"easy"},
-  {"id":"nature-029","category":"Nature","prompt":"What is the natural environment where an organism lives called?","answers":["habitat"],"difficulty":"easy"},
-  {"id":"nature-030","category":"Nature","prompt":"What green pigment in plants is responsible for absorbing sunlight?","answers":["chlorophyll"],"difficulty":"easy"},
-  {"id":"nature-031","category":"Nature","prompt":"What is the name of the layer of Earth directly beneath the crust?","answers":["mantle"],"difficulty":"easy"},
-  {"id":"nature-032","category":"Nature","prompt":"What is the world's largest hot desert?","answers":["sahara","sahara desert","the sahara"],"difficulty":"easy"},
-  {"id":"nature-033","category":"Nature","prompt":"What is the term for animals that are primarily active at night?","answers":["nocturnal"],"difficulty":"easy"},
-  {"id":"nature-034","category":"Nature","prompt":"What is the term for trees that shed their leaves seasonally?","answers":["deciduous"],"difficulty":"easy"},
-  {"id":"nature-035","category":"Nature","prompt":"What type of rock is formed from compressed layers of sediment?","answers":["sedimentary rock","sedimentary"],"difficulty":"easy"},
-  {"id":"nature-036","category":"Nature","prompt":"What type of rock forms when magma or lava cools and solidifies?","answers":["igneous rock","igneous"],"difficulty":"easy"},
-  {"id":"nature-037","category":"Nature","prompt":"What is the longest mountain range located on land?","answers":["andes","andes mountains"],"difficulty":"easy"},
-  {"id":"nature-038","category":"Nature","prompt":"What organ filters waste products from the blood in the human body?","answers":["kidney","kidneys"],"difficulty":"easy"},
-  {"id":"nature-039","category":"Nature","prompt":"What is the term for an animal that eats only meat?","answers":["carnivore"],"difficulty":"easy"},
-  {"id":"nature-040","category":"Nature","prompt":"What is the scientific name for the continuous movement of water through evaporation, condensation, and precipitation on Earth?","answers":["hydrological cycle","hydrologic cycle","water cycle"],"difficulty":"easy"},
-  {"id":"nature-041","category":"Nature","prompt":"What organelle in a cell is known as the powerhouse of the cell?","answers":["mitochondria","mitochondrion"],"difficulty":"easy"},
-  {"id":"nature-042","category":"Nature","prompt":"What is the most abundant element in Earth's crust by mass?","answers":["oxygen"],"difficulty":"easy"},
-  {"id":"nature-043","category":"Nature","prompt":"What is the name of the world's deepest ocean trench?","answers":["mariana trench","the mariana trench"],"difficulty":"easy"},
-  {"id":"nature-044","category":"Nature","prompt":"What is the scientific study of weather called?","answers":["meteorology"],"difficulty":"easy"},
-  {"id":"nature-045","category":"Nature","prompt":"What is the term for a large region characterized by a distinctive climate and community of organisms?","answers":["biome"],"difficulty":"easy"},
-  {"id":"nature-046","category":"Nature","prompt":"What is the scientific study of plants called?","answers":["botany"],"difficulty":"easy"},
-  {"id":"nature-047","category":"Nature","prompt":"What type of cloud is associated with thunderstorms and heavy rain?","answers":["cumulonimbus","cumulonimbus cloud"],"difficulty":"easy"},
-  {"id":"nature-048","category":"Nature","prompt":"What category of rock does marble belong to?","answers":["metamorphic rock","metamorphic"],"difficulty":"easy"},
-  {"id":"nature-049","category":"Nature","prompt":"What is the process by which dead organic matter is broken down into simpler substances?","answers":["decomposition"],"difficulty":"easy"},
-  {"id":"nature-050","category":"Nature","prompt":"What is the main structural material found in plant cell walls?","answers":["cellulose"],"difficulty":"easy"},
-  {"id":"nature-051","category":"Nature","prompt":"What is the term for the process by which a gas turns into a liquid?","answers":["condensation"],"difficulty":"easy"},
-  {"id":"nature-052","category":"Nature","prompt":"What is the cold, treeless biome found in Arctic regions with permanently frozen subsoil?","answers":["tundra"],"difficulty":"easy"},
-  {"id":"nature-053","category":"Nature","prompt":"What is the world's deepest lake?","answers":["lake baikal","baikal"],"difficulty":"easy"},
-  {"id":"nature-054","category":"Nature","prompt":"What scale was traditionally used to measure earthquake magnitude?","answers":["richter scale","richter"],"difficulty":"easy"},
-  {"id":"nature-055","category":"Nature","prompt":"What is the solid state of water called?","answers":["ice"],"difficulty":"easy"},
-  {"id":"nature-056","category":"Nature","prompt":"What is the term for the amount of water vapor present in the air?","answers":["humidity"],"difficulty":"easy"},
-  {"id":"nature-057","category":"Nature","prompt":"What is a young tree called?","answers":["sapling"],"difficulty":"easy"},
-  {"id":"nature-058","category":"Nature","prompt":"What is the scientific study of the oceans called?","answers":["oceanography"],"difficulty":"easy"},
-  {"id":"nature-059","category":"Nature","prompt":"What is the world's largest coral reef system?","answers":["great barrier reef","the great barrier reef"],"difficulty":"easy"},
-  {"id":"nature-060","category":"Nature","prompt":"What gas is released by plants as a byproduct of photosynthesis?","answers":["oxygen"],"difficulty":"easy"},
-  {"id":"nature-061","category":"Nature","prompt":"What is the term for fresh water stored underground in rock and soil?","answers":["groundwater"],"difficulty":"easy"},
-  {"id":"nature-062","category":"Nature","prompt":"What are organisms called that produce their own food from sunlight through photosynthesis?","answers":["autotrophs","producers","autotroph"],"difficulty":"easy"},
-  {"id":"nature-063","category":"Nature","prompt":"What is the term for a large ocean wave typically triggered by an undersea earthquake?","answers":["tsunami"],"difficulty":"easy"},
-  {"id":"nature-064","category":"Nature","prompt":"What type of tropical weather system rotates around a calm center called the eye?","answers":["hurricane","typhoon","tropical cyclone","cyclone"],"difficulty":"easy"},
-  {"id":"nature-065","category":"Nature","prompt":"What is the innermost layer of Earth?","answers":["inner core","core"],"difficulty":"easy"},
-  {"id":"nature-066","category":"Nature","prompt":"What is the coastal area where a river meets the sea and tidal influence is felt called?","answers":["estuary"],"difficulty":"easy"},
-  {"id":"nature-067","category":"Nature","prompt":"What is the chemical formula for water?","answers":["h2o"],"difficulty":"easy"},
-  {"id":"nature-068","category":"Nature","prompt":"What is the name of the ancient supercontinent that broke apart approximately 200 million years ago?","answers":["pangaea","pangea"],"difficulty":"medium"},
-  {"id":"nature-069","category":"Nature","prompt":"What is the process called when plants release water vapor through their leaves into the atmosphere?","answers":["transpiration"],"difficulty":"medium"},
-  {"id":"nature-070","category":"Nature","prompt":"What ocean current warms the climate of Western Europe?","answers":["gulf stream","the gulf stream"],"difficulty":"medium"},
-  {"id":"nature-071","category":"Nature","prompt":"Who developed the biological classification system of naming organisms with two Latin names?","answers":["carl linnaeus","linnaeus","carolus linnaeus"],"difficulty":"medium"},
-  {"id":"nature-072","category":"Nature","prompt":"What is the world's largest lake by surface area?","answers":["caspian sea","the caspian sea"],"difficulty":"medium"},
-  {"id":"nature-073","category":"Nature","prompt":"What type of biome generally has the highest species biodiversity?","answers":["tropical rainforest","tropical rain forest"],"difficulty":"medium"},
-  {"id":"nature-074","category":"Nature","prompt":"What term describes animals that maintain a constant internal body temperature regardless of their environment?","answers":["endotherms","warm-blooded","endotherm","homeotherms"],"difficulty":"medium"},
-  {"id":"nature-075","category":"Nature","prompt":"What Hawaiian volcano is considered the world's largest active volcano by volume?","answers":["mauna loa"],"difficulty":"medium"},
-  {"id":"nature-076","category":"Nature","prompt":"What ecological term describes the gradual change in the composition of a community of organisms over time?","answers":["ecological succession","succession"],"difficulty":"medium"},
-  {"id":"nature-077","category":"Nature","prompt":"What is the pH of pure water at 25 degrees Celsius?","answers":["seven","7","neutral"],"difficulty":"medium"},
-  {"id":"nature-078","category":"Nature","prompt":"What element has the chemical symbol Fe?","answers":["iron"],"difficulty":"medium"},
-  {"id":"nature-079","category":"Nature","prompt":"What type of symbiotic relationship benefits both organisms involved?","answers":["mutualism"],"difficulty":"medium"},
-  {"id":"nature-080","category":"Nature","prompt":"What mineral is the most abundant in the human body?","answers":["calcium"],"difficulty":"medium"},
-  {"id":"nature-081","category":"Nature","prompt":"What landform is created when a river deposits sediment at its mouth as it enters a larger body of water?","answers":["delta","river delta"],"difficulty":"medium"},
-  {"id":"nature-082","category":"Nature","prompt":"What is the world's highest uninterrupted waterfall, located in Venezuela?","answers":["angel falls"],"difficulty":"medium"},
-  {"id":"nature-083","category":"Nature","prompt":"What is the name for the zone of intense seismic and volcanic activity surrounding the Pacific Ocean?","answers":["ring of fire","the ring of fire"],"difficulty":"medium"},
-  {"id":"nature-084","category":"Nature","prompt":"What type of clouds form at the highest altitude and are composed of ice crystals?","answers":["cirrus","cirrus clouds"],"difficulty":"medium"},
-  {"id":"nature-085","category":"Nature","prompt":"What term describes the time required for half of the atoms in a radioactive substance to decay?","answers":["half-life","half life"],"difficulty":"medium"},
-  {"id":"nature-086","category":"Nature","prompt":"What does the Beaufort scale measure?","answers":["wind speed","wind force","wind"],"difficulty":"medium"},
-  {"id":"nature-087","category":"Nature","prompt":"What is the term for the transition zone between two different ecosystems?","answers":["ecotone"],"difficulty":"medium"},
-  {"id":"nature-088","category":"Nature","prompt":"What is the name of the lowest layer of Earth's atmosphere, where weather occurs?","answers":["troposphere"],"difficulty":"medium"},
-  {"id":"nature-089","category":"Nature","prompt":"What is the term for a large, slow-moving body of compacted ice and snow?","answers":["glacier"],"difficulty":"medium"},
-  {"id":"nature-090","category":"Nature","prompt":"What geological term describes a fracture in Earth's crust along which movement has occurred?","answers":["fault"],"difficulty":"medium"},
-  {"id":"nature-091","category":"Nature","prompt":"What is the term for an underground layer of permeable rock that stores and transmits groundwater?","answers":["aquifer"],"difficulty":"medium"},
-  {"id":"nature-092","category":"Nature","prompt":"What process, carried out by certain bacteria, converts atmospheric nitrogen gas into ammonia?","answers":["nitrogen fixation"],"difficulty":"medium"},
-  {"id":"nature-093","category":"Nature","prompt":"What type of tectonic plate boundary typically forms mountain ranges when two plates collide?","answers":["convergent boundary","convergent plate boundary"],"difficulty":"medium"},
-  {"id":"nature-094","category":"Nature","prompt":"What is the approximate percentage of nitrogen in Earth's atmosphere?","answers":["78","seventy-eight","78 percent"],"difficulty":"medium"},
-  {"id":"nature-095","category":"Nature","prompt":"What is traditionally considered the world's longest river?","answers":["nile","nile river","the nile"],"difficulty":"medium"},
-  {"id":"nature-096","category":"Nature","prompt":"What is the scientific study of fossils called?","answers":["paleontology"],"difficulty":"medium"},
-  {"id":"nature-097","category":"Nature","prompt":"What is the name of the force that attracts objects toward Earth?","answers":["gravity","gravitational force"],"difficulty":"medium"},
-  {"id":"nature-098","category":"Nature","prompt":"What is a naturally occurring, inorganic, solid substance with a definite chemical composition called?","answers":["mineral"],"difficulty":"medium"},
-  {"id":"nature-099","category":"Nature","prompt":"What is the name of the seismic boundary between Earth's crust and mantle, discovered by Andrija Mohorovičić?","answers":["moho","mohorovicic discontinuity"],"difficulty":"medium"},
-  {"id":"nature-100","category":"Nature","prompt":"What is a violently rotating column of air extending from a thunderstorm to the ground?","answers":["tornado"],"difficulty":"medium"},
-  {"id":"nature-101","category":"Nature","prompt":"What scale ranks the hardness of minerals from 1 (softest) to 10 (hardest)?","answers":["mohs scale","mohs hardness scale"],"difficulty":"medium"},
-  {"id":"nature-102","category":"Nature","prompt":"What is the term for ground that remains frozen year-round, found in cold regions?","answers":["permafrost"],"difficulty":"medium"},
-  {"id":"nature-103","category":"Nature","prompt":"What is the chemical formula for sodium chloride, commonly known as table salt?","answers":["nacl"],"difficulty":"medium"},
-  {"id":"nature-104","category":"Nature","prompt":"What is the scientific study of earthquakes called?","answers":["seismology"],"difficulty":"medium"},
-  {"id":"nature-105","category":"Nature","prompt":"What type of dark volcanic rock is the principal rock found at mid-ocean ridges?","answers":["basalt"],"difficulty":"medium"},
-  {"id":"nature-106","category":"Nature","prompt":"What is the term for an area of the ocean with very low levels of dissolved oxygen, causing few organisms to survive?","answers":["dead zone","oxygen minimum zone","hypoxic zone"],"difficulty":"medium"},
-  {"id":"nature-107","category":"Nature","prompt":"What is the scientific study of fungi called?","answers":["mycology"],"difficulty":"medium"},
-  {"id":"nature-108","category":"Nature","prompt":"What is the chemical formula for ozone?","answers":["o3"],"difficulty":"medium"},
-  {"id":"nature-109","category":"Nature","prompt":"What is the term for a species that is native to and found exclusively in one specific geographic area?","answers":["endemic species","endemic"],"difficulty":"medium"},
-  {"id":"nature-110","category":"Nature","prompt":"What is the term for the dark organic material in soil formed from decomposed plant and animal matter?","answers":["humus"],"difficulty":"medium"},
-  {"id":"nature-111","category":"Nature","prompt":"What natural phenomenon, consisting of charged particles from the Sun interacting with Earth's magnetic field, causes the Aurora Borealis?","answers":["solar wind","charged particles from the sun","solar particles"],"difficulty":"medium"},
-  {"id":"nature-112","category":"Nature","prompt":"What is the point on Earth's surface directly above where an earthquake originates underground?","answers":["epicenter","epicentre"],"difficulty":"medium"},
-  {"id":"nature-113","category":"Nature","prompt":"What type of symbiosis involves one organism benefiting while the other is harmed?","answers":["parasitism"],"difficulty":"medium"},
-  {"id":"nature-114","category":"Nature","prompt":"What is the term for the concentration of dissolved salts in water?","answers":["salinity"],"difficulty":"medium"},
-  {"id":"nature-115","category":"Nature","prompt":"What is the term for the total area of land that drains into a single river system?","answers":["watershed","drainage basin","river basin","catchment area","catchment"],"difficulty":"medium"},
-  {"id":"nature-116","category":"Nature","prompt":"What type of weather front forms when a cold air mass advances and replaces a warm air mass?","answers":["cold front"],"difficulty":"medium"},
-  {"id":"nature-117","category":"Nature","prompt":"What scale, ranging from 1 to 5, is used to classify the intensity of Atlantic hurricanes?","answers":["saffir-simpson scale","saffir simpson scale","saffir-simpson hurricane wind scale"],"difficulty":"medium"},
-  {"id":"nature-118","category":"Nature","prompt":"What is the term for the maximum elevation above which trees can no longer survive?","answers":["treeline","tree line","timberline"],"difficulty":"medium"},
-  {"id":"nature-119","category":"Nature","prompt":"What oceanographic process brings cold, nutrient-rich water from the deep ocean up to the surface?","answers":["upwelling"],"difficulty":"medium"},
-  {"id":"nature-120","category":"Nature","prompt":"What geological process involves one tectonic plate sliding beneath another into the mantle?","answers":["subduction"],"difficulty":"medium"},
-  {"id":"nature-121","category":"Nature","prompt":"What is the term for sediment deposited by a river on its floodplain during flooding?","answers":["alluvium","alluvial sediment","alluvial deposit"],"difficulty":"medium"},
-  {"id":"nature-122","category":"Nature","prompt":"What term describes the fraction of incoming solar radiation that a surface reflects back into space?","answers":["albedo"],"difficulty":"medium"},
-  {"id":"nature-123","category":"Nature","prompt":"What is the scientific study of landforms and the processes that shape them?","answers":["geomorphology"],"difficulty":"medium"},
-  {"id":"nature-124","category":"Nature","prompt":"What geological eon began approximately 541 million years ago and continues to the present?","answers":["phanerozoic","phanerozoic eon"],"difficulty":"medium"},
-  {"id":"nature-125","category":"Nature","prompt":"What is the name of the boundary layer between the troposphere and the stratosphere?","answers":["tropopause"],"difficulty":"medium"},
-  {"id":"nature-126","category":"Nature","prompt":"What type of seismic waves can travel only through solid rock and not through liquid?","answers":["s waves","secondary waves","shear waves","s-waves"],"difficulty":"medium"},
-  {"id":"nature-127","category":"Nature","prompt":"What field of study uses the width and patterns of annual tree rings to determine age and reconstruct past climates?","answers":["dendrochronology","dendroclimatology"],"difficulty":"medium"},
-  {"id":"nature-128","category":"Nature","prompt":"Who first formally proposed the theory of continental drift in 1912?","answers":["alfred wegener","wegener"],"difficulty":"medium"},
-  {"id":"nature-129","category":"Nature","prompt":"What mineral is the primary component of limestone?","answers":["calcite","calcium carbonate"],"difficulty":"medium"},
-  {"id":"nature-130","category":"Nature","prompt":"What is the term for the global ocean circulation pattern driven by differences in water temperature and salinity?","answers":["thermohaline circulation","thermohaline conveyor"],"difficulty":"medium"},
-  {"id":"nature-131","category":"Nature","prompt":"What ecological term describes the network of interconnected feeding relationships among organisms in an ecosystem?","answers":["food web"],"difficulty":"medium"},
-  {"id":"nature-132","category":"Nature","prompt":"What is the term for a group of organisms of the same species living in the same area at the same time?","answers":["population"],"difficulty":"medium"},
-  {"id":"nature-133","category":"Nature","prompt":"What type of reddish, nutrient-poor soil is characteristic of tropical rainforest regions?","answers":["laterite"],"difficulty":"medium"},
-  {"id":"nature-134","category":"Nature","prompt":"What earthquake magnitude scale, expressed in Newton-meters of energy, replaced the Richter scale as the scientific standard?","answers":["moment magnitude scale","moment magnitude"],"difficulty":"medium"},
-  {"id":"nature-135","category":"Nature","prompt":"What is the name of the deepest known point in Earth's oceans, located in the Mariana Trench?","answers":["challenger deep","the challenger deep"],"difficulty":"hard"},
-  {"id":"nature-136","category":"Nature","prompt":"What is the term for fossilized tree resin that sometimes preserves ancient organisms?","answers":["amber"],"difficulty":"hard"},
-  {"id":"nature-137","category":"Nature","prompt":"What periodic climate phenomenon describes the warming of central and eastern Pacific Ocean surface temperatures near the equator?","answers":["el nino","el niño"],"difficulty":"hard"},
-  {"id":"nature-138","category":"Nature","prompt":"What metamorphic rock typically forms from the high-grade metamorphism of granite under extreme heat and pressure?","answers":["gneiss"],"difficulty":"hard"},
-  {"id":"nature-139","category":"Nature","prompt":"What biogeochemical cycle describes the movement of nitrogen through the atmosphere, soil, water, and living organisms?","answers":["nitrogen cycle"],"difficulty":"hard"},
-  {"id":"nature-140","category":"Nature","prompt":"What term describes organisms that thrive in extreme conditions such as very high temperatures, high acidity, or intense pressure?","answers":["extremophile","extremophiles"],"difficulty":"hard"},
-  {"id":"nature-141","category":"Nature","prompt":"What trace element gives rubies their characteristic red color?","answers":["chromium"],"difficulty":"hard"},
-  {"id":"nature-142","category":"Nature","prompt":"What element gives the green mineral malachite its distinctive color?","answers":["copper"],"difficulty":"hard"},
-  {"id":"nature-143","category":"Nature","prompt":"What is the underground point where an earthquake originates called?","answers":["hypocenter","focus","hypocentre"],"difficulty":"hard"},
-  {"id":"nature-144","category":"Nature","prompt":"What method uses the known decay rate of radioactive isotopes to determine the age of rocks and minerals?","answers":["radiometric dating","radioactive dating"],"difficulty":"hard"},
-  {"id":"nature-145","category":"Nature","prompt":"What is the term for a large mass of intrusive igneous rock that solidified deep underground?","answers":["batholith"],"difficulty":"hard"},
-  {"id":"nature-146","category":"Nature","prompt":"What is the name of the seismic boundary between Earth's outer core and the mantle?","answers":["gutenberg discontinuity","core-mantle boundary"],"difficulty":"hard"},
-  {"id":"nature-147","category":"Nature","prompt":"What is the scientific study of pollen and spores, applied in paleoclimatology and forensic science?","answers":["palynology"],"difficulty":"hard"},
-  {"id":"nature-148","category":"Nature","prompt":"What term describes the rate at which temperature increases with depth below Earth's surface?","answers":["geothermal gradient"],"difficulty":"hard"},
-  {"id":"nature-149","category":"Nature","prompt":"What type of mechanical weathering occurs when water repeatedly freezes and expands in rock cracks, forcing them apart?","answers":["frost wedging","freeze-thaw weathering","frost action"],"difficulty":"hard"},
-  {"id":"nature-150","category":"Nature","prompt":"What type of volcanic glass forms when lava cools so rapidly that crystals cannot develop?","answers":["obsidian"],"difficulty":"hard"},
-  {"id":"nature-151","category":"Nature","prompt":"What element is essential for the synthesis of thyroid hormones in the human body?","answers":["iodine"],"difficulty":"hard"},
-  {"id":"nature-152","category":"Nature","prompt":"What index measures the global intensity of geomagnetic storms caused by solar activity, on a scale of 0 to 9?","answers":["kp index","k-index","planetary k-index"],"difficulty":"hard"},
-  {"id":"nature-153","category":"Nature","prompt":"What term describes the increasing concentration of a toxic substance in organisms at successively higher levels of a food chain?","answers":["biomagnification","bioaccumulation","biological magnification"],"difficulty":"hard"},
-  {"id":"nature-154","category":"Nature","prompt":"What geological boundary, approximately 66 million years ago, marks the mass extinction of non-avian dinosaurs?","answers":["cretaceous-paleogene boundary","k-pg boundary","k-t boundary"],"difficulty":"hard"},
-  {"id":"nature-155","category":"Nature","prompt":"What meteorological phenomenon occurs when a layer of warm air traps cooler air near the ground, preventing it from rising?","answers":["temperature inversion","thermal inversion"],"difficulty":"hard"},
-  {"id":"nature-156","category":"Nature","prompt":"What type of rock is formed from compacted layers of volcanic ash deposited after an eruption?","answers":["tuff","volcanic tuff"],"difficulty":"hard"},
-  {"id":"nature-157","category":"Nature","prompt":"What geological principle states that in undisturbed rock strata, older layers lie beneath younger ones?","answers":["law of superposition","principle of superposition"],"difficulty":"hard"},
-  {"id":"nature-158","category":"Nature","prompt":"What atmospheric boundary separates polar and temperate air masses and drives storm development at mid-latitudes?","answers":["polar front"],"difficulty":"hard"},
-  {"id":"nature-159","category":"Nature","prompt":"What geological process occurs when a more vigorous stream erodes through a divide and captures the headwaters of an adjacent stream?","answers":["stream piracy","river capture","stream capture"],"difficulty":"hard"},
-  {"id":"nature-160","category":"Nature","prompt":"What term describes an organism that produces energy by oxidizing inorganic compounds such as hydrogen sulfide rather than using sunlight?","answers":["chemoautotroph","chemoautotrophs","chemolithotroph"],"difficulty":"hard"},
-  {"id":"nature-161","category":"Nature","prompt":"What is the scientific measurement and mapping of the depth of oceans, seas, and other bodies of water?","answers":["bathymetry"],"difficulty":"hard"},
-  {"id":"nature-162","category":"Nature","prompt":"What term describes the process by which wind transports and deposits sediment to form dunes and other landforms?","answers":["aeolian deposition","eolian deposition","aeolian process"],"difficulty":"hard"},
-  {"id":"nature-163","category":"Nature","prompt":"What is the name of the fast-moving band of westerly winds in the upper troposphere that influences weather at mid-latitudes?","answers":["jet stream"],"difficulty":"hard"},
-  {"id":"nature-164","category":"Nature","prompt":"What type of small, steep-sided volcano is built from fragments of ejected lava that harden into cinders?","answers":["cinder cone","scoria cone"],"difficulty":"hard"},
-  {"id":"nature-165","category":"Nature","prompt":"What is the chemical formula for calcium carbonate, the main component of limestone and chalk?","answers":["caco3"],"difficulty":"hard"},
-  {"id":"nature-166","category":"Nature","prompt":"What term describes a species whose presence, abundance, or absence reflects the overall health of its ecosystem?","answers":["indicator species","bioindicator"],"difficulty":"hard"},
-  {"id":"nature-167","category":"Nature","prompt":"What process describes the excessive enrichment of a body of water with nutrients, leading to algal blooms and oxygen depletion?","answers":["eutrophication"],"difficulty":"hard"},
-  {"id":"nature-168","category":"Nature","prompt":"What is the term for sediment deposited directly by a melting glacier, forming ridges and mounds?","answers":["moraine"],"difficulty":"hard"},
-  {"id":"nature-169","category":"Nature","prompt":"What heat transfer process within the mantle is thought to be the primary driver of tectonic plate movement?","answers":["mantle convection","convection","convection currents"],"difficulty":"hard"},
-  {"id":"nature-170","category":"Nature","prompt":"What is the scientific study of caves and cave systems called?","answers":["speleology"],"difficulty":"hard"},
-  {"id":"nature-171","category":"Nature","prompt":"What property of certain rocks records the direction of Earth's magnetic field at the time those rocks formed?","answers":["paleomagnetism","remanent magnetization"],"difficulty":"hard"},
-  {"id":"nature-172","category":"Nature","prompt":"What is the term for a rapidly moving slurry of volcanic debris and water flowing down the slopes of a volcano?","answers":["lahar"],"difficulty":"hard"},
-  {"id":"nature-173","category":"Nature","prompt":"What meteorological phenomenon creates arid conditions on the leeward side of a mountain range, where air descends and warms?","answers":["rain shadow","rain shadow effect"],"difficulty":"hard"},
-  {"id":"nature-174","category":"Nature","prompt":"What term describes the vast, flat, sediment-covered floor of the deep ocean at depths typically between 3000 and 6000 metres?","answers":["abyssal plain"],"difficulty":"hard"},
-  {"id":"nature-175","category":"Nature","prompt":"What is the term for the growth movement of a plant toward a light source?","answers":["phototropism"],"difficulty":"hard"},
-  {"id":"nature-176","category":"Nature","prompt":"What term describes the amount of solar radiation received per unit area of Earth's surface?","answers":["insolation"],"difficulty":"hard"},
-  {"id":"nature-177","category":"Nature","prompt":"What is the term for the shallow coastal zone of a lake or sea where sunlight penetrates to the bottom and rooted plants can grow?","answers":["littoral zone","littoral"],"difficulty":"hard"},
-  {"id":"nature-178","category":"Nature","prompt":"What is the term for the mutually beneficial symbiosis between fungi and the roots of a plant?","answers":["mycorrhiza","mycorrhizae","mycorrhizal"],"difficulty":"hard"},
-  {"id":"nature-179","category":"Nature","prompt":"What mineral ranks 1 on the Mohs hardness scale, making it the softest known mineral?","answers":["talc"],"difficulty":"hard"},
-  {"id":"nature-180","category":"Nature","prompt":"What collective term describes all solid material ejected from a volcano during an eruption, including ash and rock fragments?","answers":["tephra","pyroclastic material"],"difficulty":"hard"},
-  {"id":"nature-181","category":"Nature","prompt":"What geological term describes a fold in rock strata that bows downward to form a trough shape?","answers":["syncline"],"difficulty":"hard"},
-  {"id":"nature-182","category":"Nature","prompt":"What is the term for a prolonged period during which global temperatures drop significantly and large areas are covered by ice sheets?","answers":["ice age","glacial period","glaciation"],"difficulty":"hard"},
-  {"id":"nature-183","category":"Nature","prompt":"What geological structure is a ring-shaped coral reef that encircles a shallow lagoon in the open ocean?","answers":["atoll"],"difficulty":"hard"},
-  {"id":"nature-184","category":"Nature","prompt":"What geological principle, one of Steno's laws, states that rock layers were originally deposited in near-horizontal sheets?","answers":["law of original horizontality","principle of original horizontality"],"difficulty":"hard"},
-  {"id":"nature-185","category":"Nature","prompt":"What element has the chemical symbol Au?","answers":["gold"],"difficulty":"hard"},
-  {"id":"nature-186","category":"Nature","prompt":"What branch of science studies the physical and chemical properties of soils and the processes that form them?","answers":["pedology","soil science"],"difficulty":"hard"},
-  {"id":"nature-187","category":"Nature","prompt":"What type of fog forms when warm, moist air moves horizontally over a cooler surface and cools to its dew point?","answers":["advection fog"],"difficulty":"hard"},
-  {"id":"nature-188","category":"Nature","prompt":"What geological feature is a large, roughly circular depression formed when a volcanic summit or magma chamber collapses?","answers":["caldera"],"difficulty":"hard"},
-  {"id":"nature-189","category":"Nature","prompt":"What is the term for the total mass of living organisms in a given area or volume?","answers":["biomass"],"difficulty":"hard"},
-  {"id":"nature-190","category":"Nature","prompt":"What is the term for precipitation that flows over the land surface and into streams rather than soaking into the ground?","answers":["surface runoff","runoff"],"difficulty":"hard"},
-  {"id":"nature-191","category":"Nature","prompt":"What is the term for a dome-shaped igneous intrusion that has arched and uplifted the overlying rock strata without breaking through to the surface?","answers":["laccolith"],"difficulty":"hard"},
-  {"id":"nature-192","category":"Nature","prompt":"What term describes the ability of an ecosystem to return to its original state after being disturbed?","answers":["ecological resilience","resilience"],"difficulty":"hard"},
-  {"id":"nature-193","category":"Nature","prompt":"What is the term for a relatively impermeable rock layer that significantly restricts the flow of groundwater between aquifers?","answers":["aquitard","aquiclude"],"difficulty":"hard"},
-  {"id":"nature-194","category":"Nature","prompt":"What is the term for Earth's rigid outer shell, comprising the crust and uppermost part of the mantle, that is divided into tectonic plates?","answers":["lithosphere"],"difficulty":"hard"},
-  {"id":"nature-195","category":"Nature","prompt":"What distinctive lava formation, consisting of rounded pillow-shaped masses, develops when lava erupts and cools underwater?","answers":["pillow lava","pillow basalt"],"difficulty":"hard"},
-  {"id":"nature-196","category":"Nature","prompt":"What is a line on a topographic map that connects all points at the same elevation above sea level?","answers":["contour line","isoline","contour"],"difficulty":"hard"},
-  {"id":"nature-197","category":"Nature","prompt":"What geological epoch, lasting from about 2.6 million to 11,700 years ago, encompassed most of the most recent ice ages?","answers":["pleistocene","pleistocene epoch"],"difficulty":"hard"},
-  {"id":"nature-198","category":"Nature","prompt":"What is the term for the horizontal angle between magnetic north and true geographic north at any given location?","answers":["magnetic declination","magnetic variation"],"difficulty":"hard"},
-  {"id":"nature-199","category":"Nature","prompt":"What natural process describes the removal and transport of dissolved minerals and nutrients downward through soil layers by percolating water?","answers":["leaching"],"difficulty":"hard"},
-  {"id":"nature-200","category":"Nature","prompt":"What is the geographical term for a narrow strip of land that connects two larger landmasses?","answers":["isthmus"],"difficulty":"hard"}
+  {
+    "id": "nature-001",
+    "category": "Nature",
+    "prompt": "What gas do plants absorb from the air during photosynthesis?",
+    "answers": ["carbon dioxide", "co2"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-002",
+    "category": "Nature",
+    "prompt": "What is the largest ocean on Earth?",
+    "answers": ["pacific ocean", "pacific"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-003",
+    "category": "Nature",
+    "prompt": "What is the hardest natural mineral on Earth?",
+    "answers": ["diamond"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-004",
+    "category": "Nature",
+    "prompt": "How many bones are in the adult human body?",
+    "answers": ["206", "two hundred and six"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-005",
+    "category": "Nature",
+    "prompt": "What layer of Earth's atmosphere contains the ozone layer?",
+    "answers": ["stratosphere"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-006",
+    "category": "Nature",
+    "prompt": "What is the most abundant gas in Earth's atmosphere?",
+    "answers": ["nitrogen"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-007",
+    "category": "Nature",
+    "prompt": "What is molten rock called while it remains beneath Earth's surface?",
+    "answers": ["magma"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-008",
+    "category": "Nature",
+    "prompt": "What is the name for molten rock after it erupts onto Earth's surface?",
+    "answers": ["lava"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-009",
+    "category": "Nature",
+    "prompt": "What is the tallest mountain on Earth measured from sea level?",
+    "answers": ["mount everest", "everest"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-010",
+    "category": "Nature",
+    "prompt": "What is the world's largest tropical rainforest?",
+    "answers": ["amazon", "amazon rainforest", "the amazon"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-011",
+    "category": "Nature",
+    "prompt": "What is the process called when liquid water changes into water vapor?",
+    "answers": ["evaporation"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-012",
+    "category": "Nature",
+    "prompt": "What is the largest animal on Earth?",
+    "answers": ["blue whale"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-013",
+    "category": "Nature",
+    "prompt": "What is the largest land animal on Earth?",
+    "answers": ["african elephant", "elephant"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-014",
+    "category": "Nature",
+    "prompt": "How many chambers does the human heart have?",
+    "answers": ["four", "4"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-015",
+    "category": "Nature",
+    "prompt": "What substance do bees collect from flowers to produce honey?",
+    "answers": ["nectar"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-016",
+    "category": "Nature",
+    "prompt": "What is the process called when a caterpillar transforms into a butterfly?",
+    "answers": ["metamorphosis"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-017",
+    "category": "Nature",
+    "prompt": "What gas do humans primarily exhale when breathing?",
+    "answers": ["carbon dioxide", "co2"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-018",
+    "category": "Nature",
+    "prompt": "What is the outermost solid layer of Earth called?",
+    "answers": ["crust", "earth's crust"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-019",
+    "category": "Nature",
+    "prompt": "What is the largest continent on Earth?",
+    "answers": ["asia"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-020",
+    "category": "Nature",
+    "prompt": "What is the freezing point of water in degrees Celsius?",
+    "answers": ["zero", "0", "0 degrees"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-021",
+    "category": "Nature",
+    "prompt": "What is the boiling point of water in degrees Celsius at standard pressure?",
+    "answers": ["100", "one hundred", "100 degrees"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-022",
+    "category": "Nature",
+    "prompt": "Which organ in the human body produces insulin?",
+    "answers": ["pancreas"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-023",
+    "category": "Nature",
+    "prompt": "What is the largest organ of the human body?",
+    "answers": ["skin"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-024",
+    "category": "Nature",
+    "prompt": "What type of blood cells help the body fight infection?",
+    "answers": ["white blood cells", "leukocytes", "white cells"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-025",
+    "category": "Nature",
+    "prompt": "What gas makes up approximately 21 percent of Earth's atmosphere?",
+    "answers": ["oxygen"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-026",
+    "category": "Nature",
+    "prompt": "What is the term for an animal that eats only plants?",
+    "answers": ["herbivore"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-027",
+    "category": "Nature",
+    "prompt": "What is the term for an animal that eats both plants and animals?",
+    "answers": ["omnivore"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-028",
+    "category": "Nature",
+    "prompt": "What is the fastest land animal on Earth?",
+    "answers": ["cheetah"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-029",
+    "category": "Nature",
+    "prompt": "What is the natural environment where an organism lives called?",
+    "answers": ["habitat"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-030",
+    "category": "Nature",
+    "prompt": "What green pigment in plants is responsible for absorbing sunlight?",
+    "answers": ["chlorophyll"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-031",
+    "category": "Nature",
+    "prompt": "What is the name of the layer of Earth directly beneath the crust?",
+    "answers": ["mantle"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-032",
+    "category": "Nature",
+    "prompt": "What is the world's largest hot desert?",
+    "answers": ["sahara", "sahara desert", "the sahara"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-033",
+    "category": "Nature",
+    "prompt": "What is the term for animals that are primarily active at night?",
+    "answers": ["nocturnal"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-034",
+    "category": "Nature",
+    "prompt": "What is the term for trees that shed their leaves seasonally?",
+    "answers": ["deciduous"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-035",
+    "category": "Nature",
+    "prompt": "What type of rock is formed from compressed layers of sediment?",
+    "answers": ["sedimentary rock", "sedimentary"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-036",
+    "category": "Nature",
+    "prompt": "What type of rock forms when magma or lava cools and solidifies?",
+    "answers": ["igneous rock", "igneous"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-037",
+    "category": "Nature",
+    "prompt": "What is the longest mountain range located on land?",
+    "answers": ["andes", "andes mountains"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-038",
+    "category": "Nature",
+    "prompt": "What organ filters waste products from the blood in the human body?",
+    "answers": ["kidney", "kidneys"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-039",
+    "category": "Nature",
+    "prompt": "What is the term for an animal that eats only meat?",
+    "answers": ["carnivore"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-040",
+    "category": "Nature",
+    "prompt": "What is the scientific name for the continuous movement of water through evaporation, condensation, and precipitation on Earth?",
+    "answers": ["hydrological cycle", "hydrologic cycle", "water cycle"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-041",
+    "category": "Nature",
+    "prompt": "What organelle in a cell is known as the powerhouse of the cell?",
+    "answers": ["mitochondria", "mitochondrion"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-042",
+    "category": "Nature",
+    "prompt": "What is the most abundant element in Earth's crust by mass?",
+    "answers": ["oxygen"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-043",
+    "category": "Nature",
+    "prompt": "What is the name of the world's deepest ocean trench?",
+    "answers": ["mariana trench", "the mariana trench"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-044",
+    "category": "Nature",
+    "prompt": "What is the scientific study of weather called?",
+    "answers": ["meteorology"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-045",
+    "category": "Nature",
+    "prompt": "What is the term for a large region characterized by a distinctive climate and community of organisms?",
+    "answers": ["biome"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-046",
+    "category": "Nature",
+    "prompt": "What is the scientific study of plants called?",
+    "answers": ["botany"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-047",
+    "category": "Nature",
+    "prompt": "What type of cloud is associated with thunderstorms and heavy rain?",
+    "answers": ["cumulonimbus", "cumulonimbus cloud"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-048",
+    "category": "Nature",
+    "prompt": "What category of rock does marble belong to?",
+    "answers": ["metamorphic rock", "metamorphic"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-049",
+    "category": "Nature",
+    "prompt": "What is the process by which dead organic matter is broken down into simpler substances?",
+    "answers": ["decomposition"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-050",
+    "category": "Nature",
+    "prompt": "What is the main structural material found in plant cell walls?",
+    "answers": ["cellulose"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-051",
+    "category": "Nature",
+    "prompt": "What is the term for the process by which a gas turns into a liquid?",
+    "answers": ["condensation"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-052",
+    "category": "Nature",
+    "prompt": "What is the cold, treeless biome found in Arctic regions with permanently frozen subsoil?",
+    "answers": ["tundra"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-053",
+    "category": "Nature",
+    "prompt": "What is the world's deepest lake?",
+    "answers": ["lake baikal", "baikal"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-054",
+    "category": "Nature",
+    "prompt": "What scale was traditionally used to measure earthquake magnitude?",
+    "answers": ["richter scale", "richter"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-055",
+    "category": "Nature",
+    "prompt": "What is the solid state of water called?",
+    "answers": ["ice"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-056",
+    "category": "Nature",
+    "prompt": "What is the term for the amount of water vapor present in the air?",
+    "answers": ["humidity"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-057",
+    "category": "Nature",
+    "prompt": "What is a young tree called?",
+    "answers": ["sapling"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-058",
+    "category": "Nature",
+    "prompt": "What is the scientific study of the oceans called?",
+    "answers": ["oceanography"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-059",
+    "category": "Nature",
+    "prompt": "What is the world's largest coral reef system?",
+    "answers": ["great barrier reef", "the great barrier reef"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-060",
+    "category": "Nature",
+    "prompt": "What gas is released by plants as a byproduct of photosynthesis?",
+    "answers": ["oxygen"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-061",
+    "category": "Nature",
+    "prompt": "What is the term for fresh water stored underground in rock and soil?",
+    "answers": ["groundwater"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-062",
+    "category": "Nature",
+    "prompt": "What are organisms called that produce their own food from sunlight through photosynthesis?",
+    "answers": ["autotrophs", "producers", "autotroph"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-063",
+    "category": "Nature",
+    "prompt": "What is the term for a large ocean wave typically triggered by an undersea earthquake?",
+    "answers": ["tsunami"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-064",
+    "category": "Nature",
+    "prompt": "What type of tropical weather system rotates around a calm center called the eye?",
+    "answers": ["hurricane", "typhoon", "tropical cyclone", "cyclone"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-065",
+    "category": "Nature",
+    "prompt": "What is the innermost layer of Earth?",
+    "answers": ["inner core", "core"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-066",
+    "category": "Nature",
+    "prompt": "What is the coastal area where a river meets the sea and tidal influence is felt called?",
+    "answers": ["estuary"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-067",
+    "category": "Nature",
+    "prompt": "What is the chemical formula for water?",
+    "answers": ["h2o"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "nature-068",
+    "category": "Nature",
+    "prompt": "What is the name of the ancient supercontinent that broke apart approximately 200 million years ago?",
+    "answers": ["pangaea", "pangea"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-069",
+    "category": "Nature",
+    "prompt": "What is the process called when plants release water vapor through their leaves into the atmosphere?",
+    "answers": ["transpiration"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-070",
+    "category": "Nature",
+    "prompt": "What ocean current warms the climate of Western Europe?",
+    "answers": ["gulf stream", "the gulf stream"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-071",
+    "category": "Nature",
+    "prompt": "Who developed the biological classification system of naming organisms with two Latin names?",
+    "answers": ["carl linnaeus", "linnaeus", "carolus linnaeus"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-072",
+    "category": "Nature",
+    "prompt": "What is the world's largest lake by surface area?",
+    "answers": ["caspian sea", "the caspian sea"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-073",
+    "category": "Nature",
+    "prompt": "What type of biome generally has the highest species biodiversity?",
+    "answers": ["tropical rainforest", "tropical rain forest"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-074",
+    "category": "Nature",
+    "prompt": "What term describes animals that maintain a constant internal body temperature regardless of their environment?",
+    "answers": ["endotherms", "warm-blooded", "endotherm", "homeotherms"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-075",
+    "category": "Nature",
+    "prompt": "What Hawaiian volcano is considered the world's largest active volcano by volume?",
+    "answers": ["mauna loa"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-076",
+    "category": "Nature",
+    "prompt": "What ecological term describes the gradual change in the composition of a community of organisms over time?",
+    "answers": ["ecological succession", "succession"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-077",
+    "category": "Nature",
+    "prompt": "What is the pH of pure water at 25 degrees Celsius?",
+    "answers": ["seven", "7", "neutral"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-078",
+    "category": "Nature",
+    "prompt": "What element has the chemical symbol Fe?",
+    "answers": ["iron"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-079",
+    "category": "Nature",
+    "prompt": "What type of symbiotic relationship benefits both organisms involved?",
+    "answers": ["mutualism"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-080",
+    "category": "Nature",
+    "prompt": "What mineral is the most abundant in the human body?",
+    "answers": ["calcium"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-081",
+    "category": "Nature",
+    "prompt": "What landform is created when a river deposits sediment at its mouth as it enters a larger body of water?",
+    "answers": ["delta", "river delta"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-082",
+    "category": "Nature",
+    "prompt": "What is the world's highest uninterrupted waterfall, located in Venezuela?",
+    "answers": ["angel falls"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-083",
+    "category": "Nature",
+    "prompt": "What is the name for the zone of intense seismic and volcanic activity surrounding the Pacific Ocean?",
+    "answers": ["ring of fire", "the ring of fire"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-084",
+    "category": "Nature",
+    "prompt": "What type of clouds form at the highest altitude and are composed of ice crystals?",
+    "answers": ["cirrus", "cirrus clouds"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-085",
+    "category": "Nature",
+    "prompt": "What term describes the time required for half of the atoms in a radioactive substance to decay?",
+    "answers": ["half-life", "half life"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-086",
+    "category": "Nature",
+    "prompt": "What does the Beaufort scale measure?",
+    "answers": ["wind speed", "wind force", "wind"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-087",
+    "category": "Nature",
+    "prompt": "What is the term for the transition zone between two different ecosystems?",
+    "answers": ["ecotone"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-088",
+    "category": "Nature",
+    "prompt": "What is the name of the lowest layer of Earth's atmosphere, where weather occurs?",
+    "answers": ["troposphere"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-089",
+    "category": "Nature",
+    "prompt": "What is the term for a large, slow-moving body of compacted ice and snow?",
+    "answers": ["glacier"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-090",
+    "category": "Nature",
+    "prompt": "What geological term describes a fracture in Earth's crust along which movement has occurred?",
+    "answers": ["fault"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-091",
+    "category": "Nature",
+    "prompt": "What is the term for an underground layer of permeable rock that stores and transmits groundwater?",
+    "answers": ["aquifer"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-092",
+    "category": "Nature",
+    "prompt": "What process, carried out by certain bacteria, converts atmospheric nitrogen gas into ammonia?",
+    "answers": ["nitrogen fixation"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-093",
+    "category": "Nature",
+    "prompt": "What type of tectonic plate boundary typically forms mountain ranges when two plates collide?",
+    "answers": ["convergent boundary", "convergent plate boundary"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-094",
+    "category": "Nature",
+    "prompt": "What is the approximate percentage of nitrogen in Earth's atmosphere?",
+    "answers": ["78", "seventy-eight", "78 percent"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-095",
+    "category": "Nature",
+    "prompt": "What is traditionally considered the world's longest river?",
+    "answers": ["nile", "nile river", "the nile"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-096",
+    "category": "Nature",
+    "prompt": "What is the scientific study of fossils called?",
+    "answers": ["paleontology"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-097",
+    "category": "Nature",
+    "prompt": "What is the name of the force that attracts objects toward Earth?",
+    "answers": ["gravity", "gravitational force"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-098",
+    "category": "Nature",
+    "prompt": "What is a naturally occurring, inorganic, solid substance with a definite chemical composition called?",
+    "answers": ["mineral"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-099",
+    "category": "Nature",
+    "prompt": "What is the name of the seismic boundary between Earth's crust and mantle, discovered by Andrija Mohorovičić?",
+    "answers": ["moho", "mohorovicic discontinuity"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-100",
+    "category": "Nature",
+    "prompt": "What is a violently rotating column of air extending from a thunderstorm to the ground?",
+    "answers": ["tornado"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-101",
+    "category": "Nature",
+    "prompt": "What scale ranks the hardness of minerals from 1 (softest) to 10 (hardest)?",
+    "answers": ["mohs scale", "mohs hardness scale"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-102",
+    "category": "Nature",
+    "prompt": "What is the term for ground that remains frozen year-round, found in cold regions?",
+    "answers": ["permafrost"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-103",
+    "category": "Nature",
+    "prompt": "What is the chemical formula for sodium chloride, commonly known as table salt?",
+    "answers": ["nacl"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-104",
+    "category": "Nature",
+    "prompt": "What is the scientific study of earthquakes called?",
+    "answers": ["seismology"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-105",
+    "category": "Nature",
+    "prompt": "What type of dark volcanic rock is the principal rock found at mid-ocean ridges?",
+    "answers": ["basalt"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-106",
+    "category": "Nature",
+    "prompt": "What is the term for an area of the ocean with very low levels of dissolved oxygen, causing few organisms to survive?",
+    "answers": ["dead zone", "oxygen minimum zone", "hypoxic zone"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-107",
+    "category": "Nature",
+    "prompt": "What is the scientific study of fungi called?",
+    "answers": ["mycology"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-108",
+    "category": "Nature",
+    "prompt": "What is the chemical formula for ozone?",
+    "answers": ["o3"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-109",
+    "category": "Nature",
+    "prompt": "What is the term for a species that is native to and found exclusively in one specific geographic area?",
+    "answers": ["endemic species", "endemic"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-110",
+    "category": "Nature",
+    "prompt": "What is the term for the dark organic material in soil formed from decomposed plant and animal matter?",
+    "answers": ["humus"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-111",
+    "category": "Nature",
+    "prompt": "What natural phenomenon, consisting of charged particles from the Sun interacting with Earth's magnetic field, causes the Aurora Borealis?",
+    "answers": ["solar wind", "charged particles from the sun", "solar particles"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-112",
+    "category": "Nature",
+    "prompt": "What is the point on Earth's surface directly above where an earthquake originates underground?",
+    "answers": ["epicenter", "epicentre"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-113",
+    "category": "Nature",
+    "prompt": "What type of symbiosis involves one organism benefiting while the other is harmed?",
+    "answers": ["parasitism"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-114",
+    "category": "Nature",
+    "prompt": "What is the term for the concentration of dissolved salts in water?",
+    "answers": ["salinity"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-115",
+    "category": "Nature",
+    "prompt": "What is the term for the total area of land that drains into a single river system?",
+    "answers": ["watershed", "drainage basin", "river basin", "catchment area", "catchment"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-116",
+    "category": "Nature",
+    "prompt": "What type of weather front forms when a cold air mass advances and replaces a warm air mass?",
+    "answers": ["cold front"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-117",
+    "category": "Nature",
+    "prompt": "What scale, ranging from 1 to 5, is used to classify the intensity of Atlantic hurricanes?",
+    "answers": [
+      "saffir-simpson scale",
+      "saffir simpson scale",
+      "saffir-simpson hurricane wind scale"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-118",
+    "category": "Nature",
+    "prompt": "What is the term for the maximum elevation above which trees can no longer survive?",
+    "answers": ["treeline", "tree line", "timberline"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-119",
+    "category": "Nature",
+    "prompt": "What oceanographic process brings cold, nutrient-rich water from the deep ocean up to the surface?",
+    "answers": ["upwelling"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-120",
+    "category": "Nature",
+    "prompt": "What geological process involves one tectonic plate sliding beneath another into the mantle?",
+    "answers": ["subduction"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-121",
+    "category": "Nature",
+    "prompt": "What is the term for sediment deposited by a river on its floodplain during flooding?",
+    "answers": ["alluvium", "alluvial sediment", "alluvial deposit"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-122",
+    "category": "Nature",
+    "prompt": "What term describes the fraction of incoming solar radiation that a surface reflects back into space?",
+    "answers": ["albedo"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-123",
+    "category": "Nature",
+    "prompt": "What is the scientific study of landforms and the processes that shape them?",
+    "answers": ["geomorphology"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-124",
+    "category": "Nature",
+    "prompt": "What geological eon began approximately 541 million years ago and continues to the present?",
+    "answers": ["phanerozoic", "phanerozoic eon"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-125",
+    "category": "Nature",
+    "prompt": "What is the name of the boundary layer between the troposphere and the stratosphere?",
+    "answers": ["tropopause"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-126",
+    "category": "Nature",
+    "prompt": "What type of seismic waves can travel only through solid rock and not through liquid?",
+    "answers": ["s waves", "secondary waves", "shear waves", "s-waves"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-127",
+    "category": "Nature",
+    "prompt": "What field of study uses the width and patterns of annual tree rings to determine age and reconstruct past climates?",
+    "answers": ["dendrochronology", "dendroclimatology"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-128",
+    "category": "Nature",
+    "prompt": "Who first formally proposed the theory of continental drift in 1912?",
+    "answers": ["alfred wegener", "wegener"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-129",
+    "category": "Nature",
+    "prompt": "What mineral is the primary component of limestone?",
+    "answers": ["calcite", "calcium carbonate"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-130",
+    "category": "Nature",
+    "prompt": "What is the term for the global ocean circulation pattern driven by differences in water temperature and salinity?",
+    "answers": ["thermohaline circulation", "thermohaline conveyor"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-131",
+    "category": "Nature",
+    "prompt": "What ecological term describes the network of interconnected feeding relationships among organisms in an ecosystem?",
+    "answers": ["food web"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-132",
+    "category": "Nature",
+    "prompt": "What is the term for a group of organisms of the same species living in the same area at the same time?",
+    "answers": ["population"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-133",
+    "category": "Nature",
+    "prompt": "What type of reddish, nutrient-poor soil is characteristic of tropical rainforest regions?",
+    "answers": ["laterite"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-134",
+    "category": "Nature",
+    "prompt": "What earthquake magnitude scale, expressed in Newton-meters of energy, replaced the Richter scale as the scientific standard?",
+    "answers": ["moment magnitude scale", "moment magnitude"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "nature-135",
+    "category": "Nature",
+    "prompt": "What is the name of the deepest known point in Earth's oceans, located in the Mariana Trench?",
+    "answers": ["challenger deep", "the challenger deep"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-136",
+    "category": "Nature",
+    "prompt": "What is the term for fossilized tree resin that sometimes preserves ancient organisms?",
+    "answers": ["amber"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-137",
+    "category": "Nature",
+    "prompt": "What periodic climate phenomenon describes the warming of central and eastern Pacific Ocean surface temperatures near the equator?",
+    "answers": ["el nino", "el niño"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-138",
+    "category": "Nature",
+    "prompt": "What metamorphic rock typically forms from the high-grade metamorphism of granite under extreme heat and pressure?",
+    "answers": ["gneiss"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-139",
+    "category": "Nature",
+    "prompt": "What biogeochemical cycle describes the movement of nitrogen through the atmosphere, soil, water, and living organisms?",
+    "answers": ["nitrogen cycle"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-140",
+    "category": "Nature",
+    "prompt": "What term describes organisms that thrive in extreme conditions such as very high temperatures, high acidity, or intense pressure?",
+    "answers": ["extremophile", "extremophiles"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-141",
+    "category": "Nature",
+    "prompt": "What trace element gives rubies their characteristic red color?",
+    "answers": ["chromium"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-142",
+    "category": "Nature",
+    "prompt": "What element gives the green mineral malachite its distinctive color?",
+    "answers": ["copper"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-143",
+    "category": "Nature",
+    "prompt": "What is the underground point where an earthquake originates called?",
+    "answers": ["hypocenter", "focus", "hypocentre"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-144",
+    "category": "Nature",
+    "prompt": "What method uses the known decay rate of radioactive isotopes to determine the age of rocks and minerals?",
+    "answers": ["radiometric dating", "radioactive dating"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-145",
+    "category": "Nature",
+    "prompt": "What is the term for a large mass of intrusive igneous rock that solidified deep underground?",
+    "answers": ["batholith"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-146",
+    "category": "Nature",
+    "prompt": "What is the name of the seismic boundary between Earth's outer core and the mantle?",
+    "answers": ["gutenberg discontinuity", "core-mantle boundary"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-147",
+    "category": "Nature",
+    "prompt": "What is the scientific study of pollen and spores, applied in paleoclimatology and forensic science?",
+    "answers": ["palynology"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-148",
+    "category": "Nature",
+    "prompt": "What term describes the rate at which temperature increases with depth below Earth's surface?",
+    "answers": ["geothermal gradient"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-149",
+    "category": "Nature",
+    "prompt": "What type of mechanical weathering occurs when water repeatedly freezes and expands in rock cracks, forcing them apart?",
+    "answers": ["frost wedging", "freeze-thaw weathering", "frost action"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-150",
+    "category": "Nature",
+    "prompt": "What type of volcanic glass forms when lava cools so rapidly that crystals cannot develop?",
+    "answers": ["obsidian"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-151",
+    "category": "Nature",
+    "prompt": "What element is essential for the synthesis of thyroid hormones in the human body?",
+    "answers": ["iodine"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-152",
+    "category": "Nature",
+    "prompt": "What index measures the global intensity of geomagnetic storms caused by solar activity, on a scale of 0 to 9?",
+    "answers": ["kp index", "k-index", "planetary k-index"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-153",
+    "category": "Nature",
+    "prompt": "What term describes the increasing concentration of a toxic substance in organisms at successively higher levels of a food chain?",
+    "answers": ["biomagnification", "bioaccumulation", "biological magnification"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-154",
+    "category": "Nature",
+    "prompt": "What geological boundary, approximately 66 million years ago, marks the mass extinction of non-avian dinosaurs?",
+    "answers": ["cretaceous-paleogene boundary", "k-pg boundary", "k-t boundary"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-155",
+    "category": "Nature",
+    "prompt": "What meteorological phenomenon occurs when a layer of warm air traps cooler air near the ground, preventing it from rising?",
+    "answers": ["temperature inversion", "thermal inversion"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-156",
+    "category": "Nature",
+    "prompt": "What type of rock is formed from compacted layers of volcanic ash deposited after an eruption?",
+    "answers": ["tuff", "volcanic tuff"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-157",
+    "category": "Nature",
+    "prompt": "What geological principle states that in undisturbed rock strata, older layers lie beneath younger ones?",
+    "answers": ["law of superposition", "principle of superposition"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-158",
+    "category": "Nature",
+    "prompt": "What atmospheric boundary separates polar and temperate air masses and drives storm development at mid-latitudes?",
+    "answers": ["polar front"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-159",
+    "category": "Nature",
+    "prompt": "What geological process occurs when a more vigorous stream erodes through a divide and captures the headwaters of an adjacent stream?",
+    "answers": ["stream piracy", "river capture", "stream capture"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-160",
+    "category": "Nature",
+    "prompt": "What term describes an organism that produces energy by oxidizing inorganic compounds such as hydrogen sulfide rather than using sunlight?",
+    "answers": ["chemoautotroph", "chemoautotrophs", "chemolithotroph"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-161",
+    "category": "Nature",
+    "prompt": "What is the scientific measurement and mapping of the depth of oceans, seas, and other bodies of water?",
+    "answers": ["bathymetry"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-162",
+    "category": "Nature",
+    "prompt": "What term describes the process by which wind transports and deposits sediment to form dunes and other landforms?",
+    "answers": ["aeolian deposition", "eolian deposition", "aeolian process"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-163",
+    "category": "Nature",
+    "prompt": "What is the name of the fast-moving band of westerly winds in the upper troposphere that influences weather at mid-latitudes?",
+    "answers": ["jet stream"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-164",
+    "category": "Nature",
+    "prompt": "What type of small, steep-sided volcano is built from fragments of ejected lava that harden into cinders?",
+    "answers": ["cinder cone", "scoria cone"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-165",
+    "category": "Nature",
+    "prompt": "What is the chemical formula for calcium carbonate, the main component of limestone and chalk?",
+    "answers": ["caco3"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-166",
+    "category": "Nature",
+    "prompt": "What term describes a species whose presence, abundance, or absence reflects the overall health of its ecosystem?",
+    "answers": ["indicator species", "bioindicator"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-167",
+    "category": "Nature",
+    "prompt": "What process describes the excessive enrichment of a body of water with nutrients, leading to algal blooms and oxygen depletion?",
+    "answers": ["eutrophication"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-168",
+    "category": "Nature",
+    "prompt": "What is the term for sediment deposited directly by a melting glacier, forming ridges and mounds?",
+    "answers": ["moraine"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-169",
+    "category": "Nature",
+    "prompt": "What heat transfer process within the mantle is thought to be the primary driver of tectonic plate movement?",
+    "answers": ["mantle convection", "convection", "convection currents"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-170",
+    "category": "Nature",
+    "prompt": "What is the scientific study of caves and cave systems called?",
+    "answers": ["speleology"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-171",
+    "category": "Nature",
+    "prompt": "What property of certain rocks records the direction of Earth's magnetic field at the time those rocks formed?",
+    "answers": ["paleomagnetism", "remanent magnetization"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-172",
+    "category": "Nature",
+    "prompt": "What is the term for a rapidly moving slurry of volcanic debris and water flowing down the slopes of a volcano?",
+    "answers": ["lahar"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-173",
+    "category": "Nature",
+    "prompt": "What meteorological phenomenon creates arid conditions on the leeward side of a mountain range, where air descends and warms?",
+    "answers": ["rain shadow", "rain shadow effect"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-174",
+    "category": "Nature",
+    "prompt": "What term describes the vast, flat, sediment-covered floor of the deep ocean at depths typically between 3000 and 6000 metres?",
+    "answers": ["abyssal plain"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-175",
+    "category": "Nature",
+    "prompt": "What is the term for the growth movement of a plant toward a light source?",
+    "answers": ["phototropism"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-176",
+    "category": "Nature",
+    "prompt": "What term describes the amount of solar radiation received per unit area of Earth's surface?",
+    "answers": ["insolation"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-177",
+    "category": "Nature",
+    "prompt": "What is the term for the shallow coastal zone of a lake or sea where sunlight penetrates to the bottom and rooted plants can grow?",
+    "answers": ["littoral zone", "littoral"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-178",
+    "category": "Nature",
+    "prompt": "What is the term for the mutually beneficial symbiosis between fungi and the roots of a plant?",
+    "answers": ["mycorrhiza", "mycorrhizae", "mycorrhizal"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-179",
+    "category": "Nature",
+    "prompt": "What mineral ranks 1 on the Mohs hardness scale, making it the softest known mineral?",
+    "answers": ["talc"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-180",
+    "category": "Nature",
+    "prompt": "What collective term describes all solid material ejected from a volcano during an eruption, including ash and rock fragments?",
+    "answers": ["tephra", "pyroclastic material"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-181",
+    "category": "Nature",
+    "prompt": "What geological term describes a fold in rock strata that bows downward to form a trough shape?",
+    "answers": ["syncline"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-182",
+    "category": "Nature",
+    "prompt": "What is the term for a prolonged period during which global temperatures drop significantly and large areas are covered by ice sheets?",
+    "answers": ["ice age", "glacial period", "glaciation"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-183",
+    "category": "Nature",
+    "prompt": "What geological structure is a ring-shaped coral reef that encircles a shallow lagoon in the open ocean?",
+    "answers": ["atoll"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-184",
+    "category": "Nature",
+    "prompt": "What geological principle, one of Steno's laws, states that rock layers were originally deposited in near-horizontal sheets?",
+    "answers": ["law of original horizontality", "principle of original horizontality"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-185",
+    "category": "Nature",
+    "prompt": "What element has the chemical symbol Au?",
+    "answers": ["gold"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-186",
+    "category": "Nature",
+    "prompt": "What branch of science studies the physical and chemical properties of soils and the processes that form them?",
+    "answers": ["pedology", "soil science"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-187",
+    "category": "Nature",
+    "prompt": "What type of fog forms when warm, moist air moves horizontally over a cooler surface and cools to its dew point?",
+    "answers": ["advection fog"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-188",
+    "category": "Nature",
+    "prompt": "What geological feature is a large, roughly circular depression formed when a volcanic summit or magma chamber collapses?",
+    "answers": ["caldera"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-189",
+    "category": "Nature",
+    "prompt": "What is the term for the total mass of living organisms in a given area or volume?",
+    "answers": ["biomass"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-190",
+    "category": "Nature",
+    "prompt": "What is the term for precipitation that flows over the land surface and into streams rather than soaking into the ground?",
+    "answers": ["surface runoff", "runoff"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-191",
+    "category": "Nature",
+    "prompt": "What is the term for a dome-shaped igneous intrusion that has arched and uplifted the overlying rock strata without breaking through to the surface?",
+    "answers": ["laccolith"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-192",
+    "category": "Nature",
+    "prompt": "What term describes the ability of an ecosystem to return to its original state after being disturbed?",
+    "answers": ["ecological resilience", "resilience"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-193",
+    "category": "Nature",
+    "prompt": "What is the term for a relatively impermeable rock layer that significantly restricts the flow of groundwater between aquifers?",
+    "answers": ["aquitard", "aquiclude"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-194",
+    "category": "Nature",
+    "prompt": "What is the term for Earth's rigid outer shell, comprising the crust and uppermost part of the mantle, that is divided into tectonic plates?",
+    "answers": ["lithosphere"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-195",
+    "category": "Nature",
+    "prompt": "What distinctive lava formation, consisting of rounded pillow-shaped masses, develops when lava erupts and cools underwater?",
+    "answers": ["pillow lava", "pillow basalt"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-196",
+    "category": "Nature",
+    "prompt": "What is a line on a topographic map that connects all points at the same elevation above sea level?",
+    "answers": ["contour line", "isoline", "contour"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-197",
+    "category": "Nature",
+    "prompt": "What geological epoch, lasting from about 2.6 million to 11,700 years ago, encompassed most of the most recent ice ages?",
+    "answers": ["pleistocene", "pleistocene epoch"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-198",
+    "category": "Nature",
+    "prompt": "What is the term for the horizontal angle between magnetic north and true geographic north at any given location?",
+    "answers": ["magnetic declination", "magnetic variation"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-199",
+    "category": "Nature",
+    "prompt": "What natural process describes the removal and transport of dissolved minerals and nutrients downward through soil layers by percolating water?",
+    "answers": ["leaching"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "nature-200",
+    "category": "Nature",
+    "prompt": "What is the geographical term for a narrow strip of land that connects two larger landmasses?",
+    "answers": ["isthmus"],
+    "difficulty": "hard"
+  }
 ]

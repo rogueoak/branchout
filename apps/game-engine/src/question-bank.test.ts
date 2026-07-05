@@ -2,7 +2,12 @@
 // A failing test here means the data files or the validator are broken.
 
 import { describe, it, expect } from 'vitest';
-import { loadQuestionBank, validateQuestionBank, CATEGORIES, type TriviaQuestion } from './question-bank.js';
+import {
+  loadQuestionBank,
+  validateQuestionBank,
+  CATEGORIES,
+  type TriviaQuestion,
+} from './question-bank.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -16,7 +21,11 @@ function makeQuestions(category: string, n: number): TriviaQuestion[] {
     category,
     prompt: `Question ${i + 1} for ${category}?`,
     answers: ['answer'],
-    difficulty: (i % 3 === 0 ? 'easy' : i % 3 === 1 ? 'medium' : 'hard') as TriviaQuestion['difficulty'],
+    difficulty: (i % 3 === 0
+      ? 'easy'
+      : i % 3 === 1
+        ? 'medium'
+        : 'hard') as TriviaQuestion['difficulty'],
   }));
 }
 
@@ -70,7 +79,13 @@ describe('validateQuestionBank - rule violations', () => {
     // Remove one Nature question so count becomes 199
     const without = bank.filter((q) => !(q.category === 'Nature' && q.id === 'nature-200'));
     // Add a duplicate-category question to keep total at 1600
-    without.push({ id: 'history-201', category: 'History', prompt: 'Extra?', answers: ['x'], difficulty: 'easy' });
+    without.push({
+      id: 'history-201',
+      category: 'History',
+      prompt: 'Extra?',
+      answers: ['x'],
+      difficulty: 'easy',
+    });
     expect(() => validateQuestionBank(without)).toThrow('Nature');
   });
 

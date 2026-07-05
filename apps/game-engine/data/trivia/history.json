@@ -360,7 +360,12 @@
     "id": "history-052",
     "category": "History",
     "prompt": "What ancient wonder stood at the entrance to the harbor of Alexandria, Egypt, guiding ships?",
-    "answers": ["the lighthouse of alexandria", "lighthouse of alexandria", "pharos of alexandria", "the pharos"],
+    "answers": [
+      "the lighthouse of alexandria",
+      "lighthouse of alexandria",
+      "pharos of alexandria",
+      "the pharos"
+    ],
     "difficulty": "easy"
   },
   {
@@ -829,7 +834,12 @@
     "id": "history-119",
     "category": "History",
     "prompt": "What was the common name for the non-aggression pact signed between Nazi Germany and the Soviet Union in August 1939?",
-    "answers": ["molotov-ribbentrop pact", "nazi-soviet pact", "ribbentrop-molotov pact", "german-soviet pact"],
+    "answers": [
+      "molotov-ribbentrop pact",
+      "nazi-soviet pact",
+      "ribbentrop-molotov pact",
+      "german-soviet pact"
+    ],
     "difficulty": "medium"
   },
   {
