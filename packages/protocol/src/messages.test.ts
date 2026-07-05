@@ -25,4 +25,19 @@ describe('protocol messages', () => {
       ProtocolError,
     );
   });
+
+  it('rejects an error frame without a string message', () => {
+    expect(() => parseMessage(JSON.stringify({ type: 'error', message: 42 }))).toThrow(
+      ProtocolError,
+    );
+  });
+
+  it('rejects a payload that is not an object', () => {
+    expect(() => parseMessage('42')).toThrow(ProtocolError);
+    expect(() => parseMessage('null')).toThrow(ProtocolError);
+  });
+
+  it('rejects an object missing a string type', () => {
+    expect(() => parseMessage(JSON.stringify({ payload: 'hi' }))).toThrow(ProtocolError);
+  });
 });

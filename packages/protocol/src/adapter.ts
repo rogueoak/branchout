@@ -18,7 +18,11 @@ export interface SocketServerHandlers {
   onConnection?(connection: SocketConnection): void;
   /** A valid protocol message arrived from a client. */
   onMessage?(connection: SocketConnection, message: ProtocolMessage): void;
-  /** A client sent something that failed to parse. Default behavior sends an error frame back. */
+  /**
+   * A transport-level error occurred on this connection (e.g. ECONNRESET). Without this the
+   * adapter logs it. Malformed client frames are not routed here - the adapter answers those
+   * with an error frame - so this only fires for genuine connection failures.
+   */
   onError?(connection: SocketConnection, error: Error): void;
   /** A client disconnected. */
   onClose?(connection: SocketConnection): void;

@@ -1,6 +1,6 @@
 # Build context is the repo root (see infra/docker-compose.yml). The whole workspace is copied
 # in so pnpm can resolve shared packages; a single image per app keeps the setup simple.
-FROM node:20-slim
+FROM node:22-slim
 RUN corepack enable
 WORKDIR /repo
 

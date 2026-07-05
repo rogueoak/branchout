@@ -20,14 +20,27 @@ describe('game-engine websocket', () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   });
 
-  it('accepts a connection and echoes a message', async () => {
+  const firstReply = (payload: string): Promise<string> => {
     const socket = new WebSocket(url);
-    const reply = await new Promise<string>((resolve, reject) => {
-      socket.on('open', () => socket.send(JSON.stringify({ type: 'echo', payload: 'ping' })));
-      socket.on('message', (data) => resolve(data.toString()));
+    return new Promise<string>((resolve, reject) => {
+      socket.on('open', () => socket.send(payload));
+      socket.on('message', (data) => {
+        resolve(data.toString());
+        socket.close();
+      });
       socket.on('error', reject);
     });
-    socket.close();
+  };
+
+  it('accepts a connection and echoes a message', async () => {
+    const reply = await firstReply(JSON.stringify({ type: 'echo', payload: 'ping' }));
     expect(JSON.parse(reply)).toEqual({ type: 'echo', payload: 'ping' });
+  });
+
+  it('answers a malformed frame with an error frame instead of dropping the connection', async () => {
+    const reply = await firstReply('not json');
+    const parsed = JSON.parse(reply);
+    expect(parsed.type).toBe('error');
+    expect(typeof parsed.message).toBe('string');
   });
 });
