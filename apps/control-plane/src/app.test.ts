@@ -29,7 +29,7 @@ function makeApp() {
     cookie: cookieConfig,
     webOrigins: ['http://localhost:3000'],
   });
-  return { app, accounts, sessions };
+  return { app, accounts, sessions, repo };
 }
 
 /** Pull the session cookie value out of a response's set-cookie header. */
@@ -168,6 +168,14 @@ describe('POST /auth/logout', () => {
     expect(me.json()).toEqual({ kind: 'unauthenticated' });
     await app.close();
   });
+
+  it('is idempotent with no session cookie', async () => {
+    const { app } = makeApp();
+    const out = await app.inject({ method: 'POST', url: '/auth/logout' });
+    expect(out.statusCode).toBe(200);
+    expect(String(out.headers['set-cookie'])).toContain('branchout_session=;');
+    await app.close();
+  });
 });
 
 describe('GET /auth/me', () => {
@@ -191,6 +199,19 @@ describe('GET /auth/me', () => {
       headers: { cookie: sessionCookie(join) },
     });
     expect(me.json()).toEqual({ kind: 'anonymous', displayName: 'Guest Gonzo' });
+    await app.close();
+  });
+
+  it('treats a session whose account row is gone as logged out and self-revokes it', async () => {
+    const { app, repo } = makeApp();
+    const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    const cookie = sessionCookie(signup);
+    // Drop the underlying account, leaving a dangling account session.
+    repo.deleteById(signup.json().account.id);
+
+    const me = await app.inject({ method: 'GET', url: '/auth/me', headers: { cookie } });
+    expect(me.json()).toEqual({ kind: 'unauthenticated' });
+    expect(String(me.headers['set-cookie'])).toContain('branchout_session=;');
     await app.close();
   });
 });

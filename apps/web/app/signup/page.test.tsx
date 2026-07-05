@@ -16,11 +16,12 @@ describe('signup page', () => {
 
   it('renders the sign-up form and reassures that play needs no account', () => {
     render(<SignupPage />);
-    expect(screen.getByRole('heading', { name: 'Create your account' })).toBeDefined();
-    expect(screen.getByLabelText('Email')).toBeDefined();
-    expect(screen.getByLabelText(/Password/)).toBeDefined();
-    expect(screen.getByLabelText(/Gamer tag/)).toBeDefined();
-    expect(screen.getByText(/Joining a room by code is free/)).toBeDefined();
+    // getByRole/getByLabelText throw on a miss, so the query itself is the assertion.
+    screen.getByRole('heading', { name: 'Create your account' });
+    screen.getByLabelText('Email');
+    screen.getByLabelText(/Password/);
+    screen.getByLabelText(/Gamer tag/);
+    screen.getByText(/Joining a room by code is free/);
     expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe('/login');
   });
 
@@ -33,7 +34,7 @@ describe('signup page', () => {
     render(<SignupPage />);
     fillAndSubmit();
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'You are in' })).toBeDefined());
+    await waitFor(() => screen.getByRole('heading', { name: 'You are in' }));
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/auth/signup'),
       expect.objectContaining({ method: 'POST', credentials: 'include' }),

@@ -1,7 +1,8 @@
+import { randomBytes } from 'node:crypto';
+import { validateDisplayName } from '../validation/display-name';
 import { validateEmail } from './email';
-import { normalizeGamerTag, validateGamerTag } from './gamertag';
+import { validateGamerTag } from './gamertag';
 import type { PasswordHasher } from './hasher';
-import { validateNickname } from './nickname';
 import { type Account, type AccountRepository, DuplicateAccountError } from './repository';
 
 export const PASSWORD_MIN = 8;
@@ -65,15 +66,14 @@ export class AccountService {
       throw new ValidationError('email', email.error!);
     }
 
-    if (
-      typeof input.password !== 'string' ||
-      input.password.length < PASSWORD_MIN ||
-      input.password.length > PASSWORD_MAX
-    ) {
+    if (typeof input.password !== 'string' || input.password.length < PASSWORD_MIN) {
       throw new ValidationError(
         'password',
         `Password must be at least ${PASSWORD_MIN} characters.`,
       );
+    }
+    if (input.password.length > PASSWORD_MAX) {
+      throw new ValidationError('password', `Password must be at most ${PASSWORD_MAX} characters.`);
     }
 
     const tag = validateGamerTag(input.gamerTag);
@@ -114,18 +114,28 @@ export class AccountService {
   /**
    * Verify credentials. Returns the account on success, null on any failure. The caller must
    * not reveal which field was wrong - an unknown email and a bad password both return null.
+   * An unknown email still runs a verify against a throwaway hash so login latency does not
+   * betray whether an email is registered (timing-based user enumeration).
    */
   async login(input: LoginInput): Promise<PublicAccount | null> {
+    const password = typeof input.password === 'string' ? input.password : '';
     const email = validateEmail(input.email);
-    if (!email.ok || typeof input.password !== 'string') {
-      return null;
+    const account = email.ok ? await this.repo.findByEmail(email.normalized!) : null;
+    const hash = account?.passwordHash ?? (await this.getDummyHash());
+    const ok = await this.hasher.verify(hash, password);
+    return account && ok ? toPublic(account) : null;
+  }
+
+  /**
+   * A cached hash of a random string, used to keep the no-such-email path as costly as a real
+   * verify. Computed once, lazily, so the fixed cost is paid on first miss, not per request.
+   */
+  private dummyHash: Promise<string> | null = null;
+  private getDummyHash(): Promise<string> {
+    if (!this.dummyHash) {
+      this.dummyHash = this.hasher.hash(randomBytes(32).toString('hex'));
     }
-    const account = await this.repo.findByEmail(email.normalized!);
-    if (!account) {
-      return null;
-    }
-    const ok = await this.hasher.verify(account.passwordHash, input.password);
-    return ok ? toPublic(account) : null;
+    return this.dummyHash;
   }
 
   async getById(id: string): Promise<PublicAccount | null> {
@@ -134,7 +144,7 @@ export class AccountService {
   }
 
   async changeNickname(id: string, rawNickname: string): Promise<PublicAccount> {
-    const nickname = validateNickname(rawNickname);
+    const nickname = validateDisplayName(rawNickname);
     if (!nickname.ok) {
       throw new ValidationError('nickname', nickname.error!);
     }
@@ -144,10 +154,4 @@ export class AccountService {
     }
     return toPublic(account);
   }
-}
-
-/** Map the gamer tag a user typed to the value uniqueness is checked against. Exposed for
- * callers that need the normalized handle (e.g. lookups) without re-importing the validator. */
-export function gamerTagKey(raw: string): string {
-  return normalizeGamerTag(raw);
 }

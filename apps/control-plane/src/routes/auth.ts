@@ -1,9 +1,9 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { AccountService, ConflictError, ValidationError } from '../accounts/service';
 import type { SessionCookieConfig } from '../config';
-import { validateNickname } from '../accounts/nickname';
 import type { Session } from '../sessions/session';
 import type { SessionStore } from '../sessions/store';
+import { validateDisplayName } from '../validation/display-name';
 
 export interface AuthDeps {
   accounts: AccountService;
@@ -156,13 +156,13 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     if (!code) {
       return reply.code(400).send({ error: 'A room code is required to join.', field: 'code' });
     }
-    const nickname = validateNickname(asString(request.body, 'displayName'));
-    if (!nickname.ok) {
-      return reply.code(400).send({ error: nickname.error, field: 'displayName' });
+    const displayName = validateDisplayName(asString(request.body, 'displayName'));
+    if (!displayName.ok) {
+      return reply.code(400).send({ error: displayName.error, field: 'displayName' });
     }
     const session = await sessions.create({
       kind: 'anonymous',
-      displayName: nickname.value!,
+      displayName: displayName.value!,
       roomCode: code,
     });
     setSessionCookie(reply, session);

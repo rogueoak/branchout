@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PasswordHasher } from './hasher';
+import { type Account, type AccountRepository, DuplicateAccountError } from './repository';
 import { InMemoryAccountRepository } from './repository.memory';
-import { AccountService, ConflictError, ValidationError } from './service';
+import { AccountService, ConflictError, PASSWORD_MAX, ValidationError } from './service';
 
 /** A fast, deterministic hasher for service tests - the real argon2/bcrypt hasher is proven in
  * hasher.test.ts. Prefixes the plaintext so a test can assert the stored value is not raw. */
@@ -55,6 +56,33 @@ describe('AccountService.signup', () => {
     await expect(
       service.signup({ email: 'a@example.com', password: 'short', gamerTag: 'One' }),
     ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('rejects a password over the max length', async () => {
+    const err = await service
+      .signup({ email: 'a@example.com', password: 'x'.repeat(PASSWORD_MAX + 1), gamerTag: 'One' })
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(ValidationError);
+    expect((err as ValidationError).message).toMatch(/at most/);
+  });
+
+  it('maps a create-time DuplicateAccountError to ConflictError (the unique-index race guard)', async () => {
+    // A repo whose pre-checks pass but whose create() throws, as a concurrent insert would.
+    const racingRepo: AccountRepository = {
+      findByEmail: async () => null,
+      findByGamerTagNormalized: async () => null,
+      findById: async () => null,
+      updateNickname: async () => null,
+      create: async (): Promise<Account> => {
+        throw new DuplicateAccountError('gamerTag');
+      },
+    };
+    const racing = new AccountService(racingRepo, fakeHasher);
+    const err = await racing
+      .signup({ email: 'a@example.com', password: 'supersecret', gamerTag: 'CoolCat' })
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(ConflictError);
+    expect((err as ConflictError).field).toBe('gamerTag');
   });
 
   it('rejects a malformed email and an invalid gamer tag', async () => {

@@ -1,6 +1,7 @@
 import { loadConfig } from './config';
 import { createPostgresPool } from './db';
-import { runMigrations } from './accounts/migrations';
+import { runMigrations } from './db/migrations';
+import { allMigrations } from './migrations';
 
 /**
  * Standalone migration entry: apply pending migrations and exit. Startup also runs migrations
@@ -11,7 +12,7 @@ async function main(): Promise<void> {
   const config = loadConfig();
   const pool = createPostgresPool(config.databaseUrl);
   try {
-    const applied = await runMigrations(pool);
+    const applied = await runMigrations(pool, allMigrations);
     console.log(
       applied.length > 0
         ? `[control-plane] applied migrations ${applied.join(', ')}`

@@ -70,4 +70,9 @@ export class InMemoryAccountRepository implements AccountRepository {
     account.updatedAt = new Date();
     return { ...account };
   }
+
+  /** Test-only helper: drop an account, to simulate a session whose row is gone. */
+  deleteById(id: string): void {
+    this.byId.delete(id);
+  }
 }

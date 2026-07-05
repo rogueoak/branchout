@@ -1,11 +1,12 @@
 import { createRedisClient, pingRedis } from '@branchout/service-runtime';
 import { createHasher } from './accounts/hasher';
-import { runMigrations } from './accounts/migrations';
 import { PostgresAccountRepository } from './accounts/repository';
 import { AccountService } from './accounts/service';
 import { createApp } from './app';
 import { loadConfig } from './config';
 import { createPostgresPool, pingPostgres } from './db';
+import { runMigrations } from './db/migrations';
+import { allMigrations } from './migrations';
 import { RedisSessionStore, type SessionRedis } from './sessions/store';
 
 async function main(): Promise<void> {
@@ -20,16 +21,19 @@ async function main(): Promise<void> {
     .connect()
     .catch((error) => console.error('[control-plane] redis connect failed', error));
 
-  // Bring the schema up to date on boot so `docker compose up` needs no separate step.
+  // Bring the schema up to date on boot so `docker compose up` needs no separate step. Fail
+  // fast on error: a missing or partial schema will not self-heal, and starting anyway would
+  // 500 every signup/login while /health (a connectivity check) still reports Postgres ok.
   try {
-    const applied = await runMigrations(pool);
+    const applied = await runMigrations(pool, allMigrations);
     console.log(
       applied.length > 0
         ? `[control-plane] applied migrations ${applied.join(', ')}`
         : '[control-plane] schema up to date',
     );
   } catch (error) {
-    console.error('[control-plane] migration failed', error);
+    console.error('[control-plane] migration failed, aborting boot', error);
+    throw error;
   }
 
   // Prove the wiring on boot so `docker compose up` surfaces a bad connection string early.

@@ -31,6 +31,18 @@ function parseBool(value: string | undefined, fallback: boolean): boolean {
 }
 
 /**
+ * Parse the SameSite policy. `lax` is the safe default and works when web and control-plane
+ * share a site (e.g. localhost:3000 -> :4000). A cross-site deploy (web and control-plane on
+ * different registrable domains) needs `none` + secure for the session cookie to be sent.
+ */
+function parseSameSite(value: string | undefined): SessionCookieConfig['sameSite'] {
+  if (value === 'strict' || value === 'none' || value === 'lax') {
+    return value;
+  }
+  return 'lax';
+}
+
+/**
  * Read service config from the environment. Connection strings are required with no default -
  * fail fast rather than silently point at localhost in production. Cookie security defaults to
  * safe (secure + lax) and only relaxes when explicitly told to for local http development.
@@ -49,7 +61,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     cookie: {
       name: env.SESSION_COOKIE_NAME ?? 'branchout_session',
       secure: parseBool(env.COOKIE_SECURE, true),
-      sameSite: 'lax',
+      sameSite: parseSameSite(env.COOKIE_SAMESITE),
       ttlSeconds: Number(env.SESSION_TTL_SECONDS ?? DEFAULT_SESSION_TTL),
     },
   };

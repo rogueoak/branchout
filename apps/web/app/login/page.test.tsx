@@ -15,9 +15,10 @@ describe('login page', () => {
 
   it('renders the log-in form and links to sign up', () => {
     render(<LoginPage />);
-    expect(screen.getByRole('heading', { name: 'Log in' })).toBeDefined();
-    expect(screen.getByLabelText('Email')).toBeDefined();
-    expect(screen.getByLabelText('Password')).toBeDefined();
+    // getByRole/getByLabelText throw on a miss, so the query itself is the assertion.
+    screen.getByRole('heading', { name: 'Log in' });
+    screen.getByLabelText('Email');
+    screen.getByLabelText('Password');
     expect(screen.getByRole('link', { name: 'Create an account' }).getAttribute('href')).toBe(
       '/signup',
     );
@@ -30,9 +31,7 @@ describe('login page', () => {
     render(<LoginPage />);
     fillAndSubmit();
 
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeDefined(),
-    );
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/auth/login'),
       expect.objectContaining({ method: 'POST', credentials: 'include' }),

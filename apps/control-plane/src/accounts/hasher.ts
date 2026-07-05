@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcryptjs';
 
 /**
@@ -30,16 +31,29 @@ async function tryLoadArgon2(): Promise<Argon2Module | null> {
       hash: (plain) => argon2.hash(plain),
       verify: (storedHash, plain) => argon2.verify(storedHash, plain),
     };
-  } catch {
+  } catch (error) {
+    // Make a missing native module visible in boot logs - otherwise the service silently runs
+    // the weaker bcrypt fallback and no one notices.
+    console.warn('[control-plane] argon2 unavailable, falling back to bcrypt', error);
     return null;
   }
 }
 
+/**
+ * bcrypt ignores input past 72 bytes, but a passphrase may be longer (PASSWORD_MAX is 200).
+ * Pre-hashing to a fixed-length SHA-256 digest lets the whole password contribute before bcrypt
+ * sees it. All bcrypt hashes this module writes are over the pre-hash, and verify applies the
+ * same transform, so the two stay consistent.
+ */
+function bcryptPrehash(plain: string): string {
+  return createHash('sha256').update(plain, 'utf8').digest('base64');
+}
+
 const bcrypt = {
-  hash: (plain: string) => bcryptHash(plain, BCRYPT_ROUNDS),
+  hash: (plain: string) => bcryptHash(bcryptPrehash(plain), BCRYPT_ROUNDS),
   verify: async (storedHash: string, plain: string) => {
     try {
-      return await bcryptCompare(plain, storedHash);
+      return await bcryptCompare(bcryptPrehash(plain), storedHash);
     } catch {
       return false;
     }
