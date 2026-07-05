@@ -18,6 +18,11 @@ Capture durable lessons as they emerge.
 - **Run `tsc` in CI even when the bundler does not type-check.** `tsup`/esbuild strip types
   without checking them, so a service type error passes `build` and merges undetected unless a
   dedicated `typecheck` step runs `tsc --noEmit`.
+- **The `dev` turbo task needs `dependsOn: ["^build"]` too, not just `build`.** A consumer that
+  imports a generated artifact (e.g. `apps/web` importing `@branchout/theme`'s built `brand.css`)
+  fails on a fresh-clone `pnpm dev` if the producing package was never built - CI's `pnpm build`
+  hides it because only `build` declared `^build`. Whatever the build generates, dev must generate
+  first. (Spec `0002`.)
 
 ## Theming
 
@@ -30,9 +35,10 @@ Capture durable lessons as they emerge.
 - **`buildBrand()` forbids a dark override identical to its light value (except
   `accent-foreground`), so a role that is visually theme-invariant still needs two distinct steps.**
   The spec's "accent sunbeam.400 in both themes" and a shared warning-foreground both tripped the
-  copy-paste guard; Confetti split them (dark accent -> sunbeam.500, dark warning-foreground ->
-  honey.900). When a role reads the same in both themes, pick adjacent steps that both clear AA
-  rather than fighting the guard. (Spec `0002`.)
+  copy-paste guard; Confetti split them (dark accent -> a brighter sunbeam.300, dark
+  warning-foreground -> honey.900). When a role reads the same in both themes, pick adjacent steps
+  that both clear AA - and lean the split toward the brand mood (brighter in dark for a "fun"
+  accent) rather than fighting the guard. (Spec `0002`.)
 - **Name functional primitive ramps differently from the semantic roles they feed.** A DTCG token
   can't be both a group and a leaf, so `color.success` the role and `color.success.600` the
   primitive collide in Style Dictionary. Confetti's functional ramps are `clover`/`honey`/`cherry`/

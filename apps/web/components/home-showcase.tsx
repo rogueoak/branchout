@@ -19,7 +19,7 @@ export function HomeShowcase() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-4xl font-bold tracking-tight">Branch out</CardTitle>
+        <CardTitle className="text-h1">Branch out</CardTitle>
         <CardDescription>where game night grows.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
@@ -34,7 +34,12 @@ export function HomeShowcase() {
           <Badge variant="warning">Waiting</Badge>
           <Badge variant="danger">Full</Badge>
           <Badge variant="info">Beta</Badge>
-          <span className="rounded-md bg-accent px-2 py-1 text-sm font-medium text-accent-foreground">
+        </div>
+        {/* Accent is a fill color, not a Badge variant - show it as its own labeled swatch so it
+            doesn't masquerade as a peer of the Badges above. */}
+        <div className="flex items-center gap-2 text-body-sm text-text-muted">
+          <span>Accent</span>
+          <span className="inline-flex items-center rounded-md bg-accent px-2 py-1 font-medium text-accent-foreground">
             Confetti
           </span>
         </div>

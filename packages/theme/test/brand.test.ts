@@ -15,12 +15,13 @@ const outDir = mkdtempSync(join(tmpdir(), 'confetti-brand-'));
 
 afterAll(() => rmSync(outDir, { recursive: true, force: true }));
 
-// Extract the declaration block of the rule whose selector is EXACTLY `selector`.
+// Extract the declaration block of the rule whose selector is EXACTLY `selector`. Throws when the
+// selector is absent so a missing `.dark` block fails loudly instead of silently falling back to
+// the `:root` block at index 0 (which would let the dark-coverage test false-pass).
 function block(css: string, selector: string): string {
-  const anchor = selector === ':root' ? ':root' : selector;
-  const idx =
-    css.indexOf(anchor + ' ') >= 0 ? css.indexOf(anchor + ' ') : css.indexOf(anchor + '{');
-  const open = css.indexOf('{', idx);
+  const start = css.indexOf(`${selector} {`);
+  if (start < 0) throw new Error(`brand.css has no \`${selector}\` block`);
+  const open = css.indexOf('{', start);
   const close = css.indexOf('}', open);
   return css.slice(open + 1, close);
 }
