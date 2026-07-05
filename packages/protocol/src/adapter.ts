@@ -1,4 +1,4 @@
-import type { ProtocolMessage } from './messages';
+import type { IngressMessage, ProtocolMessage } from './messages';
 
 // A transport-agnostic surface over a realtime connection. game-engine talks to this, not to
 // `ws` directly, so the transport (ws, Socket.IO, raw TCP, ...) can change without touching
@@ -16,8 +16,8 @@ export interface SocketConnection {
 export interface SocketServerHandlers {
   /** A client connected. */
   onConnection?(connection: SocketConnection): void;
-  /** A valid protocol message arrived from a client. */
-  onMessage?(connection: SocketConnection, message: ProtocolMessage): void;
+  /** A valid ingress frame (echo or a client game frame) arrived from a client. */
+  onMessage?(connection: SocketConnection, message: IngressMessage): void;
   /**
    * A transport-level error occurred on this connection (e.g. ECONNRESET). Without this the
    * adapter logs it. Malformed client frames are not routed here - the adapter answers those
