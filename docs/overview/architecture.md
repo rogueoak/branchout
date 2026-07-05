@@ -91,6 +91,36 @@ the two services build with `tsup` (bundled ESM); services run with `tsx` in dev
 behind a transport-agnostic interface, so the realtime transport can change without touching
 game logic.
 
+## Game engine and protocol (spec 0007)
+
+`packages/protocol` is the source of truth for two channels, each a versioned envelope (`v`)
+so a shape can change without breaking older peers:
+
+- **Player <-> engine (WebSocket).** Client frames `join`, `answer`, `vote`; server frames
+  `prompt`, `reveal`, `leaderboard`, `state`. Each game frame is keyed by room + game (client
+  frames also by player). `parseMessage` validates ingress; the engine constructs egress.
+- **Engine <-> control-plane (REST).** `start` handoff (control-plane -> engine), `round` result
+  and `game-complete` standings (engine -> control-plane). Each report carries a stable id
+  (`roundId`, `gameId`) so a retry never double-bills - the transport is internal REST, chosen
+  over a queue for simplicity at this scale (revisit if reporting volume outgrows it).
+
+`apps/game-engine` (Fastify + `ws`) owns:
+
+- **A modular game registry** - a game is a `GameModule` implementing the generic round
+  lifecycle (`configure -> startRound -> collectAnswers -> reveal -> disputeWindow -> disputeVote
+  -> leaderboard -> advance`, plus `endGame`). The engine sequences phases, timers, streaming,
+  persistence, and reporting; the module owns what each phase means. Adding a game is registering
+  a module; a stub game drives the lifecycle in tests (Trivia is spec `0008`).
+- **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for
+  the life of a game, recovered on reconnect. Per-session operations are serialized in-process so
+  concurrent frames cannot lose an update; cross-instance locking is a future concern.
+- **Streaming over Redis pub/sub** - the engine publishes server frames to a per-session channel;
+  each connected device subscribes and forwards them to its socket. Both the store and pub/sub
+  sit behind interfaces with in-memory implementations for tests.
+- **Host controls** (`pause`, `advance`, `restart`, `exit`) and the control-plane channel as
+  Fastify routes (`POST /sessions`, `POST /sessions/:room/:game/control`) plus an outbound
+  reporter client.
+
 ## Conventions
 
 Trellis (`docs/rules/`) and Spectra (`docs/spectra/`) govern how changes ship: specs before

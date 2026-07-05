@@ -36,9 +36,13 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 ## Game engine
 
-- [ ] Engine skeleton - modular game registry, session state, device connect, streaming.
-- [ ] Round protocol - the engine <-> control-plane contract for state, results, billing.
-- [ ] First reference game - proves the full loop end to end.
+- [x] Engine skeleton - modular game registry, Redis session state, device connect over
+      WebSocket, pub/sub streaming, host controls (spec `0007`).
+- [x] Round protocol - `packages/protocol` versioned envelopes for both channels (player <->
+      engine WebSocket, engine <-> control-plane REST) plus idempotent round/complete reporting
+      (spec `0007`).
+- [ ] First reference game - proves the full loop end to end (Trivia, spec `0008`; a stub game
+      drives the lifecycle in engine tests today).
 
 ## Web
 
