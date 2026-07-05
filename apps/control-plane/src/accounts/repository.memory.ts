@@ -1,0 +1,73 @@
+import {
+  type Account,
+  type AccountRepository,
+  DuplicateAccountError,
+  type NewAccount,
+} from './repository';
+
+/**
+ * In-memory account store for tests. Mirrors the Postgres repository's uniqueness rules
+ * (email and normalized gamer tag) so service logic can be exercised without a live database.
+ */
+export class InMemoryAccountRepository implements AccountRepository {
+  private readonly byId = new Map<string, Account>();
+  private counter = 0;
+
+  async create(account: NewAccount): Promise<Account> {
+    for (const existing of this.byId.values()) {
+      if (existing.email === account.email) {
+        throw new DuplicateAccountError('email');
+      }
+      if (existing.gamerTagNormalized === account.gamerTagNormalized) {
+        throw new DuplicateAccountError('gamerTag');
+      }
+    }
+    const now = new Date();
+    const stored: Account = {
+      id: `acct_${++this.counter}`,
+      email: account.email,
+      passwordHash: account.passwordHash,
+      gamerTag: account.gamerTag,
+      gamerTagNormalized: account.gamerTagNormalized,
+      nickname: account.nickname,
+      emailVerified: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.byId.set(stored.id, stored);
+    return { ...stored };
+  }
+
+  async findByEmail(normalizedEmail: string): Promise<Account | null> {
+    for (const account of this.byId.values()) {
+      if (account.email === normalizedEmail) {
+        return { ...account };
+      }
+    }
+    return null;
+  }
+
+  async findById(id: string): Promise<Account | null> {
+    const account = this.byId.get(id);
+    return account ? { ...account } : null;
+  }
+
+  async findByGamerTagNormalized(normalized: string): Promise<Account | null> {
+    for (const account of this.byId.values()) {
+      if (account.gamerTagNormalized === normalized) {
+        return { ...account };
+      }
+    }
+    return null;
+  }
+
+  async updateNickname(id: string, nickname: string): Promise<Account | null> {
+    const account = this.byId.get(id);
+    if (!account) {
+      return null;
+    }
+    account.nickname = nickname;
+    account.updatedAt = new Date();
+    return { ...account };
+  }
+}

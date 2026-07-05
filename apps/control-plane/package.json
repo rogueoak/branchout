@@ -8,6 +8,7 @@
     "build": "tsup",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "migrate": "tsx src/migrate.ts",
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -15,6 +16,10 @@
   },
   "dependencies": {
     "@branchout/service-runtime": "workspace:*",
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^10.0.2",
+    "@node-rs/argon2": "^2.0.2",
+    "bcryptjs": "^3.0.2",
     "fastify": "^5.2.0",
     "pg": "^8.13.1",
     "redis": "^4.7.0"
