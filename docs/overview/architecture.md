@@ -66,7 +66,8 @@ UI is built on rogueoak/canopy (`@rogueoak/canopy` components + `@rogueoak/roots
 Branch out ships its own **Confetti** brand (violet + hot pink + sunny yellow) through canopy's
 brandable theme API - custom primitive ramps mapped onto the same semantic role names, so every
 canopy component re-themes with no component changes, in light and dark, AA-verified. That API
-is being added upstream in canopy; `packages/theme` consumes it once released. See spec `0002`.
+ships upstream as `@rogueoak/roots/brand` (canopy PR #37 - a `buildBrand()` function + a
+`roots-brand` CLI); `packages/theme` consumes it once released. See spec `0002`.
 
 ## Deployment
 
