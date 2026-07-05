@@ -1,0 +1,175 @@
+// The engine <-> control-plane server-to-server channel, carried over internal REST (see spec
+// 0007 Approach for the transport decision: REST over a queue, made idempotent with ids so a
+// retry never double-bills). Three calls:
+//
+//   - start handoff   control-plane -> engine   POST /sessions
+//   - round result    engine -> control-plane   POST /rounds
+//   - game complete   engine -> control-plane   POST /games/complete
+//
+// Each envelope is versioned like the WebSocket channel, and each report carries a stable id so
+// the receiver can dedupe.
+
+import {
+  PROTOCOL_VERSION,
+  assertVersion,
+  isRecord,
+  requireId,
+  requireInt,
+  requireString,
+  ProtocolError,
+  type ScoreEvent,
+  type Standing,
+} from './envelope';
+
+/** A player handed to the engine at start: identity + display name. */
+export interface HandoffPlayer {
+  player: string;
+  nickname: string;
+}
+
+/**
+ * The control-plane hands a room, a selected game module, and an opaque config to the engine.
+ * `config` is validated by the game module, not here - the control-plane passes it through
+ * unchanged (spec 0006). Idempotent on `room` + `game`: re-posting a running session is a no-op.
+ */
+export interface StartHandoffRequest {
+  v: number;
+  room: string;
+  game: string;
+  players: HandoffPlayer[];
+  config: unknown;
+}
+
+export interface StartHandoffResponse {
+  v: number;
+  room: string;
+  game: string;
+  /** `started` on first handoff, `running` when the session already existed (idempotent). */
+  status: 'started' | 'running';
+}
+
+/**
+ * The engine reports a finished round. `roundId` is the idempotency key (stable per room + game
+ * + round), so the control-plane debits the round's credit exactly once even if the call retries.
+ */
+export interface RoundReport {
+  v: number;
+  room: string;
+  game: string;
+  round: number;
+  roundId: string;
+  scores: ScoreEvent[];
+  standings: Standing[];
+}
+
+/** The engine reports final standings. `gameId` dedupes the completion (stars awarded once). */
+export interface GameCompleteReport {
+  v: number;
+  room: string;
+  game: string;
+  gameId: string;
+  standings: Standing[];
+}
+
+/** The control-plane's reply to either report: `recorded` first time, `duplicate` on a retry. */
+export interface ReportAck {
+  v: number;
+  status: 'recorded' | 'duplicate';
+}
+
+function requirePlayers(data: Record<string, unknown>): HandoffPlayer[] {
+  const raw = data.players;
+  if (!Array.isArray(raw)) {
+    throw new ProtocolError('"players" must be an array');
+  }
+  return raw.map((entry) => {
+    if (!isRecord(entry)) {
+      throw new ProtocolError('each player must be an object');
+    }
+    return {
+      player: requireId(entry, 'player'),
+      nickname: requireString(entry, 'nickname'),
+    };
+  });
+}
+
+function requireScores(data: Record<string, unknown>): ScoreEvent[] {
+  const raw = data.scores;
+  if (!Array.isArray(raw)) {
+    throw new ProtocolError('"scores" must be an array');
+  }
+  return raw.map((entry) => {
+    if (!isRecord(entry)) {
+      throw new ProtocolError('each score event must be an object');
+    }
+    return {
+      player: requireString(entry, 'player'),
+      points: requireInt(entry, 'points'),
+      reason: requireString(entry, 'reason'),
+    };
+  });
+}
+
+function requireStandings(data: Record<string, unknown>): Standing[] {
+  const raw = data.standings;
+  if (!Array.isArray(raw)) {
+    throw new ProtocolError('"standings" must be an array');
+  }
+  return raw.map((entry) => {
+    if (!isRecord(entry)) {
+      throw new ProtocolError('each standing must be an object');
+    }
+    return {
+      player: requireString(entry, 'player'),
+      nickname: requireString(entry, 'nickname'),
+      score: requireInt(entry, 'score'),
+      rank: requireInt(entry, 'rank'),
+    };
+  });
+}
+
+function asEnvelope(raw: unknown): Record<string, unknown> {
+  if (!isRecord(raw)) {
+    throw new ProtocolError('report must be an object');
+  }
+  assertVersion(raw.v);
+  return raw;
+}
+
+/** Validate a start-handoff request body (control-plane -> engine ingress). */
+export function parseStartHandoff(raw: unknown): StartHandoffRequest {
+  const data = asEnvelope(raw);
+  return {
+    v: PROTOCOL_VERSION,
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
+    players: requirePlayers(data),
+    config: data.config,
+  };
+}
+
+/** Validate a round report body (engine -> control-plane ingress). */
+export function parseRoundReport(raw: unknown): RoundReport {
+  const data = asEnvelope(raw);
+  return {
+    v: PROTOCOL_VERSION,
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
+    round: requireInt(data, 'round'),
+    roundId: requireString(data, 'roundId'),
+    scores: requireScores(data),
+    standings: requireStandings(data),
+  };
+}
+
+/** Validate a game-complete report body (engine -> control-plane ingress). */
+export function parseGameCompleteReport(raw: unknown): GameCompleteReport {
+  const data = asEnvelope(raw);
+  return {
+    v: PROTOCOL_VERSION,
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
+    gameId: requireString(data, 'gameId'),
+    standings: requireStandings(data),
+  };
+}
