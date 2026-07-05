@@ -147,4 +147,92 @@ describe('game-engine websocket', () => {
     expect(received.some((m) => m.type === 'reveal')).toBe(true);
     socket.close();
   });
+
+  describe('authorization guards', () => {
+    const join = (socket: WebSocket, over: Record<string, unknown> = {}) =>
+      socket.send(
+        JSON.stringify({
+          v: PROTOCOL_VERSION,
+          type: 'join',
+          room: 'r1',
+          game: STUB_GAME_ID,
+          player: 'p1',
+          nickname: 'Ada',
+          ...over,
+        }),
+      );
+
+    const answer = (socket: WebSocket, over: Record<string, unknown> = {}) =>
+      socket.send(
+        JSON.stringify({
+          v: PROTOCOL_VERSION,
+          type: 'answer',
+          room: 'r1',
+          game: STUB_GAME_ID,
+          player: 'p1',
+          round: 1,
+          answer: 'blue',
+          ...over,
+        }),
+      );
+
+    beforeEach(async () => {
+      await engine.start({
+        v: PROTOCOL_VERSION,
+        room: 'r1',
+        game: STUB_GAME_ID,
+        players: [{ player: 'p1', nickname: 'Ada' }],
+        config: { rounds: 1, secrets: ['blue'] },
+      });
+    });
+
+    it('rejects an answer sent before joining', async () => {
+      const socket = await open();
+      const err = waitFor(socket, 'error');
+      answer(socket);
+      expect((await err).message).toMatch(/join a session/);
+      socket.close();
+    });
+
+    it('rejects acting on a room/game the socket did not join', async () => {
+      const socket = await open();
+      const joined = waitFor(socket, 'state');
+      join(socket);
+      await joined;
+      const err = waitFor(socket, 'error');
+      answer(socket, { room: 'other-room' });
+      expect((await err).message).toMatch(/join a session/);
+      socket.close();
+    });
+
+    it('rejects acting on behalf of another player', async () => {
+      const socket = await open();
+      const joined = waitFor(socket, 'state');
+      join(socket);
+      await joined;
+      const err = waitFor(socket, 'error');
+      answer(socket, { player: 'p2' });
+      expect((await err).message).toMatch(/another player/);
+      socket.close();
+    });
+
+    it('rejects a second join on the same connection', async () => {
+      const socket = await open();
+      const joined = waitFor(socket, 'state');
+      join(socket);
+      await joined;
+      const err = waitFor(socket, 'error');
+      join(socket);
+      expect((await err).message).toMatch(/already joined/);
+      socket.close();
+    });
+
+    it('rejects a join for a player not in the roster', async () => {
+      const socket = await open();
+      const err = waitFor(socket, 'error');
+      join(socket, { player: 'intruder' });
+      expect((await err).message).toMatch(/roster/);
+      socket.close();
+    });
+  });
 });

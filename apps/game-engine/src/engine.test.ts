@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { GameCompleteReport, RoundReport, StartHandoffRequest } from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
-import { GameEngine, NoSessionError } from './engine';
+import { GameEngine, NoSessionError, UnknownPlayerError } from './engine';
 import { InMemoryPubSub } from './pubsub';
 import { GameRegistry } from './registry';
 import type { ControlPlaneReporter } from './reporter';
@@ -210,22 +210,53 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.scores.p1).toBe(100);
   });
 
-  it('does not mark a round reported when the control-plane rejects it, then reports on retry', async () => {
+  it('reports each round exactly once with a stable idempotency id across a full game', async () => {
+    await h.engine.start(handoff()); // 2 rounds
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> round 2
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 2, 'green');
+    await playRoundNoDispute(h.engine, 'r1');
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // end
+
+    const ids = h.reporter.rounds.map((r) => r.roundId);
+    expect(ids).toEqual(['r1:stub:1:1', 'r1:stub:1:2']);
+    expect(new Set(ids).size).toBe(ids.length); // each id sent at most once
+  });
+
+  it('retries a failed round report via the outbox and delivers it exactly once', async () => {
     await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
     await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
-    h.reporter.failRoundOnce = true;
+    h.reporter.failRoundOnce = true; // the first delivery attempt fails
 
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // reveal -> disputing
-    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // finalize round 1 (report fails)
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // finalize round 1 (report fails, queued)
     let state = await h.engine.getState('r1', STUB_GAME_ID);
     expect(state?.reportedRounds).toEqual([]);
+    expect(state?.pendingRounds).toHaveLength(1);
     expect(h.reporter.rounds).toHaveLength(0);
 
-    // Restart replays the round; the same roundId is now free to report (new run id).
-    await h.engine.control('r1', STUB_GAME_ID, 'restart');
+    // Ending the game flushes the outbox: the same roundId is retried and now delivered.
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // leaderboard -> endGame
     state = await h.engine.getState('r1', STUB_GAME_ID);
-    expect(state?.runId).toBe(2);
-    expect(state?.scores.p1).toBe(0);
+    expect(state?.phase).toBe('complete');
+    expect(state?.pendingRounds).toEqual([]);
+    expect(h.reporter.rounds.map((r) => r.roundId)).toEqual(['r1:stub:1:1']); // delivered once
+    expect(state?.reportedRounds).toEqual(['r1:stub:1:1']);
+  });
+
+  it('lets a completed game be started again (0006 can re-hand-off the room)', async () => {
+    await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // complete
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('complete');
+
+    const restarted = await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
+    expect(restarted.status).toBe('started');
+    const state = await h.engine.getState('r1', STUB_GAME_ID);
+    expect(state?.phase).toBe('collecting');
+    expect(state?.scores).toEqual({ p1: 0, p2: 0 });
   });
 
   it('recovers session state on reconnect (join returns the live snapshot)', async () => {
@@ -256,6 +287,28 @@ describe('GameEngine lifecycle', () => {
     await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await playRoundNoDispute(h.engine, 'r1');
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.scores.p1).toBe(100);
+  });
+
+  it('re-arms a timed dispute window after a pause/resume so the round does not stall', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 1, secrets: ['blue'], disputeWindowMs: 10000 } }),
+    );
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> disputing, arms window
+    await h.engine.control('r1', STUB_GAME_ID, 'pause'); // pause: cancels the window
+    h.scheduler.flush(); // the original timer no-ops while paused
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+
+    await h.engine.control('r1', STUB_GAME_ID, 'pause'); // resume: re-arms the window
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+  });
+
+  it('rejects a join for a player not in the handed-off roster', async () => {
+    await h.engine.start(handoff());
+    await expect(h.engine.join('r1', STUB_GAME_ID, 'intruder', 'Mallory')).rejects.toThrow(
+      UnknownPlayerError,
+    );
   });
 
   it('exit ends the game, reports completion, and drops the session', async () => {

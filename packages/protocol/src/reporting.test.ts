@@ -39,6 +39,18 @@ describe('parseStartHandoff', () => {
       }),
     ).toThrow(ProtocolError);
   });
+
+  it('rejects an unsafe room identity (channel/key injection)', () => {
+    expect(() =>
+      parseStartHandoff({
+        v: PROTOCOL_VERSION,
+        room: 'r1:evil',
+        game: 'stub',
+        players: [{ player: 'p1', nickname: 'Ada' }],
+        config: {},
+      }),
+    ).toThrow(ProtocolError);
+  });
 });
 
 describe('parseRoundReport', () => {

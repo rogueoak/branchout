@@ -33,6 +33,11 @@ export function createApp(checks: HealthChecks, engine: GameEngine): FastifyInst
     });
   });
 
+  // NOTE: the /sessions routes carry ambient authority - any caller that reaches this port can
+  // start, control, or inspect a session. There is no auth yet (the control-plane authenticates
+  // this server-to-server channel in a later spec), so the engine port must stay network-isolated
+  // to the control-plane until then. See the matching Origin note in @branchout/protocol's ws.ts.
+
   // Start handoff (control-plane -> engine). Idempotent on room + game: re-posting a running
   // session returns `running` rather than restarting it.
   app.post('/sessions', async (request, reply) => {
@@ -54,14 +59,15 @@ export function createApp(checks: HealthChecks, engine: GameEngine): FastifyInst
     }
   });
 
-  // Inspect a session (useful for the host UI and debugging).
+  // Inspect a session (useful for the host UI and debugging). Returns the protocol `state`
+  // projection only - never the module scratch or opaque config, which can hold in-flight secrets.
   app.get<{ Params: { room: string; game: string } }>(
     '/sessions/:room/:game',
     async (request, reply) => {
       const { room, game } = request.params;
-      const state = await engine.getState(room, game);
-      if (!state) return reply.code(404).send({ error: 'no such session' });
-      return reply.code(200).send(state);
+      const snapshot = await engine.getSnapshot(room, game);
+      if (!snapshot) return reply.code(404).send({ error: 'no such session' });
+      return reply.code(200).send(snapshot);
     },
   );
 

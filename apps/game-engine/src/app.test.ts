@@ -119,12 +119,16 @@ describe('game-engine /sessions control', () => {
     await app.close();
   });
 
-  it('inspects session state', async () => {
+  it('inspects a session as the protocol state projection, not the raw internals', async () => {
     const app = appWithRedis(true);
     await app.inject({ method: 'POST', url: '/sessions', payload: handoff });
     const res = await app.inject({ method: 'GET', url: `/sessions/r1/${STUB_GAME_ID}` });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ room: 'r1', phase: 'collecting', round: 1 });
+    const body = res.json();
+    expect(body).toMatchObject({ type: 'state', room: 'r1', phase: 'collecting', round: 1 });
+    // The projection must not leak the module scratch or the opaque config.
+    expect(body.scratch).toBeUndefined();
+    expect(body.config).toBeUndefined();
     await app.close();
   });
 });

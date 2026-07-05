@@ -35,6 +35,13 @@ export class NoSessionError extends Error {
   }
 }
 
+export class UnknownPlayerError extends Error {
+  constructor(player: string) {
+    super(`player "${player}" is not in this session's roster`);
+    this.name = 'UnknownPlayerError';
+  }
+}
+
 export interface EngineDeps {
   registry: GameRegistry;
   store: SessionStore;
@@ -69,13 +76,16 @@ export class GameEngine {
     const prev = this.locks.get(key) ?? Promise.resolve();
     const next = prev.then(fn, fn);
     // Swallow rejections on the chain guard so one failure does not poison the queue.
-    this.locks.set(
-      key,
-      next.then(
-        () => undefined,
-        () => undefined,
-      ),
+    const guard = next.then(
+      () => undefined,
+      () => undefined,
     );
+    this.locks.set(key, guard);
+    // Prune the key once its chain drains and nothing newer has chained onto it, so the map does
+    // not grow unbounded across every room+game the engine ever serves.
+    void guard.then(() => {
+      if (this.locks.get(key) === guard) this.locks.delete(key);
+    });
     return next;
   }
 
@@ -84,7 +94,9 @@ export class GameEngine {
     const key = sessionKey(req.room, req.game);
     return this.run(key, async () => {
       const existing = await this.store.load(req.room, req.game);
-      if (existing) {
+      // Idempotent while a game is live; a finished (`complete`) session is startable again so
+      // 0006 can re-hand-off the same game into a room without the session wedging forever.
+      if (existing && existing.phase !== 'complete') {
         return { v: PROTOCOL_VERSION, room: req.room, game: req.game, status: 'running' };
       }
       const module = this.registry.resolve(req.game);
@@ -113,6 +125,7 @@ export class GameEngine {
         scratch: cfg.scratch,
         config: req.config,
         reportedRounds: [],
+        pendingRounds: [],
         completeReported: false,
       };
       await this.startRoundInto(state, module);
@@ -121,19 +134,22 @@ export class GameEngine {
     });
   }
 
-  /** Bind a device to a session; mark the player connected and return a state snapshot. */
+  /**
+   * Bind a device to a session; mark the player connected and return a state snapshot. The player
+   * must be in the roster the control-plane handed off - a device cannot inject a new player id or
+   * take over another player's slot. (This is input validation at the boundary; per-player auth
+   * arrives with the control-plane session, a later spec.)
+   */
   async join(room: string, game: string, player: string, nickname: string): Promise<StateMessage> {
     const key = sessionKey(room, game);
     return this.run(key, async () => {
       const state = await this.requireState(room, game);
       const existing = state.players.find((p) => p.player === player);
-      if (existing) {
-        existing.connected = true;
-        if (nickname) existing.nickname = nickname;
-      } else {
-        state.players.push({ player, nickname, connected: true });
-        state.scores[player] ??= 0;
+      if (!existing) {
+        throw new UnknownPlayerError(player);
       }
+      existing.connected = true;
+      if (nickname) existing.nickname = nickname;
       await this.store.save(state);
       // Others see the (re)connection; the joiner gets the snapshot as its return value.
       await this.publish(state, this.stateMessage(state));
@@ -208,6 +224,11 @@ export class GameEngine {
           state.paused = !state.paused;
           await this.store.save(state);
           await this.publish(state, this.stateMessage(state));
+          // Resuming inside a timed dispute/vote window re-arms it, so a paused window does not
+          // strand the round waiting for a manual advance.
+          if (!state.paused && (state.phase === 'disputing' || state.phase === 'voting')) {
+            this.armWindow(state, module, state.phase);
+          }
           return;
         case 'advance':
           await this.advanceLocked(state, module);
@@ -228,6 +249,16 @@ export class GameEngine {
    */
   async getState(room: string, game: string): Promise<SessionState | null> {
     return this.run(sessionKey(room, game), () => this.store.load(room, game));
+  }
+
+  /**
+   * A protocol `state` projection of the session for external callers (the inspect route). Unlike
+   * {@link getState} it exposes only the wire contract - phase, players, scores - never the
+   * module's `scratch` or the opaque `config`, which can hold in-flight secrets (e.g. answers).
+   */
+  async getSnapshot(room: string, game: string): Promise<StateMessage | null> {
+    const state = await this.getState(room, game);
+    return state ? this.stateMessage(state) : null;
   }
 
   // --- internals ---
@@ -324,7 +355,7 @@ export class GameEngine {
     await this.store.save(state);
   }
 
-  /** Close out a round: publish the leaderboard and report the round result once. */
+  /** Close out a round: publish the leaderboard and report the round result (idempotent). */
   private async finalizeRound(state: SessionState, module: GameModule): Promise<void> {
     state.phase = 'leaderboard';
     const standings = module.leaderboard(this.context(state));
@@ -332,8 +363,11 @@ export class GameEngine {
     await this.publish(state, this.stateMessage(state));
 
     const roundId = `${state.room}:${state.game}:${state.runId}:${state.round}`;
-    if (!state.reportedRounds.includes(roundId)) {
-      const report: RoundReport = {
+    const known =
+      state.reportedRounds.includes(roundId) ||
+      state.pendingRounds.some((r) => r.roundId === roundId);
+    if (!known) {
+      state.pendingRounds.push({
         v: PROTOCOL_VERSION,
         room: state.room,
         game: state.game,
@@ -341,10 +375,25 @@ export class GameEngine {
         roundId,
         scores: state.roundScores,
         standings,
-      };
-      const sent = await this.tryReport(() => this.reporter.reportRound(report));
-      if (sent) state.reportedRounds.push(roundId);
+      });
     }
+    await this.flushPendingRounds(state);
+  }
+
+  /**
+   * Deliver queued round reports, keeping any that still fail. The `roundId` dedupe guarantees at
+   * most one debit per round even across retries: a delivered id lands in `reportedRounds` and is
+   * never re-sent.
+   */
+  private async flushPendingRounds(state: SessionState): Promise<void> {
+    const remaining: RoundReport[] = [];
+    for (const report of state.pendingRounds) {
+      if (state.reportedRounds.includes(report.roundId)) continue;
+      const sent = await this.tryReport(() => this.reporter.reportRound(report));
+      if (sent) state.reportedRounds.push(report.roundId);
+      else remaining.push(report);
+    }
+    state.pendingRounds = remaining;
   }
 
   private async endGame(state: SessionState, module: GameModule): Promise<void> {
@@ -352,6 +401,8 @@ export class GameEngine {
     const standings = module.endGame(this.context(state));
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
+    // Drain any straggler round reports before the completion report.
+    await this.flushPendingRounds(state);
     await this.reportComplete(state, standings);
   }
 
@@ -414,7 +465,8 @@ export class GameEngine {
       await send();
       return true;
     } catch (error) {
-      // Stay up if the control-plane is down; the report retries on the next finalize/complete.
+      // Stay up if the control-plane is down. A failed round report stays in the outbox and is
+      // retried on the next finalize/endGame; the completion report is best-effort (terminal).
       this.logger.error('[game-engine] control-plane report failed', error);
       return false;
     }

@@ -11,6 +11,7 @@ import {
   assertVersion,
   isRecord,
   requireBool,
+  requireId,
   requireInt,
   requireString,
   type Phase,
@@ -132,9 +133,9 @@ function parseJoin(data: Record<string, unknown>): JoinMessage {
   return {
     v: PROTOCOL_VERSION,
     type: 'join',
-    room: requireString(data, 'room'),
-    game: requireString(data, 'game'),
-    player: requireString(data, 'player'),
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
+    player: requireId(data, 'player'),
     nickname: requireString(data, 'nickname'),
   };
 }
@@ -143,9 +144,9 @@ function parseAnswer(data: Record<string, unknown>): AnswerMessage {
   return {
     v: PROTOCOL_VERSION,
     type: 'answer',
-    room: requireString(data, 'room'),
-    game: requireString(data, 'game'),
-    player: requireString(data, 'player'),
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
+    player: requireId(data, 'player'),
     round: requireInt(data, 'round'),
     answer: requireString(data, 'answer'),
   };
@@ -155,11 +156,11 @@ function parseVote(data: Record<string, unknown>): VoteMessage {
   return {
     v: PROTOCOL_VERSION,
     type: 'vote',
-    room: requireString(data, 'room'),
-    game: requireString(data, 'game'),
-    player: requireString(data, 'player'),
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
+    player: requireId(data, 'player'),
     round: requireInt(data, 'round'),
-    target: requireString(data, 'target'),
+    target: requireId(data, 'target'),
     agree: requireBool(data, 'agree'),
   };
 }

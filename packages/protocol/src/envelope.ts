@@ -13,16 +13,15 @@ export const PROTOCOL_VERSION = 1 as const;
  * The generic round lifecycle phases the engine sequences. A game module fills in what each
  * phase means; the engine only tracks which one a session is in and streams it to devices.
  *
- * `configuring -> collecting -> revealing -> disputing -> voting -> leaderboard` cycles per
- * round, then `complete` is terminal.
+ * `configuring -> collecting -> disputing -> voting -> leaderboard` cycles per round (reveal is
+ * published on the collecting -> disputing transition), then `complete` is terminal.
  */
 export type Phase =
-  'configuring' | 'collecting' | 'revealing' | 'disputing' | 'voting' | 'leaderboard' | 'complete';
+  'configuring' | 'collecting' | 'disputing' | 'voting' | 'leaderboard' | 'complete';
 
 const PHASES: readonly Phase[] = [
   'configuring',
   'collecting',
-  'revealing',
   'disputing',
   'voting',
   'leaderboard',
@@ -78,6 +77,22 @@ export function requireString(source: Record<string, unknown>, key: string): str
   const value = source[key];
   if (typeof value !== 'string' || value.length === 0) {
     throw new ProtocolError(`"${key}" must be a non-empty string`);
+  }
+  return value;
+}
+
+/** Characters allowed in an identity field (room/game/player/target). */
+const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+/**
+ * Validate an identity field. These are concatenated into pub/sub channel names and idempotency
+ * keys (`stream:room:game`, `room:game:runId:round`), so an embedded `:` or oversized value could
+ * collide distinct sessions or reports. Restrict them to a safe, bounded charset at the boundary.
+ */
+export function requireId(source: Record<string, unknown>, key: string): string {
+  const value = requireString(source, key);
+  if (!ID_PATTERN.test(value)) {
+    throw new ProtocolError(`"${key}" must match ${ID_PATTERN} (letters, digits, _ or -, <= 64)`);
   }
   return value;
 }

@@ -135,4 +135,20 @@ describe('client game frames', () => {
       ),
     ).toThrow(ProtocolError);
   });
+
+  it('rejects an identity field with an unsafe character (channel/key injection)', () => {
+    // A ':' in room/game/player would collide the stream channel and idempotency-key composition.
+    expect(() =>
+      parseMessage(
+        JSON.stringify({
+          v: PROTOCOL_VERSION,
+          type: 'join',
+          room: 'r1:evil',
+          game: 'stub',
+          player: 'p1',
+          nickname: 'Ada',
+        }),
+      ),
+    ).toThrow(ProtocolError);
+  });
 });

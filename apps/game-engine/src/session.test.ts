@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { InMemorySessionStore, sessionKey, type SessionState } from './session';
+import { describe, expect, it, vi } from 'vitest';
+import type { RedisClientType } from 'redis';
+import {
+  COMPLETE_SESSION_TTL_SECONDS,
+  InMemorySessionStore,
+  RedisSessionStore,
+  sessionKey,
+  type SessionState,
+} from './session';
 
 function makeState(overrides: Partial<SessionState> = {}): SessionState {
   return {
@@ -18,6 +25,7 @@ function makeState(overrides: Partial<SessionState> = {}): SessionState {
     scratch: {},
     config: {},
     reportedRounds: [],
+    pendingRounds: [],
     completeReported: false,
     ...overrides,
   };
@@ -51,5 +59,21 @@ describe('InMemorySessionStore', () => {
     await store.save(makeState());
     await store.delete('r1', 'stub');
     expect(await store.load('r1', 'stub')).toBeNull();
+  });
+});
+
+describe('RedisSessionStore', () => {
+  it('persists a live session with no TTL and expires a completed one', async () => {
+    const set = vi.fn(async () => 'OK');
+    const client = { set } as unknown as RedisClientType;
+    const store = new RedisSessionStore(client);
+
+    await store.save(makeState({ phase: 'collecting' }));
+    expect(set).toHaveBeenLastCalledWith('session:r1:stub', expect.any(String), undefined);
+
+    await store.save(makeState({ phase: 'complete' }));
+    expect(set).toHaveBeenLastCalledWith('session:r1:stub', expect.any(String), {
+      EX: COMPLETE_SESSION_TTL_SECONDS,
+    });
   });
 });

@@ -13,6 +13,7 @@ import {
   PROTOCOL_VERSION,
   assertVersion,
   isRecord,
+  requireId,
   requireInt,
   requireString,
   ProtocolError,
@@ -86,7 +87,7 @@ function requirePlayers(data: Record<string, unknown>): HandoffPlayer[] {
       throw new ProtocolError('each player must be an object');
     }
     return {
-      player: requireString(entry, 'player'),
+      player: requireId(entry, 'player'),
       nickname: requireString(entry, 'nickname'),
     };
   });
@@ -140,8 +141,8 @@ export function parseStartHandoff(raw: unknown): StartHandoffRequest {
   const data = asEnvelope(raw);
   return {
     v: PROTOCOL_VERSION,
-    room: requireString(data, 'room'),
-    game: requireString(data, 'game'),
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
     players: requirePlayers(data),
     config: data.config,
   };
@@ -152,8 +153,8 @@ export function parseRoundReport(raw: unknown): RoundReport {
   const data = asEnvelope(raw);
   return {
     v: PROTOCOL_VERSION,
-    room: requireString(data, 'room'),
-    game: requireString(data, 'game'),
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
     round: requireInt(data, 'round'),
     roundId: requireString(data, 'roundId'),
     scores: requireScores(data),
@@ -166,8 +167,8 @@ export function parseGameCompleteReport(raw: unknown): GameCompleteReport {
   const data = asEnvelope(raw);
   return {
     v: PROTOCOL_VERSION,
-    room: requireString(data, 'room'),
-    game: requireString(data, 'game'),
+    room: requireId(data, 'room'),
+    game: requireId(data, 'game'),
     gameId: requireString(data, 'gameId'),
     standings: requireStandings(data),
   };
