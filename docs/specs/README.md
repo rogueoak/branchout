@@ -16,6 +16,24 @@ assigned in build order, not written all at once, so the roadmap can shift as fo
 | `0002` | Branch out Confetti theme on canopy (light + dark, AA) | drafted |
 | `0003` | Brand assets - icon, favicon, wordmark lockup | drafted |
 
+## First vertical slice - landing page + Trivia end to end
+
+The first proof that the whole platform works: a landing page that converts, and one game
+(Trivia) played start to finish. Build order runs top to bottom; each is one PR.
+
+| Spec | Title | State |
+|---|---|---|
+| `0004` | Accounts + anonymous play (control-plane) | drafted |
+| `0005` | Landing page (web) | drafted |
+| `0006` | Rooms, modes, orchestration + credit gating (control-plane) | drafted |
+| `0007` | Game engine + round protocol (game-engine, `packages/protocol`) | drafted |
+| `0008` | Trivia game logic (game-engine) | drafted |
+| `0009` | Trivia question bank - 1600 questions (data) | drafted |
+| `0010` | Web game client for Trivia (web) | drafted |
+
+`0005` and `0009` can build early (they lean on the foundations, not the whole spine). `0008`
+needs `0007` + `0009`; `0010` needs `0006` + `0007` + `0008`.
+
 ## Platform spine (control-plane)
 
 - Accounts + anonymous play - account model, sign-up, anonymous sessions.
