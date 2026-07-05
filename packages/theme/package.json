@@ -1,0 +1,38 @@
+{
+  "name": "@branchout/theme",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Branch out Confetti brand - canopy semantic roles repointed at the Confetti ramps, in light and dark.",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    "./brand.css": "./dist/brand.css",
+    "./tokens/primitive.json": "./tokens/primitive.json",
+    "./tokens/semantic.json": "./tokens/semantic.json",
+    "./tokens/semantic.dark.json": "./tokens/semantic.dark.json"
+  },
+  "files": [
+    "dist",
+    "tokens",
+    "brand.config.json"
+  ],
+  "scripts": {
+    "build": "roots-brand brand.config.json",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@rogueoak/roots": "^0.4.0"
+  },
+  "devDependencies": {
+    "@branchout/config": "workspace:*",
+    "@types/node": "^20.17.10",
+    "style-dictionary": "^4.3.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

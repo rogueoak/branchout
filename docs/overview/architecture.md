@@ -59,7 +59,11 @@ nothing platform-specific leaks into those services.
   credit ledger, purchases, room and game history.
 - **Redis** - live, ephemeral state: room membership and presence, online/player status, game
   session state and pub/sub for streaming updates. Anything that must survive a restart lands
-  in Postgres.
+  in Postgres. Auth sessions live here too: an opaque id in an httpOnly cookie keys a
+  server-side session with a sliding TTL, so log out / ban revokes instantly (spec `0004`).
+- **Schema** - the control-plane owns a minimal forward-only migration runner
+  (`schema_migrations` ledger + ordered SQL, applied on boot and via a `migrate` script). Add a
+  migration by appending the next id; never edit a shipped one (spec `0004`).
 
 ## Design system and theme
 

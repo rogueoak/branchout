@@ -1,1 +1,18 @@
 @import 'tailwindcss';
+
+/* Fonts: roots ships the family names only; the fontsource packages provide the faces. */
+@import '@fontsource-variable/figtree';
+@import '@fontsource-variable/geist-mono';
+
+/* Canopy's design tokens + Tailwind v4 preset, then the Branch out Confetti brand LAST so its
+   :root / .dark blocks win by cascade and re-point every semantic role. */
+@import '@rogueoak/roots/tokens.css';
+@import '@rogueoak/roots/tailwind-preset.css';
+@import '@branchout/theme/brand.css';
+
+/* Scan canopy's compiled components so Tailwind emits the utilities their cva recipes reference
+   (the class strings are full literals in the shipped dist). */
+@source '../node_modules/@rogueoak/canopy/dist';
+
+/* Enable the rare explicit `dark:` utility; automatic light/dark still flips via the token layer. */
+@custom-variant dark (&:where(.dark, .dark *));

@@ -18,6 +18,35 @@ Capture durable lessons as they emerge.
 - **Run `tsc` in CI even when the bundler does not type-check.** `tsup`/esbuild strip types
   without checking them, so a service type error passes `build` and merges undetected unless a
   dedicated `typecheck` step runs `tsc --noEmit`.
+- **The `dev` turbo task needs `dependsOn: ["^build"]` too, not just `build`.** A consumer that
+  imports a generated artifact (e.g. `apps/web` importing `@branchout/theme`'s built `brand.css`)
+  fails on a fresh-clone `pnpm dev` if the producing package was never built - CI's `pnpm build`
+  hides it because only `build` declared `^build`. Whatever the build generates, dev must generate
+  first. (Spec `0002`.)
+
+## Theming
+
+- **The AA guard is the arbiter of a brand's ramp steps - author the anchors, then let the build
+  correct them.** A hand-picked "hot pink" (bubblegum.500) or a green.600 success under white text
+  fails WCAG AA; deepen the fill one ramp step (never rename the role) until `buildBrand()` passes.
+  Confetti nudged secondary 500 -> 600, success 600 -> 700, and info 600 -> 700 in light for
+  white-text AA, and dark primary-active 500 -> 400 (violet .500 is too dark under a near-black
+  primary-foreground). (Spec `0002`.)
+- **`buildBrand()` forbids a dark override identical to its light value (except
+  `accent-foreground`), so a role that is visually theme-invariant still needs two distinct steps.**
+  The spec's "accent sunbeam.400 in both themes" and a shared warning-foreground both tripped the
+  copy-paste guard; Confetti split them (dark accent -> a brighter sunbeam.300, dark
+  warning-foreground -> honey.900). When a role reads the same in both themes, pick adjacent steps
+  that both clear AA - and lean the split toward the brand mood (brighter in dark for a "fun"
+  accent) rather than fighting the guard. (Spec `0002`.)
+- **Name functional primitive ramps differently from the semantic roles they feed.** A DTCG token
+  can't be both a group and a leaf, so `color.success` the role and `color.success.600` the
+  primitive collide in Style Dictionary. Confetti's functional ramps are `clover`/`honey`/`cherry`/
+  `lagoon` feeding `success`/`warning`/`danger`/`info`. (Spec `0002`.)
+- **Canopy ships its components without a `use client` directive, so the consumer owns the client
+  boundary.** Canopy's `twigs` (Card) calls `React.createContext` at module scope; imported into an
+  App Router Server Component it prerenders with `createContext is not a function`. Wrap canopy
+  usage in a `'use client'` component. (Spec `0002`.)
 
 ## Testing
 
@@ -43,3 +72,21 @@ Capture durable lessons as they emerge.
   boundary.** Non-empty-string checks are not enough when the value is concatenated into
   `stream:room:game` or `room:game:runId:round`; an embedded separator collides distinct
   sessions or reports. (Feedback `0003`.)
+
+## Auth and security
+
+- **Build the adversarial and degraded partitions with the happy path, not after.** For auth
+  specifically: keep credential checks constant-time (verify against a dummy hash on an unknown
+  user so latency does not enumerate accounts), never let a hash silently truncate input (bcrypt
+  ignores bytes past 72 - pre-hash with SHA-256), and fail fast on un-healable startup state (a
+  failed migration must abort boot, not serve 500s while `/health` reports the DB "ok"). These
+  were all caught in persona review of `0004`, not by the passing happy-path tests. (Feedback
+  `0003`.)
+
+## Module boundaries
+
+- **Place a module by the concern it owns, not the file you were editing.** Service-wide infra
+  (the migration runner) and cross-domain rules (display-name validation) belong in neutral
+  homes (`db/`, `validation/`), not inside the first domain that needed them (`accounts/`) -
+  otherwise sessions and future domains pick up a wrong-direction dependency on accounts.
+  (Feedback `0003`.)
