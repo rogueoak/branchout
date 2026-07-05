@@ -72,17 +72,19 @@ export async function loadQuestionBank(): Promise<TriviaQuestion[]> {
     'trivia',
   );
 
-  const questions: TriviaQuestion[] = [];
-  for (const category of CATEGORIES) {
-    const filename = `${category.toLowerCase()}.json`;
-    const raw = await readFile(path.join(dir, filename), 'utf8');
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      throw new Error(`question-bank: ${filename} must be a JSON array`);
-    }
-    questions.push(...(parsed as TriviaQuestion[]));
-  }
-  return questions;
+  const perCategory = await Promise.all(
+    CATEGORIES.map(async (category) => {
+      const filename = `${category.toLowerCase()}.json`;
+      const raw = await readFile(path.join(dir, filename), 'utf8');
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        throw new Error(`question-bank: ${filename} must be a JSON array`);
+      }
+      // Unchecked cast: validateQuestionBank() enforces the schema at runtime.
+      return parsed as TriviaQuestion[];
+    }),
+  );
+  return perCategory.flat();
 }
 
 // ---------------------------------------------------------------------------
