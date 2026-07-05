@@ -24,9 +24,9 @@ In:
 - `packages/config` - shared `tsconfig`, eslint (flat config, matching canopy), prettier.
 - `packages/protocol` - empty-but-wired shared-types package the services will grow into.
 - `apps/web` - Next.js app (TypeScript), boots to a placeholder home page.
-- `apps/control-plane` - Express + TypeScript service, `/health` endpoint, Postgres + Redis
+- `apps/control-plane` - Fastify + TypeScript service, `/health` endpoint, Postgres + Redis
   clients read from env.
-- `apps/game-engine` - Express + TypeScript service with a WebSocket endpoint, `/health`,
+- `apps/game-engine` - Fastify + TypeScript service with a WebSocket endpoint, `/health`,
   Redis client.
 - `infra/docker-compose.yml` - Postgres, Redis, and the three apps; `.env.example`.
 - CI - one workflow running install, build, lint, test.
@@ -40,14 +40,14 @@ Out:
 
 - Match canopy's toolchain so the two repos feel the same: pnpm workspaces, Turborepo, Tailwind
   v4 in `web`, TypeScript project references, flat eslint config, prettier.
-- **Both services use Express** for consistency and to match the stated preference for plain,
-  classic Node services. Decision to confirm in review: `control-plane` could instead use
-  Fastify for its schema/validation story; this spec picks Express for one framework across both
-  services. Flag it if you disagree.
-- Realtime on `game-engine`: Express does not speak WebSocket natively. Start with the `ws`
-  library behind a thin adapter in `packages/protocol` so the transport can change later. Note
-  in review: Socket.IO would buy rooms, reconnection, and presence out of the box - call it if
-  you want that instead of hand-rolling on `ws`.
+- **Both services use Fastify** for one framework across both, with its built-in schema
+  validation and `inject()` testing. (This reverses the spec's original Express pick after
+  developer review; Fastify won for its validation story and first-class async handlers.)
+- Realtime on `game-engine`: Fastify does not handle the HTTP `upgrade` event itself. Mount the
+  `ws` library behind a thin adapter in `packages/protocol` on Fastify's underlying HTTP server
+  (`app.server`) so the transport stays swappable without pulling a Fastify-specific plugin.
+  Note in review: `@fastify/websocket` or Socket.IO would buy rooms, reconnection, and presence
+  out of the box - call it if you want that instead of hand-rolling on `ws`.
 - Postgres and Redis clients read connection strings from env; no schema yet, just a startup
   connectivity check so `docker compose up` proves the wiring.
 - `docker-compose.yml` is the single source of local truth and the same file used to deploy on a

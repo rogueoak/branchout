@@ -1,0 +1,32 @@
+{
+  "name": "@branchout/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Branch out web - marketing site and browser game client.",
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev -p 3000",
+    "start": "next start -p 3000",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "next": "^15.1.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@branchout/config": "workspace:*",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^20.17.10",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
