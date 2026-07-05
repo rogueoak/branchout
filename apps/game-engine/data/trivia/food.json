@@ -1,0 +1,1402 @@
+[
+  {
+    "id": "food-001",
+    "category": "Food",
+    "prompt": "Which Italian dish consists of flat bread topped with tomato sauce and cheese?",
+    "answers": ["pizza"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-002",
+    "category": "Food",
+    "prompt": "What pasta shape's name means 'little worms' in Italian?",
+    "answers": ["vermicelli"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-003",
+    "category": "Food",
+    "prompt": "Which spice, derived from the Crocus sativus flower, is the world's most expensive by weight?",
+    "answers": ["saffron"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-004",
+    "category": "Food",
+    "prompt": "What is the main ingredient in traditional guacamole?",
+    "answers": ["avocado", "avocados"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-005",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish sushi?",
+    "answers": ["japan"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-006",
+    "category": "Food",
+    "prompt": "What French cooking technique involves cooking food slowly in its own fat?",
+    "answers": ["confit"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-007",
+    "category": "Food",
+    "prompt": "Which grain is used to make traditional Japanese sake?",
+    "answers": ["rice"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-008",
+    "category": "Food",
+    "prompt": "What is the name of the Indian bread cooked in a tandoor oven?",
+    "answers": ["naan", "nan"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-009",
+    "category": "Food",
+    "prompt": "Which country invented the croissant?",
+    "answers": ["austria"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-010",
+    "category": "Food",
+    "prompt": "What is the primary protein source in a traditional Nicoise salad?",
+    "answers": ["tuna"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-011",
+    "category": "Food",
+    "prompt": "Which Mexican spirit is made from the blue agave plant?",
+    "answers": ["tequila"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-012",
+    "category": "Food",
+    "prompt": "What is the Japanese term for raw fish served over seasoned rice?",
+    "answers": ["nigiri", "nigiri sushi"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-013",
+    "category": "Food",
+    "prompt": "Which country is the largest producer of coffee in the world?",
+    "answers": ["brazil"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-014",
+    "category": "Food",
+    "prompt": "What cooking technique involves briefly submerging food in boiling water then cooling it in ice water?",
+    "answers": ["blanching"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-015",
+    "category": "Food",
+    "prompt": "Which French sauce is made from butter, egg yolks, and lemon juice?",
+    "answers": ["hollandaise", "hollandaise sauce"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-016",
+    "category": "Food",
+    "prompt": "What is the name of the fermented Korean side dish made from salted cabbage?",
+    "answers": ["kimchi"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-017",
+    "category": "Food",
+    "prompt": "Which nut is used to make marzipan?",
+    "answers": ["almond", "almonds"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-018",
+    "category": "Food",
+    "prompt": "What is the name of the Spanish rice dish traditionally cooked in a wide shallow pan?",
+    "answers": ["paella"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-019",
+    "category": "Food",
+    "prompt": "Which Scandinavian technique of preserving salmon uses salt, sugar, and dill?",
+    "answers": ["gravlax", "gravlaks"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-020",
+    "category": "Food",
+    "prompt": "What is the base spirit in a traditional Mojito cocktail?",
+    "answers": ["rum", "white rum"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-021",
+    "category": "Food",
+    "prompt": "Which country is the birthplace of the dish moussaka?",
+    "answers": ["greece"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-022",
+    "category": "Food",
+    "prompt": "What type of pastry is used to make a classic beef Wellington?",
+    "answers": ["puff pastry"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-023",
+    "category": "Food",
+    "prompt": "Which legume is the main ingredient in hummus?",
+    "answers": ["chickpea", "chickpeas", "garbanzo bean", "garbanzo beans"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-024",
+    "category": "Food",
+    "prompt": "What is the Italian word for a coffee made with espresso and steamed milk foam?",
+    "answers": ["cappuccino"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-025",
+    "category": "Food",
+    "prompt": "Which vegetable gives borscht its characteristic red color?",
+    "answers": ["beet", "beets", "beetroot"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-026",
+    "category": "Food",
+    "prompt": "What is the traditional Japanese fermented soybean paste used in soups?",
+    "answers": ["miso"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-027",
+    "category": "Food",
+    "prompt": "Which French cooking method involves cooking food in a vacuum-sealed bag in temperature-controlled water?",
+    "answers": ["sous vide"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-028",
+    "category": "Food",
+    "prompt": "What is the name of the Ethiopian flatbread used as both utensil and plate?",
+    "answers": ["injera"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-029",
+    "category": "Food",
+    "prompt": "Which country is the largest producer of olive oil in the world?",
+    "answers": ["spain"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-030",
+    "category": "Food",
+    "prompt": "What is the name of the Chinese technique of quickly stir-frying food in a very hot wok?",
+    "answers": ["wok hei", "stir frying", "stir-frying"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-031",
+    "category": "Food",
+    "prompt": "Which herb is the primary flavoring in pesto sauce?",
+    "answers": ["basil"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-032",
+    "category": "Food",
+    "prompt": "What is the name of the Lebanese flatbread used to scoop dips?",
+    "answers": ["pita", "pita bread", "pitta"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-033",
+    "category": "Food",
+    "prompt": "Which cheese is traditionally used in a Greek salad?",
+    "answers": ["feta"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-034",
+    "category": "Food",
+    "prompt": "What is the French term for a mixture of equal parts butter and flour used as a sauce thickener?",
+    "answers": ["roux"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-035",
+    "category": "Food",
+    "prompt": "Which country is credited with inventing chocolate?",
+    "answers": ["mexico"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-036",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese rice wine?",
+    "answers": ["sake"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-037",
+    "category": "Food",
+    "prompt": "Which spice blend gives Indian curry its characteristic yellow color?",
+    "answers": ["turmeric"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-038",
+    "category": "Food",
+    "prompt": "What is the name of the Italian cured meat made from pork belly?",
+    "answers": ["pancetta"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-039",
+    "category": "Food",
+    "prompt": "Which cooking method involves cooking food by surrounding it with dry hot air in an enclosed space?",
+    "answers": ["baking", "roasting"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-040",
+    "category": "Food",
+    "prompt": "What is the primary grain used to make traditional Scottish haggis?",
+    "answers": ["oats", "oatmeal"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-041",
+    "category": "Food",
+    "prompt": "Which cocktail is made with vodka, coffee liqueur, and cream?",
+    "answers": ["white russian"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-042",
+    "category": "Food",
+    "prompt": "What is the Japanese term for seasoned rice vinegar-flavored rice used in sushi?",
+    "answers": ["shari", "sushi rice"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-043",
+    "category": "Food",
+    "prompt": "Which country is the origin of the Wiener Schnitzel?",
+    "answers": ["austria"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-044",
+    "category": "Food",
+    "prompt": "What is the name of the French onion-based soup traditionally served with croutons and melted cheese?",
+    "answers": ["french onion soup", "onion soup"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-045",
+    "category": "Food",
+    "prompt": "Which type of fish is traditionally used in a classic Caesar salad?",
+    "answers": ["anchovy", "anchovies"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-046",
+    "category": "Food",
+    "prompt": "What is the name of the Middle Eastern sesame paste used in hummus?",
+    "answers": ["tahini", "tahina"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-047",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish pad thai?",
+    "answers": ["thailand"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-048",
+    "category": "Food",
+    "prompt": "What is the Cajun cooking technique of cooking meat in very high heat until it is blackened on the outside?",
+    "answers": ["blackening", "blackened"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-049",
+    "category": "Food",
+    "prompt": "Which grain is the main ingredient in polenta?",
+    "answers": ["cornmeal", "corn", "maize"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-050",
+    "category": "Food",
+    "prompt": "What is the name of the Vietnamese soup consisting of broth, rice noodles, and meat?",
+    "answers": ["pho"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-051",
+    "category": "Food",
+    "prompt": "Which fruit is used to make traditional balsamic vinegar from Modena, Italy?",
+    "answers": ["grape", "grapes"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-052",
+    "category": "Food",
+    "prompt": "What is the name of the Mexican sauce made from dried chilies, chocolate, and spices?",
+    "answers": ["mole"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-053",
+    "category": "Food",
+    "prompt": "Which type of milk is used to make traditional mozzarella di bufala?",
+    "answers": ["buffalo milk", "water buffalo milk"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-054",
+    "category": "Food",
+    "prompt": "What is the name of the Jewish unleavened flatbread eaten during Passover?",
+    "answers": ["matzo", "matzah", "matzoh"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-055",
+    "category": "Food",
+    "prompt": "Which fermented drink is made from kefir grains and milk?",
+    "answers": ["kefir"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-056",
+    "category": "Food",
+    "prompt": "What is the name of the Peruvian dish of raw fish cured in citrus juice?",
+    "answers": ["ceviche", "seviche"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-057",
+    "category": "Food",
+    "prompt": "Which country is the origin of croissants as they are known today?",
+    "answers": ["france"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-058",
+    "category": "Food",
+    "prompt": "What is the name of the Turkish frozen dessert made with salep and mastic?",
+    "answers": ["dondurma", "maras ice cream"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-059",
+    "category": "Food",
+    "prompt": "Which cooking technique involves cooking food in a small amount of fat over relatively high heat?",
+    "answers": ["sauteing", "saute", "sautéing"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-060",
+    "category": "Food",
+    "prompt": "What is the Italian term for pasta stuffed with ricotta and spinach, folded into triangles?",
+    "answers": ["pansotti", "tortellini", "ravioli"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-061",
+    "category": "Food",
+    "prompt": "Which country produces Manchego cheese?",
+    "answers": ["spain"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-062",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese fermented soybean dish with a strong smell and sticky texture?",
+    "answers": ["natto"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-063",
+    "category": "Food",
+    "prompt": "Which spice is derived from the dried bark of a tree and commonly used in baking?",
+    "answers": ["cinnamon"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-064",
+    "category": "Food",
+    "prompt": "What is the name of the North African stew typically cooked in a cone-shaped clay pot?",
+    "answers": ["tagine", "tajine"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-065",
+    "category": "Food",
+    "prompt": "Which cocktail consists of gin, vermouth, and an olive or lemon twist?",
+    "answers": ["martini"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-066",
+    "category": "Food",
+    "prompt": "What is the name of the Indian clarified butter used in cooking?",
+    "answers": ["ghee"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-067",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish baklava?",
+    "answers": ["turkey"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-068",
+    "category": "Food",
+    "prompt": "What is the name of the cheese that is traditionally used in a traditional English ploughman's lunch?",
+    "answers": ["cheddar"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-069",
+    "category": "Food",
+    "prompt": "Which fruit is the main ingredient in a traditional British summer pudding?",
+    "answers": ["berries", "mixed berries", "summer berries"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-070",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese pancake made with cabbage and various toppings?",
+    "answers": ["okonomiyaki"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-071",
+    "category": "Food",
+    "prompt": "Which country is the birthplace of tiramisu?",
+    "answers": ["italy"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-072",
+    "category": "Food",
+    "prompt": "What is the name of the French method of cooking vegetables in butter until soft but not browned?",
+    "answers": ["sweating"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-073",
+    "category": "Food",
+    "prompt": "Which seed is the source of tahini?",
+    "answers": ["sesame", "sesame seeds"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-074",
+    "category": "Food",
+    "prompt": "What is the name of the German fermented cabbage dish?",
+    "answers": ["sauerkraut"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-075",
+    "category": "Food",
+    "prompt": "Which country is the origin of the cocktail pisco sour?",
+    "answers": ["peru"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-076",
+    "category": "Food",
+    "prompt": "What is the name of the Chinese dumpling typically eaten during Lunar New Year?",
+    "answers": ["jiaozi", "dumplings", "potstickers"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-077",
+    "category": "Food",
+    "prompt": "Which type of rice is used in making risotto?",
+    "answers": ["arborio", "carnaroli", "vialone nano"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-078",
+    "category": "Food",
+    "prompt": "What is the traditional cooking fat used in authentic French croissants?",
+    "answers": ["butter"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-079",
+    "category": "Food",
+    "prompt": "Which country is the largest producer of tea in the world?",
+    "answers": ["china"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-080",
+    "category": "Food",
+    "prompt": "What is the name of the Russian fermented rye bread?",
+    "answers": ["borodinsky", "black bread", "kvass bread"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-081",
+    "category": "Food",
+    "prompt": "Which vegetable is the main ingredient in a traditional ratatouille?",
+    "answers": ["eggplant", "aubergine", "zucchini"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-082",
+    "category": "Food",
+    "prompt": "What is the name of the cooking technique where meat is browned then cooked slowly in liquid?",
+    "answers": ["braising"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-083",
+    "category": "Food",
+    "prompt": "Which country is the origin of gyros?",
+    "answers": ["greece"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-084",
+    "category": "Food",
+    "prompt": "What is the name of the Indian flatbread made in a tandoor from whole wheat flour?",
+    "answers": ["roti", "chapati"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-085",
+    "category": "Food",
+    "prompt": "Which country produces Gouda cheese?",
+    "answers": ["netherlands", "holland"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-086",
+    "category": "Food",
+    "prompt": "What is the name of the thick Japanese noodle made from wheat flour?",
+    "answers": ["udon"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-087",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish shakshuka?",
+    "answers": ["tunisia", "north africa"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-088",
+    "category": "Food",
+    "prompt": "What is the name of the Mexican corn-based dough used for tamales?",
+    "answers": ["masa"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-089",
+    "category": "Food",
+    "prompt": "Which type of pasta is shaped like hollow tubes?",
+    "answers": ["penne", "rigatoni", "ziti"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-090",
+    "category": "Food",
+    "prompt": "What is the Japanese word for the crispy coating of deep-fried seafood and vegetables?",
+    "answers": ["tempura"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-091",
+    "category": "Food",
+    "prompt": "Which country is credited with inventing champagne?",
+    "answers": ["france"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-092",
+    "category": "Food",
+    "prompt": "What is the name of the Hungarian meat stew seasoned with paprika?",
+    "answers": ["goulash"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-093",
+    "category": "Food",
+    "prompt": "Which fruit is used to make traditional Moroccan preserved lemons?",
+    "answers": ["lemon", "lemons"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-094",
+    "category": "Food",
+    "prompt": "What is the name of the thick coconut-based sauce used in Malaysian and Indonesian cuisines?",
+    "answers": ["rendang sauce", "santan"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-095",
+    "category": "Food",
+    "prompt": "Which grain is used to make the fermented Ethiopian drink tej?",
+    "answers": ["honey", "t'ej"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-096",
+    "category": "Food",
+    "prompt": "What is the name of the French technique of encasing food in a pastry shell?",
+    "answers": ["en croute", "in crust"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-097",
+    "category": "Food",
+    "prompt": "Which country is the origin of peri-peri sauce?",
+    "answers": ["mozambique", "south africa", "portugal"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-098",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese thin buckwheat noodles?",
+    "answers": ["soba"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-099",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish feijoada?",
+    "answers": ["brazil"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-100",
+    "category": "Food",
+    "prompt": "What is the name of the Italian dessert made from egg yolks, sugar, and Marsala wine?",
+    "answers": ["zabaione", "zabaglione", "sabayon"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-101",
+    "category": "Food",
+    "prompt": "Which country is the origin of the smorgasbord?",
+    "answers": ["sweden"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-102",
+    "category": "Food",
+    "prompt": "What is the name of the thin crepe-like French pancake traditionally served with sweet or savory fillings?",
+    "answers": ["crepe", "crêpe"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-103",
+    "category": "Food",
+    "prompt": "Which country produces Emmental cheese?",
+    "answers": ["switzerland"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-104",
+    "category": "Food",
+    "prompt": "What is the name of the Indonesian fermented soybean cake?",
+    "answers": ["tempeh"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-105",
+    "category": "Food",
+    "prompt": "Which cocktail is made with rum, lime juice, and mint?",
+    "answers": ["mojito"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-106",
+    "category": "Food",
+    "prompt": "What is the name of the Scottish smoked salmon preparation?",
+    "answers": ["smoked salmon", "lox"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-107",
+    "category": "Food",
+    "prompt": "Which root vegetable is the main ingredient in traditional Polish barszcz?",
+    "answers": ["beet", "beetroot", "beets"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-108",
+    "category": "Food",
+    "prompt": "What is the name of the cooking technique where food is cooked in a sealed container to preserve juices?",
+    "answers": ["steaming"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-109",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish jerk chicken?",
+    "answers": ["jamaica"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-110",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese sweet rice wine used in cooking?",
+    "answers": ["mirin"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-111",
+    "category": "Food",
+    "prompt": "Which spice is made from the dried stigmas of a flower and has a distinctive red-orange color?",
+    "answers": ["saffron"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-112",
+    "category": "Food",
+    "prompt": "What is the name of the fermented fish sauce widely used in Southeast Asian cooking?",
+    "answers": ["fish sauce", "nam pla", "nuoc mam"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-113",
+    "category": "Food",
+    "prompt": "Which country is the origin of spanakopita?",
+    "answers": ["greece"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-114",
+    "category": "Food",
+    "prompt": "What is the name of the technique where a cook ignites alcohol added to a dish?",
+    "answers": ["flambeing", "flambe"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-115",
+    "category": "Food",
+    "prompt": "Which country is the origin of stroganoff?",
+    "answers": ["russia"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-116",
+    "category": "Food",
+    "prompt": "What is the name of the thin, straw-like pasta used in Italian soups?",
+    "answers": ["capellini", "angel hair"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-117",
+    "category": "Food",
+    "prompt": "Which country is famous for producing the cheese roquefort?",
+    "answers": ["france"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-118",
+    "category": "Food",
+    "prompt": "What is the name of the Chinese sauce made from fermented black beans?",
+    "answers": ["black bean sauce", "douchi sauce"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-119",
+    "category": "Food",
+    "prompt": "Which country is the origin of sauerbraten?",
+    "answers": ["germany"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-120",
+    "category": "Food",
+    "prompt": "What is the name of the Greek spirit distilled from grapes with an anise flavor?",
+    "answers": ["ouzo"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-121",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish rendang?",
+    "answers": ["indonesia"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-122",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese grilled chicken skewers?",
+    "answers": ["yakitori"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-123",
+    "category": "Food",
+    "prompt": "Which cooking technique involves submerging food in hot oil?",
+    "answers": ["deep frying", "deep-frying"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-124",
+    "category": "Food",
+    "prompt": "What is the name of the traditional French fish stew from Marseille?",
+    "answers": ["bouillabaisse"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-125",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish bobotie?",
+    "answers": ["south africa"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-126",
+    "category": "Food",
+    "prompt": "What is the name of the French apple brandy from the Normandy region?",
+    "answers": ["calvados"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-127",
+    "category": "Food",
+    "prompt": "Which country is the origin of pierogi?",
+    "answers": ["poland"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-128",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese soup stock made from kombu seaweed and bonito flakes?",
+    "answers": ["dashi"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-129",
+    "category": "Food",
+    "prompt": "Which country produces Parmigiano-Reggiano cheese?",
+    "answers": ["italy"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-130",
+    "category": "Food",
+    "prompt": "What is the name of the Lebanese dish made of minced meat on skewers?",
+    "answers": ["kofta", "kafta"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-131",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish chicken tikka masala?",
+    "answers": ["india", "united kingdom"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-132",
+    "category": "Food",
+    "prompt": "What is the name of the Italian slow-cooked meat sauce used in lasagna?",
+    "answers": ["bolognese", "ragu", "ragu bolognese"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-133",
+    "category": "Food",
+    "prompt": "Which country is the origin of Welsh rarebit?",
+    "answers": ["wales", "united kingdom"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-134",
+    "category": "Food",
+    "prompt": "What is the name of the Spanish cold tomato soup?",
+    "answers": ["gazpacho"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-135",
+    "category": "Food",
+    "prompt": "Which country produces Gruyere cheese?",
+    "answers": ["switzerland"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-136",
+    "category": "Food",
+    "prompt": "What is the name of the Moroccan spice blend used in many dishes?",
+    "answers": ["ras el hanout"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-137",
+    "category": "Food",
+    "prompt": "Which country is the origin of Wiener Würstchen sausages?",
+    "answers": ["austria"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-138",
+    "category": "Food",
+    "prompt": "What is the name of the Brazilian spirit made from fermented sugarcane juice?",
+    "answers": ["cachaca", "cachaça"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-139",
+    "category": "Food",
+    "prompt": "Which cooking technique involves cooking food on a rack over boiling water?",
+    "answers": ["steaming"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-140",
+    "category": "Food",
+    "prompt": "What is the name of the Indian spice blend used in chai tea?",
+    "answers": ["masala", "chai masala"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-141",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish jollof rice?",
+    "answers": ["west africa", "senegal", "ghana", "nigeria"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-142",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese fermented rice product used to make sake?",
+    "answers": ["koji", "aspergillus oryzae"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-143",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish köfte?",
+    "answers": ["turkey"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-144",
+    "category": "Food",
+    "prompt": "What is the name of the sweet rice porridge eaten throughout Asia for breakfast?",
+    "answers": ["congee", "jook", "porridge"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-145",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish poutine?",
+    "answers": ["canada"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-146",
+    "category": "Food",
+    "prompt": "What is the name of the Italian appetizer of thin sliced raw beef or fish?",
+    "answers": ["carpaccio"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-147",
+    "category": "Food",
+    "prompt": "Which country is the origin of the churro?",
+    "answers": ["spain"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-148",
+    "category": "Food",
+    "prompt": "What is the name of the Jamaican seasoning paste made from scotch bonnet peppers?",
+    "answers": ["jerk seasoning", "jerk paste"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-149",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish injera with wat?",
+    "answers": ["ethiopia"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-150",
+    "category": "Food",
+    "prompt": "What is the name of the dried mushroom used extensively in Italian cooking?",
+    "answers": ["porcini"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-151",
+    "category": "Food",
+    "prompt": "Which country is the origin of the drink kombucha?",
+    "answers": ["china"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-152",
+    "category": "Food",
+    "prompt": "What is the name of the French technique of cooking food in paper or foil parcels?",
+    "answers": ["en papillote"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-153",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish peking duck?",
+    "answers": ["china"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-154",
+    "category": "Food",
+    "prompt": "What is the name of the Spanish dried and cured pork sausage?",
+    "answers": ["chorizo"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-155",
+    "category": "Food",
+    "prompt": "Which country is the origin of the food tabouleh?",
+    "answers": ["lebanon", "syria"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-156",
+    "category": "Food",
+    "prompt": "What is the name of the Italian cured pork leg from Parma?",
+    "answers": ["prosciutto", "prosciutto di parma"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-157",
+    "category": "Food",
+    "prompt": "Which country is credited with inventing the cronut?",
+    "answers": ["united states", "usa", "america"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-158",
+    "category": "Food",
+    "prompt": "What is the name of the classic French sauce made with white wine, shallots, and butter?",
+    "answers": ["beurre blanc"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-159",
+    "category": "Food",
+    "prompt": "Which country is the origin of the cheesecake?",
+    "answers": ["greece"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-160",
+    "category": "Food",
+    "prompt": "What is the name of the cooking technique where food is cooked at exactly the temperature you want it to be served at?",
+    "answers": ["sous vide"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-161",
+    "category": "Food",
+    "prompt": "Which country is the origin of the drink horchata?",
+    "answers": ["spain"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-162",
+    "category": "Food",
+    "prompt": "What is the name of the Middle Eastern flatbread cooked on a convex iron griddle?",
+    "answers": ["markook", "saj bread"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-163",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish ramen?",
+    "answers": ["japan", "china"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-164",
+    "category": "Food",
+    "prompt": "What is the name of the Persian rice dish with a crispy bottom?",
+    "answers": ["tahdig"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-165",
+    "category": "Food",
+    "prompt": "Which country is the origin of the aperitif campari?",
+    "answers": ["italy"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-166",
+    "category": "Food",
+    "prompt": "What is the name of the Greek dish made of layers of eggplant and ground meat?",
+    "answers": ["moussaka"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-167",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish pierogi ruskie?",
+    "answers": ["poland"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-168",
+    "category": "Food",
+    "prompt": "What is the name of the French layered potato dish cooked in cream?",
+    "answers": ["gratin dauphinois", "potato gratin"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-169",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish chimichurri sauce?",
+    "answers": ["argentina"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-170",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese rice triangles wrapped in seaweed?",
+    "answers": ["onigiri", "rice ball"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-171",
+    "category": "Food",
+    "prompt": "Which country is the origin of the bratwurst sausage?",
+    "answers": ["germany"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-172",
+    "category": "Food",
+    "prompt": "What is the name of the Indian sweet made from milk solids fried in ghee?",
+    "answers": ["gulab jamun"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-173",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish empanada?",
+    "answers": ["spain"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-174",
+    "category": "Food",
+    "prompt": "What is the name of the Japanese alcoholic drink made from distilled sweet potato?",
+    "answers": ["shochu", "shōchū"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-175",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish pelmeni?",
+    "answers": ["russia"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-176",
+    "category": "Food",
+    "prompt": "What is the name of the thickening agent made from cornstarch used in Chinese cooking?",
+    "answers": ["cornstarch slurry", "cornflour"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-177",
+    "category": "Food",
+    "prompt": "Which country is the origin of the rum punch cocktail?",
+    "answers": ["barbados", "caribbean"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-178",
+    "category": "Food",
+    "prompt": "What is the name of the Turkish sweet made from thin layers of pastry, nuts, and honey?",
+    "answers": ["baklava"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-179",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish knish?",
+    "answers": ["russia", "ukraine", "eastern europe"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-180",
+    "category": "Food",
+    "prompt": "What is the name of the Mexican sauce made from tomatillos and chiles?",
+    "answers": ["salsa verde"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-181",
+    "category": "Food",
+    "prompt": "Which country is the origin of miso soup?",
+    "answers": ["japan"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-182",
+    "category": "Food",
+    "prompt": "What is the name of the French pastry of choux cream puffs filled with cream?",
+    "answers": ["profiterole", "cream puff"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-183",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish laksa?",
+    "answers": ["malaysia", "singapore"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-184",
+    "category": "Food",
+    "prompt": "What is the name of the Lebanese spirit made from grapes and anise?",
+    "answers": ["arak"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-185",
+    "category": "Food",
+    "prompt": "Which country is the origin of the souvlaki?",
+    "answers": ["greece"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-186",
+    "category": "Food",
+    "prompt": "What is the name of the Korean barbecued beef dish cooked at the table?",
+    "answers": ["bulgogi"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-187",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish bibimbap?",
+    "answers": ["korea", "south korea"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-188",
+    "category": "Food",
+    "prompt": "What is the name of the aged Italian cheese with a hard, granular texture grated over pasta?",
+    "answers": ["parmesan", "parmigiano-reggiano", "parmigiano reggiano"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-189",
+    "category": "Food",
+    "prompt": "Which country is the origin of the cocktail caipirinha?",
+    "answers": ["brazil"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-190",
+    "category": "Food",
+    "prompt": "What is the name of the Italian risotto dish made with saffron?",
+    "answers": ["risotto alla milanese"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-191",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dessert pavlova?",
+    "answers": ["australia", "new zealand"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-192",
+    "category": "Food",
+    "prompt": "What is the name of the Georgian bread stuffed with cheese and egg?",
+    "answers": ["khachapuri"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-193",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish pebre?",
+    "answers": ["chile"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-194",
+    "category": "Food",
+    "prompt": "What is the name of the flat, disc-shaped pasta often served with butter and sage?",
+    "answers": ["gnocchi", "pasta"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-195",
+    "category": "Food",
+    "prompt": "Which cooking technique involves lowering a whole animal or large cut of meat into an underground fire pit?",
+    "answers": ["barbacoa"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-196",
+    "category": "Food",
+    "prompt": "What is the name of the Caribbean fermented hot sauce made from scotch bonnet peppers?",
+    "answers": ["pepper sauce", "scotch bonnet sauce"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "food-197",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dulce de leche?",
+    "answers": ["argentina"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-198",
+    "category": "Food",
+    "prompt": "What is the name of the Polish smoked sausage traditionally served at Easter?",
+    "answers": ["kielbasa"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "food-199",
+    "category": "Food",
+    "prompt": "Which country is the origin of the dish haggis?",
+    "answers": ["scotland"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "food-200",
+    "category": "Food",
+    "prompt": "What is the name of the Indian spice blend made from coriander, cumin, chili, and turmeric used as a base for many dishes?",
+    "answers": ["curry powder"],
+    "difficulty": "easy"
+  }
+]

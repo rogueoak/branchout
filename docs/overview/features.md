@@ -45,6 +45,9 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Round protocol - `packages/protocol` versioned envelopes for both channels (player <->
       engine WebSocket, engine <-> control-plane REST) plus idempotent round/complete reporting
       (spec `0007`).
+- [x] Trivia question bank - 1600 validated questions across 8 categories (Nature, Food, Animals,
+      Science, People, Places, Things, History), 200 per category, with loader and validator module
+      enforcing schema, difficulty-tier balance, and uniqueness constraints (spec `0009`).
 - [ ] First reference game - proves the full loop end to end (Trivia, spec `0008`; a stub game
       drives the lifecycle in engine tests today).
 

@@ -1,0 +1,1416 @@
+[
+  {
+    "id": "science-001",
+    "category": "Science",
+    "prompt": "What force attracts all objects with mass toward each other?",
+    "answers": ["gravity", "gravitational force", "gravitation"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-002",
+    "category": "Science",
+    "prompt": "What is the SI unit of force?",
+    "answers": ["newton", "newtons"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-003",
+    "category": "Science",
+    "prompt": "What is the boiling point of water at standard atmospheric pressure in degrees Celsius?",
+    "answers": ["100", "100 degrees celsius", "100 degrees", "100c"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-004",
+    "category": "Science",
+    "prompt": "What type of energy does a moving object possess?",
+    "answers": ["kinetic energy", "kinetic"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-005",
+    "category": "Science",
+    "prompt": "What is the freezing point of water in degrees Celsius at standard pressure?",
+    "answers": ["0", "zero", "0 degrees celsius", "zero degrees celsius"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-006",
+    "category": "Science",
+    "prompt": "What is the SI unit of electric current?",
+    "answers": ["ampere", "amp", "amperes", "amps"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-007",
+    "category": "Science",
+    "prompt": "What color of visible light has the longest wavelength?",
+    "answers": ["red"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-008",
+    "category": "Science",
+    "prompt": "What is the SI unit of electrical resistance?",
+    "answers": ["ohm", "ohms"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-009",
+    "category": "Science",
+    "prompt": "What type of mirror curves outward and gives a wider field of view, as used in car rear-view mirrors?",
+    "answers": ["convex mirror", "convex"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-010",
+    "category": "Science",
+    "prompt": "What is the name for the phenomenon where a wave's observed frequency shifts because the source and observer are moving relative to each other?",
+    "answers": ["doppler effect", "the doppler effect", "doppler"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-011",
+    "category": "Science",
+    "prompt": "What is the SI unit of power?",
+    "answers": ["watt", "watts"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-012",
+    "category": "Science",
+    "prompt": "What is the term for the bending of light as it passes from one medium into another?",
+    "answers": ["refraction"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-013",
+    "category": "Science",
+    "prompt": "Which scientist formulated the three laws of motion and the law of universal gravitation?",
+    "answers": ["isaac newton", "newton"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-014",
+    "category": "Science",
+    "prompt": "What is the SI unit of frequency?",
+    "answers": ["hertz", "hz"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-015",
+    "category": "Science",
+    "prompt": "What does the acronym LASER stand for?",
+    "answers": ["light amplification by stimulated emission of radiation"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-016",
+    "category": "Science",
+    "prompt": "What type of electric charge do electrons carry?",
+    "answers": ["negative", "negative charge"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-017",
+    "category": "Science",
+    "prompt": "What law states that the pressure of a gas at constant temperature is inversely proportional to its volume?",
+    "answers": ["boyle's law", "boyles law"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-018",
+    "category": "Science",
+    "prompt": "What term describes the product of force and the time interval over which it acts, equal to the change in momentum?",
+    "answers": ["impulse"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-019",
+    "category": "Science",
+    "prompt": "What principle states that the position and momentum of a particle cannot both be precisely known at the same time?",
+    "answers": [
+      "heisenberg uncertainty principle",
+      "uncertainty principle",
+      "heisenberg principle"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-020",
+    "category": "Science",
+    "prompt": "What is the temperature of absolute zero in degrees Celsius?",
+    "answers": ["-273.15", "-273", "minus 273", "negative 273"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-021",
+    "category": "Science",
+    "prompt": "What effect describes the emission of electrons from a metal surface when it is struck by light of sufficient frequency?",
+    "answers": ["photoelectric effect"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-022",
+    "category": "Science",
+    "prompt": "What force holds protons and neutrons together inside an atomic nucleus?",
+    "answers": ["strong nuclear force", "strong force", "strong interaction"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-023",
+    "category": "Science",
+    "prompt": "What particle mediates the electromagnetic force between charged particles?",
+    "answers": ["photon", "photons"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-024",
+    "category": "Science",
+    "prompt": "What is the SI unit of electric charge?",
+    "answers": ["coulomb", "coulombs"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-025",
+    "category": "Science",
+    "prompt": "What quantum number describes the orientation of an atomic orbital in space?",
+    "answers": ["magnetic quantum number", "magnetic number"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-026",
+    "category": "Science",
+    "prompt": "What experiment demonstrated the wave nature of electrons by firing them through two narrow slits?",
+    "answers": [
+      "double slit experiment",
+      "double-slit experiment",
+      "young's double slit experiment",
+      "two-slit experiment"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-027",
+    "category": "Science",
+    "prompt": "Who developed the wave equation that describes the quantum mechanical behavior of particles?",
+    "answers": ["erwin schrodinger", "schrodinger", "erwin schroedinger"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-028",
+    "category": "Science",
+    "prompt": "What principle states that no two identical fermions can occupy the same quantum state simultaneously?",
+    "answers": ["pauli exclusion principle", "exclusion principle", "pauli principle"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-029",
+    "category": "Science",
+    "prompt": "What is the chemical symbol for gold?",
+    "answers": ["au"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-030",
+    "category": "Science",
+    "prompt": "What is the chemical formula for water?",
+    "answers": ["h2o"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-031",
+    "category": "Science",
+    "prompt": "What element has the atomic number 1?",
+    "answers": ["hydrogen"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-032",
+    "category": "Science",
+    "prompt": "What is the chemical symbol for sodium?",
+    "answers": ["na"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-033",
+    "category": "Science",
+    "prompt": "What is the chemical symbol for iron?",
+    "answers": ["fe"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-034",
+    "category": "Science",
+    "prompt": "What is the pH of pure water at 25 degrees Celsius?",
+    "answers": ["7", "seven"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-035",
+    "category": "Science",
+    "prompt": "What is the most abundant gas in Earth's atmosphere?",
+    "answers": ["nitrogen"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-036",
+    "category": "Science",
+    "prompt": "What is the chemical symbol for silver?",
+    "answers": ["ag"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-037",
+    "category": "Science",
+    "prompt": "What is the chemical symbol for potassium?",
+    "answers": ["k"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-038",
+    "category": "Science",
+    "prompt": "What type of chemical bond involves the transfer of electrons from one atom to another?",
+    "answers": ["ionic bond", "ionic"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-039",
+    "category": "Science",
+    "prompt": "What is the name of the chart that organizes all known chemical elements by atomic number and shared properties?",
+    "answers": ["periodic table", "periodic table of elements", "periodic table of the elements"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-040",
+    "category": "Science",
+    "prompt": "What is the term for a substance that increases the rate of a chemical reaction without being consumed?",
+    "answers": ["catalyst"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-041",
+    "category": "Science",
+    "prompt": "What is the name for the attraction between a hydrogen atom bonded to a highly electronegative atom and another electronegative atom?",
+    "answers": ["hydrogen bond", "hydrogen bonding"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-042",
+    "category": "Science",
+    "prompt": "What law states that equal volumes of ideal gases at the same temperature and pressure contain equal numbers of molecules?",
+    "answers": ["avogadro's law", "avogadros law", "avogadro law"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-043",
+    "category": "Science",
+    "prompt": "What SI unit for amount of substance contains approximately 6.022 times ten to the power of 23 particles?",
+    "answers": ["mole", "mol"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-044",
+    "category": "Science",
+    "prompt": "What type of chemical reaction releases heat energy to the surrounding environment?",
+    "answers": ["exothermic reaction", "exothermic"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-045",
+    "category": "Science",
+    "prompt": "What is the chemical symbol for tungsten?",
+    "answers": ["w"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-046",
+    "category": "Science",
+    "prompt": "What is the lightest noble gas?",
+    "answers": ["helium"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-047",
+    "category": "Science",
+    "prompt": "What process separates a liquid mixture by heating it to exploit differences in boiling points of its components?",
+    "answers": ["distillation", "fractional distillation"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-048",
+    "category": "Science",
+    "prompt": "What principle states that electrons fill the lowest available energy orbitals before occupying higher ones?",
+    "answers": ["aufbau principle", "aufbau", "building-up principle"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-049",
+    "category": "Science",
+    "prompt": "What is the term for the energy required to remove one electron from a gaseous atom in its ground state?",
+    "answers": ["ionization energy", "first ionization energy", "ionization potential"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-050",
+    "category": "Science",
+    "prompt": "What element has the highest electronegativity on the Pauling scale?",
+    "answers": ["fluorine"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-051",
+    "category": "Science",
+    "prompt": "What is the term for molecules that share the same molecular formula but differ in the structural arrangement of their atoms?",
+    "answers": ["isomers", "isomer", "structural isomers"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-052",
+    "category": "Science",
+    "prompt": "What rule states that electrons occupy degenerate orbitals one at a time with parallel spins before any pairing occurs?",
+    "answers": ["hund's rule", "hunds rule", "rule of maximum multiplicity"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-053",
+    "category": "Science",
+    "prompt": "What is the chemical (IUPAC-accepted) name for aspirin?",
+    "answers": ["acetylsalicylic acid", "2-acetoxybenzoic acid"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-054",
+    "category": "Science",
+    "prompt": "What is the term for the minimum energy required for a chemical reaction to proceed?",
+    "answers": ["activation energy"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-055",
+    "category": "Science",
+    "prompt": "What element has the chemical symbol Sb?",
+    "answers": ["antimony"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-056",
+    "category": "Science",
+    "prompt": "Which German chemist developed the industrial process for synthesizing ammonia from nitrogen and hydrogen gas?",
+    "answers": ["fritz haber", "haber"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-057",
+    "category": "Science",
+    "prompt": "What law of chemistry states that in any chemical reaction the total mass of the reactants equals the total mass of the products?",
+    "answers": ["law of conservation of mass", "conservation of mass", "conservation of matter"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-058",
+    "category": "Science",
+    "prompt": "What organelle is known as the powerhouse of the cell?",
+    "answers": ["mitochondria", "mitochondrion"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-059",
+    "category": "Science",
+    "prompt": "What molecule carries genetic information in most living organisms?",
+    "answers": ["dna", "deoxyribonucleic acid"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-060",
+    "category": "Science",
+    "prompt": "How many chambers does the human heart have?",
+    "answers": ["4", "four"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-061",
+    "category": "Science",
+    "prompt": "What process allows plants to convert sunlight, water, and carbon dioxide into glucose and oxygen?",
+    "answers": ["photosynthesis"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-062",
+    "category": "Science",
+    "prompt": "What is the largest organ of the human body?",
+    "answers": ["skin"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-063",
+    "category": "Science",
+    "prompt": "How many bones are in the adult human body?",
+    "answers": ["206", "two hundred and six", "two hundred six"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-064",
+    "category": "Science",
+    "prompt": "What blood type is considered the universal red blood cell donor?",
+    "answers": ["o negative", "o-negative", "o-", "type o negative"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-065",
+    "category": "Science",
+    "prompt": "What is the basic structural and functional unit of all living organisms?",
+    "answers": ["cell", "the cell"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-066",
+    "category": "Science",
+    "prompt": "What gas do humans inhale that is essential for cellular respiration?",
+    "answers": ["oxygen"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-067",
+    "category": "Science",
+    "prompt": "What is the scientific study of heredity and genes called?",
+    "answers": ["genetics"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-068",
+    "category": "Science",
+    "prompt": "What type of cell division produces two genetically identical daughter cells from one parent cell?",
+    "answers": ["mitosis"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-069",
+    "category": "Science",
+    "prompt": "What membrane-bound organelle within a cell contains the chromosomes and controls cell activities?",
+    "answers": ["nucleus", "cell nucleus"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-070",
+    "category": "Science",
+    "prompt": "What type of RNA carries amino acids to the ribosome during protein synthesis?",
+    "answers": ["transfer rna", "trna"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-071",
+    "category": "Science",
+    "prompt": "What process allows cells to generate ATP from glucose in the absence of oxygen?",
+    "answers": ["anaerobic respiration", "fermentation", "anaerobic glycolysis"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-072",
+    "category": "Science",
+    "prompt": "What term describes the variety of life on Earth across all levels of biological organization?",
+    "answers": ["biodiversity", "biological diversity"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-073",
+    "category": "Science",
+    "prompt": "What enzyme unwinds and separates the two strands of DNA during replication?",
+    "answers": ["helicase"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-074",
+    "category": "Science",
+    "prompt": "What type of chemical bond links adjacent amino acids together in a protein chain?",
+    "answers": ["peptide bond", "peptide"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-075",
+    "category": "Science",
+    "prompt": "What type of cell division reduces chromosome number by half to produce haploid gametes?",
+    "answers": ["meiosis"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-076",
+    "category": "Science",
+    "prompt": "What term describes an organism that produces its own food through photosynthesis or chemosynthesis?",
+    "answers": ["autotroph", "producer", "primary producer"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-077",
+    "category": "Science",
+    "prompt": "What is the name for the process by which messenger RNA is read at the ribosome to produce a protein?",
+    "answers": ["translation"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-078",
+    "category": "Science",
+    "prompt": "What enzyme synthesizes new DNA strands by adding complementary nucleotides during DNA replication?",
+    "answers": ["dna polymerase", "dna pol"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-079",
+    "category": "Science",
+    "prompt": "What metabolic cycle, also called the citric acid cycle, oxidizes acetyl-CoA to produce energy carriers in aerobic respiration?",
+    "answers": ["krebs cycle", "citric acid cycle", "tca cycle", "tricarboxylic acid cycle"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-080",
+    "category": "Science",
+    "prompt": "What chromosomal region holds sister chromatids together and is the attachment point for spindle fibers during cell division?",
+    "answers": ["centromere"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-081",
+    "category": "Science",
+    "prompt": "What type of mutation causes a shift in the reading frame by inserting or deleting nucleotides in a number not divisible by three?",
+    "answers": ["frameshift mutation", "frameshift"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-082",
+    "category": "Science",
+    "prompt": "What molecule serves as the primary energy currency of the cell?",
+    "answers": ["atp", "adenosine triphosphate"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-083",
+    "category": "Science",
+    "prompt": "What large molecular machine in the cell reads mRNA and assembles the corresponding amino acid chain into a protein?",
+    "answers": ["ribosome", "ribosomes"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-084",
+    "category": "Science",
+    "prompt": "What genetic condition results from a person having three copies of chromosome 21?",
+    "answers": ["down syndrome", "trisomy 21", "down's syndrome"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-085",
+    "category": "Science",
+    "prompt": "What enzyme adds repetitive DNA sequences to the ends of chromosomes, preventing them from shortening with each replication?",
+    "answers": ["telomerase"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-086",
+    "category": "Science",
+    "prompt": "What is the name of the process by which messenger RNA is synthesized from a DNA template?",
+    "answers": ["transcription"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-087",
+    "category": "Science",
+    "prompt": "What is the name of the star closest to Earth?",
+    "answers": ["sun", "the sun", "sol"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-088",
+    "category": "Science",
+    "prompt": "What is the largest planet in our solar system?",
+    "answers": ["jupiter"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-089",
+    "category": "Science",
+    "prompt": "How many planets are in our solar system?",
+    "answers": ["8", "eight"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-090",
+    "category": "Science",
+    "prompt": "What is the name of Earth's only natural satellite?",
+    "answers": ["moon", "the moon", "luna"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-091",
+    "category": "Science",
+    "prompt": "What is the name of the galaxy that contains our solar system?",
+    "answers": ["milky way", "the milky way", "milky way galaxy"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-092",
+    "category": "Science",
+    "prompt": "What planet is commonly called the Red Planet?",
+    "answers": ["mars"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-093",
+    "category": "Science",
+    "prompt": "What is the name for the massive explosion that marks the death of a large star?",
+    "answers": ["supernova"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-094",
+    "category": "Science",
+    "prompt": "What planet is most famous for its prominent ring system?",
+    "answers": ["saturn"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-095",
+    "category": "Science",
+    "prompt": "What is the term for a rocky body orbiting the sun, most of which are found in a belt between Mars and Jupiter?",
+    "answers": ["asteroid"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-096",
+    "category": "Science",
+    "prompt": "What is the name for a body of ice, rock, and dust that develops a visible tail when it approaches the sun?",
+    "answers": ["comet"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-097",
+    "category": "Science",
+    "prompt": "What is the name for the point in a planet's elliptical orbit where it is closest to the sun?",
+    "answers": ["perihelion"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-098",
+    "category": "Science",
+    "prompt": "What is the term for the boundary surrounding a black hole beyond which nothing, including light, can escape?",
+    "answers": ["event horizon"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-099",
+    "category": "Science",
+    "prompt": "What is the term for a rapidly rotating neutron star that emits regular pulses of electromagnetic radiation?",
+    "answers": ["pulsar"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-100",
+    "category": "Science",
+    "prompt": "What space telescope, launched into low Earth orbit in 1990, has provided landmark images of distant galaxies?",
+    "answers": ["hubble space telescope", "hubble", "hubble telescope"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-101",
+    "category": "Science",
+    "prompt": "What is the term for the apparent shift in position of a nearby star against background stars, used to measure stellar distances?",
+    "answers": ["parallax", "stellar parallax"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-102",
+    "category": "Science",
+    "prompt": "What scale measures the apparent brightness of a celestial object as observed from Earth?",
+    "answers": ["apparent magnitude", "magnitude", "magnitude scale"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-103",
+    "category": "Science",
+    "prompt": "What is the name for the minimum speed an object must reach to escape the gravitational pull of a celestial body without further propulsion?",
+    "answers": ["escape velocity"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-104",
+    "category": "Science",
+    "prompt": "What is the second-largest planet in our solar system?",
+    "answers": ["saturn"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-105",
+    "category": "Science",
+    "prompt": "What does the abbreviation AU stand for in astronomy?",
+    "answers": ["astronomical unit"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-106",
+    "category": "Science",
+    "prompt": "What is the name of the phenomenon where a massive object warps spacetime and bends the path of light passing near it?",
+    "answers": ["gravitational lensing", "gravitational lens"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-107",
+    "category": "Science",
+    "prompt": "What is the name for the region at the center of a black hole where curvature and density become theoretically infinite?",
+    "answers": ["singularity", "gravitational singularity"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-108",
+    "category": "Science",
+    "prompt": "What type of stellar remnant is left behind when a star with a core mass between roughly 1.4 and 3 solar masses undergoes a supernova?",
+    "answers": ["neutron star"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-109",
+    "category": "Science",
+    "prompt": "Which astronomer first observed the four largest moons of Jupiter through a telescope in 1610?",
+    "answers": ["galileo galilei", "galileo"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-110",
+    "category": "Science",
+    "prompt": "What is the name for the hypothetical form of energy thought to be causing the accelerating expansion of the universe?",
+    "answers": ["dark energy"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-111",
+    "category": "Science",
+    "prompt": "What is the name for the unseen matter that makes up approximately 27 percent of the universe's total mass-energy content?",
+    "answers": ["dark matter"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-112",
+    "category": "Science",
+    "prompt": "What is the name of the brightest star in the night sky as seen from Earth?",
+    "answers": ["sirius", "sirius a"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-113",
+    "category": "Science",
+    "prompt": "What is the name of the process by which stars generate energy through the fusion of hydrogen nuclei into helium?",
+    "answers": ["nuclear fusion", "hydrogen fusion", "stellar nucleosynthesis"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-114",
+    "category": "Science",
+    "prompt": "What is the name of the constant that relates a galaxy's recessional velocity to its distance from Earth?",
+    "answers": ["hubble constant", "hubble's constant"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-115",
+    "category": "Science",
+    "prompt": "What is pi rounded to two decimal places?",
+    "answers": ["3.14"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-116",
+    "category": "Science",
+    "prompt": "What is the square root of 144?",
+    "answers": ["12", "twelve"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-117",
+    "category": "Science",
+    "prompt": "How many sides does a hexagon have?",
+    "answers": ["6", "six"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-118",
+    "category": "Science",
+    "prompt": "How many degrees are in a right angle?",
+    "answers": ["90", "ninety", "90 degrees"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-119",
+    "category": "Science",
+    "prompt": "What is the sum of the interior angles of a triangle in degrees?",
+    "answers": ["180", "one hundred and eighty", "180 degrees"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-120",
+    "category": "Science",
+    "prompt": "What is the name for a triangle in which all three sides are equal in length?",
+    "answers": ["equilateral triangle", "equilateral"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-121",
+    "category": "Science",
+    "prompt": "What is the name for the longest side of a right triangle, which is opposite the right angle?",
+    "answers": ["hypotenuse"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-122",
+    "category": "Science",
+    "prompt": "What is the approximate value of the mathematical constant e to three decimal places?",
+    "answers": ["2.718"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-123",
+    "category": "Science",
+    "prompt": "What is the value of 2 raised to the power of 10?",
+    "answers": ["1024", "one thousand and twenty four", "one thousand twenty four"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-124",
+    "category": "Science",
+    "prompt": "What is the name for a whole number greater than 1 that has no positive divisors other than 1 and itself?",
+    "answers": ["prime number", "prime"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-125",
+    "category": "Science",
+    "prompt": "What theorem states that in a right triangle, the square of the hypotenuse equals the sum of the squares of the other two sides?",
+    "answers": ["pythagorean theorem", "pythagoras theorem", "pythagorean theorem"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-126",
+    "category": "Science",
+    "prompt": "What is the mathematical term for the instantaneous rate of change of a function with respect to its variable?",
+    "answers": ["derivative"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-127",
+    "category": "Science",
+    "prompt": "What is the term for the complete set of all possible output values of a function?",
+    "answers": ["range", "codomain"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-128",
+    "category": "Science",
+    "prompt": "How many prime numbers are less than 20?",
+    "answers": ["8", "eight"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-129",
+    "category": "Science",
+    "prompt": "What is the name for a polygon with exactly eight sides?",
+    "answers": ["octagon"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-130",
+    "category": "Science",
+    "prompt": "What is the term for a real number that cannot be expressed as the ratio of two integers?",
+    "answers": ["irrational number", "irrational"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-131",
+    "category": "Science",
+    "prompt": "What is the name for the logarithm with base e, commonly written as ln?",
+    "answers": ["natural logarithm", "natural log"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-132",
+    "category": "Science",
+    "prompt": "What branch of mathematics studies the relationships between angles and sides of triangles?",
+    "answers": ["trigonometry"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-133",
+    "category": "Science",
+    "prompt": "What is the value of zero factorial?",
+    "answers": ["1", "one"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-134",
+    "category": "Science",
+    "prompt": "What statistical term describes the sum of all values in a data set divided by the number of values?",
+    "answers": ["mean", "arithmetic mean", "average"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-135",
+    "category": "Science",
+    "prompt": "What is the name of the famous unsolved conjecture proposing that all nontrivial zeros of the Riemann zeta function lie on the critical line with real part one-half?",
+    "answers": ["riemann hypothesis", "riemann conjecture"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-136",
+    "category": "Science",
+    "prompt": "What conjecture states that every even integer greater than 2 can be written as the sum of two prime numbers?",
+    "answers": ["goldbach's conjecture", "goldbach conjecture"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-137",
+    "category": "Science",
+    "prompt": "What is the next prime number after 97?",
+    "answers": ["101", "one hundred and one"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-138",
+    "category": "Science",
+    "prompt": "In graph theory, what is the name for a path through a graph that visits every vertex exactly once?",
+    "answers": ["hamiltonian path", "hamilton path"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-139",
+    "category": "Science",
+    "prompt": "What paradox exposes a contradiction in naive set theory by asking whether the set of all sets that do not contain themselves contains itself?",
+    "answers": ["russell's paradox", "russells paradox", "russell paradox"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-140",
+    "category": "Science",
+    "prompt": "What is the sum of all positive integers from 1 to 100?",
+    "answers": ["5050", "five thousand and fifty", "five thousand fifty"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-141",
+    "category": "Science",
+    "prompt": "What is the name of the calculus rule used to differentiate the product of two functions?",
+    "answers": ["product rule"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-142",
+    "category": "Science",
+    "prompt": "What theorem, proved by Andrew Wiles, states that no three positive integers a, b, and c satisfy the equation a to the n plus b to the n equals c to the n for any integer n greater than 2?",
+    "answers": ["fermat's last theorem", "fermat last theorem", "fermat's last theorem"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-143",
+    "category": "Science",
+    "prompt": "What is the name for a positive integer that equals the sum of all its positive proper divisors?",
+    "answers": ["perfect number"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-144",
+    "category": "Science",
+    "prompt": "What is the name of the outermost solid layer of the Earth?",
+    "answers": ["crust", "earth's crust", "the crust"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-145",
+    "category": "Science",
+    "prompt": "What is the most abundant element in Earth's crust by mass?",
+    "answers": ["oxygen"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-146",
+    "category": "Science",
+    "prompt": "What is the name of the largest ocean on Earth?",
+    "answers": ["pacific ocean", "pacific", "the pacific ocean"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-147",
+    "category": "Science",
+    "prompt": "In which layer of the atmosphere is the ozone layer primarily found?",
+    "answers": ["stratosphere"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-148",
+    "category": "Science",
+    "prompt": "What is the term for molten rock that exists beneath the surface of the Earth?",
+    "answers": ["magma"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-149",
+    "category": "Science",
+    "prompt": "What is molten rock called after it has erupted onto Earth's surface from a volcano?",
+    "answers": ["lava"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-150",
+    "category": "Science",
+    "prompt": "What scale is commonly used to measure the magnitude of earthquakes?",
+    "answers": ["richter scale", "richter", "richter magnitude scale"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-151",
+    "category": "Science",
+    "prompt": "What is the name for the point on Earth's surface directly above the underground focus of an earthquake?",
+    "answers": ["epicenter", "epicentre"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-152",
+    "category": "Science",
+    "prompt": "What is the name of the process by which water vapor cools and changes into liquid water?",
+    "answers": ["condensation"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-153",
+    "category": "Science",
+    "prompt": "What type of rock is formed from the cooling and solidification of magma or lava?",
+    "answers": ["igneous rock", "igneous"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-154",
+    "category": "Science",
+    "prompt": "What is the name of the ancient supercontinent that included all of Earth's present-day landmasses, existing about 300 million years ago?",
+    "answers": ["pangaea", "pangea"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-155",
+    "category": "Science",
+    "prompt": "What is the name for the rigid outer shell of Earth that includes the crust and the uppermost part of the mantle?",
+    "answers": ["lithosphere"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-156",
+    "category": "Science",
+    "prompt": "What process creates new oceanic crust at mid-ocean ridges as tectonic plates diverge?",
+    "answers": ["seafloor spreading"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-157",
+    "category": "Science",
+    "prompt": "What is the name of Earth's layer that lies between the crust and the outer core?",
+    "answers": ["mantle", "earth's mantle", "the mantle"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-158",
+    "category": "Science",
+    "prompt": "What term describes the long-term average weather conditions of a particular region?",
+    "answers": ["climate"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-159",
+    "category": "Science",
+    "prompt": "What term describes the continuous movement of water from Earth's surface to the atmosphere and back again through evaporation and precipitation?",
+    "answers": ["water cycle", "hydrological cycle", "hydrologic cycle"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-160",
+    "category": "Science",
+    "prompt": "What type of rock is formed when existing rocks are altered by intense heat and pressure deep within the Earth?",
+    "answers": ["metamorphic rock", "metamorphic"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-161",
+    "category": "Science",
+    "prompt": "What is the term for the gradual wearing away and transportation of rock and soil by wind, water, or ice?",
+    "answers": ["erosion"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-162",
+    "category": "Science",
+    "prompt": "What is the name for a large, slow-moving mass of ice that flows under its own weight across a landscape?",
+    "answers": ["glacier"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-163",
+    "category": "Science",
+    "prompt": "What is the name of the boundary between Earth's crust and the mantle, identified by a change in seismic wave speed?",
+    "answers": ["mohorovicic discontinuity", "moho", "moho discontinuity", "mohorovicic"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-164",
+    "category": "Science",
+    "prompt": "What type of seismic wave is a compressional wave that can travel through both solid rock and liquid, making it the fastest seismic wave?",
+    "answers": ["p-wave", "primary wave", "compressional wave", "p wave"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-165",
+    "category": "Science",
+    "prompt": "Which scientist proposed the theory of continental drift in 1912?",
+    "answers": ["alfred wegener", "wegener"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-166",
+    "category": "Science",
+    "prompt": "What is the approximate age of the Earth in billions of years?",
+    "answers": ["4.5", "4.54", "four and a half"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-167",
+    "category": "Science",
+    "prompt": "What is the name of the current official geological epoch, which began approximately 11,700 years ago at the end of the last ice age?",
+    "answers": ["holocene", "holocene epoch"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-168",
+    "category": "Science",
+    "prompt": "What mineral is rated 10, the highest possible score, on the Mohs hardness scale?",
+    "answers": ["diamond"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-169",
+    "category": "Science",
+    "prompt": "What recurring Pacific Ocean phenomenon involves the warming of central and eastern Pacific surface waters and disrupts global weather patterns?",
+    "answers": ["el nino", "el nino southern oscillation", "enso"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-170",
+    "category": "Science",
+    "prompt": "What is the name for the seismic boundary between Earth's outer core and the mantle, also called the core-mantle boundary?",
+    "answers": ["core-mantle boundary", "gutenberg discontinuity", "gutenberg discontinuity"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-171",
+    "category": "Science",
+    "prompt": "Approximately what percentage of Earth's total water is fresh water?",
+    "answers": ["3", "3 percent", "2.5", "2.5 percent", "about 3 percent"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-172",
+    "category": "Science",
+    "prompt": "What does CPU stand for in computing?",
+    "answers": ["central processing unit"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-173",
+    "category": "Science",
+    "prompt": "What does LED stand for?",
+    "answers": ["light emitting diode", "light-emitting diode"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-174",
+    "category": "Science",
+    "prompt": "What does HTTP stand for?",
+    "answers": ["hypertext transfer protocol"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-175",
+    "category": "Science",
+    "prompt": "What does RAM stand for in computing?",
+    "answers": ["random access memory"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-176",
+    "category": "Science",
+    "prompt": "What does GPS stand for?",
+    "answers": ["global positioning system"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-177",
+    "category": "Science",
+    "prompt": "What does USB stand for?",
+    "answers": ["universal serial bus"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-178",
+    "category": "Science",
+    "prompt": "What does HTML stand for?",
+    "answers": ["hypertext markup language"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-179",
+    "category": "Science",
+    "prompt": "What is the binary representation of the decimal number 2?",
+    "answers": ["10", "10 in binary", "1 0"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-180",
+    "category": "Science",
+    "prompt": "What does URL stand for?",
+    "answers": ["uniform resource locator"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-181",
+    "category": "Science",
+    "prompt": "What does AI stand for in the context of computing and technology?",
+    "answers": ["artificial intelligence"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "science-182",
+    "category": "Science",
+    "prompt": "What does SQL stand for?",
+    "answers": ["structured query language"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-183",
+    "category": "Science",
+    "prompt": "How many bits are in one byte?",
+    "answers": ["8", "eight"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-184",
+    "category": "Science",
+    "prompt": "What does HTTPS stand for?",
+    "answers": ["hypertext transfer protocol secure"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-185",
+    "category": "Science",
+    "prompt": "What is the term for encoding data into a coded format so that only authorized parties can read it?",
+    "answers": ["encryption"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-186",
+    "category": "Science",
+    "prompt": "What does VPN stand for in networking?",
+    "answers": ["virtual private network"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-187",
+    "category": "Science",
+    "prompt": "What does API stand for in software development?",
+    "answers": ["application programming interface"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-188",
+    "category": "Science",
+    "prompt": "What type of network topology connects all devices to a single central node or switch?",
+    "answers": ["star topology", "star", "star network"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-189",
+    "category": "Science",
+    "prompt": "What layer of the OSI network model is responsible for routing data packets between different networks?",
+    "answers": ["network layer", "layer 3", "layer three"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-190",
+    "category": "Science",
+    "prompt": "What does DNS stand for in internet infrastructure?",
+    "answers": ["domain name system"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "science-191",
+    "category": "Science",
+    "prompt": "What graph search algorithm efficiently finds the shortest path between a source node and all other nodes in a weighted graph with non-negative edges?",
+    "answers": ["dijkstra's algorithm", "dijkstra algorithm", "dijkstra"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-192",
+    "category": "Science",
+    "prompt": "What does RAID stand for in the context of data storage systems?",
+    "answers": ["redundant array of independent disks", "redundant array of inexpensive disks"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-193",
+    "category": "Science",
+    "prompt": "What widely used public-key encryption algorithm relies on the computational difficulty of factoring the product of two large prime numbers?",
+    "answers": ["rsa", "rsa algorithm", "rsa encryption"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-194",
+    "category": "Science",
+    "prompt": "What is the name of the fundamental open question in computer science asking whether every problem whose solution can be quickly verified can also be quickly solved?",
+    "answers": ["p vs np", "p versus np", "p equals np", "p=np"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-195",
+    "category": "Science",
+    "prompt": "What was the name of the first commercially available microprocessor, released by Intel in 1971?",
+    "answers": ["intel 4004", "4004"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-196",
+    "category": "Science",
+    "prompt": "In Boolean logic, what is the output of the XOR operation when both input bits have the same value?",
+    "answers": ["0", "zero", "false"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-197",
+    "category": "Science",
+    "prompt": "What Big O notation describes an algorithm whose runtime grows proportionally to the logarithm of the input size?",
+    "answers": ["o(log n)", "o log n", "logarithmic time", "log n"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-198",
+    "category": "Science",
+    "prompt": "What was the name of the first general-purpose programmable electronic digital computer, completed in the United States in 1945?",
+    "answers": ["eniac"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-199",
+    "category": "Science",
+    "prompt": "What type of cyberattack involves inserting malicious SQL code into an input field to manipulate or extract data from a database?",
+    "answers": ["sql injection", "sql injection attack"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "science-200",
+    "category": "Science",
+    "prompt": "What theorem in information theory establishes the minimum average number of bits needed to losslessly encode messages from a source?",
+    "answers": [
+      "shannon's source coding theorem",
+      "source coding theorem",
+      "noiseless coding theorem",
+      "shannon source coding theorem"
+    ],
+    "difficulty": "hard"
+  }
+]
