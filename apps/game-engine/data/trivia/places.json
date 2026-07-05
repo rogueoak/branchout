@@ -1,0 +1,1402 @@
+[
+  {
+    "id": "places-001",
+    "category": "Places",
+    "prompt": "What is the capital of France?",
+    "answers": ["paris"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-002",
+    "category": "Places",
+    "prompt": "What is the capital of Japan?",
+    "answers": ["tokyo"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-003",
+    "category": "Places",
+    "prompt": "What is the capital of the United States?",
+    "answers": ["washington dc", "washington d.c.", "washington"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-004",
+    "category": "Places",
+    "prompt": "What is the capital of the United Kingdom?",
+    "answers": ["london"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-005",
+    "category": "Places",
+    "prompt": "What is the capital of Germany?",
+    "answers": ["berlin"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-006",
+    "category": "Places",
+    "prompt": "What is the capital of Italy?",
+    "answers": ["rome", "roma"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-007",
+    "category": "Places",
+    "prompt": "What is the capital of Spain?",
+    "answers": ["madrid"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-008",
+    "category": "Places",
+    "prompt": "What is the capital of China?",
+    "answers": ["beijing", "peking"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-009",
+    "category": "Places",
+    "prompt": "What is the capital of Russia?",
+    "answers": ["moscow", "moskva"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-010",
+    "category": "Places",
+    "prompt": "What is the capital of Canada?",
+    "answers": ["ottawa"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-011",
+    "category": "Places",
+    "prompt": "What is the capital of Brazil?",
+    "answers": ["brasilia", "brasília"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-012",
+    "category": "Places",
+    "prompt": "What is the capital of India?",
+    "answers": ["new delhi", "delhi"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-013",
+    "category": "Places",
+    "prompt": "What is the capital of Mexico?",
+    "answers": ["mexico city", "ciudad de mexico"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-014",
+    "category": "Places",
+    "prompt": "What is the capital of Australia?",
+    "answers": ["canberra"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-015",
+    "category": "Places",
+    "prompt": "What is the capital of Egypt?",
+    "answers": ["cairo"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-016",
+    "category": "Places",
+    "prompt": "What is the capital of Argentina?",
+    "answers": ["buenos aires"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-017",
+    "category": "Places",
+    "prompt": "What is the capital of Greece?",
+    "answers": ["athens", "athina"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-018",
+    "category": "Places",
+    "prompt": "What is the capital of Turkey?",
+    "answers": ["ankara"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-019",
+    "category": "Places",
+    "prompt": "What is the capital of Nigeria?",
+    "answers": ["abuja"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-020",
+    "category": "Places",
+    "prompt": "What is the capital of Kenya?",
+    "answers": ["nairobi"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-021",
+    "category": "Places",
+    "prompt": "What is the capital of South Korea?",
+    "answers": ["seoul"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-022",
+    "category": "Places",
+    "prompt": "What is the capital of the Netherlands?",
+    "answers": ["amsterdam"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-023",
+    "category": "Places",
+    "prompt": "What is the capital of Sweden?",
+    "answers": ["stockholm"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-024",
+    "category": "Places",
+    "prompt": "What is the capital of Norway?",
+    "answers": ["oslo"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-025",
+    "category": "Places",
+    "prompt": "What is the capital of Denmark?",
+    "answers": ["copenhagen", "kobenhavn"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-026",
+    "category": "Places",
+    "prompt": "What is the capital of Finland?",
+    "answers": ["helsinki"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-027",
+    "category": "Places",
+    "prompt": "What is the capital of Poland?",
+    "answers": ["warsaw", "warszawa"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-028",
+    "category": "Places",
+    "prompt": "What is the capital of Portugal?",
+    "answers": ["lisbon", "lisboa"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-029",
+    "category": "Places",
+    "prompt": "What is the capital of Austria?",
+    "answers": ["vienna", "wien"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-030",
+    "category": "Places",
+    "prompt": "What is the capital of Belgium?",
+    "answers": ["brussels", "bruxelles", "brussel"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-031",
+    "category": "Places",
+    "prompt": "What is the capital of Ireland?",
+    "answers": ["dublin"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-032",
+    "category": "Places",
+    "prompt": "What is the capital of the Czech Republic?",
+    "answers": ["prague", "praha"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-033",
+    "category": "Places",
+    "prompt": "What is the capital of Hungary?",
+    "answers": ["budapest"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-034",
+    "category": "Places",
+    "prompt": "What is the capital of Ukraine?",
+    "answers": ["kyiv", "kiev"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-035",
+    "category": "Places",
+    "prompt": "What is the capital of New Zealand?",
+    "answers": ["wellington"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-036",
+    "category": "Places",
+    "prompt": "What is the capital of the Philippines?",
+    "answers": ["manila"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-037",
+    "category": "Places",
+    "prompt": "What is the capital of Thailand?",
+    "answers": ["bangkok"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-038",
+    "category": "Places",
+    "prompt": "What is the capital of Pakistan?",
+    "answers": ["islamabad"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-039",
+    "category": "Places",
+    "prompt": "What is the capital of Iran?",
+    "answers": ["tehran", "teheran"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-040",
+    "category": "Places",
+    "prompt": "What is the capital of Iraq?",
+    "answers": ["baghdad"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-041",
+    "category": "Places",
+    "prompt": "What is the capital of Jordan?",
+    "answers": ["amman"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-042",
+    "category": "Places",
+    "prompt": "What is the capital of Morocco?",
+    "answers": ["rabat"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-043",
+    "category": "Places",
+    "prompt": "What is the capital of Ethiopia?",
+    "answers": ["addis ababa"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-044",
+    "category": "Places",
+    "prompt": "What is the capital of Saudi Arabia?",
+    "answers": ["riyadh"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-045",
+    "category": "Places",
+    "prompt": "What is the capital of Switzerland?",
+    "answers": ["bern", "berne"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-046",
+    "category": "Places",
+    "prompt": "What is the capital of Romania?",
+    "answers": ["bucharest", "bucuresti"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-047",
+    "category": "Places",
+    "prompt": "What is the capital of Cuba?",
+    "answers": ["havana", "la habana"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-048",
+    "category": "Places",
+    "prompt": "What is the capital of Chile?",
+    "answers": ["santiago"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-049",
+    "category": "Places",
+    "prompt": "What is the capital of Colombia?",
+    "answers": ["bogota", "bogotá"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-050",
+    "category": "Places",
+    "prompt": "What is the capital of Peru?",
+    "answers": ["lima"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-051",
+    "category": "Places",
+    "prompt": "What is the capital of Venezuela?",
+    "answers": ["caracas"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-052",
+    "category": "Places",
+    "prompt": "What is the capital of Bangladesh?",
+    "answers": ["dhaka", "dacca"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-053",
+    "category": "Places",
+    "prompt": "What is the largest ocean by area?",
+    "answers": ["pacific ocean", "pacific"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-054",
+    "category": "Places",
+    "prompt": "What is the longest river in the world?",
+    "answers": ["nile", "nile river"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-055",
+    "category": "Places",
+    "prompt": "What is the tallest mountain in the world?",
+    "answers": ["mount everest", "everest"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-056",
+    "category": "Places",
+    "prompt": "On which continent is the Sahara Desert located?",
+    "answers": ["africa"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-057",
+    "category": "Places",
+    "prompt": "In which country is the Eiffel Tower located?",
+    "answers": ["france"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-058",
+    "category": "Places",
+    "prompt": "In which country is the Taj Mahal located?",
+    "answers": ["india"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-059",
+    "category": "Places",
+    "prompt": "In which country are the Pyramids of Giza located?",
+    "answers": ["egypt"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-060",
+    "category": "Places",
+    "prompt": "In which US state is the Grand Canyon located?",
+    "answers": ["arizona"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-061",
+    "category": "Places",
+    "prompt": "What is the largest country in the world by area?",
+    "answers": ["russia"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-062",
+    "category": "Places",
+    "prompt": "What is the smallest country in the world by area?",
+    "answers": ["vatican city", "vatican", "holy see"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-063",
+    "category": "Places",
+    "prompt": "In which Indian city is the Taj Mahal located?",
+    "answers": ["agra"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-064",
+    "category": "Places",
+    "prompt": "In which city is the ancient Roman Colosseum located?",
+    "answers": ["rome", "roma"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-065",
+    "category": "Places",
+    "prompt": "In which country does the Amazon River primarily flow?",
+    "answers": ["brazil"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-066",
+    "category": "Places",
+    "prompt": "What is the capital of Malaysia?",
+    "answers": ["kuala lumpur"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-067",
+    "category": "Places",
+    "prompt": "What is the capital of Vietnam?",
+    "answers": ["hanoi"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "places-068",
+    "category": "Places",
+    "prompt": "What is the capital of Myanmar (Burma)?",
+    "answers": ["naypyidaw", "nay pyi taw"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-069",
+    "category": "Places",
+    "prompt": "What is the capital of Cambodia?",
+    "answers": ["phnom penh"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-070",
+    "category": "Places",
+    "prompt": "What is the capital of Nepal?",
+    "answers": ["kathmandu", "katmandu"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-071",
+    "category": "Places",
+    "prompt": "What is the capital of Mongolia?",
+    "answers": ["ulaanbaatar", "ulan bator"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-072",
+    "category": "Places",
+    "prompt": "What is the capital of Kazakhstan?",
+    "answers": ["astana", "nur-sultan"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-073",
+    "category": "Places",
+    "prompt": "What is the capital of Azerbaijan?",
+    "answers": ["baku"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-074",
+    "category": "Places",
+    "prompt": "What is the capital of Georgia, the country in the Caucasus region?",
+    "answers": ["tbilisi"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-075",
+    "category": "Places",
+    "prompt": "What is the capital of Armenia?",
+    "answers": ["yerevan", "erevan"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-076",
+    "category": "Places",
+    "prompt": "What is the capital of Uzbekistan?",
+    "answers": ["tashkent"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-077",
+    "category": "Places",
+    "prompt": "What is the capital of Oman?",
+    "answers": ["muscat", "muskat"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-078",
+    "category": "Places",
+    "prompt": "What is the capital of Kuwait?",
+    "answers": ["kuwait city"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-079",
+    "category": "Places",
+    "prompt": "What is the capital of Qatar?",
+    "answers": ["doha"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-080",
+    "category": "Places",
+    "prompt": "What is the capital of Bahrain?",
+    "answers": ["manama"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-081",
+    "category": "Places",
+    "prompt": "What is the capital of Yemen?",
+    "answers": ["sanaa", "sana'a"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-082",
+    "category": "Places",
+    "prompt": "What is the capital of Syria?",
+    "answers": ["damascus", "dimashq"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-083",
+    "category": "Places",
+    "prompt": "What is the capital of Lebanon?",
+    "answers": ["beirut"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-084",
+    "category": "Places",
+    "prompt": "What is the capital of Libya?",
+    "answers": ["tripoli"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-085",
+    "category": "Places",
+    "prompt": "What is the capital of Tunisia?",
+    "answers": ["tunis"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-086",
+    "category": "Places",
+    "prompt": "What is the capital of Algeria?",
+    "answers": ["algiers", "alger"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-087",
+    "category": "Places",
+    "prompt": "What is the capital of Sudan?",
+    "answers": ["khartoum"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-088",
+    "category": "Places",
+    "prompt": "What is the capital of Somalia?",
+    "answers": ["mogadishu"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-089",
+    "category": "Places",
+    "prompt": "What is the official capital of Tanzania?",
+    "answers": ["dodoma"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-090",
+    "category": "Places",
+    "prompt": "What is the capital of Uganda?",
+    "answers": ["kampala"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-091",
+    "category": "Places",
+    "prompt": "What is the capital of Rwanda?",
+    "answers": ["kigali"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-092",
+    "category": "Places",
+    "prompt": "What is the capital of Mozambique?",
+    "answers": ["maputo"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-093",
+    "category": "Places",
+    "prompt": "What is the capital of Angola?",
+    "answers": ["luanda"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-094",
+    "category": "Places",
+    "prompt": "What is the capital of Zambia?",
+    "answers": ["lusaka"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-095",
+    "category": "Places",
+    "prompt": "What is the capital of Zimbabwe?",
+    "answers": ["harare"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-096",
+    "category": "Places",
+    "prompt": "What is the capital of Botswana?",
+    "answers": ["gaborone"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-097",
+    "category": "Places",
+    "prompt": "What is the capital of Namibia?",
+    "answers": ["windhoek"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-098",
+    "category": "Places",
+    "prompt": "What is the capital of Senegal?",
+    "answers": ["dakar"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-099",
+    "category": "Places",
+    "prompt": "What is the capital of Mali?",
+    "answers": ["bamako"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-100",
+    "category": "Places",
+    "prompt": "What is the capital of Ghana?",
+    "answers": ["accra"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-101",
+    "category": "Places",
+    "prompt": "What is the capital of Ecuador?",
+    "answers": ["quito"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-102",
+    "category": "Places",
+    "prompt": "What is the capital of Paraguay?",
+    "answers": ["asuncion", "asunción"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-103",
+    "category": "Places",
+    "prompt": "What is the capital of Uruguay?",
+    "answers": ["montevideo"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-104",
+    "category": "Places",
+    "prompt": "What is the capital of Guatemala?",
+    "answers": ["guatemala city"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-105",
+    "category": "Places",
+    "prompt": "What is the capital of Honduras?",
+    "answers": ["tegucigalpa"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-106",
+    "category": "Places",
+    "prompt": "What is the capital of Nicaragua?",
+    "answers": ["managua"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-107",
+    "category": "Places",
+    "prompt": "What is the capital of Costa Rica?",
+    "answers": ["san jose", "san josé"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-108",
+    "category": "Places",
+    "prompt": "What is the capital of Panama?",
+    "answers": ["panama city"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-109",
+    "category": "Places",
+    "prompt": "What is the capital of Jamaica?",
+    "answers": ["kingston"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-110",
+    "category": "Places",
+    "prompt": "What is the capital of Haiti?",
+    "answers": ["port-au-prince"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-111",
+    "category": "Places",
+    "prompt": "What is the capital of the Dominican Republic?",
+    "answers": ["santo domingo"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-112",
+    "category": "Places",
+    "prompt": "What is the second longest river in the world?",
+    "answers": ["amazon", "amazon river"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-113",
+    "category": "Places",
+    "prompt": "What is the largest hot desert in the world?",
+    "answers": ["sahara", "sahara desert"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-114",
+    "category": "Places",
+    "prompt": "What is the name of the world's highest waterfall, located in Venezuela?",
+    "answers": ["angel falls", "angel waterfall"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-115",
+    "category": "Places",
+    "prompt": "What is the deepest lake in the world?",
+    "answers": ["lake baikal", "baikal", "lake baykal"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-116",
+    "category": "Places",
+    "prompt": "What is the largest lake in Africa by surface area?",
+    "answers": ["lake victoria", "victoria"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-117",
+    "category": "Places",
+    "prompt": "In which mountain range is Mount Everest located?",
+    "answers": ["himalayas", "himalaya", "the himalayas"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-118",
+    "category": "Places",
+    "prompt": "What is the longest mountain range in the world?",
+    "answers": ["andes", "andes mountains"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-119",
+    "category": "Places",
+    "prompt": "What is the capital of Slovakia?",
+    "answers": ["bratislava"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-120",
+    "category": "Places",
+    "prompt": "What is the capital of Slovenia?",
+    "answers": ["ljubljana"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-121",
+    "category": "Places",
+    "prompt": "What is the capital of Croatia?",
+    "answers": ["zagreb"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-122",
+    "category": "Places",
+    "prompt": "What is the capital of Bosnia and Herzegovina?",
+    "answers": ["sarajevo"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-123",
+    "category": "Places",
+    "prompt": "What is the capital of Serbia?",
+    "answers": ["belgrade", "beograd"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-124",
+    "category": "Places",
+    "prompt": "What is the capital of Albania?",
+    "answers": ["tirana", "tirane"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-125",
+    "category": "Places",
+    "prompt": "What is the capital of Belarus?",
+    "answers": ["minsk"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-126",
+    "category": "Places",
+    "prompt": "What is the capital of Latvia?",
+    "answers": ["riga"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-127",
+    "category": "Places",
+    "prompt": "What is the capital of Lithuania?",
+    "answers": ["vilnius"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-128",
+    "category": "Places",
+    "prompt": "What is the capital of Estonia?",
+    "answers": ["tallinn"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-129",
+    "category": "Places",
+    "prompt": "In which country is the Angkor Wat temple complex located?",
+    "answers": ["cambodia"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-130",
+    "category": "Places",
+    "prompt": "In which country is the ancient Inca citadel of Machu Picchu located?",
+    "answers": ["peru"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-131",
+    "category": "Places",
+    "prompt": "What is the longest river in Europe?",
+    "answers": ["volga", "volga river"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-132",
+    "category": "Places",
+    "prompt": "In which country is Mount Kilimanjaro, the highest peak in Africa, located?",
+    "answers": ["tanzania"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-133",
+    "category": "Places",
+    "prompt": "What is the name of the strait between Spain and Morocco?",
+    "answers": ["strait of gibraltar", "gibraltar strait", "gibraltar"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-134",
+    "category": "Places",
+    "prompt": "In which country is Stonehenge located?",
+    "answers": ["england", "united kingdom", "uk", "great britain"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "places-135",
+    "category": "Places",
+    "prompt": "What is the capital of Burkina Faso?",
+    "answers": ["ouagadougou"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-136",
+    "category": "Places",
+    "prompt": "What is the capital of Niger?",
+    "answers": ["niamey"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-137",
+    "category": "Places",
+    "prompt": "What is the capital of Chad?",
+    "answers": ["ndjamena", "n'djamena"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-138",
+    "category": "Places",
+    "prompt": "What is the capital of Cameroon?",
+    "answers": ["yaounde", "yaoundé"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-139",
+    "category": "Places",
+    "prompt": "What is the capital of the Democratic Republic of the Congo?",
+    "answers": ["kinshasa"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-140",
+    "category": "Places",
+    "prompt": "What is the capital of the Republic of the Congo?",
+    "answers": ["brazzaville"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-141",
+    "category": "Places",
+    "prompt": "What is the capital of Madagascar?",
+    "answers": ["antananarivo"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-142",
+    "category": "Places",
+    "prompt": "What is the capital of Montenegro?",
+    "answers": ["podgorica"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-143",
+    "category": "Places",
+    "prompt": "What is the capital of North Macedonia?",
+    "answers": ["skopje"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-144",
+    "category": "Places",
+    "prompt": "What is the capital of Kosovo?",
+    "answers": ["pristina", "prishtina"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-145",
+    "category": "Places",
+    "prompt": "What is the capital of Moldova?",
+    "answers": ["chisinau", "kishinev"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-146",
+    "category": "Places",
+    "prompt": "What is the capital of Kyrgyzstan?",
+    "answers": ["bishkek"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-147",
+    "category": "Places",
+    "prompt": "What is the capital of Tajikistan?",
+    "answers": ["dushanbe"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-148",
+    "category": "Places",
+    "prompt": "What is the capital of Turkmenistan?",
+    "answers": ["ashgabat", "ashkhabad"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-149",
+    "category": "Places",
+    "prompt": "What is the capital of Bhutan?",
+    "answers": ["thimphu", "thimbu"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-150",
+    "category": "Places",
+    "prompt": "What is the capital of the Maldives?",
+    "answers": ["male", "malé"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-151",
+    "category": "Places",
+    "prompt": "What is the capital of Laos?",
+    "answers": ["vientiane"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-152",
+    "category": "Places",
+    "prompt": "What is the capital of Brunei?",
+    "answers": ["bandar seri begawan"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-153",
+    "category": "Places",
+    "prompt": "What is the capital of East Timor (Timor-Leste)?",
+    "answers": ["dili"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-154",
+    "category": "Places",
+    "prompt": "What is the capital of Papua New Guinea?",
+    "answers": ["port moresby"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-155",
+    "category": "Places",
+    "prompt": "What is the capital of Fiji?",
+    "answers": ["suva"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-156",
+    "category": "Places",
+    "prompt": "What is the capital of Vanuatu?",
+    "answers": ["port vila"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-157",
+    "category": "Places",
+    "prompt": "What is the capital of the Solomon Islands?",
+    "answers": ["honiara"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-158",
+    "category": "Places",
+    "prompt": "What is the capital of Tuvalu?",
+    "answers": ["funafuti"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-159",
+    "category": "Places",
+    "prompt": "What is the capital of the Comoros?",
+    "answers": ["moroni"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-160",
+    "category": "Places",
+    "prompt": "What is the capital of Cape Verde?",
+    "answers": ["praia"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-161",
+    "category": "Places",
+    "prompt": "What is the capital of Guinea-Bissau?",
+    "answers": ["bissau"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-162",
+    "category": "Places",
+    "prompt": "What is the capital of Equatorial Guinea?",
+    "answers": ["malabo"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-163",
+    "category": "Places",
+    "prompt": "What is the capital of Gabon?",
+    "answers": ["libreville"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-164",
+    "category": "Places",
+    "prompt": "What is the capital of the Central African Republic?",
+    "answers": ["bangui"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-165",
+    "category": "Places",
+    "prompt": "What is the capital of South Sudan?",
+    "answers": ["juba"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-166",
+    "category": "Places",
+    "prompt": "What is the capital of Eritrea?",
+    "answers": ["asmara"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-167",
+    "category": "Places",
+    "prompt": "What is the capital of Djibouti?",
+    "answers": ["djibouti", "djibouti city"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-168",
+    "category": "Places",
+    "prompt": "What is the capital of Lesotho?",
+    "answers": ["maseru"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-169",
+    "category": "Places",
+    "prompt": "What is the capital of Malawi?",
+    "answers": ["lilongwe"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-170",
+    "category": "Places",
+    "prompt": "What is the capital of Sierra Leone?",
+    "answers": ["freetown"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-171",
+    "category": "Places",
+    "prompt": "What is the capital of Liberia?",
+    "answers": ["monrovia"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-172",
+    "category": "Places",
+    "prompt": "What is the capital of Guinea?",
+    "answers": ["conakry"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-173",
+    "category": "Places",
+    "prompt": "What is the capital of Mauritania?",
+    "answers": ["nouakchott"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-174",
+    "category": "Places",
+    "prompt": "What is the capital of the Gambia?",
+    "answers": ["banjul"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-175",
+    "category": "Places",
+    "prompt": "What is the capital of Togo?",
+    "answers": ["lome", "lomé"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-176",
+    "category": "Places",
+    "prompt": "What is the political capital of Burundi?",
+    "answers": ["gitega"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-177",
+    "category": "Places",
+    "prompt": "What is the name of the world's largest salt flat, located in Bolivia?",
+    "answers": ["salar de uyuni", "uyuni salt flat", "uyuni"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-178",
+    "category": "Places",
+    "prompt": "What is the name of the deepest ocean trench in the world?",
+    "answers": ["mariana trench"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-179",
+    "category": "Places",
+    "prompt": "What is the second longest river in Africa?",
+    "answers": ["congo river", "congo", "river congo"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-180",
+    "category": "Places",
+    "prompt": "What is the largest island in the Mediterranean Sea?",
+    "answers": ["sicily"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-181",
+    "category": "Places",
+    "prompt": "What river forms the natural border between the United States and Mexico along its lower course?",
+    "answers": ["rio grande", "rio bravo"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-182",
+    "category": "Places",
+    "prompt": "What large lake sits on the border between Peru and Bolivia?",
+    "answers": ["lake titicaca", "titicaca"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-183",
+    "category": "Places",
+    "prompt": "In which country is the Atacama Desert primarily located?",
+    "answers": ["chile"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-184",
+    "category": "Places",
+    "prompt": "What is the name of the desert covering much of southern Mongolia and northern China?",
+    "answers": ["gobi", "gobi desert"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-185",
+    "category": "Places",
+    "prompt": "What is the name of the semi-arid desert spanning Botswana, Namibia, and South Africa?",
+    "answers": ["kalahari", "kalahari desert"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-186",
+    "category": "Places",
+    "prompt": "What is the name of the narrow strip of land connecting North America and South America?",
+    "answers": ["isthmus of panama", "panama isthmus"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-187",
+    "category": "Places",
+    "prompt": "In which ocean are the Galapagos Islands located?",
+    "answers": ["pacific ocean", "pacific"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-188",
+    "category": "Places",
+    "prompt": "What is the name of the world's largest coral reef system, off the coast of Australia?",
+    "answers": ["great barrier reef"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-189",
+    "category": "Places",
+    "prompt": "What is the name of the sea between Italy and the Balkan Peninsula?",
+    "answers": ["adriatic sea", "adriatic"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-190",
+    "category": "Places",
+    "prompt": "What is the highest peak in North America?",
+    "answers": ["denali", "mount denali", "mount mckinley", "mckinley"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-191",
+    "category": "Places",
+    "prompt": "What is the highest peak in South America?",
+    "answers": ["aconcagua", "mount aconcagua"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-192",
+    "category": "Places",
+    "prompt": "What is the name of the canal in Egypt connecting the Mediterranean Sea to the Red Sea?",
+    "answers": ["suez canal"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-193",
+    "category": "Places",
+    "prompt": "In which US state is Denali (the highest peak in North America) located?",
+    "answers": ["alaska"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-194",
+    "category": "Places",
+    "prompt": "What is the name of the peninsula on which Spain and Portugal are located?",
+    "answers": ["iberian peninsula", "iberia"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-195",
+    "category": "Places",
+    "prompt": "In which ocean are the Azores islands located?",
+    "answers": ["atlantic ocean", "atlantic", "north atlantic ocean", "north atlantic"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-196",
+    "category": "Places",
+    "prompt": "What is the name of the river delta formed by the Ganges and Brahmaputra rivers, the world's largest?",
+    "answers": ["ganges-brahmaputra delta", "sundarbans delta", "sundarbans", "ganges delta"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-197",
+    "category": "Places",
+    "prompt": "What is the largest island in the world?",
+    "answers": ["greenland"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-198",
+    "category": "Places",
+    "prompt": "What is the name of the world's longest fjord, located in Greenland?",
+    "answers": ["scoresby sound", "scoresby sund"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-199",
+    "category": "Places",
+    "prompt": "What is the name of the famous deep Norwegian fjord that is the world's deepest?",
+    "answers": ["sognefjord", "sognefjorden"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "places-200",
+    "category": "Places",
+    "prompt": "In which country is the ancient rose-red rock city of Petra located?",
+    "answers": ["jordan"],
+    "difficulty": "hard"
+  }
+]

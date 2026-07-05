@@ -1,0 +1,1402 @@
+[
+  {
+    "id": "history-001",
+    "category": "History",
+    "prompt": "In which year did World War II end?",
+    "answers": ["1945"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-002",
+    "category": "History",
+    "prompt": "In which year did World War II begin?",
+    "answers": ["1939"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-003",
+    "category": "History",
+    "prompt": "Who was the first President of the United States?",
+    "answers": ["george washington"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-004",
+    "category": "History",
+    "prompt": "In which year was the United States Declaration of Independence signed?",
+    "answers": ["1776"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-005",
+    "category": "History",
+    "prompt": "In which year did the French Revolution begin?",
+    "answers": ["1789"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-006",
+    "category": "History",
+    "prompt": "In which year did Christopher Columbus first reach the Americas?",
+    "answers": ["1492"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-007",
+    "category": "History",
+    "prompt": "In which year did the Berlin Wall fall?",
+    "answers": ["1989"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-008",
+    "category": "History",
+    "prompt": "Which ancient Egyptian queen formed a political alliance with Julius Caesar?",
+    "answers": ["cleopatra", "cleopatra vii"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-009",
+    "category": "History",
+    "prompt": "In which city was Julius Caesar assassinated in 44 BC?",
+    "answers": ["rome"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-010",
+    "category": "History",
+    "prompt": "Which ancient Greek city-state was famous for its strict warrior culture?",
+    "answers": ["sparta"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-011",
+    "category": "History",
+    "prompt": "What was the name of the ocean liner that sank after hitting an iceberg in April 1912?",
+    "answers": ["titanic", "rms titanic", "the titanic"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-012",
+    "category": "History",
+    "prompt": "What document did King John of England sign in 1215 to limit royal power?",
+    "answers": ["magna carta", "the magna carta"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-013",
+    "category": "History",
+    "prompt": "In which year did World War I begin?",
+    "answers": ["1914"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-014",
+    "category": "History",
+    "prompt": "In which year did World War I end?",
+    "answers": ["1918"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-015",
+    "category": "History",
+    "prompt": "Who led the Bolshevik Revolution in Russia in 1917?",
+    "answers": ["vladimir lenin", "lenin"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-016",
+    "category": "History",
+    "prompt": "Who was the dictator of Germany during World War II?",
+    "answers": ["adolf hitler", "hitler"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-017",
+    "category": "History",
+    "prompt": "In which year did the Soviet Union officially dissolve?",
+    "answers": ["1991"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-018",
+    "category": "History",
+    "prompt": "What massive fortification did ancient China build along its northern border to defend against invasions?",
+    "answers": ["the great wall", "great wall", "great wall of china"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-019",
+    "category": "History",
+    "prompt": "In which year did humans first land on the Moon?",
+    "answers": ["1969"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-020",
+    "category": "History",
+    "prompt": "At which battle did Napoleon Bonaparte suffer his final defeat in 1815?",
+    "answers": ["waterloo", "battle of waterloo"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-021",
+    "category": "History",
+    "prompt": "Who served as British Prime Minister during most of World War II?",
+    "answers": ["winston churchill", "churchill"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-022",
+    "category": "History",
+    "prompt": "In which year did the American Civil War end?",
+    "answers": ["1865"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-023",
+    "category": "History",
+    "prompt": "Which country is credited with inventing gunpowder?",
+    "answers": ["china"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-024",
+    "category": "History",
+    "prompt": "What ancient trade network connected China to the Mediterranean world?",
+    "answers": ["silk road", "the silk road"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-025",
+    "category": "History",
+    "prompt": "Which country did Mahatma Gandhi lead to independence through nonviolent resistance?",
+    "answers": ["india"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-026",
+    "category": "History",
+    "prompt": "In which year did India gain independence from Britain?",
+    "answers": ["1947"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-027",
+    "category": "History",
+    "prompt": "Who was the first Emperor of Rome?",
+    "answers": ["augustus", "augustus caesar", "octavian"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-028",
+    "category": "History",
+    "prompt": "What was the capital city of the Byzantine Empire?",
+    "answers": ["constantinople"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-029",
+    "category": "History",
+    "prompt": "Who was the first person to walk on the Moon?",
+    "answers": ["neil armstrong"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-030",
+    "category": "History",
+    "prompt": "The Aztec Empire was located in the territory of which modern-day country?",
+    "answers": ["mexico"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-031",
+    "category": "History",
+    "prompt": "In which year did the Russian Revolution overthrow Tsar Nicholas II?",
+    "answers": ["1917"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-032",
+    "category": "History",
+    "prompt": "Alexander the Great was the king of which ancient kingdom?",
+    "answers": ["macedon", "macedonia"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-033",
+    "category": "History",
+    "prompt": "Which Roman emperor made Christianity the official religion of the Roman Empire?",
+    "answers": ["constantine", "constantine the great", "constantine i"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-034",
+    "category": "History",
+    "prompt": "In which country did the Renaissance cultural movement begin?",
+    "answers": ["italy"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-035",
+    "category": "History",
+    "prompt": "Who wrote the ancient Chinese military treatise known as 'The Art of War'?",
+    "answers": ["sun tzu", "sun zi"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-036",
+    "category": "History",
+    "prompt": "Who was the first woman to win a Nobel Prize?",
+    "answers": ["marie curie"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-037",
+    "category": "History",
+    "prompt": "Which ancient city is regarded as the birthplace of democracy?",
+    "answers": ["athens"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-038",
+    "category": "History",
+    "prompt": "Which US President issued the Emancipation Proclamation to free enslaved people in Confederate states?",
+    "answers": ["abraham lincoln", "lincoln"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-039",
+    "category": "History",
+    "prompt": "Which country launched the first artificial satellite, Sputnik, into space?",
+    "answers": ["soviet union", "ussr", "russia", "the soviet union"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-040",
+    "category": "History",
+    "prompt": "In which year did the first modern Olympic Games take place in Athens?",
+    "answers": ["1896"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-041",
+    "category": "History",
+    "prompt": "What was the name of the devastating plague that killed roughly one-third of Europe's population in the 14th century?",
+    "answers": ["the black death", "black death", "bubonic plague", "plague"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-042",
+    "category": "History",
+    "prompt": "Which river was the lifeblood of the ancient Egyptian civilization?",
+    "answers": ["the nile", "nile", "nile river"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-043",
+    "category": "History",
+    "prompt": "In which year was the atomic bomb dropped on Hiroshima, Japan?",
+    "answers": ["1945"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-044",
+    "category": "History",
+    "prompt": "Which country dropped atomic bombs on Japan during World War II?",
+    "answers": ["united states", "usa", "america", "the united states"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-045",
+    "category": "History",
+    "prompt": "Which ancient civilization built the Great Pyramid of Giza?",
+    "answers": ["egyptians", "ancient egyptians", "egypt"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-046",
+    "category": "History",
+    "prompt": "Who commanded the expedition that first circumnavigated the globe, dying before its completion?",
+    "answers": ["ferdinand magellan", "magellan"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-047",
+    "category": "History",
+    "prompt": "Which city was divided by a famous wall from 1961 until 1989?",
+    "answers": ["berlin"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-048",
+    "category": "History",
+    "prompt": "Which ancient Greek philosopher tutored Alexander the Great?",
+    "answers": ["aristotle"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-049",
+    "category": "History",
+    "prompt": "Which ancient Greek philosopher was sentenced to drink hemlock for corrupting Athenian youth?",
+    "answers": ["socrates"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-050",
+    "category": "History",
+    "prompt": "What empire did Genghis Khan found in the early 13th century?",
+    "answers": ["the mongol empire", "mongol empire"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-051",
+    "category": "History",
+    "prompt": "Who was the Supreme Allied Commander during the D-Day invasion in 1944?",
+    "answers": ["dwight eisenhower", "eisenhower", "dwight d eisenhower"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-052",
+    "category": "History",
+    "prompt": "What ancient wonder stood at the entrance to the harbor of Alexandria, Egypt, guiding ships?",
+    "answers": ["the lighthouse of alexandria", "lighthouse of alexandria", "pharos of alexandria", "the pharos"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-053",
+    "category": "History",
+    "prompt": "Which ancient civilization built the city of Machu Picchu in the Andes mountains?",
+    "answers": ["inca", "incas", "incan", "the inca"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-054",
+    "category": "History",
+    "prompt": "Which Roman general crossed the Rubicon River in 49 BC, triggering a civil war?",
+    "answers": ["julius caesar", "caesar"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-055",
+    "category": "History",
+    "prompt": "Which ancient empire invaded Greece at the Battle of Thermopylae in 480 BC?",
+    "answers": ["the persian empire", "persian empire", "persia"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-056",
+    "category": "History",
+    "prompt": "Which artist painted the ceiling of the Sistine Chapel in the Vatican?",
+    "answers": ["michelangelo"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-057",
+    "category": "History",
+    "prompt": "In which year did Nelson Mandela become the first democratically elected President of South Africa?",
+    "answers": ["1994"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-058",
+    "category": "History",
+    "prompt": "What famous document did Martin Luther post on a church door in Wittenberg in 1517?",
+    "answers": ["ninety-five theses", "95 theses", "the ninety-five theses"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-059",
+    "category": "History",
+    "prompt": "Which country was the first in the world to grant women the right to vote in national elections?",
+    "answers": ["new zealand"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-060",
+    "category": "History",
+    "prompt": "What was the name of the first permanent English settlement in North America, founded in 1607?",
+    "answers": ["jamestown"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-061",
+    "category": "History",
+    "prompt": "In which year did the American Civil War begin?",
+    "answers": ["1861"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-062",
+    "category": "History",
+    "prompt": "Who was the first European explorer to reach India by sailing around the southern tip of Africa?",
+    "answers": ["vasco da gama"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-063",
+    "category": "History",
+    "prompt": "What was the name of the ship that carried the Pilgrims from England to North America in 1620?",
+    "answers": ["the mayflower", "mayflower"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-064",
+    "category": "History",
+    "prompt": "Who invented the movable-type printing press in Europe around 1440?",
+    "answers": ["johannes gutenberg", "gutenberg"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-065",
+    "category": "History",
+    "prompt": "In which year was the Eiffel Tower completed in Paris?",
+    "answers": ["1889"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-066",
+    "category": "History",
+    "prompt": "What ancient picture-based writing system was used by the ancient Egyptians?",
+    "answers": ["hieroglyphics", "hieroglyphs", "hieroglyphic"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-067",
+    "category": "History",
+    "prompt": "In which year was the Battle of Hastings fought?",
+    "answers": ["1066"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "history-068",
+    "category": "History",
+    "prompt": "What was the name of the peace treaty that officially ended World War I?",
+    "answers": ["treaty of versailles", "the treaty of versailles"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-069",
+    "category": "History",
+    "prompt": "The ancient city of Carthage was located in which modern-day country?",
+    "answers": ["tunisia"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-070",
+    "category": "History",
+    "prompt": "What was the name of the giant colossus statue that once stood at the entrance to the harbor of the Greek island of Rhodes?",
+    "answers": ["the colossus of rhodes", "colossus of rhodes"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-071",
+    "category": "History",
+    "prompt": "Who was the last Tsar of Russia, who abdicated in 1917?",
+    "answers": ["nicholas ii", "nicholas the second", "tsar nicholas ii"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-072",
+    "category": "History",
+    "prompt": "Who led the Norman conquest of England in 1066?",
+    "answers": ["william the conqueror", "william i", "william of normandy"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-073",
+    "category": "History",
+    "prompt": "Which ancient civilization of Mesopotamia developed cuneiform, one of the earliest known writing systems?",
+    "answers": ["sumer", "sumerians", "mesopotamia"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-074",
+    "category": "History",
+    "prompt": "What was the name of the political party that Adolf Hitler led to power in Germany?",
+    "answers": ["the nazi party", "nazi party", "national socialist german workers party", "nsdap"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-075",
+    "category": "History",
+    "prompt": "Which ancient Roman city was preserved under volcanic ash when Mount Vesuvius erupted in 79 AD?",
+    "answers": ["pompeii"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-076",
+    "category": "History",
+    "prompt": "In which year did the United States officially enter World War I?",
+    "answers": ["1917"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-077",
+    "category": "History",
+    "prompt": "Which English king was tried and executed during the English Civil War in 1649?",
+    "answers": ["charles i", "charles the first", "king charles i"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-078",
+    "category": "History",
+    "prompt": "What was the name of the naval battle in 480 BC where the Greek fleet decisively defeated the Persian navy?",
+    "answers": ["salamis", "battle of salamis"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-079",
+    "category": "History",
+    "prompt": "Who was the Carthaginian general who crossed the Alps with war elephants to attack Rome?",
+    "answers": ["hannibal", "hannibal barca"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-080",
+    "category": "History",
+    "prompt": "In which ancient Greek sanctuary were the original Olympic Games held?",
+    "answers": ["olympia"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-081",
+    "category": "History",
+    "prompt": "Which Persian king led the massive invasion of Greece that was turned back at Salamis in 480 BC?",
+    "answers": ["xerxes", "xerxes i", "xerxes the great"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-082",
+    "category": "History",
+    "prompt": "In which year was the modern State of Israel formally declared?",
+    "answers": ["1948"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-083",
+    "category": "History",
+    "prompt": "In which year did Mao Zedong establish the People's Republic of China?",
+    "answers": ["1949"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-084",
+    "category": "History",
+    "prompt": "In which year did the Korean War end?",
+    "answers": ["1953"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-085",
+    "category": "History",
+    "prompt": "Who was the British monarch during the American Revolution?",
+    "answers": ["king george iii", "george iii", "george the third"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-086",
+    "category": "History",
+    "prompt": "What was the name of the 1783 treaty that formally ended the American Revolutionary War?",
+    "answers": ["treaty of paris", "the treaty of paris"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-087",
+    "category": "History",
+    "prompt": "In which year did Martin Luther post his Ninety-Five Theses, traditionally marking the start of the Protestant Reformation?",
+    "answers": ["1517"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-088",
+    "category": "History",
+    "prompt": "In which year was the United Nations founded?",
+    "answers": ["1945"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-089",
+    "category": "History",
+    "prompt": "What was the name of the ancient Incan capital city, located in present-day Peru?",
+    "answers": ["cusco", "cuzco"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-090",
+    "category": "History",
+    "prompt": "Who commanded the Confederate forces during most of the American Civil War?",
+    "answers": ["robert e lee", "robert e. lee", "lee"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-091",
+    "category": "History",
+    "prompt": "To which island was Napoleon Bonaparte exiled after his defeat at Waterloo?",
+    "answers": ["saint helena", "st helena", "st. helena"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-092",
+    "category": "History",
+    "prompt": "Which battle in 490 BC, where the Greeks defeated a Persian invasion force, inspired the legend of the marathon run?",
+    "answers": ["marathon", "battle of marathon"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-093",
+    "category": "History",
+    "prompt": "What was the name of South Africa's system of institutionalized racial segregation enforced by the government?",
+    "answers": ["apartheid"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-094",
+    "category": "History",
+    "prompt": "Who was the first female Prime Minister of the United Kingdom?",
+    "answers": ["margaret thatcher", "thatcher"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-095",
+    "category": "History",
+    "prompt": "In which year did Fidel Castro's revolution establish a communist government in Cuba?",
+    "answers": ["1959"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-096",
+    "category": "History",
+    "prompt": "Who was the Emperor of Japan during World War II?",
+    "answers": ["hirohito", "emperor hirohito"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-097",
+    "category": "History",
+    "prompt": "What name is given to the mass killings of Armenians carried out by the Ottoman Empire during World War I?",
+    "answers": ["the armenian genocide", "armenian genocide"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-098",
+    "category": "History",
+    "prompt": "In which year did the Ottoman Empire formally dissolve?",
+    "answers": ["1922"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-099",
+    "category": "History",
+    "prompt": "Who was the first woman to fly solo across the Atlantic Ocean?",
+    "answers": ["amelia earhart", "earhart"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-100",
+    "category": "History",
+    "prompt": "Which Pharaoh of ancient Egypt is believed to have ordered the construction of the Great Pyramid at Giza?",
+    "answers": ["khufu", "cheops"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-101",
+    "category": "History",
+    "prompt": "What was the name of the great library of the ancient world, located in Alexandria, Egypt?",
+    "answers": ["library of alexandria", "the library of alexandria"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-102",
+    "category": "History",
+    "prompt": "Who was the first Emperor of the Holy Roman Empire, crowned on Christmas Day 800 AD?",
+    "answers": ["charlemagne", "charles the great"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-103",
+    "category": "History",
+    "prompt": "In which year did the United States purchase Alaska from Russia?",
+    "answers": ["1867"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-104",
+    "category": "History",
+    "prompt": "In which year was King Louis XVI of France executed by guillotine?",
+    "answers": ["1793"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-105",
+    "category": "History",
+    "prompt": "Who was the first European explorer to sight the Pacific Ocean from a peak in Panama in 1513?",
+    "answers": ["vasco nunez de balboa", "balboa", "nunez de balboa"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-106",
+    "category": "History",
+    "prompt": "In which year did Napoleon Bonaparte escape from his first exile on the island of Elba?",
+    "answers": ["1815"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-107",
+    "category": "History",
+    "prompt": "What was the name of the famous pass where 300 Spartans held off a vast Persian army in 480 BC?",
+    "answers": ["thermopylae", "battle of thermopylae"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-108",
+    "category": "History",
+    "prompt": "What was the name of the last imperial dynasty to rule China, overthrown in 1912?",
+    "answers": ["qing", "qing dynasty", "the qing dynasty"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-109",
+    "category": "History",
+    "prompt": "What ancient Greek epic poem, attributed to Homer, tells the story of the Trojan War?",
+    "answers": ["the iliad", "iliad"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-110",
+    "category": "History",
+    "prompt": "In which year did the Pilgrim Fathers land at Plymouth in North America?",
+    "answers": ["1620"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-111",
+    "category": "History",
+    "prompt": "In which year did the Ottoman Turks capture Constantinople, ending the Byzantine Empire?",
+    "answers": ["1453"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-112",
+    "category": "History",
+    "prompt": "Who was the Venetian merchant who documented his travels to China and his service at the court of Kublai Khan?",
+    "answers": ["marco polo"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-113",
+    "category": "History",
+    "prompt": "In which year was the United States Constitution signed by the delegates to the Constitutional Convention?",
+    "answers": ["1787"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-114",
+    "category": "History",
+    "prompt": "What ancient Greek hero is credited with devising the Trojan Horse stratagem to end the Trojan War?",
+    "answers": ["odysseus", "ulysses"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-115",
+    "category": "History",
+    "prompt": "What was the name of the series of religious wars launched by European Christians to recover the Holy Land from Muslim control?",
+    "answers": ["the crusades", "crusades"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-116",
+    "category": "History",
+    "prompt": "In which year did Japan's Meiji Restoration begin, launching the country's rapid modernization?",
+    "answers": ["1868"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-117",
+    "category": "History",
+    "prompt": "Who founded the religion of Islam in the 7th century AD?",
+    "answers": ["muhammad", "prophet muhammad", "the prophet muhammad"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-118",
+    "category": "History",
+    "prompt": "Which was the first dynasty to unify China under a single emperor, in 221 BC?",
+    "answers": ["qin", "qin dynasty", "the qin dynasty"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-119",
+    "category": "History",
+    "prompt": "What was the common name for the non-aggression pact signed between Nazi Germany and the Soviet Union in August 1939?",
+    "answers": ["molotov-ribbentrop pact", "nazi-soviet pact", "ribbentrop-molotov pact", "german-soviet pact"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-120",
+    "category": "History",
+    "prompt": "In which year did the Napoleonic Wars finally end?",
+    "answers": ["1815"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-121",
+    "category": "History",
+    "prompt": "Who was the first European explorer to sail around the Cape of Good Hope, in 1488?",
+    "answers": ["bartolomeu dias", "bartholomew diaz", "bartolomew dias", "dias"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-122",
+    "category": "History",
+    "prompt": "In which year was the Communist Manifesto, written by Karl Marx and Friedrich Engels, first published?",
+    "answers": ["1848"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-123",
+    "category": "History",
+    "prompt": "In which year did the Spanish Armada attempt its invasion of England?",
+    "answers": ["1588"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-124",
+    "category": "History",
+    "prompt": "What international organization was created after World War I to promote collective security and resolve disputes?",
+    "answers": ["league of nations", "the league of nations"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-125",
+    "category": "History",
+    "prompt": "In which year was the Suez Canal first opened to navigation?",
+    "answers": ["1869"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-126",
+    "category": "History",
+    "prompt": "Who was the first explorer to reach the South Pole, in December 1911?",
+    "answers": ["roald amundsen", "amundsen"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-127",
+    "category": "History",
+    "prompt": "In which year did Copernicus publish his theory that the Earth revolves around the Sun?",
+    "answers": ["1543"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-128",
+    "category": "History",
+    "prompt": "Which ancient empire did Rome fight in the three Punic Wars?",
+    "answers": ["carthage", "carthaginian empire"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-129",
+    "category": "History",
+    "prompt": "In which year did Napoleon Bonaparte's catastrophic invasion of Russia take place?",
+    "answers": ["1812"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-130",
+    "category": "History",
+    "prompt": "What was the name of the first artificial satellite launched into Earth orbit, in 1957?",
+    "answers": ["sputnik", "sputnik 1"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-131",
+    "category": "History",
+    "prompt": "Which African country was the only one never fully colonized by a European power throughout the colonial era?",
+    "answers": ["ethiopia"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-132",
+    "category": "History",
+    "prompt": "In which year did the United States purchase the Louisiana Territory from France, doubling its size?",
+    "answers": ["1803"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-133",
+    "category": "History",
+    "prompt": "Who was the first European explorer to reach the coast of Brazil, arriving in 1500?",
+    "answers": ["pedro alvares cabral", "cabral", "pedro cabral"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-134",
+    "category": "History",
+    "prompt": "What ancient wonder of the world was a giant garden structure, traditionally said to have been built in Babylon?",
+    "answers": ["the hanging gardens of babylon", "hanging gardens of babylon", "hanging gardens"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "history-135",
+    "category": "History",
+    "prompt": "Which ancient Babylonian king is known for one of the earliest surviving written law codes in history?",
+    "answers": ["hammurabi"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-136",
+    "category": "History",
+    "prompt": "Who was the founder of the Achaemenid Persian Empire in the 6th century BC?",
+    "answers": ["cyrus the great", "cyrus ii", "cyrus"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-137",
+    "category": "History",
+    "prompt": "Who was the Spartan king who led the famous 300 warriors at the Battle of Thermopylae?",
+    "answers": ["leonidas", "leonidas i"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-138",
+    "category": "History",
+    "prompt": "Which Roman emperor ordered the construction of the Colosseum in Rome?",
+    "answers": ["vespasian"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-139",
+    "category": "History",
+    "prompt": "What was the name of the 1571 naval battle where the Holy League defeated the Ottoman fleet?",
+    "answers": ["lepanto", "battle of lepanto"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-140",
+    "category": "History",
+    "prompt": "What was the name of the 1648 peace agreement that ended the Thirty Years' War and established the concept of national sovereignty?",
+    "answers": ["peace of westphalia", "treaty of westphalia", "westphalia"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-141",
+    "category": "History",
+    "prompt": "Who was the first female pharaoh of ancient Egypt to reign as king in her own right?",
+    "answers": ["hatshepsut"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-142",
+    "category": "History",
+    "prompt": "In which year did the Roman Empire permanently split into Eastern and Western halves?",
+    "answers": ["395", "395 ad"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-143",
+    "category": "History",
+    "prompt": "What was the Mongol name for the capital that Kublai Khan established in present-day Beijing?",
+    "answers": ["khanbaliq", "khanbalik", "cambaluc", "dadu"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-144",
+    "category": "History",
+    "prompt": "Who was the founder of the Maurya Empire in ancient India, around 322 BC?",
+    "answers": ["chandragupta maurya", "chandragupta"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-145",
+    "category": "History",
+    "prompt": "What was the name of the ancient Greek military formation of soldiers with overlapping shields and long spears?",
+    "answers": ["phalanx", "the phalanx"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-146",
+    "category": "History",
+    "prompt": "Which Germanic tribe, led by Alaric, sacked Rome in 410 AD?",
+    "answers": ["visigoths", "the visigoths"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-147",
+    "category": "History",
+    "prompt": "In which year did Attila the Hun die, halting the Hunnic advance into Western Europe?",
+    "answers": ["453", "453 ad"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-148",
+    "category": "History",
+    "prompt": "What ancient inscription, discovered in Egypt in 1799, was the key to deciphering Egyptian hieroglyphics?",
+    "answers": ["rosetta stone", "the rosetta stone"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-149",
+    "category": "History",
+    "prompt": "Who was the founder of the Gupta Empire in ancient India, which presided over a golden age of culture?",
+    "answers": ["chandragupta i"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-150",
+    "category": "History",
+    "prompt": "Which medieval Arab physician and philosopher wrote the influential 'Canon of Medicine'?",
+    "answers": ["ibn sina", "avicenna"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-151",
+    "category": "History",
+    "prompt": "In which year was Charlemagne crowned Emperor of the Romans by Pope Leo III?",
+    "answers": ["800", "800 ad"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-152",
+    "category": "History",
+    "prompt": "What was the name of the great Aztec capital city that stood where Mexico City is today?",
+    "answers": ["tenochtitlan"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-153",
+    "category": "History",
+    "prompt": "In which year did Tokugawa Ieyasu become shogun and consolidate control over Japan?",
+    "answers": ["1603"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-154",
+    "category": "History",
+    "prompt": "Who was the aged Doge of Venice who steered the Fourth Crusade to sack Constantinople in 1204?",
+    "answers": ["enrico dandolo", "dandolo"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-155",
+    "category": "History",
+    "prompt": "In which year did the Mongols sack Baghdad and execute the Abbasid Caliph, ending the Abbasid Caliphate?",
+    "answers": ["1258"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-156",
+    "category": "History",
+    "prompt": "Who was the Aztec emperor when Hernan Cortes arrived in Mexico in 1519?",
+    "answers": ["moctezuma ii", "moctezuma", "montezuma", "montezuma ii"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-157",
+    "category": "History",
+    "prompt": "What was the name of the great Silk Road city that served as the capital of Timur's empire in Central Asia?",
+    "answers": ["samarkand"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-158",
+    "category": "History",
+    "prompt": "In which year did the Spanish Inquisition officially begin under papal authorization?",
+    "answers": ["1478"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-159",
+    "category": "History",
+    "prompt": "What was the name of the 333 BC battle where Alexander the Great decisively defeated the Persian Emperor Darius III?",
+    "answers": ["issus", "battle of issus"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-160",
+    "category": "History",
+    "prompt": "Who was the last Byzantine Emperor, who died defending Constantinople against the Ottomans in 1453?",
+    "answers": ["constantine xi", "constantine xi palaiologos", "constantine palaiologos"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-161",
+    "category": "History",
+    "prompt": "What was the name of the 338 BC battle where Philip II of Macedon defeated a combined Athenian and Theban army?",
+    "answers": ["chaeronea", "battle of chaeronea"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-162",
+    "category": "History",
+    "prompt": "Which Mughal emperor commissioned the building of the Taj Mahal as a tomb for his wife?",
+    "answers": ["shah jahan"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-163",
+    "category": "History",
+    "prompt": "What name is given to the ancient writing system used by the Indus Valley Civilization, which scholars have never deciphered?",
+    "answers": ["indus script", "indus valley script", "harappan script"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-164",
+    "category": "History",
+    "prompt": "Who was the founder of the Sikh religion in the 15th century?",
+    "answers": ["guru nanak", "nanak", "guru nanak dev"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-165",
+    "category": "History",
+    "prompt": "In which year did the Hundred Years' War between England and France end?",
+    "answers": ["1453"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-166",
+    "category": "History",
+    "prompt": "What was the name of the ancient Mongol capital city from which Genghis Khan's successors ruled their empire?",
+    "answers": ["karakorum", "qaraqorum"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-167",
+    "category": "History",
+    "prompt": "What year does ancient Roman tradition hold as the founding date of the city of Rome?",
+    "answers": ["753 bc", "753"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-168",
+    "category": "History",
+    "prompt": "What was the name of the 325 AD council convened by Constantine that established foundational Christian doctrine?",
+    "answers": ["council of nicaea", "the council of nicaea", "first council of nicaea"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-169",
+    "category": "History",
+    "prompt": "What was the name of the famously wealthy ancient Lydian king whose name became a byword for immense riches?",
+    "answers": ["croesus"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-170",
+    "category": "History",
+    "prompt": "What ancient people carved the city of Petra into the rose-red sandstone cliffs of present-day Jordan?",
+    "answers": ["nabataeans", "the nabataeans", "nabataean"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-171",
+    "category": "History",
+    "prompt": "Who was the Chinese admiral who commanded massive treasure voyages across the Indian Ocean in the early 15th century?",
+    "answers": ["zheng he", "cheng ho"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-172",
+    "category": "History",
+    "prompt": "Which Japanese warlord first unified Japan in the late 16th century before being assassinated at Honno-ji Temple in 1582?",
+    "answers": ["oda nobunaga", "nobunaga"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-173",
+    "category": "History",
+    "prompt": "What was the term for the enslaved class of people who were forced to work Spartan agricultural land?",
+    "answers": ["helots", "helot"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-174",
+    "category": "History",
+    "prompt": "In which year was the Gutenberg Bible, the first major book printed with movable metal type, completed?",
+    "answers": ["1455"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-175",
+    "category": "History",
+    "prompt": "What was the name of the Aztec god of war and the sun who required human blood sacrifice?",
+    "answers": ["huitzilopochtli"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-176",
+    "category": "History",
+    "prompt": "Who was the famous Athenian statesman who presided over Athens during its 5th-century BC Golden Age?",
+    "answers": ["pericles"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-177",
+    "category": "History",
+    "prompt": "Which Mongol ruler conquered most of China and established the Yuan Dynasty?",
+    "answers": ["kublai khan", "kubla khan"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-178",
+    "category": "History",
+    "prompt": "In which year did the Crimean War end?",
+    "answers": ["1856"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-179",
+    "category": "History",
+    "prompt": "Who founded the Safavid dynasty in Persia in the early 16th century, making Twelver Shia Islam the state religion?",
+    "answers": ["shah ismail i", "ismail i", "shah ismail"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-180",
+    "category": "History",
+    "prompt": "In which year did the Roman Republic officially transition into the Roman Empire under its first emperor?",
+    "answers": ["27 bc", "27"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-181",
+    "category": "History",
+    "prompt": "Which ancient Indian emperor, known for his edicts promoting nonviolence and Buddhism, is often called a philosopher king?",
+    "answers": ["ashoka", "asoka"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-182",
+    "category": "History",
+    "prompt": "In which year did the First Crusade capture Jerusalem?",
+    "answers": ["1099"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-183",
+    "category": "History",
+    "prompt": "On which Mediterranean island was Napoleon Bonaparte born in 1769?",
+    "answers": ["corsica"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-184",
+    "category": "History",
+    "prompt": "What was the name of the 31 BC naval battle where Octavian defeated Mark Antony and Cleopatra, ending the last war of the Roman Republic?",
+    "answers": ["actium", "battle of actium"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-185",
+    "category": "History",
+    "prompt": "Who was the first Tudor monarch of England, crowned after winning the Battle of Bosworth Field in 1485?",
+    "answers": ["henry vii", "henry the seventh"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-186",
+    "category": "History",
+    "prompt": "In which year did the Mughal Empire effectively end when the British exiled its last emperor after the Indian Rebellion?",
+    "answers": ["1857"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-187",
+    "category": "History",
+    "prompt": "What was the name of the monotheistic sun deity promoted by the Egyptian Pharaoh Akhenaten?",
+    "answers": ["aten", "aton"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-188",
+    "category": "History",
+    "prompt": "In which year was Marie Antoinette executed during the French Revolution?",
+    "answers": ["1793"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-189",
+    "category": "History",
+    "prompt": "What was the name of the ancient Nubian kingdom that rivaled Egypt and at one point conquered and ruled it?",
+    "answers": ["kush", "kingdom of kush", "nubia"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-190",
+    "category": "History",
+    "prompt": "Which ancient Greek scholar is credited with calculating the circumference of the Earth with remarkable accuracy around 240 BC?",
+    "answers": ["eratosthenes"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-191",
+    "category": "History",
+    "prompt": "What is the name of the simple substitution cipher that Julius Caesar used to encrypt military messages?",
+    "answers": ["caesar cipher", "the caesar cipher"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-192",
+    "category": "History",
+    "prompt": "In which year did Otto von Bismarck unify the German states into the German Empire?",
+    "answers": ["1871"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-193",
+    "category": "History",
+    "prompt": "Which ancient Roman historian wrote 'The Annals,' a major account covering the reigns of Tiberius through Nero?",
+    "answers": ["tacitus"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-194",
+    "category": "History",
+    "prompt": "What council, held in 787 AD, resolved the Byzantine iconoclasm controversy by restoring the veneration of icons?",
+    "answers": ["second council of nicaea", "the second council of nicaea"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-195",
+    "category": "History",
+    "prompt": "In which year did Zulu forces defeat a British army at the Battle of Isandlwana during the Anglo-Zulu War?",
+    "answers": ["1879"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-196",
+    "category": "History",
+    "prompt": "Who was the Incan emperor captured and eventually executed by the Spanish conquistador Francisco Pizarro?",
+    "answers": ["atahualpa"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-197",
+    "category": "History",
+    "prompt": "In which year did the Black Death first reach Europe via the port of Messina in Sicily?",
+    "answers": ["1347"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-198",
+    "category": "History",
+    "prompt": "Which Egyptian pharaoh's nearly intact tomb did archaeologist Howard Carter discover in the Valley of the Kings in 1922?",
+    "answers": ["tutankhamun", "tutankhamen", "king tut"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-199",
+    "category": "History",
+    "prompt": "Who was the last Aztec emperor, captured by Hernan Cortes when Tenochtitlan fell in 1521?",
+    "answers": ["cuauhtemoc", "cuauhtemoc tlatoani"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "history-200",
+    "category": "History",
+    "prompt": "Who was the Athenian general whose naval strategy secured the Greek victory over the Persians at the Battle of Salamis in 480 BC?",
+    "answers": ["themistocles"],
+    "difficulty": "hard"
+  }
+]

@@ -1,0 +1,1402 @@
+[
+  {
+    "id": "things-001",
+    "category": "Things",
+    "prompt": "What device tells you which direction is north using a magnetic needle?",
+    "answers": ["compass", "a compass", "magnetic compass"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-002",
+    "category": "Things",
+    "prompt": "What instrument measures the temperature of its surroundings using mercury or a digital sensor?",
+    "answers": ["thermometer", "a thermometer"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-003",
+    "category": "Things",
+    "prompt": "What cutting tool has two metal blades joined at a central pivot and is used to cut paper and fabric?",
+    "answers": ["scissors", "a pair of scissors", "shears"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-004",
+    "category": "Things",
+    "prompt": "What handheld optical lens in a frame makes objects appear larger when held close to them?",
+    "answers": ["magnifying glass", "a magnifying glass", "loupe", "hand lens"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-005",
+    "category": "Things",
+    "prompt": "What wall-mounted or tabletop device displays the current time using hands or a digital display?",
+    "answers": ["clock", "a clock"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-006",
+    "category": "Things",
+    "prompt": "What communication device converts voice into electrical signals to transmit speech over long distances?",
+    "answers": ["telephone", "a telephone", "phone", "a phone"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-007",
+    "category": "Things",
+    "prompt": "What glass envelope containing a filament or gas produces light when electricity is passed through it?",
+    "answers": ["light bulb", "a light bulb", "lightbulb", "bulb", "electric bulb"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-008",
+    "category": "Things",
+    "prompt": "What two-wheeled, pedal-powered vehicle is steered with handlebars and ridden for transportation or sport?",
+    "answers": ["bicycle", "a bicycle", "bike", "a bike"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-009",
+    "category": "Things",
+    "prompt": "What small electronic device with a keypad performs arithmetic and other mathematical calculations?",
+    "answers": ["calculator", "a calculator"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-010",
+    "category": "Things",
+    "prompt": "What large household appliance uses a refrigerant cycle to keep food and drinks cold?",
+    "answers": ["refrigerator", "a refrigerator", "fridge", "a fridge"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-011",
+    "category": "Things",
+    "prompt": "What collapsible canopy mounted on a handle is opened to shield a person from rain?",
+    "answers": ["umbrella", "an umbrella", "brolly", "a brolly"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-012",
+    "category": "Things",
+    "prompt": "What flat, polished surface reflects light to show a clear image of whatever stands before it?",
+    "answers": ["mirror", "a mirror", "looking glass"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-013",
+    "category": "Things",
+    "prompt": "What office tool drives small metal fasteners through sheets of paper to bind them together?",
+    "answers": ["stapler", "a stapler"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-014",
+    "category": "Things",
+    "prompt": "What tool with a weighted metal head on a handle is used to drive nails into wood?",
+    "answers": ["hammer", "a hammer", "claw hammer"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-015",
+    "category": "Things",
+    "prompt": "What long, straight-edged strip marked with unit measurements is used to measure length and draw straight lines?",
+    "answers": ["ruler", "a ruler", "rule", "straightedge"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-016",
+    "category": "Things",
+    "prompt": "What folded paper container with a sealable flap is used to send letters through the mail?",
+    "answers": ["envelope", "an envelope"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-017",
+    "category": "Things",
+    "prompt": "What long-handled cleaning tool with bristles at one end is used to sweep dust and debris from floors?",
+    "answers": ["broom", "a broom", "sweeping brush"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-018",
+    "category": "Things",
+    "prompt": "What cylindrical wax object with a central wick is burned to provide light?",
+    "answers": ["candle", "a candle"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-019",
+    "category": "Things",
+    "prompt": "What small metal object with a unique pattern of notches is inserted into a lock to open it?",
+    "answers": ["key", "a key"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-020",
+    "category": "Things",
+    "prompt": "What eating utensil has a shallow oval bowl on a handle and is used to scoop food or liquids?",
+    "answers": ["spoon", "a spoon"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-021",
+    "category": "Things",
+    "prompt": "What eating utensil with multiple pointed tines is used to spear and lift solid food?",
+    "answers": ["fork", "a fork"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-022",
+    "category": "Things",
+    "prompt": "What small open container with a handle is used to hold and drink hot or cold beverages?",
+    "answers": ["cup", "a cup", "mug", "a mug"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-023",
+    "category": "Things",
+    "prompt": "What round, deep dish is used to hold soup, cereal, or other food at a meal?",
+    "answers": ["bowl", "a bowl"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-024",
+    "category": "Things",
+    "prompt": "What flat, round dish is used to hold and serve solid food at a meal?",
+    "answers": ["plate", "a plate", "dinner plate"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-025",
+    "category": "Things",
+    "prompt": "What writing instrument uses liquid ink stored inside to leave marks on paper?",
+    "answers": ["pen", "a pen", "ballpoint pen", "ballpoint"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-026",
+    "category": "Things",
+    "prompt": "What slender writing instrument uses a graphite core to leave marks on paper that can be erased?",
+    "answers": ["pencil", "a pencil"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-027",
+    "category": "Things",
+    "prompt": "What small block of rubber is used to remove pencil marks from paper?",
+    "answers": ["eraser", "an eraser", "rubber", "a rubber"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-028",
+    "category": "Things",
+    "prompt": "What bag with two shoulder straps worn on the back is used to carry books and belongings?",
+    "answers": ["backpack", "a backpack", "rucksack", "a rucksack", "knapsack"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-029",
+    "category": "Things",
+    "prompt": "What small timepiece is strapped to the wrist for convenient timekeeping?",
+    "answers": ["watch", "a watch", "wristwatch", "a wristwatch"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-030",
+    "category": "Things",
+    "prompt": "What pair of corrective lenses in a frame is worn on the face to improve vision?",
+    "answers": ["glasses", "eyeglasses", "spectacles", "a pair of glasses"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-031",
+    "category": "Things",
+    "prompt": "What soft cushion filled with feathers or foam is placed under the head during sleep?",
+    "answers": ["pillow", "a pillow"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-032",
+    "category": "Things",
+    "prompt": "What large piece of soft fabric is draped over the body to provide warmth in bed?",
+    "answers": ["blanket", "a blanket"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-033",
+    "category": "Things",
+    "prompt": "What thick, absorbent cloth is used to dry the body after washing or swimming?",
+    "answers": ["towel", "a towel", "bath towel"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-034",
+    "category": "Things",
+    "prompt": "What cleansing product in bar or liquid form is used with water to wash away dirt and germs?",
+    "answers": ["soap", "a bar of soap", "hand soap"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-035",
+    "category": "Things",
+    "prompt": "What small brush with a long handle and soft bristles is used to clean the teeth?",
+    "answers": ["toothbrush", "a toothbrush"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-036",
+    "category": "Things",
+    "prompt": "What flat grooming tool with a row of thin teeth is used to separate and smooth hair?",
+    "answers": ["comb", "a comb", "hair comb"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-037",
+    "category": "Things",
+    "prompt": "What long strip of leather or fabric worn around the waist keeps trousers from falling down?",
+    "answers": ["belt", "a belt"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-038",
+    "category": "Things",
+    "prompt": "What fastening device uses two strips of interlocking metal or plastic teeth, opened and closed by a sliding tab?",
+    "answers": ["zipper", "a zipper", "zip", "a zip"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-039",
+    "category": "Things",
+    "prompt": "What thin, pointed metal instrument with an eye for thread is used to stitch fabric together by hand?",
+    "answers": ["needle", "a needle", "sewing needle"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-040",
+    "category": "Things",
+    "prompt": "What narrow strip coated with adhesive on one side is used to fasten or seal lightweight materials?",
+    "answers": ["tape", "adhesive tape", "sellotape", "scotch tape", "sticky tape"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-041",
+    "category": "Things",
+    "prompt": "What sticky liquid or paste is applied to surfaces to bond them together as it dries?",
+    "answers": ["glue", "adhesive", "a glue"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-042",
+    "category": "Things",
+    "prompt": "What thin rubber bag inflated with air or helium is used as a decoration at parties?",
+    "answers": ["balloon", "a balloon"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-043",
+    "category": "Things",
+    "prompt": "What device uses a lens to focus light onto a sensor or film to record photographs?",
+    "answers": ["camera", "a camera"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-044",
+    "category": "Things",
+    "prompt": "What portable electrochemical cell stores electrical energy and releases it to power devices?",
+    "answers": ["battery", "a battery"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-045",
+    "category": "Things",
+    "prompt": "What small handheld wireless device sends infrared signals to operate a television from across the room?",
+    "answers": ["remote control", "a remote control", "remote", "a remote", "tv remote"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-046",
+    "category": "Things",
+    "prompt": "What portable structure with two rails joined by evenly spaced rungs is used to climb up or down?",
+    "answers": ["ladder", "a ladder"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-047",
+    "category": "Things",
+    "prompt": "What open-topped cylindrical container with a handle is used to carry water and other materials?",
+    "answers": ["bucket", "a bucket", "pail", "a pail"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-048",
+    "category": "Things",
+    "prompt": "What strong, flexible length of twisted fiber is used for tying, hauling, or climbing?",
+    "answers": ["rope", "a rope"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-049",
+    "category": "Things",
+    "prompt": "What circular disc that rotates on a central axle is the fundamental mechanism enabling wheeled vehicles to move?",
+    "answers": ["wheel", "a wheel"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-050",
+    "category": "Things",
+    "prompt": "What flat printed or drawn representation of a geographic area shows roads, rivers, and landmarks?",
+    "answers": ["map", "a map"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-051",
+    "category": "Things",
+    "prompt": "What spherical model mounted on a stand has the continents, oceans, and countries of the Earth printed on its surface?",
+    "answers": ["globe", "a globe", "world globe", "terrestrial globe"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-052",
+    "category": "Things",
+    "prompt": "What small, flat metal disc issued by a government is used as a form of currency?",
+    "answers": ["coin", "a coin"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-053",
+    "category": "Things",
+    "prompt": "What small adhesive label affixed to an envelope or parcel shows that postage for delivery has been paid?",
+    "answers": ["postage stamp", "stamp", "a stamp", "a postage stamp"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-054",
+    "category": "Things",
+    "prompt": "What chart organized by days, weeks, and months is used to track the passage of time through a year?",
+    "answers": ["calendar", "a calendar"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-055",
+    "category": "Things",
+    "prompt": "What device with a platform or digital display is used to measure the weight of objects placed on it?",
+    "answers": ["scale", "scales", "weighing scale", "balance", "a scale"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-056",
+    "category": "Things",
+    "prompt": "What battery-powered handheld device emits a concentrated beam of light from an electric bulb?",
+    "answers": ["flashlight", "torch", "a flashlight", "a torch"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-057",
+    "category": "Things",
+    "prompt": "What tool with a flat or pointed metal blade fixed to a long wooden handle is used for digging earth?",
+    "answers": ["shovel", "a shovel", "spade", "a spade"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-058",
+    "category": "Things",
+    "prompt": "What tool with a serrated metal blade is moved back and forth to cut through wood or other materials?",
+    "answers": ["saw", "a saw", "handsaw", "a handsaw"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-059",
+    "category": "Things",
+    "prompt": "What tool with soft bristles fixed to a handle is used to apply paint or varnish to surfaces?",
+    "answers": ["paintbrush", "a paintbrush", "paint brush", "brush"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-060",
+    "category": "Things",
+    "prompt": "What object produces an invisible field that attracts iron and steel and can hold notes to a metal surface?",
+    "answers": ["magnet", "a magnet"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-061",
+    "category": "Things",
+    "prompt": "What portable enclosed light source protects a flame or electric bulb from wind and weather?",
+    "answers": ["lantern", "a lantern"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-062",
+    "category": "Things",
+    "prompt": "What small, colored wax stick is used by children to draw and color on paper?",
+    "answers": ["crayon", "a crayon", "wax crayon"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-063",
+    "category": "Things",
+    "prompt": "What bound collection of printed pages containing text or illustrations is published for reading?",
+    "answers": ["book", "a book"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-064",
+    "category": "Things",
+    "prompt": "What large, regularly printed publication on thin paper contains news articles and current events?",
+    "answers": ["newspaper", "a newspaper", "paper", "a paper"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-065",
+    "category": "Things",
+    "prompt": "What household electronic device receives broadcast signals and displays moving images and audio on a screen?",
+    "answers": ["television", "a television", "tv", "telly"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-066",
+    "category": "Things",
+    "prompt": "What bedside device is set in advance to produce a loud sound at a specific time in order to wake a person?",
+    "answers": ["alarm clock", "an alarm clock"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-067",
+    "category": "Things",
+    "prompt": "What small hollow instrument produces a shrill, loud sound when a person blows air through it?",
+    "answers": ["whistle", "a whistle"],
+    "difficulty": "easy"
+  },
+  {
+    "id": "things-068",
+    "category": "Things",
+    "prompt": "What ancient counting frame has beads that slide on rods and was used for arithmetic before calculators existed?",
+    "answers": ["abacus", "an abacus"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-069",
+    "category": "Things",
+    "prompt": "What navigational instrument measures the angle between a celestial body and the horizon to determine a ship's position at sea?",
+    "answers": ["sextant", "a sextant"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-070",
+    "category": "Things",
+    "prompt": "What instrument measures atmospheric pressure and is used to help predict changes in the weather?",
+    "answers": ["barometer", "a barometer"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-071",
+    "category": "Things",
+    "prompt": "What optical instrument using mirrors or prisms allows a submarine crew to observe the sea surface without surfacing?",
+    "answers": ["periscope", "a periscope"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-072",
+    "category": "Things",
+    "prompt": "What ancient timekeeping device uses the shadow of an upright arm cast by sunlight to indicate the hour of day?",
+    "answers": ["sundial", "a sundial"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-073",
+    "category": "Things",
+    "prompt": "What early electrical device transmits coded messages as pulses of current along a wire, widely used in the 19th century?",
+    "answers": ["telegraph", "a telegraph", "electric telegraph"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-074",
+    "category": "Things",
+    "prompt": "What early sound-reproduction machine invented by Thomas Edison plays recordings etched onto a rotating grooved cylinder or disc?",
+    "answers": ["phonograph", "a phonograph", "gramophone", "a gramophone"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-075",
+    "category": "Things",
+    "prompt": "What mechanical device with a keyboard prints letters one at a time onto paper by striking inked type against it?",
+    "answers": ["typewriter", "a typewriter"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-076",
+    "category": "Things",
+    "prompt": "What powered machine uses a needle and interlocking threads to stitch fabric together far faster than hand sewing?",
+    "answers": ["sewing machine", "a sewing machine"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-077",
+    "category": "Things",
+    "prompt": "What optical instrument uses multiple lenses to magnify objects too small to be seen clearly with the naked eye?",
+    "answers": ["microscope", "a microscope"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-078",
+    "category": "Things",
+    "prompt": "What optical instrument uses lenses or mirrors to make distant objects such as stars appear closer and larger?",
+    "answers": ["telescope", "a telescope"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-079",
+    "category": "Things",
+    "prompt": "What medical instrument worn around a doctor's neck transmits the sounds of the heart and lungs to earpieces?",
+    "answers": ["stethoscope", "a stethoscope"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-080",
+    "category": "Things",
+    "prompt": "What mechanical or electronic device produces a steady audible tick at an adjustable rate to help musicians keep time?",
+    "answers": ["metronome", "a metronome"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-081",
+    "category": "Things",
+    "prompt": "What two-pronged metal implement vibrates at a precise, fixed pitch when struck, used to tune musical instruments?",
+    "answers": ["tuning fork", "a tuning fork"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-082",
+    "category": "Things",
+    "prompt": "What laboratory gas burner produces a single, adjustable open flame used to heat equipment during experiments?",
+    "answers": ["bunsen burner", "a bunsen burner"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-083",
+    "category": "Things",
+    "prompt": "What laboratory machine spins samples at high speed in order to separate their components according to density?",
+    "answers": ["centrifuge", "a centrifuge"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-084",
+    "category": "Things",
+    "prompt": "What heavy block of iron or steel provides a hard surface on which a blacksmith hammers hot metal to shape it?",
+    "answers": ["anvil", "an anvil"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-085",
+    "category": "Things",
+    "prompt": "What machine tool holds and rotates a workpiece while a cutting tool shapes it into a cylindrical form?",
+    "answers": ["lathe", "a lathe"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-086",
+    "category": "Things",
+    "prompt": "What power tool uses a rotating bit to bore holes into wood, metal, or masonry?",
+    "answers": ["drill", "a drill", "power drill", "a power drill"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-087",
+    "category": "Things",
+    "prompt": "What hand tool with shaped jaws grips and turns nuts, bolts, and pipe fittings?",
+    "answers": ["wrench", "a wrench", "spanner", "a spanner"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-088",
+    "category": "Things",
+    "prompt": "What hinged hand tool with serrated jaws grips, bends, or cuts wire and small components?",
+    "answers": ["pliers", "a pair of pliers"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-089",
+    "category": "Things",
+    "prompt": "What tool contains a bubble trapped in a liquid-filled tube to indicate when a surface is perfectly horizontal or vertical?",
+    "answers": ["spirit level", "a spirit level", "level", "bubble level", "a level"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-090",
+    "category": "Things",
+    "prompt": "What tool with a hardened metal blade and a handle is driven by a mallet to carve or cut wood, stone, or metal?",
+    "answers": ["chisel", "a chisel"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-091",
+    "category": "Things",
+    "prompt": "What electrically heated tool melts soft metal solder to form permanent joints between electronic components?",
+    "answers": ["soldering iron", "a soldering iron"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-092",
+    "category": "Things",
+    "prompt": "What electronic test instrument measures voltage, electric current, and resistance in a single device?",
+    "answers": ["multimeter", "a multimeter"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-093",
+    "category": "Things",
+    "prompt": "What computer component stores digital data on spinning magnetic platters enclosed in a sealed metal housing?",
+    "answers": ["hard drive", "a hard drive", "hard disk", "hard disk drive", "hdd"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-094",
+    "category": "Things",
+    "prompt": "What device modulates and demodulates signals to connect a computer to the internet via telephone or cable lines?",
+    "answers": ["modem", "a modem"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-095",
+    "category": "Things",
+    "prompt": "What device uses a moving beam of light to convert printed documents and photographs into digital image files?",
+    "answers": ["scanner", "a scanner", "flatbed scanner"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-096",
+    "category": "Things",
+    "prompt": "What device uses a bright light source and lens to enlarge and display images or video onto a large screen?",
+    "answers": ["projector", "a projector", "video projector", "slide projector"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-097",
+    "category": "Things",
+    "prompt": "What device senses room temperature and automatically activates a heating or cooling system to maintain a set level?",
+    "answers": ["thermostat", "a thermostat"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-098",
+    "category": "Things",
+    "prompt": "What medical device delivers a controlled electric shock to the chest to restore a normal heart rhythm during cardiac arrest?",
+    "answers": ["defibrillator", "a defibrillator", "aed", "automated external defibrillator"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-099",
+    "category": "Things",
+    "prompt": "What medical device directs electromagnetic radiation through the body to produce images of internal structures such as bones?",
+    "answers": ["x-ray machine", "xray machine", "x ray machine"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-100",
+    "category": "Things",
+    "prompt": "What scientific instrument detects and records vibrations in the ground caused by earthquakes or other seismic events?",
+    "answers": ["seismograph", "a seismograph", "seismometer", "a seismometer"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-101",
+    "category": "Things",
+    "prompt": "What handheld instrument detects and measures ionizing radiation such as alpha particles, beta particles, and gamma rays?",
+    "answers": ["geiger counter", "a geiger counter", "geiger-muller counter"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-102",
+    "category": "Things",
+    "prompt": "What detection system emits sound waves underwater and listens for their echoes to locate submarines and map the sea floor?",
+    "answers": ["sonar", "sonar system"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-103",
+    "category": "Things",
+    "prompt": "What detection system sends out radio waves and analyzes their reflections to track the position and speed of aircraft and ships?",
+    "answers": ["radar", "radar system"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-104",
+    "category": "Things",
+    "prompt": "What handheld or vehicle-mounted device calculates its exact position on Earth by receiving timing signals from orbiting satellites?",
+    "answers": ["gps receiver", "gps device", "gps", "sat nav", "satnav"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-105",
+    "category": "Things",
+    "prompt": "What office device scans a document and transmits its image over a telephone line to be printed by a matching machine elsewhere?",
+    "answers": ["fax machine", "a fax machine", "facsimile machine", "fax"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-106",
+    "category": "Things",
+    "prompt": "What rectangular plastic housing containing a spool of magnetic tape was widely used to record and play audio from the 1970s through the 1990s?",
+    "answers": ["cassette tape", "audio cassette", "cassette", "a cassette"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-107",
+    "category": "Things",
+    "prompt": "What thin, flexible magnetic storage disc enclosed in a square plastic case was an early removable medium for personal computers?",
+    "answers": ["floppy disk", "a floppy disk", "floppy disc", "floppy", "diskette"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-108",
+    "category": "Things",
+    "prompt": "What shiny circular optical disc stores digital data, including music and software, that is read by a laser?",
+    "answers": ["cd", "compact disc", "compact disk"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-109",
+    "category": "Things",
+    "prompt": "What small plug-in device uses flash memory chips to store and transfer digital files between computers?",
+    "answers": ["usb drive", "flash drive", "thumb drive", "usb stick", "usb flash drive"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-110",
+    "category": "Things",
+    "prompt": "What ceiling-mounted safety device sounds a loud alarm when it detects smoke particles in the air?",
+    "answers": ["smoke detector", "a smoke detector", "smoke alarm", "a smoke alarm"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-111",
+    "category": "Things",
+    "prompt": "What pressurized cylindrical canister is aimed at the base of a fire and discharged to release a smothering agent?",
+    "answers": ["fire extinguisher", "a fire extinguisher"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-112",
+    "category": "Things",
+    "prompt": "What spinning wheel or disc mounted in a set of rings maintains its orientation in space regardless of how the surrounding frame is tilted?",
+    "answers": ["gyroscope", "a gyroscope", "gyro"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-113",
+    "category": "Things",
+    "prompt": "What instrument measures the altitude of an aircraft above sea level, typically by detecting changes in air pressure?",
+    "answers": ["altimeter", "an altimeter"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-114",
+    "category": "Things",
+    "prompt": "What instrument measures wind speed, typically using a set of small rotating cups that spin faster as the wind blows harder?",
+    "answers": ["anemometer", "an anemometer", "wind gauge", "wind meter"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-115",
+    "category": "Things",
+    "prompt": "What instrument measures the amount of water vapor, or humidity, present in the air?",
+    "answers": ["hygrometer", "a hygrometer", "humidity gauge", "humidity meter"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-116",
+    "category": "Things",
+    "prompt": "What handheld instrument measures the angle of inclination or slope of a hillside, roof, or other surface?",
+    "answers": ["clinometer", "a clinometer", "inclinometer", "an inclinometer"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-117",
+    "category": "Things",
+    "prompt": "What mechanical linkage instrument traces an original drawing with a stylus and simultaneously copies it at a different scale?",
+    "answers": ["pantograph", "a pantograph"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-118",
+    "category": "Things",
+    "prompt": "What electronic instrument displays the waveform of electrical signals as a moving line graph on a screen over time?",
+    "answers": ["oscilloscope", "an oscilloscope", "scope"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-119",
+    "category": "Things",
+    "prompt": "What handheld device used by police measures the concentration of alcohol in a person's exhaled breath?",
+    "answers": ["breathalyzer", "a breathalyzer", "breathalyser", "a breathalyser", "breath tester"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-120",
+    "category": "Things",
+    "prompt": "What instrument records physiological responses such as blood pressure and breathing rate to assess whether a person may be lying?",
+    "answers": ["polygraph", "a polygraph", "lie detector", "a lie detector"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-121",
+    "category": "Things",
+    "prompt": "What cassette format for magnetic video tape dominated the home video market during the 1980s and 1990s?",
+    "answers": ["vhs tape", "vhs cassette", "vhs", "video home system tape"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-122",
+    "category": "Things",
+    "prompt": "What kitchen appliance uses electromagnetic radiation in the microwave frequency to heat food rapidly from the inside out?",
+    "answers": ["microwave oven", "a microwave oven", "microwave", "a microwave"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-123",
+    "category": "Things",
+    "prompt": "What household machine sprays hot water and detergent over dishes and utensils to clean them automatically?",
+    "answers": ["dishwasher", "a dishwasher"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-124",
+    "category": "Things",
+    "prompt": "What household appliance uses water, a rotating drum, and detergent to launder clothing and linens?",
+    "answers": ["washing machine", "a washing machine", "washer", "a washer"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-125",
+    "category": "Things",
+    "prompt": "What small kitchen appliance uses electric heating elements to brown slices of bread by applying dry radiant heat?",
+    "answers": ["toaster", "a toaster"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-126",
+    "category": "Things",
+    "prompt": "What kitchen appliance uses rapidly rotating blades in a tall container to puree, chop, or mix food and liquids?",
+    "answers": ["blender", "a blender", "liquidizer", "a liquidizer"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-127",
+    "category": "Things",
+    "prompt": "What sealed cooking pot traps steam to raise internal pressure, allowing food to cook at temperatures above the boiling point of water?",
+    "answers": ["pressure cooker", "a pressure cooker"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-128",
+    "category": "Things",
+    "prompt": "What instrument is connected in parallel across a component to measure the electrical potential difference, or voltage, across it?",
+    "answers": ["voltmeter", "a voltmeter"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-129",
+    "category": "Things",
+    "prompt": "What small belt-worn wireless device beeps or vibrates when it receives a short numeric or text message from a remote system?",
+    "answers": ["pager", "a pager", "beeper", "a beeper"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-130",
+    "category": "Things",
+    "prompt": "What manual calculating device uses two logarithmic scales that slide past each other to perform multiplication, division, and other calculations?",
+    "answers": ["slide rule", "a slide rule", "slipstick"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-131",
+    "category": "Things",
+    "prompt": "What precision measuring instrument uses a main scale and a sliding vernier scale to measure dimensions such as diameter and depth to fractions of a millimeter?",
+    "answers": ["vernier caliper", "a vernier caliper", "caliper", "a caliper", "vernier calipers"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-132",
+    "category": "Things",
+    "prompt": "What heavy weight suspended on a string uses gravity to establish a perfectly vertical reference line?",
+    "answers": ["plumb bob", "a plumb bob", "plumb line", "a plumb line"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-133",
+    "category": "Things",
+    "prompt": "What semicircular or circular measuring tool marked in degrees is used to measure and lay out angles on paper or a workpiece?",
+    "answers": ["protractor", "a protractor"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-134",
+    "category": "Things",
+    "prompt": "What drawing instrument with two hinged legs, one holding a sharp point and the other a pencil or pen, is used to draw circles and arcs?",
+    "answers": ["compass", "drafting compass", "drawing compass", "a compass", "a drafting compass"],
+    "difficulty": "medium"
+  },
+  {
+    "id": "things-135",
+    "category": "Things",
+    "prompt": "What highly precise timekeeping instrument, developed in the 18th century, allowed ships to determine their longitude by keeping exact time at sea?",
+    "answers": ["chronometer", "a chronometer", "marine chronometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-136",
+    "category": "Things",
+    "prompt": "What surveying instrument mounts a precision telescope on horizontal and vertical axes to measure angles in both planes with great accuracy?",
+    "answers": ["theodolite", "a theodolite"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-137",
+    "category": "Things",
+    "prompt": "What precision measuring instrument uses a calibrated screw mechanism to measure very small dimensions such as wire diameter to within micrometers?",
+    "answers": ["micrometer", "a micrometer", "micrometer screw gauge", "screw gauge"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-138",
+    "category": "Things",
+    "prompt": "What instrument measures the pressure of a gas or liquid, often using a U-shaped tube partially filled with fluid?",
+    "answers": ["manometer", "a manometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-139",
+    "category": "Things",
+    "prompt": "What instrument measures extremely high temperatures from a safe distance by analyzing the thermal radiation emitted by a hot object?",
+    "answers": ["pyrometer", "a pyrometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-140",
+    "category": "Things",
+    "prompt": "What pressurized chamber uses superheated steam at high pressure to sterilize surgical instruments and laboratory equipment?",
+    "answers": ["autoclave", "an autoclave"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-141",
+    "category": "Things",
+    "prompt": "What simple instrument detects the presence and sign of electric charge by showing the deflection of thin metal leaves inside a glass vessel?",
+    "answers": ["electroscope", "an electroscope", "gold leaf electroscope"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-142",
+    "category": "Things",
+    "prompt": "What instrument measures the strength, direction, and relative change of a magnetic field in its surrounding environment?",
+    "answers": ["magnetometer", "a magnetometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-143",
+    "category": "Things",
+    "prompt": "What highly sensitive instrument measures tiny local variations in gravitational acceleration at the Earth's surface?",
+    "answers": ["gravimeter", "a gravimeter", "gravity meter", "a gravity meter"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-144",
+    "category": "Things",
+    "prompt": "What instrument measures the rotational speed of an engine shaft or other rotating device, typically expressed in revolutions per minute?",
+    "answers": ["tachometer", "a tachometer", "rev counter", "a rev counter"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-145",
+    "category": "Things",
+    "prompt": "What instrument measures the force, torque, or mechanical power output of an engine or motor?",
+    "answers": ["dynamometer", "a dynamometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-146",
+    "category": "Things",
+    "prompt": "What instrument measures the viscosity of a liquid, which is its resistance to flow under an applied force?",
+    "answers": ["viscometer", "a viscometer", "viscosimeter"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-147",
+    "category": "Things",
+    "prompt": "What insulated vessel measures the heat released or absorbed during a chemical reaction or physical change?",
+    "answers": ["calorimeter", "a calorimeter", "bomb calorimeter"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-148",
+    "category": "Things",
+    "prompt": "What optical instrument disperses light or other radiation into its component wavelengths to identify the chemical composition of a sample?",
+    "answers": ["spectrometer", "a spectrometer", "spectroscope", "a spectroscope"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-149",
+    "category": "Things",
+    "prompt": "What precision instrument uses the interference of overlapping light waves to make extremely accurate measurements of distance, wavelength, or refractive index?",
+    "answers": ["interferometer", "an interferometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-150",
+    "category": "Things",
+    "prompt": "What highly sensitive instrument measures the power of incident electromagnetic radiation by detecting the heating effect on an absorbing element?",
+    "answers": ["bolometer", "a bolometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-151",
+    "category": "Things",
+    "prompt": "What 19th-century weaving machine used a chain of punched cards to automatically control thread patterns, making it an early example of programmable technology?",
+    "answers": ["jacquard loom", "the jacquard loom", "jacquard machine"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-152",
+    "category": "Things",
+    "prompt": "What clockwork mechanical model, powered by gears in a cabinet, demonstrates the relative positions and orbital motions of the planets around the sun?",
+    "answers": ["orrery", "an orrery"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-153",
+    "category": "Things",
+    "prompt": "What mechanical instrument measures the area of an irregular two-dimensional shape by tracing its boundary with a moving stylus?",
+    "answers": ["planimeter", "a planimeter", "polar planimeter"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-154",
+    "category": "Things",
+    "prompt": "What hand-cranked electrostatic generator, developed in the 1880s, uses two counter-rotating discs to accumulate very high voltage static electricity?",
+    "answers": ["wimshurst machine", "the wimshurst machine", "wimshurst generator"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-155",
+    "category": "Things",
+    "prompt": "What early electrical capacitor, consisting of a glass jar coated inside and outside with metal foil, was used in 18th-century experiments to store static electric charge?",
+    "answers": ["leyden jar", "a leyden jar", "leiden jar"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-156",
+    "category": "Things",
+    "prompt": "What sensitive electromagnetic instrument detects and measures very small electric currents by the deflection of a magnetic needle or moving coil?",
+    "answers": ["galvanometer", "a galvanometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-157",
+    "category": "Things",
+    "prompt": "What ancient Greek bronze device, recovered from a 1st-century BCE shipwreck, used interlocking gears to predict eclipses and astronomical positions?",
+    "answers": ["antikythera mechanism", "the antikythera mechanism"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-158",
+    "category": "Things",
+    "prompt": "What compact type of barometer uses a sealed flexible metal capsule that expands or contracts with air pressure, eliminating the need for liquid mercury?",
+    "answers": ["aneroid barometer", "an aneroid barometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-159",
+    "category": "Things",
+    "prompt": "What geophysical instrument detects and measures very slight changes in the tilt angle of the ground surface, used to monitor volcanic activity and fault zones?",
+    "answers": ["tiltmeter", "a tiltmeter"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-160",
+    "category": "Things",
+    "prompt": "What mechanical or electronic device fitted in a vehicle records the total distance that vehicle has traveled since it was manufactured?",
+    "answers": ["odometer", "an odometer", "mileometer", "a mileometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-161",
+    "category": "Things",
+    "prompt": "What astronomical instrument uses a motor-driven flat mirror to redirect sunlight into a fixed solar telescope while compensating for Earth's rotation throughout the day?",
+    "answers": ["coelostat", "a coelostat", "siderostat", "a siderostat"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-162",
+    "category": "Things",
+    "prompt": "What extremely sensitive analytical balance detects mass changes as small as one microgram, used in thin-film deposition and adsorption research?",
+    "answers": ["microbalance", "a microbalance"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-163",
+    "category": "Things",
+    "prompt": "What instrument measures the coefficient of friction between two surfaces under controlled conditions of load and sliding speed?",
+    "answers": ["tribometer", "a tribometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-164",
+    "category": "Things",
+    "prompt": "What instrument measures the change in length or volume of a material as its temperature is varied, used to study thermal expansion?",
+    "answers": ["dilatometer", "a dilatometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-165",
+    "category": "Things",
+    "prompt": "What optical instrument measures the refractive index of a transparent substance, used to determine its concentration or chemical identity?",
+    "answers": ["refractometer", "a refractometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-166",
+    "category": "Things",
+    "prompt": "What optical instrument uses polarized light to detect internal stresses in glass or crystals and to analyze birefringent materials?",
+    "answers": ["polariscope", "a polariscope"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-167",
+    "category": "Things",
+    "prompt": "What wood-splitting tool has a blade oriented perpendicular to its handle and is struck with a mallet to cleave wood along the grain?",
+    "answers": ["froe", "a froe"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-168",
+    "category": "Things",
+    "prompt": "What woodworking tool has a curved or flat blade set at right angles to its handle and is swung like an axe to chip and smooth timber surfaces?",
+    "answers": ["adze", "an adze"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-169",
+    "category": "Things",
+    "prompt": "What woodworking tool has a long blade with a handle at each end and is pulled toward the user to pare and shape wood?",
+    "answers": ["drawknife", "a drawknife", "draw knife", "drawshave"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-170",
+    "category": "Things",
+    "prompt": "What small planing tool with a blade flanked by two short handles is used to smooth and shape curved wooden pieces such as chair legs and wheel spokes?",
+    "answers": ["spokeshave", "a spokeshave", "spoke shave"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-171",
+    "category": "Things",
+    "prompt": "What cylindrical rod or shaft is inserted into a workpiece as a core around which metal or other material is shaped, bent, or wound?",
+    "answers": ["mandrel", "a mandrel"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-172",
+    "category": "Things",
+    "prompt": "What rotary cutting tool with fluted edges is used to enlarge a previously drilled hole to an accurate diameter with a smooth finish?",
+    "answers": ["reamer", "a reamer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-173",
+    "category": "Things",
+    "prompt": "What multi-toothed linear cutting tool is pushed or pulled through a hole to cut a specific internal profile such as a keyway or spline?",
+    "answers": ["broach", "a broach", "broaching tool"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-174",
+    "category": "Things",
+    "prompt": "What hardened steel tool with fluted cutting edges is turned into a pre-drilled hole to cut internal screw threads?",
+    "answers": ["tap", "a tap", "threading tap", "screw tap"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-175",
+    "category": "Things",
+    "prompt": "What metalworking tool or die reduces the cross-section of a rod or wire, or forms a specific contoured shape on the surface of a workpiece?",
+    "answers": ["swage", "a swage"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-176",
+    "category": "Things",
+    "prompt": "What circular surgical saw, shaped like a hollow cylinder with serrated edges, is used to cut a disc of bone from the skull?",
+    "answers": ["trephine", "a trephine", "trepan", "a trepan"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-177",
+    "category": "Things",
+    "prompt": "What sharp-pointed surgical instrument enclosed in a hollow cannula is used to puncture a body cavity in order to drain fluid or introduce a laparoscope?",
+    "answers": ["trocar", "a trocar"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-178",
+    "category": "Things",
+    "prompt": "What surgical instrument holds the cut edges of an incision open to give the surgeon unobstructed access to deeper tissues?",
+    "answers": ["retractor", "a retractor", "surgical retractor", "a surgical retractor"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-179",
+    "category": "Things",
+    "prompt": "What handheld instrument projects a focused beam of light into the eye so a physician can examine the retina, optic disc, and blood vessels at the back of the eye?",
+    "answers": ["ophthalmoscope", "an ophthalmoscope", "fundoscope", "a fundoscope"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-180",
+    "category": "Things",
+    "prompt": "What medical instrument with a curved blade and a built-in light source is inserted into the mouth to visualize the larynx and vocal cords, often during intubation?",
+    "answers": ["laryngoscope", "a laryngoscope"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-181",
+    "category": "Things",
+    "prompt": "What set of reference minerals of known hardness is used to determine the hardness of an unknown mineral by scratch testing?",
+    "answers": ["mohs hardness kit", "mohs kit", "mohs scale kit", "hardness kit"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-182",
+    "category": "Things",
+    "prompt": "What optical instrument measures changes in the polarization state of light reflected from a thin film surface to determine the film's thickness and optical constants?",
+    "answers": ["ellipsometer", "an ellipsometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-183",
+    "category": "Things",
+    "prompt": "What analytical instrument detects minuscule changes in mass deposited on a quartz crystal by measuring the resulting shift in the crystal's resonant frequency?",
+    "answers": ["quartz crystal microbalance", "qcm"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-184",
+    "category": "Things",
+    "prompt": "What large, double-sided coarse file with cutting teeth is used by a farrier to level and shape a horse's hoof wall before fitting a shoe?",
+    "answers": ["farrier's rasp", "farriers rasp", "hoof rasp", "rasp"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-185",
+    "category": "Things",
+    "prompt": "What sheet-metal cutting tool punches out small overlapping notches along a line to cut curves and complex shapes without distorting the surrounding metal?",
+    "answers": ["nibbler", "a nibbler", "metal nibbler"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-186",
+    "category": "Things",
+    "prompt": "What vacuum tube generates and focuses a beam of electrons onto a phosphorescent screen to display text and images, used in older televisions and computer monitors?",
+    "answers": ["cathode ray tube", "crt", "a cathode ray tube"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-187",
+    "category": "Things",
+    "prompt": "What stiff paper card with holes punched in specific positions was used to store data and program instructions for early computers and automated looms?",
+    "answers": ["punch card", "punched card", "a punch card", "hollerith card"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-188",
+    "category": "Things",
+    "prompt": "What device consisting of a flexible expanding chamber with a nozzle blows a directed stream of air when compressed, used to stoke a fire in a forge or fireplace?",
+    "answers": ["bellows", "a bellows", "a pair of bellows"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-189",
+    "category": "Things",
+    "prompt": "What tapered wooden rod weighted at one end is used to twist raw fiber into yarn during hand spinning?",
+    "answers": ["spindle", "a spindle", "drop spindle"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-190",
+    "category": "Things",
+    "prompt": "What ancient granodiorite stele inscribed with the same royal decree in hieroglyphics, Demotic script, and ancient Greek enabled scholars to decipher Egyptian hieroglyphics?",
+    "answers": ["rosetta stone", "the rosetta stone"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-191",
+    "category": "Things",
+    "prompt": "What legendary sword, wielded by King Arthur in British mythology, was given to him by the Lady of the Lake?",
+    "answers": ["excalibur"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-192",
+    "category": "Things",
+    "prompt": "What famous cracked bell, housed in Philadelphia, was historically rung to mark important events in early American history including the first public reading of the Declaration of Independence?",
+    "answers": ["liberty bell", "the liberty bell"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-193",
+    "category": "Things",
+    "prompt": "What series of ornate jeweled Easter eggs, crafted from precious metals and gemstones, was made by the House of Faberge as imperial gifts for the Russian tsars?",
+    "answers": ["faberge egg", "faberge eggs", "imperial faberge egg", "fabergé egg"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-194",
+    "category": "Things",
+    "prompt": "What large, deep-blue natural diamond famous for its supposed curse is now on permanent display at the Smithsonian National Museum of Natural History?",
+    "answers": ["hope diamond", "the hope diamond"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-195",
+    "category": "Things",
+    "prompt": "What ancient water-lifting device attributed to Archimedes uses a rotating helical surface inside a cylinder to raise water from a lower level to a higher one?",
+    "answers": ["archimedes screw", "archimedes' screw", "archimedean screw"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-196",
+    "category": "Things",
+    "prompt": "What medieval brass instrument consisting of a flat disc engraved with the sky allowed astronomers and navigators to measure celestial altitudes, tell the time, and determine latitude?",
+    "answers": ["astrolabe", "an astrolabe"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-197",
+    "category": "Things",
+    "prompt": "What frame-based device interlaces two perpendicular sets of threads to produce woven cloth?",
+    "answers": ["loom", "a loom", "weaving loom"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-198",
+    "category": "Things",
+    "prompt": "What staff or forked stick holds a bundle of unspun fiber such as flax or wool steady while a spinner draws it out and twists it into thread?",
+    "answers": ["distaff", "a distaff"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-199",
+    "category": "Things",
+    "prompt": "What laboratory instrument measures how much light of each wavelength a substance absorbs or transmits, used to identify and quantify dissolved materials?",
+    "answers": ["spectrophotometer", "a spectrophotometer"],
+    "difficulty": "hard"
+  },
+  {
+    "id": "things-200",
+    "category": "Things",
+    "prompt": "What instrument measures the deformation and flow behavior of materials, particularly complex fluids and soft solids, under applied stress or strain?",
+    "answers": ["rheometer", "a rheometer"],
+    "difficulty": "hard"
+  }
+]
