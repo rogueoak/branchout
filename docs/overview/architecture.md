@@ -13,8 +13,9 @@ apps/
 packages/
   theme          Branch out brand theme built on @rogueoak/roots (the brandable API)
   brand          logo, icon, and favicon assets (from assets/)
-  protocol       shared TypeScript types + contracts (control-plane <-> engine <-> web)
-  config         shared tsconfig, eslint, prettier
+  protocol         shared TypeScript types + contracts (control-plane <-> engine <-> web)
+  service-runtime  shared Express-service helpers (env parsing, Redis client)
+  config           shared tsconfig, eslint, prettier
 infra/
   docker-compose.yml   Postgres + Redis + the three apps, runnable end to end locally
 ```

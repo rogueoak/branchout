@@ -1,15 +1,9 @@
+import { requireEnv } from '@branchout/service-runtime';
+
 export interface ServiceConfig {
   port: number;
   databaseUrl: string;
   redisUrl: string;
-}
-
-function requireEnv(env: NodeJS.ProcessEnv, key: string): string {
-  const value = env[key];
-  if (!value) {
-    throw new Error(`missing required environment variable: ${key}`);
-  }
-  return value;
 }
 
 /**

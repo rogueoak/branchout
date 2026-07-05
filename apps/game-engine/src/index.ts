@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
+import { createRedisClient, pingRedis } from '@branchout/service-runtime';
 import { createApp } from './app';
 import { loadConfig } from './config';
-import { createRedisClient, pingRedis } from './redis';
 import { attachGameSocket } from './socket';
 
 async function main(): Promise<void> {

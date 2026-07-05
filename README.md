@@ -26,15 +26,16 @@ apps/
   control-plane  Express - accounts, rooms, billing (system of record)
   game-engine    Express + WebSocket - runs games, holds live state
 packages/
-  protocol       shared protocol types + the WebSocket transport adapter
-  config         shared tsconfig, ESLint, Prettier
+  protocol         shared protocol types + the WebSocket transport adapter
+  service-runtime  shared Express-service helpers (env parsing, Redis client)
+  config           shared tsconfig, ESLint, Prettier
 infra/
   docker-compose.yml   Postgres + Redis + the three apps, end to end
 ```
 
 ## Quick start
 
-You need Node 20+ and pnpm 11. Docker is only needed to run the whole system at once.
+You need Node 22+ and pnpm 11. Docker is only needed to run the whole system at once.
 
 ```sh
 git clone git@github.com:rogueoak/branchout.git

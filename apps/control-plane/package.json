@@ -14,6 +14,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@branchout/service-runtime": "workspace:*",
     "express": "^4.21.2",
     "pg": "^8.13.1",
     "redis": "^4.7.0"

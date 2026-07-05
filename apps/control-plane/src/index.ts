@@ -1,7 +1,7 @@
+import { createRedisClient, pingRedis } from '@branchout/service-runtime';
 import { createApp } from './app';
 import { loadConfig } from './config';
 import { createPostgresPool, pingPostgres } from './db';
-import { createRedisClient, pingRedis } from './redis';
 
 async function main(): Promise<void> {
   const config = loadConfig();
