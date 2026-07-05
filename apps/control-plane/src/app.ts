@@ -4,6 +4,9 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { AccountService } from './accounts/service';
 import type { SessionCookieConfig } from './config';
 import { registerAuthRoutes } from './routes/auth';
+import { registerEngineRoutes } from './routes/engine';
+import { registerRoomRoutes } from './routes/rooms';
+import type { RoomService } from './rooms/service';
 import type { SessionStore } from './sessions/store';
 
 /** Injected liveness probes so the app is testable without real Postgres or Redis. */
@@ -16,9 +19,12 @@ export interface AppDeps {
   checks: HealthChecks;
   accounts: AccountService;
   sessions: SessionStore;
+  rooms: RoomService;
   cookie: SessionCookieConfig;
   /** Browser origins allowed to call the API with credentials. */
   webOrigins: string[];
+  /** Shared secret the engine presents on the report intake; left unset only in trusted dev. */
+  internalToken?: string;
 }
 
 /**
@@ -33,7 +39,7 @@ export function createApp(deps: AppDeps): FastifyInstance {
   app.register(cors, {
     origin: deps.webOrigins,
     credentials: true,
-    methods: ['GET', 'POST', 'PATCH'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   });
   app.register(cookie);
 
@@ -54,6 +60,17 @@ export function createApp(deps: AppDeps): FastifyInstance {
     accounts: deps.accounts,
     sessions: deps.sessions,
     cookie: deps.cookie,
+  });
+
+  registerRoomRoutes(app, {
+    rooms: deps.rooms,
+    sessions: deps.sessions,
+    cookie: deps.cookie,
+  });
+
+  registerEngineRoutes(app, {
+    rooms: deps.rooms,
+    internalToken: deps.internalToken,
   });
 
   return app;

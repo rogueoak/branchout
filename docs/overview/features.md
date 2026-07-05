@@ -25,18 +25,35 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 ## Stars and monetization
 
-- [ ] Stars - cross-game points (win 3, second 2, third 1; custom scoring allowed).
-- [ ] Subscription tiers - Free / Gathering / Party, with daily credit grants.
-- [ ] Credit ledger - balance, spend per round, block starting a game you cannot afford.
+- [x] Stars - cross-game points (win 3, second 2, third 1; ties share a rank). The control-plane
+      converts the engine's final standings to stars on game complete (spec `0006`).
+- [~] Subscription tiers - Free 10 / Gathering 50 / Party unlimited daily credit grants. The grant
+      amounts and an injected tier provider ship in `0006`; real subscriptions (changing tier) are
+      the Purchases spec, so every account is Free until then.
+- [x] Credit ledger - an append-only Postgres ledger: idempotent daily grant by tier, one debit
+      per round applied only by the round-report intake, a balance function, and an affordability
+      check that refuses to start more rounds than the balance covers (Party unlimited) (spec
+      `0006`).
 - [ ] Purchases - subscribe, change tier, manage billing.
 
 ## Rooms and orchestration
 
-- [ ] Room lifecycle - create (for a game or empty), join by code, host, observers.
-- [ ] Modes - interactive (viewer + remote) vs remote; the "at least one viewer" rule to start.
-- [ ] Game selection and start handoff to the engine; pause, restart, exit.
-- [ ] Round reporting - engine reports results; control-plane bills and scores.
-- [ ] Rooms outlive a game - play another match or a different game from the same room.
+- [x] Room lifecycle - a signed-in host creates a room with a 5-character join code (no ambiguous
+      characters) and a `/join?code=ABC12` share link; players and observers join by code with a
+      per-game nickname; the host can kick a member (blocked from rejoining on the same session,
+      code still works for others). Live membership/presence in Redis, durable room + history in
+      Postgres (spec `0006`).
+- [x] Modes - each player picks interactive (viewer + remote) or remote; the "at least one viewer"
+      rule (an observer or an interactive player) gates start (spec `0006`).
+- [x] Game selection and start handoff - the host selects a game and an opaque config (passed
+      through unchanged); start runs the affordability check then hands off to the engine via the
+      protocol `StartHandoffRequest`; pause, restart, and exit proxy to the engine, and exit
+      returns the room to the lobby (spec `0006`).
+- [x] Round reporting - the engine's round-report intake debits one credit and records scoring;
+      the game-complete intake converts standings to stars; both idempotent by report id, guarded
+      by an internal token (spec `0006`).
+- [x] Rooms outlive a game - the room returns to the lobby after a game so the host can play
+      another match or a different game without recreating it (spec `0006`).
 
 ## Game engine
 

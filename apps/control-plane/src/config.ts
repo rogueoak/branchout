@@ -18,10 +18,19 @@ export interface ServiceConfig {
   /** Browser origins allowed to call the API with credentials (the web app). */
   webOrigins: string[];
   cookie: SessionCookieConfig;
+  /** Base URL of the game engine's internal REST API for the start handoff + host controls. */
+  engineUrl: string;
+  /** Shared secret the engine presents on the report intake; unset only in trusted dev. */
+  internalToken?: string;
+  /** TTL for live room membership/presence in Redis; refreshed on each write. */
+  membershipTtlSeconds: number;
 }
 
 /** One week, in seconds - the default session lifetime. */
 const DEFAULT_SESSION_TTL = 60 * 60 * 24 * 7;
+
+/** Twelve hours - the default lifetime for a room's idle live membership in Redis. */
+const DEFAULT_MEMBERSHIP_TTL = 60 * 60 * 12;
 
 function parseBool(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined) {
@@ -64,5 +73,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
       sameSite: parseSameSite(env.COOKIE_SAMESITE),
       ttlSeconds: Number(env.SESSION_TTL_SECONDS ?? DEFAULT_SESSION_TTL),
     },
+    engineUrl: env.ENGINE_URL ?? 'http://localhost:4001',
+    ...(env.INTERNAL_API_TOKEN ? { internalToken: env.INTERNAL_API_TOKEN } : {}),
+    membershipTtlSeconds: Number(env.MEMBERSHIP_TTL_SECONDS ?? DEFAULT_MEMBERSHIP_TTL),
   };
 }

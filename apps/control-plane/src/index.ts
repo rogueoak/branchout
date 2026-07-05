@@ -4,9 +4,16 @@ import { PostgresAccountRepository } from './accounts/repository';
 import { AccountService } from './accounts/service';
 import { createApp } from './app';
 import { loadConfig } from './config';
+import { CreditLedger } from './credits/ledger';
+import { PostgresLedgerRepository } from './credits/repository';
+import { FreeTierProvider } from './credits/tiers';
 import { createPostgresPool, pingPostgres } from './db';
 import { runMigrations } from './db/migrations';
 import { allMigrations } from './migrations';
+import { HttpEngineClient } from './rooms/engine-client';
+import { RedisMembershipStore, type MembershipRedis } from './rooms/membership.redis';
+import { PostgresRoomRepository } from './rooms/repository';
+import { RoomService } from './rooms/service';
 import { RedisSessionStore, type SessionRedis } from './sessions/store';
 
 async function main(): Promise<void> {
@@ -55,6 +62,23 @@ async function main(): Promise<void> {
   };
   const sessions = new RedisSessionStore(sessionRedis, config.cookie.ttlSeconds);
 
+  // Live room membership/presence in Redis; durable room + history and the credit ledger in
+  // Postgres. Tiers default to Free until the Purchases spec adds real subscriptions.
+  const membershipRedis: MembershipRedis = {
+    hSet: (key, field, value) => redis.hSet(key, field, value),
+    hGet: (key, field) => redis.hGet(key, field),
+    hGetAll: (key) => redis.hGetAll(key),
+    hDel: (key, field) => redis.hDel(key, field),
+    sAdd: (key, member) => redis.sAdd(key, member),
+    sIsMember: (key, member) => redis.sIsMember(key, member),
+    del: (key) => redis.del(key),
+    expire: (key, seconds) => redis.expire(key, seconds),
+  };
+  const membership = new RedisMembershipStore(membershipRedis, config.membershipTtlSeconds);
+  const ledger = new CreditLedger(new PostgresLedgerRepository(pool), new FreeTierProvider());
+  const engine = new HttpEngineClient(config.engineUrl, config.internalToken);
+  const rooms = new RoomService(new PostgresRoomRepository(pool), membership, ledger, engine);
+
   const app = createApp({
     checks: {
       checkPostgres: () => pingPostgres(pool),
@@ -62,8 +86,10 @@ async function main(): Promise<void> {
     },
     accounts,
     sessions,
+    rooms,
     cookie: config.cookie,
     webOrigins: config.webOrigins,
+    ...(config.internalToken ? { internalToken: config.internalToken } : {}),
   });
 
   const shutdown = (signal: string) => {
