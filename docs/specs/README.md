@@ -46,7 +46,7 @@ assigned in build order, not written all at once, so the roadmap can shift as fo
 
 ## Notes
 
-- `0002` depends on canopy shipping its brandable theme API (a separate PR in rogueoak/canopy)
-  and a `@rogueoak/roots` release that includes it.
+- `0002` depends on canopy's brandable theme API (rogueoak/canopy PR #37 -
+  `@rogueoak/roots/brand`) and a `@rogueoak/roots` release that includes it.
 - The engine <-> control-plane contract is shared TypeScript in `packages/protocol`; the spec
   that introduces it is the first of the game-engine group.

@@ -8,7 +8,8 @@ platform and wants the "Confetti" palette (violet + hot pink + sunny yellow). Yo
 brand mapped onto canopy's semantic roles so all canopy components re-theme, in light and dark,
 without forking anything or restyling components.
 
-Depends on: canopy's brandable theme API (a separate PR in rogueoak/canopy) and a
+Depends on: canopy's brandable theme API, delivered in rogueoak/canopy PR #37
+(`@rogueoak/roots/brand` - a `buildBrand()` function and a `roots-brand` CLI), and a
 `@rogueoak/roots` release that includes it. This spec consumes that API; it does not build it.
 
 ## Outcome
@@ -25,7 +26,9 @@ Depends on: canopy's brandable theme API (a separate PR in rogueoak/canopy) and 
 In:
 - Confetti primitive ramps (below) authored as canopy-style DTCG tokens.
 - Semantic light + dark mappings using canopy's exact role names.
-- `packages/theme` wired to build via the canopy brand API; a `brand.css` the web app imports.
+- `packages/theme` holding the Confetti DTCG token files (primitives + light/dark semantic
+  mappings) and a `brand.config.json`, built via `@rogueoak/roots/brand` (`buildBrand()` or the
+  `roots-brand` CLI) into a `brand.css` the web app imports after `@rogueoak/roots/tokens.css`.
 - AA-contrast check over every role and interaction state in both themes (reuse canopy's guard).
 - A short theme README: how to import it and how to add a role if canopy adds one.
 
@@ -38,6 +41,14 @@ Out:
 Keep semantic role names identical to canopy so nothing in the component layer changes. Only the
 primitive ramps and the role -> primitive references differ. Author four brand ramps plus the
 functional ramps, then map roles.
+
+Generate the theme with `@rogueoak/roots/brand`: point `buildBrand()` (or the `roots-brand` CLI
+via `brand.config.json`) at the Confetti primitive + semantic + semantic-dark DTCG files. It
+emits a `brand.css` with a `:root` block (brand primitives + light roles) and a `.dark` block
+(dark roles); the web app imports it after `tokens.css` and it overrides canopy's roles by
+cascade - no component changes. `buildBrand()` fails the build on any AA break, unmapped role,
+dark value equal to its light value, or a flat-hex dark value, so the guard below is enforced by
+the pipeline, not by hand.
 
 ### Confetti primitive ramps
 
@@ -78,8 +89,9 @@ the ramp step (not the role name) and note it in `overview/learnings.md`.
 
 ## Acceptance
 
-- [ ] `packages/theme` builds a Confetti `brand.css` via the canopy brand API with `:root`
-      (light) and `.dark` blocks covering every canopy semantic role.
+- [ ] `packages/theme` builds a Confetti `brand.css` via `@rogueoak/roots/brand`
+      (`buildBrand()` / `roots-brand`) with `:root` (light) and `.dark` blocks covering every
+      canopy semantic role.
 - [ ] `apps/web` shows canopy components (Button, Card, Badge, Input) in Confetti colors with no
       per-component style overrides; `.dark` flips the whole page.
 - [ ] AA check passes for every role and interaction state in both light and dark; the build
