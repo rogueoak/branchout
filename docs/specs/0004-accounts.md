@@ -12,10 +12,13 @@ action in `0006`.
 
 ## Outcome
 
+- You can play without an account: joining a host's room by code needs only a display name, no
+  sign-up. An account is only required to host or to save progress.
 - A visitor can sign up with an email and password, log in, log out, and read their own identity
   from a "me" endpoint.
-- Every account has a unique **gamer tag** (always public) and a **nickname** that defaults to
-  the gamer tag.
+- Every account has a unique **gamer tag** (always public) and a **nickname**. The nickname
+  defaults to the gamer tag and can be changed to any display text. You can also pick a different
+  nickname per game when you join a room (that per-game override lives in `0006`).
 - A player can join a room by code with a chosen display name and get an ephemeral anonymous
   session, no account required. A host is always a signed-in account.
 
@@ -31,6 +34,12 @@ In:
 - **Log out** - end the session and clear the cookie.
 - **Me** - return the current identity (account id, gamer tag, nickname) for a signed-in account,
   or the ephemeral identity for an anonymous session, or unauthenticated.
+- **Change nickname** - update the account's default nickname to any display text (validated for
+  length and safe characters; it need not be unique). The per-game nickname override is set at
+  room join and is owned by `0006`.
+- **Sign-up and login pages** - `/signup` and `/login` in `apps/web` that call these endpoints,
+  built on canopy + the Confetti theme; the landing page (`0005`) links to both. This spec spans
+  the control-plane endpoints plus this thin web slice so accounts work end to end.
 - **Anonymous play** - a join-by-code path mints an ephemeral session with a chosen display name
   and no account row. It carries a session id and display name only; it cannot host.
 - **Sessions** - an httpOnly, secure, sameSite cookie backed by a Redis-stored server session
@@ -69,7 +78,10 @@ Out (later specs own these):
 - [ ] "Me" returns the identity for an account session, the display name for an anonymous
       session, and unauthenticated when there is no session.
 - [ ] Join-by-code mints an anonymous Redis session with a chosen display name and no account
-      row; an anonymous session cannot host.
+      row; an anonymous session cannot host, and playing needs no sign-up.
+- [ ] Changing the nickname updates the default to any valid display text (not required unique).
+- [ ] `/signup` and `/login` pages in `apps/web` call the endpoints and are reachable from the
+      landing page.
 - [ ] The cookie is httpOnly, secure, and sameSite; email verification is stubbed or flagged and
       noted as a follow-up; profiles/friends/OAuth are out and referenced to their specs.
 - [ ] Unit tests cover hashing/verification, gamer-tag uniqueness and normalization, session

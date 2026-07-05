@@ -23,12 +23,16 @@ Depends on `0004` (a host is a signed-in account; players may be anonymous) and 
 ## Scope
 
 In:
-- **Rooms** - a signed-in host creates a room and gets a short, shareable join code. Members have
-  a role: **host**, **player**, or **observer**. A room outlives a single game - play another
-  match or pick a different game without recreating it.
-- **Membership, presence, and mode in Redis** - who is in the room, who is connected, and each
-  player's chosen **interactive** or **remote** mode. Room records and game history persist in
-  **Postgres**.
+- **Rooms** - a signed-in host creates a room and gets a **5-character** join code (uppercase
+  ASCII letters and digits, with ambiguous characters like `O`/`0` and `I`/`1` excluded). The
+  room also offers a **share link** of the form `/join?code=ABC12`, so a host can send one
+  tap-to-join URL or read the code aloud. Members have a role: **host**, **player**, or
+  **observer**. A room outlives a single game - play another match or pick a different game
+  without recreating it.
+- **Membership, presence, and mode in Redis** - who is in the room, who is connected, each
+  player's chosen **interactive** or **remote** mode, and each player's **per-game nickname**
+  (the display name they picked when joining; an account may override its default nickname here,
+  an anonymous player just picks one). Room records and game history persist in **Postgres**.
 - **Start rule** - starting a game requires **at least one viewer**: an observer, or an
   interactive player (a room of only remote players cannot start).
 - **Game selection + start handoff** - the host selects a game (Trivia) and its config. The
@@ -36,8 +40,10 @@ In:
   the config through to the engine unchanged. On start, the control-plane runs the **credit
   allowance check** (below), then hands off to `0007` with the room and config; players are
   redirected into the game.
-- **Host controls** - pause, restart, and exit, proxied to the engine. Exit returns the room to
-  the lobby state so it can host another game.
+- **Host controls** - pause, restart, and exit (proxied to the engine), and **kick** a player or
+  observer from the room. Kicking removes them from Redis membership, disconnects their session,
+  and blocks a rejoin with the same session; the code still works for anyone else. Exit returns
+  the room to the lobby state so it can host another game.
 - **Round reporting intake** - an endpoint the engine calls with round results: debit one credit
   per round and record the round's scoring. On the game-complete report, convert final standings
   to **stars** (win 3, second 2, third 1 by default) and record them.
@@ -72,8 +78,11 @@ Out:
 
 ## Acceptance
 
-- [ ] A signed-in host creates a room with a short join code; anonymous users can join as players
-      or observers but cannot host.
+- [ ] A signed-in host creates a room with a 5-character code (no ambiguous characters) and a
+      `/join?code=ABC12` share link; anonymous users can join as players or observers but cannot
+      host, and each joiner picks a per-game nickname.
+- [ ] A host can kick a player or observer: they are removed from membership, disconnected, and
+      cannot rejoin on the same session; the code still works for others.
 - [ ] Members hold a host/player/observer role; each player sets interactive or remote mode;
       membership, presence, and mode live in Redis and room/game history in Postgres.
 - [ ] Start is blocked with no viewer present and allowed once at least one observer or

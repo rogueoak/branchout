@@ -18,9 +18,10 @@ convert.
 ## Scope
 
 In:
-- The `/` route in `apps/web` (server-rendered), sections in order: hero (logo + wordmark,
-  tagline "where game night grows", one-line pitch, primary "Sign up free" CTA, secondary
-  "Browse games"); "how it works" in three steps (make a room, share the code, play together);
+- The `/` route in `apps/web` (server-rendered): a header with the wordmark and a **"Log in"**
+  link (to `/login`), then sections in order: hero (logo + wordmark, tagline "where game night
+  grows", one-line pitch, primary "Sign up free" CTA to `/signup`, secondary "Browse games");
+  "how it works" in three steps (make a room, share the code, play together);
   the tier table (Free / Gathering / Party with prices and daily credits); a games teaser strip
   (static, Trivia featured); a short footer.
 - Signed-in vs anonymous CTA swap using the accounts session from `0004`.
@@ -38,15 +39,16 @@ Out:
   secondary.
 - Copy follows Trellis language rules: warm, terse, address the reader as "you", ASCII only, no
   marketing hype. Lead with what it does.
-- The CTA links to `/signup` (owned by `0004`); if `0004` has not merged yet, the link points at
-  a route that 404s in dev - keep the dependency explicit rather than faking a flow.
+- The primary CTA links to `/signup` and the header "Log in" links to `/login`; both pages are
+  delivered by `0004`. If `0004` has not merged yet, the links point at routes that 404 in dev -
+  keep the dependency explicit rather than faking a flow.
 - Conditionally render the signed-in CTA by reading the session server-side; if accounts are not
   wired yet, default to the anonymous view behind a flag.
 
 ## Acceptance
 
 - [ ] `/` shows hero, how-it-works, tiers, games teaser, and footer, with one primary "Sign up
-      free" CTA that links to sign-up.
+      free" CTA to `/signup` and a header "Log in" link to `/login`.
 - [ ] Renders correctly in light and dark and down to a phone width; passes basic a11y checks
       (landmarks, headings, contrast via the AA-verified theme, focus states).
 - [ ] A signed-in visitor sees "Play now" instead of "Sign up free".

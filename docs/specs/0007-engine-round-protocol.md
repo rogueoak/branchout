@@ -29,7 +29,7 @@ In:
   - **Engine <-> control-plane (server-to-server)** - start handoff (room + opaque config in),
     round result (per-round scoring out), and game-complete standings (final ranks out). See the
     Approach for the transport decision.
-- **Engine skeleton** (`apps/game-engine`, Express + WebSocket):
+- **Engine skeleton** (`apps/game-engine`, Fastify + WebSocket):
   - A **modular game registry**: a game is a module implementing a lifecycle interface; the engine
     resolves the selected game by id and drives it. Adding a game is registering a module.
   - **Session state in Redis** keyed by room/game: phase, players, scores, and per-game scratch
