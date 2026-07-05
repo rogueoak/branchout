@@ -1,0 +1,46 @@
+import { describe, it, expect } from 'vitest';
+import { iconSvg } from '../icon.js';
+import { faviconSvg } from '../favicon.js';
+import { logoSvg } from '../logo.js';
+import { palette, goldRootRule, safeArea, sparkGradient } from '../brand-notes.js';
+
+describe('SVG exports', () => {
+  it('iconSvg is a valid SVG string with correct viewBox', () => {
+    expect(iconSvg).toMatch(/^<svg /);
+    expect(iconSvg).toContain('viewBox="0 0 512 512"');
+  });
+
+  it('faviconSvg is a valid SVG string with correct viewBox', () => {
+    expect(faviconSvg).toMatch(/^<svg /);
+    expect(faviconSvg).toContain('viewBox="0 0 512 512"');
+  });
+
+  it('logoSvg is a valid SVG string with correct viewBox', () => {
+    expect(logoSvg).toMatch(/^<svg /);
+    expect(logoSvg).toContain('viewBox="0 0 520 150"');
+  });
+});
+
+describe('brand constants', () => {
+  it('palette has gold root color', () => {
+    expect(palette.goldRoot).toBe('#d2a463');
+  });
+
+  it('palette has dark background color', () => {
+    expect(palette.darkBg).toBe('#0d0a15');
+  });
+
+  it('goldRootRule mentions the color', () => {
+    expect(goldRootRule).toContain('#d2a463');
+  });
+
+  it('safeArea rule is a non-empty string', () => {
+    expect(typeof safeArea).toBe('string');
+    expect(safeArea.length).toBeGreaterThan(0);
+  });
+
+  it('sparkGradient references palette extremes', () => {
+    expect(sparkGradient.from).toBe(palette.gold);
+    expect(sparkGradient.to).toBe(palette.violet);
+  });
+});
