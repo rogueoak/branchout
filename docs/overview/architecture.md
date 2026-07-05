@@ -75,6 +75,21 @@ Docker Compose, both locally and on a server. `docker compose up` brings up Post
 and the three apps as one runnable system - the same file in dev and prod. Kubernetes is a
 someday, not a now.
 
+`infra/docker-compose.yml` is the production-shaped base (build each image, run its `start`
+command, healthchecks). `infra/docker-compose.override.yml` is auto-merged by a plain
+`docker compose up` for local dev: it bind-mounts the repo and runs each app's `dev` script for
+hot reload. Deploy with `-f docker-compose.yml` to skip the override.
+
+## Build tooling
+
+Turborepo drives `build`/`lint`/`test`/`typecheck`. Shared config (tsconfig, flat ESLint,
+Prettier) lives in `packages/config`; the root files re-export it. The `protocol` package and
+the two services build with `tsup` (bundled ESM); services run with `tsx` in dev and
+`node dist` in prod. `web` builds with `next build` (Tailwind v4 via `@tailwindcss/postcss`).
+`packages/protocol` carries both the shared message types and the `ws`-backed transport adapter
+behind a transport-agnostic interface, so the realtime transport can change without touching
+game logic.
+
 ## Conventions
 
 Trellis (`docs/rules/`) and Spectra (`docs/spectra/`) govern how changes ship: specs before

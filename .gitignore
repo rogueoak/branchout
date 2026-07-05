@@ -1,0 +1,18 @@
+# Spectra build worktrees
+.worktrees/
+
+# OS
+.DS_Store
+
+# Dependencies & build output
+node_modules/
+dist/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Next.js generated types
+next-env.d.ts
+
+# Local env
+.env

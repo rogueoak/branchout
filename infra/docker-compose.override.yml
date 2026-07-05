@@ -1,0 +1,28 @@
+# Local dev overlay - auto-merged by `docker compose up` (skip it in prod with
+# `-f docker-compose.yml`). It bind-mounts the repo for hot reload and runs each app's `dev`
+# script instead of `start`. Anonymous volumes keep the image's installed node_modules from
+# being shadowed by the host bind mount (pnpm's store lives in the root node_modules).
+
+services:
+  web:
+    command: pnpm --filter @branchout/web dev
+    volumes:
+      - ..:/repo
+      - /repo/node_modules
+      - /repo/apps/web/node_modules
+      - /repo/apps/web/.next
+
+  control-plane:
+    command: pnpm --filter @branchout/control-plane dev
+    volumes:
+      - ..:/repo
+      - /repo/node_modules
+      - /repo/apps/control-plane/node_modules
+
+  game-engine:
+    command: pnpm --filter @branchout/game-engine dev
+    volumes:
+      - ..:/repo
+      - /repo/node_modules
+      - /repo/apps/game-engine/node_modules
+      - /repo/packages/protocol/node_modules

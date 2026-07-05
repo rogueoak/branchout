@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+.turbo/
+pnpm-lock.yaml
+*.tsbuildinfo
+
+# Spectra protocol/specs/plans/feedback/overview - authored deliberately, not
+# subject to Prettier's code formatting.
+docs/
+
+# Spectra-managed agent files (AGENTS.md + its CLAUDE.md/GEMINI.md symlinks) - owned
+# by the Spectra plugin; don't let Prettier fight spectra-update over them.
+AGENTS.md
+CLAUDE.md
+GEMINI.md
