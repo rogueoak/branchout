@@ -181,10 +181,6 @@ importers:
         version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
 
   packages/brand:
-    dependencies:
-      sharp:
-        specifier: ^0.33.0
-        version: 0.33.5
     devDependencies:
       '@branchout/config':
         specifier: workspace:*
@@ -192,6 +188,9 @@ importers:
       '@types/node':
         specifier: ^20.17.10
         version: 20.19.43
+      sharp:
+        specifier: ^0.33.0
+        version: 0.33.5
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
