@@ -74,9 +74,9 @@ describe('home page - signed-in visitor', () => {
     expect(screen.getByRole('link', { name: 'Play now' })).toBeDefined();
   });
 
-  it('still renders the header "Log in" link', () => {
+  it('hides the header "Log in" link (a signed-in visitor is already authenticated)', () => {
     render(<LandingContent signedIn={true} />);
-    expect(screen.getByRole('link', { name: 'Log in' })).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Log in' })).toBeNull();
   });
 
   it('still renders all content sections', () => {

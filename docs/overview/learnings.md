@@ -108,3 +108,17 @@ Capture durable lessons as they emerge.
   homes (`db/`, `validation/`), not inside the first domain that needed them (`accounts/`) -
   otherwise sessions and future domains pick up a wrong-direction dependency on accounts.
   (Feedback `0003`.)
+
+## UI and CTAs
+
+- **Give a secondary element emphasis through a badge, ring, or border - not a second `primary`
+  button.** On a view with a designated primary CTA (a marketing hero, a form's submit), a
+  `primary` variant used to say "look here too" (a "popular" pricing tier) becomes a second
+  primary action and breaks the one-primary-per-view rule, flattening the real CTA. Rank options
+  with a `Popular` badge + `ring`/border and keep their buttons `secondary`/`outline`.
+  (Feedback `0005`.)
+- **A server component that renders canopy `twigs` (Card) needs `'use client'`, and the file
+  should say why.** Canopy ships components without a `use client` directive and Card calls
+  `React.createContext` at module scope, so the consumer owns the boundary (see Theming). When
+  you add the directive, add a one-line comment naming the dependency that forces it, so the next
+  reader does not "optimize" it away and break the build. (Feedback `0005`.)

@@ -1,3 +1,7 @@
+// Client boundary: canopy ships its Twigs (Card) without a `use client` directive, and Card calls
+// `React.createContext` at module scope - imported into a Server Component it fails to prerender
+// (see docs/overview/learnings.md, Theming). The consumer owns the boundary, so this file declares
+// it. The async session read stays in the parent Server Component (page.tsx).
 'use client';
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
@@ -34,32 +38,37 @@ const HOW_IT_WORKS = [
   },
 ];
 
-// Pricing tiers: Free / Gathering / Party (spec 0005, amounts from spec 0006).
+// Pricing tiers: Free / Gathering / Party (spec 0005, amounts from spec 0006). `price` is the
+// prominent USD figure; `priceAlt` is the CAD equivalent, shown as a quieter second line so the
+// two currencies are easy to scan rather than crammed onto one line.
 const TIERS = [
   {
     id: 'free',
     name: 'Free',
     price: 'Free',
+    priceAlt: null,
+    period: null,
     credits: '10 credits per day',
-    cta: 'Get started',
     href: '/signup',
     highlight: false,
   },
   {
     id: 'gathering',
     name: 'Gathering',
-    price: '7 USD / 10 CAD',
+    price: '7 USD',
+    priceAlt: '10 CAD',
+    period: 'per month',
     credits: '50 credits per day',
-    cta: 'Get started',
     href: '/signup',
     highlight: true,
   },
   {
     id: 'party',
     name: 'Party',
-    price: '10 USD / 14 CAD',
+    price: '10 USD',
+    priceAlt: '14 CAD',
+    period: 'per month',
     credits: 'Unlimited credits',
-    cta: 'Get started',
     href: '/signup',
     highlight: false,
   },
@@ -72,16 +81,20 @@ export function LandingContent({ signedIn }: LandingContentProps) {
 
   return (
     <div className="bg-bg text-text">
-      {/* Site header: wordmark on the left, Log in on the right. */}
+      {/* Site header: wordmark on the left, Log in on the right. A signed-in visitor is already
+          authenticated, so the "Log in" link is hidden rather than contradicting the hero's
+          "Play now" CTA. */}
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
         <Logo className="h-10" />
         <nav aria-label="Site navigation">
-          <a
-            href="/login"
-            className="text-body-sm font-medium text-text-muted underline-offset-4 hover:text-text hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            Log in
-          </a>
+          {signedIn ? null : (
+            <a
+              href="/login"
+              className="text-body-sm font-medium text-text-muted underline-offset-4 hover:text-text hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Log in
+            </a>
+          )}
         </nav>
       </header>
 
@@ -148,17 +161,25 @@ export function LandingContent({ signedIn }: LandingContentProps) {
               </CardHeader>
               <CardContent>
                 <p className="text-h3 text-text">{tier.price}</p>
-                <p className="text-caption text-text-muted">per month</p>
+                {tier.priceAlt ? (
+                  <p className="text-body-sm text-text-muted">{tier.priceAlt}</p>
+                ) : null}
+                {tier.period ? (
+                  <p className="text-caption text-text-subtle">{tier.period}</p>
+                ) : null}
               </CardContent>
               <CardFooter>
+                {/* Tier CTAs never use `primary`: the hero owns the single primary action. The
+                    highlighted tier earns emphasis from its Popular badge + ring, and a slightly
+                    stronger `secondary` button - not a competing primary. */}
                 <a
                   href={tier.href}
                   className={buttonVariants({
-                    variant: tier.highlight ? 'primary' : 'outline',
+                    variant: tier.highlight ? 'secondary' : 'outline',
                     size: 'sm',
                   })}
                 >
-                  {tier.cta}
+                  Get started
                 </a>
               </CardFooter>
             </Card>
@@ -175,8 +196,8 @@ export function LandingContent({ signedIn }: LandingContentProps) {
         <h2 id="games-heading" className="text-h2 mb-10 text-center text-text">
           What you can play
         </h2>
-        <div className="flex flex-wrap gap-6">
-          <Card className="w-full sm:w-72">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <Card>
             <CardHeader>
               <CardTitle asChild>
                 <h3>Trivia</h3>
