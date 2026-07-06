@@ -151,3 +151,26 @@ Capture durable lessons as they emerge.
   route or a wire field exposes it, and an identity kept in an httpOnly cookie cannot be echoed by
   client code. When a server spec precedes its UI, budget a read surface for that UI. Building the
   Trivia web client on `0006`/`0007` surfaced four such gaps at once. (Feedback `0010`.)
+- **A new field on a versioned envelope is optional-and-defaulted unless you bump the version.**
+  The version stamp exists so a shape can grow without breaking older peers; adding a *required*
+  field under the same version voids that guarantee - a peer predating the field passes the version
+  gate yet omits it, and a reader that trusts its presence crashes (a required `disputes` on the
+  `state` recovery frame would `undefined.filter` on any pre-field engine). Add it optional, default
+  its absence at the read boundary (`frame.x ?? default`), and reserve a version bump for a genuinely
+  breaking change. (Feedback `0011`.)
+- **A browser-facing service echoes the public identity a UI needs, never the secret that
+  authenticates the caller.** Give a resource member two ids: the httpOnly session token stays
+  server-side (auth, kick/rejoin key, host-only), and a separate public token (unguessable, minted
+  beside it) is what the roster, the wire frames, and the UI key on. Returning the public id on join
+  and in the members list lets a non-host device act without ever exposing the session token - and
+  keying the engine roster on the public id (not the session id, which the engine already broadcast)
+  removed a prior leak. (Spec `0012`.)
+
+## Testing the seam
+
+- **Test the mapping at a seam, not just its two ends.** When one value must equal another across a
+  boundary - the engine handoff roster key must be the id `join` returned to the device, not a
+  different id on the same member - assert that equality directly (`engine.starts[0].players[i]` is
+  the member's `playerId`, and is NOT the `sessionId`). Testing "an id is minted" and "the engine
+  accepts an id" separately leaves the load-bearing "it is the *right* id" line free to be reverted
+  with the whole suite still green. (Feedback `0011`.)

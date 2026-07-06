@@ -215,6 +215,27 @@ describe('start rule and gates', () => {
     expect(engine.starts[0]!.game).toBe('trivia');
   });
 
+  it('keys the engine handoff roster by the public playerId, never the session id', async () => {
+    const { service, membership, room, host, engine } = await readyRoom({ host_acct: 'party' });
+    const player = anon('Racer');
+    const { playerId } = await service.join(room.code, player, {
+      role: 'player',
+      nickname: 'Racer',
+      mode: 'interactive',
+    });
+    await service.start(room.code, host, 1);
+    const roster = engine.starts[0]!.players;
+    const racer = roster.find((p) => p.nickname === 'Racer');
+    // The roster identity the engine (and thus the browser's `join`) keys on is the public
+    // playerId - exactly what `join` returned to the device - and NOT the httpOnly session id.
+    expect(racer?.player).toBe(playerId);
+    expect(racer?.player).not.toBe(player.id);
+    // And the stored member confirms the two ids are distinct.
+    const stored = await membership.get(room.id, player.id);
+    expect(stored?.playerId).toBe(playerId);
+    expect(stored?.sessionId).toBe(player.id);
+  });
+
   it('only the host can select or start', async () => {
     const { service, room } = await readyRoom({ host_acct: 'party' });
     const stranger = account('Stranger', 'other_acct');

@@ -77,7 +77,9 @@ export function reduceGameState(state: GameState, frame: ServerMessage | ErrorFr
         round: frame.round,
         players: frame.players,
         scores: frame.scores,
-        disputes: frame.disputes,
+        // Default at the boundary: a `state` frame from a peer predating the `disputes` field
+        // (same PROTOCOL_VERSION, additive change) omits it, and "absent" means "no disputers".
+        disputes: frame.disputes ?? [],
         error: null,
       };
 

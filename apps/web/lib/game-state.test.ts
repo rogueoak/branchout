@@ -62,6 +62,15 @@ describe('reduceGameState', () => {
     expect(next.disputes).toEqual(['p2']);
   });
 
+  it('defaults disputers to empty when a peer omits the field (backward compatible)', () => {
+    // A `state` frame from an engine predating the additive `disputes` field (same protocol
+    // version) omits it; the reducer must read that as "no disputers", never leave it undefined.
+    const legacy = state();
+    delete (legacy as { disputes?: string[] }).disputes;
+    const next = reduceGameState(initialGameState(), legacy);
+    expect(next.disputes).toEqual([]);
+  });
+
   it('decodes a Trivia prompt and clears the prior round results', () => {
     const withReveal = {
       ...initialGameState(),
