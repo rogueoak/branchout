@@ -79,7 +79,21 @@ What the product does for users, grouped by area. Each capability maps to one or
       (Free / Gathering / Party with prices and daily credits), Trivia games teaser, footer.
       Signed-in visitors see "Play now" instead of "Sign up free" via a server-side session
       check; graceful fallback to anonymous view if the control plane is unreachable (spec `0005`).
-- [ ] Game client shell - lobby, interactive/remote layout, in-game screens.
+- [x] Game client shell - the browser client for Trivia (spec `0010`). A rooms home to create a
+      room (host) or join by code, and the `/join?code=ABC12` share-link route where a player picks
+      a nickname, player/observer, and interactive/remote (minting an anonymous session if needed).
+      A host config panel (category incl. Random, rounds 1-100, difficulty 1-10) with a Start button
+      gated on a viewer being present, valid settings, and the server's affordability check. The
+      in-game stage renders by mode and role from one layout (viewer left, remote right, stacked on
+      small screens; observer/host see the viewer, remote players the controller): prompt, free-text
+      answer, reveal + scoring, a dispute button in the 10s window, a vote UI, a between-round
+      leaderboard, host controls (advance/pause/restart/exit), and a final results screen with
+      stars. A protocol-typed WebSocket client (`lib/game-client.ts`) folds prompt/reveal/
+      leaderboard/state into a pure state machine and reconnects. Built on canopy + the Confetti
+      theme, light/dark, responsive, a11y. Known cross-spec gaps (browser player identity, an
+      `advance` proxy, the disputers in the state frame) are in
+      `docs/feedback/0010-web-client-integration-gaps.md`, deferred to a control-plane/protocol
+      follow-up.
 - [ ] Profile pages and friend search/invite.
 
 ## Future

@@ -134,3 +134,20 @@ Capture durable lessons as they emerge.
   `React.createContext` at module scope, so the consumer owns the boundary (see Theming). When
   you add the directive, add a one-line comment naming the dependency that forces it, so the next
   reader does not "optimize" it away and break the build. (Feedback `0005`.)
+- **Prefer a native control over a portalled Radix one when the picker is a plain enum.** Canopy's
+  `Select` is Radix-backed (a portalled listbox driven by pointer events) and does not render its
+  options in jsdom without an elaborate userEvent setup, so it is both harder to test and heavier
+  than the job needs. A native `<select>` styled with canopy's `inputVariants()` recipe stays on-
+  theme (no hardcoded colors), keyboard/screen-reader accessible, and testable with
+  `getByLabelText` + `fireEvent.change`. Reach for the compound component only when you need its
+  custom rendering. (Spec `0010`.)
+
+## Client-server contracts
+
+- **A service that a browser will later consume must project outward the reads that consumer needs -
+  the caller's own identity in a resource, every host action the UI offers, and the state the UI
+  renders - not just the writes and the server-to-server calls.** An engine capability (`advance`)
+  or a value held only in server state (the disputers list) is invisible to a front end until a
+  route or a wire field exposes it, and an identity kept in an httpOnly cookie cannot be echoed by
+  client code. When a server spec precedes its UI, budget a read surface for that UI. Building the
+  Trivia web client on `0006`/`0007` surfaced four such gaps at once. (Feedback `0010`.)
