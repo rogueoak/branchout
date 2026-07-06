@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// Assumes this package lives at <repo>/packages/brand, so ../../.. is the monorepo root (the
+// theme package follows the same convention). If the package moves, update this path.
 const root = join(__dirname, '../../..');
 const distDir = join(__dirname, '../dist');
 const webPublic = join(root, 'apps/web/public');

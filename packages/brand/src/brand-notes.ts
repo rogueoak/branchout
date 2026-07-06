@@ -21,8 +21,7 @@ export const palette = {
  * It grounds the upward-branching structure and ties the family mark to the rogueoak oak.
  * Do not remove it, recolor it, or move it to a non-root position.
  */
-export const goldRootRule =
-  'The root node is always gold (#d2a463). Do not recolor or remove it.';
+export const goldRootRule = 'The root node is always gold (#d2a463). Do not recolor or remove it.';
 
 /**
  * Safe-area guidance.

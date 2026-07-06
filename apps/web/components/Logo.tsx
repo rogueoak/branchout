@@ -10,6 +10,8 @@ interface LogoProps {
  * tagline "where game night grows". Inlined for crisp rendering at all DPRs.
  */
 export function Logo({ className }: LogoProps) {
+  // logoSvg is a build-time constant inlined from assets/branchout-logo.svg (checked-in source,
+  // not user input or fetched at runtime), so dangerouslySetInnerHTML is safe here.
   return (
     <span
       className={className}

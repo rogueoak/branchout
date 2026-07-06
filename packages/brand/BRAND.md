@@ -2,14 +2,14 @@
 
 ## Palette
 
-| Role          | Hex       | Usage                                      |
-|---------------|-----------|--------------------------------------------|
-| Gold          | `#FBBF24` | Spark gradient start (warm / root end)     |
-| Pink          | `#EC4899` | Spark gradient midpoint                    |
-| Violet        | `#7C3AED` | Spark gradient end (cool / tip end), glow  |
-| Gold root     | `#d2a463` | Root node -- see rule below                |
-| Dark bg       | `#0d0a15` | App icon and OG canvas                     |
-| Panel bg      | `#0d1117` | Logo tile background                       |
+| Role      | Hex       | Usage                                     |
+| --------- | --------- | ----------------------------------------- |
+| Gold      | `#FBBF24` | Spark gradient start (warm / root end)    |
+| Pink      | `#EC4899` | Spark gradient midpoint                   |
+| Violet    | `#7C3AED` | Spark gradient end (cool / tip end), glow |
+| Gold root | `#d2a463` | Root node -- see rule below               |
+| Dark bg   | `#0d0a15` | App icon and OG canvas                    |
+| Panel bg  | `#0d1117` | Logo tile background                      |
 
 ## The gold root rule
 
@@ -34,6 +34,7 @@ Do not place text, other logos, or decorative elements inside the safe area.
 ## Do not restyle the mark ad hoc
 
 The SVGs in `assets/` are the source of truth. Do not:
+
 - Add drop shadows, filters, or extra effects.
 - Change node colors (each leaf carries a specific party color).
 - Modify gradient direction or colors.

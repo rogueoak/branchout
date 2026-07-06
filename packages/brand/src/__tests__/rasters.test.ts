@@ -1,11 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import sharp from 'sharp';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, '../../dist');
+
+// Self-contained: generate the rasters first, so running vitest directly (not only via
+// `turbo run test` after the build task) still finds the files.
+beforeAll(() => {
+  execSync('node scripts/generate-rasters.mjs', { cwd: join(__dirname, '../..') });
+});
 
 describe('favicon/OG raster generation', () => {
   it.each([
