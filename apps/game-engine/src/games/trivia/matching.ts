@@ -1,23 +1,21 @@
 // Trivia answer matching (spec 0008). Players type free-form text; we compare it against each
-// accepted answer after normalizing both sides. Normalization is the only automatic defense
-// against false negatives from formatting; the dispute vote is the human fallback for the rest.
+// accepted answer after normalizing both sides. Normalization and the fuzzy tolerance are the
+// only automatic defense against false negatives from typos and formatting, with the dispute vote
+// as the human fallback.
 //
-// Matching is EXACT after normalization - no fuzzy / edit-distance tolerance. Spec 0008 flagged
-// this as a decision to confirm in review; review chose exact-only. The reasoning is asymmetry of
-// harm: a false negative (a correct answer marked wrong) is recoverable through the dispute vote,
-// but a false positive (a wrong answer awarded 100 points) has no correction path, so we never
-// auto-award a near miss. `Paris` vs `Parts` is one edit apart - fuzzy would have scored it.
-//
-// Normalization (order matches the spec):
+// Normalization (order matters):
 //   1. lowercase
 //   2. join numeric separators (punctuation between two digits: `1,000` -> `1000`)
-//   3. collapse inner whitespace to single spaces and trim
-//   4. strip a single leading article (`a` / `an` / `the`) when whitespace-separated
-//   5. drop remaining punctuation, then collapse/trim again
+//   3. drop remaining punctuation (anything that is not a letter, number, or whitespace)
+//   4. collapse inner whitespace to single spaces and trim
+//   5. strip a single leading article (`a` / `an` / `the`)
+//   6. collapse/trim again
 //
-// The article is stripped before punctuation is dropped, so only a whitespace-separated leading
-// article is removed (`the beatles` -> `beatles`); a punctuation-joined one is kept (`a-bomb` ->
-// `a bomb`, `the-beatles` -> `the beatles`).
+// Matching: exact after normalization, PLUS a Levenshtein distance of <= 1 when the accepted
+// answer is 5+ characters (long enough that a single edit is far likelier a typo than a
+// different word). Short answers require an exact normalized match to avoid "cat" ~ "cot". This
+// is spec 0008's flagged decision, confirmed in review: keep the fuzzy tolerance - the dispute
+// vote is the human fallback either way, and it cuts false negatives from typos.
 
 const LEADING_ARTICLE = /^(?:an?|the)\s+/;
 // Keep Unicode letters/numbers and whitespace; everything else (punctuation, symbols) is dropped.
@@ -27,23 +25,62 @@ const WHITESPACE = /\s+/g;
 // so it is removed to join the number - `1,000` -> `1000` - rather than split into `1 000`.
 const NUMERIC_SEPARATOR = /(\d)[^\p{L}\p{N}\s]+(?=\d)/gu;
 
+/** The minimum normalized answer length at which the Levenshtein-1 tolerance applies. */
+export const FUZZY_MIN_LENGTH = 5;
+
 /** Normalize a player answer or an accepted answer to its comparable canonical form. */
 export function normalizeAnswer(raw: string): string {
-  const withoutArticle = raw
+  const stripped = raw
     .toLowerCase()
     .replace(NUMERIC_SEPARATOR, '$1')
+    .replace(PUNCTUATION, ' ')
     .replace(WHITESPACE, ' ')
     .trim()
     .replace(LEADING_ARTICLE, '');
-  return withoutArticle.replace(PUNCTUATION, ' ').replace(WHITESPACE, ' ').trim();
+  return stripped.replace(WHITESPACE, ' ').trim();
 }
 
 /**
- * True when `answer` exactly matches any of `accepted` under normalization. An empty or blank
- * answer never matches (a player who left it blank is not correct).
+ * Levenshtein edit distance between two strings, short-circuiting once the running minimum of a
+ * row exceeds `max` (we only ever care whether the distance is <= 1, so bailing keeps it cheap).
+ */
+export function levenshtein(a: string, b: string, max = Infinity): number {
+  if (a === b) return 0;
+  // |len difference| is a lower bound on the distance, so a big gap cannot be within `max`.
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  let curr = new Array<number>(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i += 1) {
+    curr[0] = i;
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      const value = Math.min(prev[j]! + 1, curr[j - 1]! + 1, prev[j - 1]! + cost);
+      curr[j] = value;
+      if (value < rowMin) rowMin = value;
+    }
+    if (rowMin > max) return max + 1;
+    [prev, curr] = [curr, prev];
+  }
+  return prev[b.length]!;
+}
+
+/** True when the normalized answers are equal, or within one edit for a 5+ char accepted answer. */
+function answersMatch(normalizedPlayer: string, normalizedAccepted: string): boolean {
+  if (normalizedPlayer === normalizedAccepted) return true;
+  if (normalizedAccepted.length < FUZZY_MIN_LENGTH) return false;
+  return levenshtein(normalizedPlayer, normalizedAccepted, 1) <= 1;
+}
+
+/**
+ * True when `answer` matches any of `accepted` under normalization and the fuzzy tolerance. An
+ * empty or blank answer never matches (a player who left it blank is not "close").
  */
 export function isCorrectAnswer(answer: string, accepted: readonly string[]): boolean {
   const normalizedPlayer = normalizeAnswer(answer);
   if (normalizedPlayer.length === 0) return false;
-  return accepted.some((candidate) => normalizeAnswer(candidate) === normalizedPlayer);
+  return accepted.some((candidate) => answersMatch(normalizedPlayer, normalizeAnswer(candidate)));
 }
