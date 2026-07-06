@@ -26,15 +26,25 @@ branchout.games {
     # HSTS: tell browsers to always use HTTPS for this domain (2 years).
     header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 
-    # WebSocket upgrade - game-engine handles /ws/* traffic.
-    # Caddy preserves the Upgrade header automatically when reverse_proxy sees
-    # a WebSocket handshake request.
-    handle /ws/* {
+    # WebSocket upgrade - game-engine handles /ws traffic. The engine's ws server
+    # accepts any path, so no prefix strip is needed; match both bare /ws and /ws/*.
+    # Caddy preserves the Upgrade header automatically on a WebSocket handshake.
+    @ws path /ws /ws/*
+    handle @ws {
         reverse_proxy game-engine:4001
     }
 
-    # REST API - control-plane handles /api/* traffic.
-    handle /api/* {
+    # The engine report intake (control-plane /engine/*) is internal-only: the
+    # game-engine calls it over the container network, never the browser. Block it
+    # from the internet so the (currently unauthenticated) money endpoint is not
+    # reachable from outside. Must come before the general /api proxy below.
+    handle /api/engine/* {
+        respond 404
+    }
+
+    # REST API - control-plane serves /auth, /rooms, /engine (no /api prefix), so
+    # handle_path STRIPS /api before proxying: /api/auth/login -> /auth/login.
+    handle_path /api/* {
         reverse_proxy control-plane:4000
     }
 
