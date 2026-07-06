@@ -16,3 +16,9 @@ next-env.d.ts
 
 # Local env
 .env
+
+# Generated brand rasters (produced by packages/brand build)
+apps/web/public/favicon-16.png
+apps/web/public/favicon-32.png
+apps/web/public/apple-touch-icon.png
+apps/web/public/og.png

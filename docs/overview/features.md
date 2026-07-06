@@ -8,7 +8,8 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Monorepo scaffold - pnpm + Turborepo workspace, shared config, CI, local docker-compose
       (Postgres + Redis) so the whole system runs with one command (spec `0001`).
 - [x] Branch out Confetti theme on canopy, light + dark, AA-verified (spec `0002`).
-- [ ] Brand assets - icon, favicon, wordmark lockup (spec `0003`; assets already in `assets/`).
+- [x] Brand assets - icon, favicon, wordmark lockup, OG image; `packages/brand` re-exports
+      SVGs and generates rasters at build time (spec `0003`).
 
 ## Accounts and profiles
 

@@ -1,0 +1,45 @@
+{
+  "name": "@branchout/brand",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Branch out brand assets: SVG exports and generated favicon/OG rasters.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "BRAND.md"
+  ],
+  "exports": {
+    "./icon": {
+      "types": "./dist/icon.d.ts",
+      "import": "./dist/icon.js"
+    },
+    "./favicon": {
+      "types": "./dist/favicon.d.ts",
+      "import": "./dist/favicon.js"
+    },
+    "./logo": {
+      "types": "./dist/logo.d.ts",
+      "import": "./dist/logo.js"
+    },
+    "./brand": {
+      "types": "./dist/brand.d.ts",
+      "import": "./dist/brand.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup && node scripts/generate-rasters.mjs",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@branchout/config": "workspace:*",
+    "@types/node": "^20.17.10",
+    "sharp": "^0.33.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

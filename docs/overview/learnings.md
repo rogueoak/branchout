@@ -9,6 +9,19 @@ Capture durable lessons as they emerge.
   on one emitted error. Handle failure and success at the same time, not as a follow-up.
   (Feedback `0001`.)
 
+## Brand assets
+
+- **Inline SVG exports through tsup's text loader avoid runtime `fs` dependencies in
+  browser-consumed packages.** Using `loader: { '.svg': 'text' }` in tsup config embeds SVG
+  content as string literals at build time; the built JS is portable and works in Next.js
+  without webpack SVG plugins or runtime file-system access. A matching vite plugin
+  (`transform` returning `export default JSON.stringify(content)`) keeps vitest green
+  without a separate build step. (Spec `0003`.)
+- **Place generated rasters in `dist/` then copy to `public/` in the same build script.**
+  Turborepo's `outputs: ["dist/**"]` tracks brand rasters through the cache; a single
+  `generate-rasters.mjs` that both generates and copies keeps the pipeline simple and
+  ensures web always has fresh files after `pnpm build`. (Spec `0003`.)
+
 ## Toolchain
 
 - **Pin the runtime to what the toolchain actually requires, not an aspirational lower bound.**
