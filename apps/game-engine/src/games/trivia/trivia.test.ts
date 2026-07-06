@@ -105,7 +105,7 @@ describe('validateConfig', () => {
 
 describe('configure', () => {
   it('sets the 10-second dispute window and passes the round count through', () => {
-    const game = createTriviaGame(makeBank(2));
+    const game = createTriviaGame(makeBank(4));
     const result = game.configure({ category: 'Food', rounds: 7 }, players);
     expect(result.rounds).toBe(7);
     // Pin the literal so a change to the window duration is caught (Acceptance 3: 10s).
@@ -114,13 +114,33 @@ describe('configure', () => {
   });
 
   it('throws on invalid config so the engine rejects the start', () => {
-    const game = createTriviaGame(makeBank(2));
+    const game = createTriviaGame(makeBank(4));
     expect(() => game.configure({ category: 'Nope' }, players)).toThrow();
+  });
+
+  it('rejects more rounds than the chosen category has questions', () => {
+    const game = createTriviaGame(makeBank(1)); // 3 per category, 24 across Random
+    expect(() => game.configure({ category: 'Nature', rounds: 4 }, players)).toThrow(/fewer than/);
+    expect(game.configure({ category: 'Nature', rounds: 3 }, players).rounds).toBe(3);
+    // Random spans every category, so the same round count fits.
+    expect(() => game.configure({ category: 'Random', rounds: 4 }, players)).not.toThrow();
+  });
+});
+
+describe('question exhaustion (defensive)', () => {
+  it('throws from startRound if the pool is somehow drained mid-game', () => {
+    // configure guards against this, so drive startRound past the pool directly.
+    const game = createTriviaGame(makeBank(1)); // Nature has 3 questions
+    let scratch = game.configure({ category: 'Nature', rounds: 3 }, players).scratch;
+    for (let round = 1; round <= 3; round += 1) {
+      scratch = game.startRound(ctx(scratch, { round })).scratch;
+    }
+    expect(() => game.startRound(ctx(scratch, { round: 4 }))).toThrow(/ran out of questions/);
   });
 });
 
 describe('reveal scoring', () => {
-  const game = createTriviaGame(makeBank(2), mulberry32(1));
+  const game = createTriviaGame(makeBank(4), mulberry32(1));
 
   it('awards 100 for a correct (incl. fuzzy) answer and nothing for a wrong one', () => {
     let scratch = game.configure({ category: 'Nature', difficulty: 5 }, players).scratch;
@@ -161,7 +181,7 @@ describe('reveal scoring', () => {
 });
 
 describe('dispute resolution', () => {
-  const game = createTriviaGame(makeBank(2), mulberry32(3));
+  const game = createTriviaGame(makeBank(4), mulberry32(3));
 
   // p1 answers correctly; p2 and p3 are wrong. p2 disputes; p1 and p3 are the "other" voters.
   function setup(): Record<string, unknown> {
@@ -264,7 +284,7 @@ describe('dispute resolution', () => {
 // same verdict. These tests use 4-5 players so the denominator is genuinely falsifiable: the
 // majority is of the *other connected* players, not the ballots cast nor the whole roster.
 describe('dispute majority denominator (larger rosters)', () => {
-  const game = createTriviaGame(makeBank(2), mulberry32(11));
+  const game = createTriviaGame(makeBank(4), mulberry32(11));
 
   function roster(n: number, disconnected: string[] = []): SessionPlayer[] {
     return Array.from({ length: n }, (_, i) => {
@@ -350,7 +370,7 @@ describe('dispute majority denominator (larger rosters)', () => {
 });
 
 describe('end-game ranking', () => {
-  const game = createTriviaGame(makeBank(2));
+  const game = createTriviaGame(makeBank(4));
 
   it('ranks distinct scores strictly highest-first (1/2/3)', () => {
     const standings = game.endGame(ctx({}, { scores: { p1: 100, p2: 250, p3: 50 } }));

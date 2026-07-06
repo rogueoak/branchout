@@ -123,6 +123,15 @@ function toRecord(scratch: TriviaScratch): Record<string, unknown> {
   return scratch as unknown as Record<string, unknown>;
 }
 
+/** Total questions available for a category across all tiers (the `Random` pool spans them all). */
+function poolSize(index: QuestionIndex, category: string): number {
+  const tiers = index.byCategoryTier.get(category);
+  if (!tiers) return 0;
+  let total = 0;
+  for (const pool of tiers.values()) total += pool.length;
+  return total;
+}
+
 /**
  * Validate and default a host config. Throws a descriptive `Error` on any invalid field so the
  * engine's `configure` handoff rejects a bad start rather than launching a broken game.
@@ -169,6 +178,16 @@ export function createTriviaGame(
     // Trivia does not need the roster to configure; the interface allows fewer params.
     configure(config: unknown): ConfigureResult {
       const cfg = validateConfig(config);
+      // The draw never repeats a question, so the chosen pool must hold at least `rounds`
+      // questions. Reject up front here rather than let `startRound` throw partway through a live
+      // game, after players have already invested rounds.
+      const available = poolSize(index, cfg.category);
+      if (available < cfg.rounds) {
+        throw new Error(
+          `trivia category "${cfg.category}" has only ${available} question(s), fewer than the ` +
+            `configured ${cfg.rounds} round(s)`,
+        );
+      }
       return {
         scratch: toRecord(emptyScratch(cfg)),
         rounds: cfg.rounds,

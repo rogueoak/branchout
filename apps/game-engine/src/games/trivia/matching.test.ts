@@ -33,6 +33,14 @@ describe('normalizeAnswer', () => {
     // A second article is left in place; only the leading one is stripped.
     expect(normalizeAnswer('the the band')).toBe('the band');
   });
+
+  it('strips the article before dropping punctuation (spec order), keeping a punctuated article', () => {
+    // "the beatles" (space-separated) -> article stripped -> "beatles".
+    expect(normalizeAnswer('the-beatles')).toBe('the beatles');
+    // "a-bomb": no whitespace after the leading "a", so the article is NOT stripped; punctuation
+    // then becomes a space -> "a bomb". Dropping punctuation first would have wrongly yielded "bomb".
+    expect(normalizeAnswer('a-bomb')).toBe('a bomb');
+  });
 });
 
 describe('levenshtein', () => {

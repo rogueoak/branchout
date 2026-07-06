@@ -3,19 +3,22 @@
 // only automatic defense against false negatives from typos and formatting, with the dispute vote
 // as the human fallback.
 //
-// Normalization (order matters):
+// Normalization follows the spec's stated order:
 //   1. lowercase
 //   2. join numeric separators (punctuation between two digits: `1,000` -> `1000`)
-//   3. drop remaining punctuation (anything that is not a letter, number, or whitespace)
-//   4. collapse inner whitespace to single spaces and trim
-//   5. strip a single leading article (`a` / `an` / `the`)
-//   6. collapse/trim again
+//   3. collapse inner whitespace to single spaces and trim
+//   4. strip a single leading article (`a` / `an` / `the`)
+//   5. drop remaining punctuation, then collapse/trim again
+//
+// The article is stripped BEFORE punctuation is dropped (spec order), so only a
+// whitespace-separated leading article is removed: `the beatles` -> `beatles`, but a
+// punctuation-joined one survives - `a-bomb` -> `a bomb`, keeping the meaningful `a`.
 //
 // Matching: exact after normalization, PLUS a Levenshtein distance of <= 1 when the accepted
 // answer is 5+ characters (long enough that a single edit is far likelier a typo than a
 // different word). Short answers require an exact normalized match to avoid "cat" ~ "cot". This
-// is spec 0008's flagged decision, confirmed in review: keep the fuzzy tolerance - the dispute
-// vote is the human fallback either way, and it cuts false negatives from typos.
+// is spec 0008's flagged decision, confirmed in review: KEEP the fuzzy tolerance - the spec's
+// Acceptance lists it, and the dispute vote is the human fallback for the rest.
 
 const LEADING_ARTICLE = /^(?:an?|the)\s+/;
 // Keep Unicode letters/numbers and whitespace; everything else (punctuation, symbols) is dropped.
@@ -30,14 +33,13 @@ export const FUZZY_MIN_LENGTH = 5;
 
 /** Normalize a player answer or an accepted answer to its comparable canonical form. */
 export function normalizeAnswer(raw: string): string {
-  const stripped = raw
+  const withoutArticle = raw
     .toLowerCase()
     .replace(NUMERIC_SEPARATOR, '$1')
-    .replace(PUNCTUATION, ' ')
     .replace(WHITESPACE, ' ')
     .trim()
     .replace(LEADING_ARTICLE, '');
-  return stripped.replace(WHITESPACE, ' ').trim();
+  return withoutArticle.replace(PUNCTUATION, ' ').replace(WHITESPACE, ' ').trim();
 }
 
 /**
