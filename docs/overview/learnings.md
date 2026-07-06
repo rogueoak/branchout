@@ -70,6 +70,11 @@ Capture durable lessons as they emerge.
 - **A test named for a guarantee must exercise that guarantee end to end.** An idempotency test
   that stops before the retry, or a "reports on retry" test that never re-delivers, proves
   nothing; drive the failure path through to the observable outcome. (Feedback `0003`.)
+- **Test a majority/quorum rule at a roster size where the wrong denominators diverge.** A vote
+  over N others with threshold `agrees*2 > N` gives an identical verdict for "other players" vs
+  "ballots cast" vs "all players" when N=2, so a 3-player dispute test proves nothing. Pick a
+  size (odd, >= 3 others) where each candidate denominator yields a different verdict - the
+  Trivia dispute rule was only honestly pinned once tested on 4-5 players. (Feedback `0004`.)
 
 ## Services and state
 
@@ -85,6 +90,13 @@ Capture durable lessons as they emerge.
   boundary.** Non-empty-string checks are not enough when the value is concatenated into
   `stream:room:game` or `room:game:runId:round`; an embedded separator collides distinct
   sessions or reports. (Feedback `0003`.)
+- **Prune an ephemeral session's per-round scratch to the round in play.** State the engine
+  persists and deep-clones every frame must not accumulate rounds it never reads again, or the
+  Redis blob and per-frame clone cost grow with game length. Trivia keeps only `usedIds` and the
+  current round's working state, resetting the per-round maps in `startRound`. (Feedback `0004`.)
+- **A vote/quorum denominator should count only *connected* eligible voters.** In a live game
+  where devices drop, dividing by the whole roster treats an offline player as an implicit "no"
+  and can make a legitimate majority unreachable; gate on `connected`. (Feedback `0004`.)
 
 ## Auth and security
 
