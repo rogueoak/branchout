@@ -27,6 +27,8 @@ export interface GameState {
   round: number;
   players: PlayerView[];
   scores: Record<string, number>;
+  /** The playerIds under dispute this round - the exact set the vote UI offers a ballot on. */
+  disputes: string[];
   /** The current round's prompt, or null before the first prompt / between rounds. */
   prompt: TriviaPrompt | null;
   /** The answer-round reveal, set on reveal and cleared when the next prompt lands. */
@@ -48,6 +50,7 @@ export function initialGameState(): GameState {
     round: 0,
     players: [],
     scores: {},
+    disputes: [],
     prompt: null,
     reveal: null,
     disputeResult: null,
@@ -74,6 +77,9 @@ export function reduceGameState(state: GameState, frame: ServerMessage | ErrorFr
         round: frame.round,
         players: frame.players,
         scores: frame.scores,
+        // Default at the boundary: a `state` frame from a peer predating the `disputes` field
+        // (same PROTOCOL_VERSION, additive change) omits it, and "absent" means "no disputers".
+        disputes: frame.disputes ?? [],
         error: null,
       };
 

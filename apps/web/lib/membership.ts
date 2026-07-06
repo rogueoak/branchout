@@ -1,8 +1,8 @@
-// The caller's own place in a room, carried across the create/join step and the room page. The
-// control-plane does not yet expose a "who am I in this room" read (a GET room, or the caller's
-// member id on join - see docs/feedback/0010-web-client-integration-gaps.md), so the browser
-// remembers what it chose at join time. This is per-tab session storage, not a source of truth:
-// the server re-authorizes every action from the session cookie regardless.
+// The caller's own place in a room, carried across the create/join step and the room page. Join
+// now returns the caller's public `playerId` (spec 0012) and the host reads its own from the
+// members list, so this remembers that identity plus the role/mode/nickname chosen at join. This is
+// per-tab session storage, not a source of truth: the server re-authorizes every action from the
+// session cookie regardless.
 
 import type { Mode, Role, RoomView } from './room-api';
 
@@ -12,9 +12,9 @@ export interface Membership {
   mode?: Mode;
   nickname: string;
   /**
-   * This device's engine player id (the control-plane session id used in the start handoff). The
-   * host can read it from the members list (their own host row); a non-host player cannot yet, so
-   * it may be absent until the control-plane returns it on join.
+   * This device's public engine `playerId` (the identity the engine roster and `join` key on, NOT
+   * the httpOnly session id). A non-host player gets it from the join response; the host reads its
+   * own from the members list (its host row), so it may be absent until that list first loads.
    */
   player?: string;
   room: RoomView;

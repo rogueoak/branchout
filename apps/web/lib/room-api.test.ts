@@ -45,9 +45,13 @@ describe('room-api', () => {
     );
   });
 
-  it('joins a room by code with role, nickname, and mode in the body', async () => {
-    const fetchMock = mockFetch({ ok: true, body: { room } });
-    await joinRoom('ABC12', { role: 'player', nickname: 'Ada', mode: 'interactive' });
+  it('joins a room by code and returns the caller playerId', async () => {
+    const fetchMock = mockFetch({ ok: true, body: { room, playerId: 'pid_123' } });
+    const result = await joinRoom('ABC12', {
+      role: 'player',
+      nickname: 'Ada',
+      mode: 'interactive',
+    });
     const [, init] = fetchMock.mock.calls[0]!;
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual({
@@ -55,6 +59,9 @@ describe('room-api', () => {
       nickname: 'Ada',
       mode: 'interactive',
     });
+    // The engine identity a non-host device needs to connect flows back on join.
+    expect(result.playerId).toBe('pid_123');
+    expect(result.room.code).toBe('ABC12');
   });
 
   it('maps a control-plane error body to a RoomApiError carrying the code', async () => {
@@ -86,7 +93,7 @@ describe('room-api', () => {
     expect(members[0]!.role).toBe('host');
   });
 
-  it('sends the advance control action (typed for the coming control-plane proxy)', async () => {
+  it('sends the advance control action to the control-plane proxy', async () => {
     const fetchMock = mockFetch({ ok: true, body: { room } });
     await controlGame('ABC12', 'advance');
     const [url, init] = fetchMock.mock.calls[0]!;

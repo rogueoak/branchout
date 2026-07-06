@@ -55,11 +55,12 @@ export function RoomClient({ code }: RoomClientProps) {
   const isHost = membership?.role === 'host';
   const running = room?.status === 'running';
 
-  // The host can read their own player id from the members list (the host row); a non-host relies
-  // on what join stored (may be absent until the control-plane returns it - see feedback 0006).
+  // The host reads its own public playerId from the members list (its host row); a non-host relies
+  // on the playerId join returned and stored in membership. This is the identity the engine roster
+  // and `join` key on (spec 0012), never the httpOnly session id.
   const me = useMemo(() => {
     if (isHost) {
-      return members.find((member) => member.role === 'host')?.sessionId ?? membership?.player;
+      return members.find((member) => member.role === 'host')?.playerId ?? membership?.player;
     }
     return membership?.player;
   }, [isHost, members, membership]);

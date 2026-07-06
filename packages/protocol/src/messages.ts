@@ -115,6 +115,18 @@ export interface StateMessage {
   round: number;
   players: PlayerView[];
   scores: Record<string, number>;
+  /**
+   * The playerIds who raised a dispute in the round currently in play (empty until someone does,
+   * reset when the next round starts). The vote UI reads it during the `voting` phase to name
+   * exactly the disputers instead of guessing from the wrong-answer set. Carries playerIds, the
+   * same identity space as `players[].player`.
+   *
+   * Optional on the wire so this stays an additive, backward-compatible change under the same
+   * `PROTOCOL_VERSION`: a peer predating this field still parses as a valid `state` frame, and a
+   * reader must treat its absence as "no disputers" (default to `[]` at the boundary). The engine
+   * always populates it.
+   */
+  disputes?: string[];
 }
 
 export type ServerMessage = PromptMessage | RevealMessage | LeaderboardMessage | StateMessage;
