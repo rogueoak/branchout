@@ -1,0 +1,40 @@
+# Caddy edge proxy stack. The only stack that publishes host ports 80/443.
+# Caddy terminates TLS, issues ACME certificates, and routes by path to
+# the app services (web/control-plane/game-engine) on the shared external
+# `edge` network. ACME data persists in the `caddy_data` named volume.
+#
+# Bring up:
+#   docker network create edge  # idempotent; deploy job does this
+#   docker compose -f deploy/docker/compose.proxy.yml up -d --wait
+name: proxy
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3 (QUIC)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data   # ACME certs + keys; must survive redeploys
+      - caddy_config:/config
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  caddy_data:   # ACME certificate storage; back this up
+  caddy_config:
+
+# Created externally by the deploy job (idempotent): `docker network create edge`.
+# All app services that Caddy proxies must also join this network.
+networks:
+  edge:
+    external: true

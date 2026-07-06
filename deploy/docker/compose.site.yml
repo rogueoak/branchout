@@ -1,0 +1,131 @@
+# Branch out app stack. Runs the three private GHCR images plus Postgres and
+# Redis. No host ports are published: Caddy reaches the app services as
+# web:3000 / control-plane:4000 / game-engine:4001 over the external `edge`
+# network. Postgres and Redis are on the internal-only `db` network; they
+# are not reachable from the host or from Caddy.
+#
+# Deploy (CD pins IMAGE_TAG to the sha-<full> tag built in that run):
+#   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml pull
+#   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml up -d --wait
+#
+# Secrets come from a host-side env_file written by the deploy job.
+# The deploy job writes ~/branchout/.env.prod (mode 0600) before calling
+# compose, so the file is at the repo root relative to the compose run dir.
+# Required keys: POSTGRES_PASSWORD, SESSION_SECRET
+# Optional (spec 0004/0006): DATABASE_URL, REDIS_URL, INTERNAL_TOKEN
+name: branchout
+
+services:
+  web:
+    image: ghcr.io/rogueoak/branchout/web:${IMAGE_TAG:-latest}
+    container_name: branchout-web
+    restart: unless-stopped
+    expose:
+      - "3000"
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      # curl is installed in the Dockerfile for this check. /health is the Next.js health route.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health -o /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - edge
+      - db  # web makes server-side calls to control-plane for SSR
+
+  control-plane:
+    image: ghcr.io/rogueoak/branchout/control-plane:${IMAGE_TAG:-latest}
+    container_name: branchout-control-plane
+    restart: unless-stopped
+    expose:
+      - "4000"
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4000/health -o /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - edge
+      - db
+
+  game-engine:
+    image: ghcr.io/rogueoak/branchout/game-engine:${IMAGE_TAG:-latest}
+    container_name: branchout-game-engine
+    restart: unless-stopped
+    expose:
+      - "4001"
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4001/health -o /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - edge
+      - db
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: branchout-postgres
+    restart: unless-stopped
+    env_file: .env.prod  # provides POSTGRES_PASSWORD
+    environment:
+      POSTGRES_DB: branchout
+      POSTGRES_USER: branchout
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U branchout -d branchout"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - db  # internal only; no host port
+
+  redis:
+    image: redis:7-alpine
+    container_name: branchout-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    networks:
+      - db  # internal only; no host port
+
+volumes:
+  postgres_data: # durable; survives redeploys; back up with pg_dump (follow-up)
+  redis_data:
+
+networks:
+  # Shared with the proxy stack; owned externally.
+  # Created by the deploy job: `docker network create edge`.
+  edge:
+    external: true
+
+  # Internal-only network: app services <-> Postgres/Redis.
+  # Not reachable from the host or from Caddy.
+  db:
+    internal: true

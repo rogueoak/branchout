@@ -1,0 +1,45 @@
+# Caddy edge config for branchout.games.
+# Auto-TLS via ACME (Let's Encrypt). No email in this file (operator privacy;
+# set `email` in a local /etc/caddy/Caddyfile override on the host if needed).
+#
+# Same-origin path routing: one domain, one TLS certificate, no CORS.
+#   /api/*  -> control-plane:4000  (REST)
+#   /ws/*   -> game-engine:4001    (WebSocket upgrade)
+#   *       -> web:3000            (Next.js)
+#
+# Validate before applying:
+#   docker compose -f deploy/docker/compose.proxy.yml exec caddy caddy validate --config /etc/caddy/Caddyfile
+
+{
+    # No ACME email here. Add `email you@example.com` in a host-local override
+    # snippet (/etc/caddy/Caddyfile.d/*.caddy) if you want expiry notifications.
+}
+
+# Redirect www to apex (permanent).
+www.branchout.games {
+    redir https://branchout.games{uri} permanent
+}
+
+branchout.games {
+    encode gzip zstd
+
+    # HSTS: tell browsers to always use HTTPS for this domain (2 years).
+    header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+
+    # WebSocket upgrade - game-engine handles /ws/* traffic.
+    # Caddy preserves the Upgrade header automatically when reverse_proxy sees
+    # a WebSocket handshake request.
+    handle /ws/* {
+        reverse_proxy game-engine:4001
+    }
+
+    # REST API - control-plane handles /api/* traffic.
+    handle /api/* {
+        reverse_proxy control-plane:4000
+    }
+
+    # Everything else goes to the Next.js web app.
+    handle {
+        reverse_proxy web:3000
+    }
+}
