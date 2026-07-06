@@ -8,9 +8,9 @@
 #   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml pull
 #   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml up -d --wait
 #
-# Secrets come from a host-side env_file written by the deploy job.
-# The deploy job writes ~/branchout/.env.prod (mode 0600) before calling
-# compose, so the file is at the repo root relative to the compose run dir.
+# Secrets come from a host-side env_file the deploy job writes next to this
+# compose file as deploy/docker/.env.prod (mode 0600). `env_file: .env.prod`
+# is resolved relative to THIS file's directory, so it must live alongside it.
 # Required keys: POSTGRES_PASSWORD, SESSION_SECRET
 # Optional (spec 0004/0006): DATABASE_URL, REDIS_URL, INTERNAL_TOKEN
 name: branchout
@@ -21,32 +21,37 @@ services:
     container_name: branchout-web
     restart: unless-stopped
     expose:
-      - "3000"
+      - '3000'
     env_file: .env.prod
     environment:
       NODE_ENV: production
     healthcheck:
       # curl is installed in the Dockerfile for this check. /health is the Next.js health route.
-      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health -o /dev/null || exit 1"]
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:3000/health -o /dev/null || exit 1']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    depends_on:
+      # web makes server-side (SSR) calls to control-plane; wait for it to be healthy.
+      control-plane:
+        condition: service_healthy
     networks:
+      # edge only: web reaches control-plane over `edge` (Caddy is here too).
+      # It has no business talking to Postgres/Redis directly, so it stays off `db`.
       - edge
-      - db  # web makes server-side calls to control-plane for SSR
 
   control-plane:
     image: ghcr.io/rogueoak/branchout/control-plane:${IMAGE_TAG:-latest}
     container_name: branchout-control-plane
     restart: unless-stopped
     expose:
-      - "4000"
+      - '4000'
     env_file: .env.prod
     environment:
       NODE_ENV: production
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:4000/health -o /dev/null || exit 1"]
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:4000/health -o /dev/null || exit 1']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -65,12 +70,12 @@ services:
     container_name: branchout-game-engine
     restart: unless-stopped
     expose:
-      - "4001"
+      - '4001'
     env_file: .env.prod
     environment:
       NODE_ENV: production
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:4001/health -o /dev/null || exit 1"]
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:4001/health -o /dev/null || exit 1']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -86,12 +91,12 @@ services:
     image: postgres:16-alpine
     container_name: branchout-postgres
     restart: unless-stopped
-    env_file: .env.prod  # provides POSTGRES_PASSWORD
+    env_file: .env.prod # provides POSTGRES_PASSWORD
     environment:
       POSTGRES_DB: branchout
       POSTGRES_USER: branchout
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U branchout -d branchout"]
+      test: ['CMD-SHELL', 'pg_isready -U branchout -d branchout']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -99,21 +104,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - db  # internal only; no host port
+      - db # internal only; no host port
 
   redis:
     image: redis:7-alpine
     container_name: branchout-redis
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 5
     volumes:
       - redis_data:/data
     networks:
-      - db  # internal only; no host port
+      - db # internal only; no host port
 
 volumes:
   postgres_data: # durable; survives redeploys; back up with pg_dump (follow-up)

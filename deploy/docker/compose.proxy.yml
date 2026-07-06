@@ -14,23 +14,28 @@ services:
     container_name: caddy
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp" # HTTP/3 (QUIC)
+      - '80:80'
+      - '443:443'
+      - '443:443/udp' # HTTP/3 (QUIC)
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data   # ACME certs + keys; must survive redeploys
+      - caddy_data:/data # ACME certs + keys; must survive redeploys
       - caddy_config:/config
     networks:
       - edge
     healthcheck:
-      test: ["CMD", "caddy", "version"]
+      # Hit the local admin API (bound to 127.0.0.1:2019 inside the container),
+      # which only answers once Caddy is actually running and serving - a truer
+      # signal than `caddy version`, which passes even if the server never came up.
+      # busybox wget ships in the alpine image.
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:2019/config/']
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
 
 volumes:
-  caddy_data:   # ACME certificate storage; back this up
+  caddy_data: # ACME certificate storage; back this up
   caddy_config:
 
 # Created externally by the deploy job (idempotent): `docker network create edge`.

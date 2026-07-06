@@ -76,14 +76,33 @@ ships upstream as `@rogueoak/roots/brand` (canopy PR #37 - a `buildBrand()` func
 
 ## Deployment
 
-Docker Compose, both locally and on a server. `docker compose up` brings up Postgres, Redis,
-and the three apps as one runnable system - the same file in dev and prod. Kubernetes is a
-someday, not a now.
+Docker Compose, both locally and on a server. Kubernetes is a someday, not a now.
 
-`infra/docker-compose.yml` is the production-shaped base (build each image, run its `start`
-command, healthchecks). `infra/docker-compose.override.yml` is auto-merged by a plain
-`docker compose up` for local dev: it bind-mounts the repo and runs each app's `dev` script for
-hot reload. Deploy with `-f docker-compose.yml` to skip the override.
+**Local dev** uses `infra/docker-compose.yml` (production-shaped base: build each image, run its
+`start` command, healthchecks) with `infra/docker-compose.override.yml` auto-merged by a plain
+`docker compose up` for hot reload (bind-mounts the repo, runs each app's `dev` script).
+
+**Production** (`branchout.games`, one DigitalOcean droplet - spec `0011`) runs two compose stacks
+on a shared external Docker network, `edge`, defined under `deploy/docker/`:
+
+- `compose.proxy.yml` - the **proxy** stack. Caddy, the only container publishing host ports
+  80/443. Terminates TLS (auto-ACME), enforces HSTS, and does same-origin path routing:
+  `/api/*` -> `control-plane:4000`, `/ws/*` -> `game-engine:4001` (WebSocket upgrade), everything
+  else -> `web:3000`. `www` redirects to the apex. ACME data persists in a named volume. One
+  domain, one certificate, first-party session cookie, no CORS.
+- `compose.site.yml` - the **branchout** app stack. The three private GHCR images
+  (`ghcr.io/rogueoak/branchout/<app>:sha-<commit>`) plus Postgres and Redis. It publishes no host
+  port; Caddy reaches the app services over `edge`. Only the three app services join `edge`;
+  Postgres and Redis sit on an internal-only `db` network with no host port. `web` is on `edge`
+  only (it reaches control-plane there for SSR) - it never touches the data tier directly.
+
+Deploys are hands-off: every push to `main` runs `.github/workflows/release.yml`
+(verify -> build the three images -> deploy). The deploy job SSHes into the droplet as `deploy`,
+force-syncs the repo, pulls the run's private images (GHCR login with the run-scoped
+`GITHUB_TOKEN`, `packages: read`), writes `deploy/docker/.env.prod` from GitHub secrets, and rolls
+the stack forward health-gated with `up -d --wait`. Server secrets live only in that host env file
+and in GitHub Actions secrets - never in the repo. Rollback is a redeploy of an older `sha`;
+`cleanup-images.yml` bounds image disk use. See `deploy/README.md` for host setup and secrets.
 
 ## Build tooling
 

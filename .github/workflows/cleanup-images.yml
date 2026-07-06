@@ -9,11 +9,11 @@ name: Cleanup images
 on:
   schedule:
     # Daily at 04:17 UTC (off-peak). The scheduled run is live (it deletes).
-    - cron: "17 4 * * *"
+    - cron: '17 4 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Preview deletions without actually deleting"
+        description: 'Preview deletions without actually deleting'
         type: boolean
         default: true
 

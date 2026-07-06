@@ -20,20 +20,23 @@ Two compose stacks, one shared external Docker network (`edge`):
   the app services over the external `edge` network. Postgres and Redis are on an
   internal-only `db` network; they are not reachable from the host or from Caddy.
 
-Server secrets (Postgres password, session secret) live in `.env.prod` at the repo root
-on the host. The deploy job writes this file fresh from GitHub secrets on every run
-(mode 0600, readable only by the deploy user). It is never committed to git.
+Server secrets (Postgres password, session secret) live in `deploy/docker/.env.prod`
+on the host (next to `compose.site.yml`, where `env_file: .env.prod` resolves). The
+deploy job writes this file fresh from GitHub secrets on every run (mode 0600, readable
+only by the deploy user). It is gitignored and never committed.
 
 ## Host prerequisites (one-time setup)
 
 A fresh droplet needs:
 
 1. **Docker Engine + Compose** installed and running.
+
    ```
    curl -fsSL https://get.docker.com | sh
    ```
 
 2. A **`deploy` user** in the `docker` group:
+
    ```
    adduser --disabled-password --gecos "" deploy
    usermod -aG docker deploy
@@ -72,6 +75,7 @@ docker compose -f ~/branchout/coming-soon/compose.yml down
 ```
 
 Verify the ports are free:
+
 ```sh
 ss -tlnp | grep -E ':80|:443'
 ```
@@ -83,16 +87,17 @@ brings up Caddy and the full site.
 
 Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branchout repo:
 
-| Secret | Value |
-|---|---|
-| `DEPLOY_SSH_KEY` | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet) |
-| `DEPLOY_KNOWN_HOSTS` | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy) |
-| `DEPLOY_HOST` | Droplet IP address or hostname |
-| `DEPLOY_USER` | `deploy` |
-| `POSTGRES_PASSWORD` | Strong random password for the Postgres `branchout` user |
-| `SESSION_SECRET` | Strong random secret for session signing (spec 0004) |
+| Secret               | Value                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `DEPLOY_SSH_KEY`     | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet) |
+| `DEPLOY_KNOWN_HOSTS` | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                         |
+| `DEPLOY_HOST`        | Droplet IP address or hostname                                                                               |
+| `DEPLOY_USER`        | `deploy`                                                                                                     |
+| `POSTGRES_PASSWORD`  | Strong random password for the Postgres `branchout` user                                                     |
+| `SESSION_SECRET`     | Strong random secret for session signing (spec 0004)                                                         |
 
 Generate strong values with:
+
 ```sh
 openssl rand -base64 32   # run once for POSTGRES_PASSWORD, once for SESSION_SECRET
 ```

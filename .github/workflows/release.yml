@@ -103,17 +103,19 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/deploy_key \
-            -o BatchMode=yes \
-            -o ConnectTimeout=10 \
-            -o StrictHostKeyChecking=yes \
-            "$USER@$HOST" \
-            "IMAGE_TAG='$IMAGE_TAG' \
-             GHCR_TOKEN='$RUN_TOKEN' \
-             GHCR_ACTOR='$GITHUB_ACTOR_NAME' \
-             POSTGRES_PASSWORD='$POSTGRES_PASSWORD' \
-             SESSION_SECRET='$SESSION_SECRET' \
-             bash -se" <<'REMOTE'
+          # Pass every value to the remote shell over the encrypted stdin channel,
+          # not on the SSH command line: printf %q emits a shell-safe assignment for
+          # any value (a single quote or special char can't break the script), and
+          # keeping them off argv means they never reach the remote command that
+          # sshd may log at VERBOSE/DEBUG. The heredoc delimiter is quoted so the
+          # runner shell does no expansion of the script body itself.
+          {
+            printf 'export IMAGE_TAG=%q\n' "$IMAGE_TAG"
+            printf 'export GHCR_TOKEN=%q\n' "$RUN_TOKEN"
+            printf 'export GHCR_ACTOR=%q\n' "$GITHUB_ACTOR_NAME"
+            printf 'export POSTGRES_PASSWORD=%q\n' "$POSTGRES_PASSWORD"
+            printf 'export SESSION_SECRET=%q\n' "$SESSION_SECRET"
+            cat <<'REMOTE'
           set -euo pipefail
           REPO="$HOME/branchout"
 
@@ -141,13 +143,17 @@ jobs:
           # Log in to GHCR with the run-scoped token (packages:read, ephemeral).
           # Pipe via stdin so the token never appears in process arguments or logs.
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_ACTOR" --password-stdin
+          # Guarantee logout even if a later step fails - no GHCR credentials linger.
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
 
-          # Write the host env file from GitHub secrets. mode 0600: only the
-          # deploy user can read it. This file is the only place secrets live on
-          # the host; it is not committed to git.
-          install -m 0600 /dev/null .env.prod
+          # Write the host env file NEXT TO the compose file, so `env_file: .env.prod`
+          # (resolved relative to the compose file's directory) finds it. mode 0600:
+          # only the deploy user can read it. This file is the only place secrets live
+          # on the host; it is gitignored and never committed.
+          ENV_FILE="deploy/docker/.env.prod"
+          install -m 0600 /dev/null "$ENV_FILE"
           printf 'POSTGRES_PASSWORD=%s\nSESSION_SECRET=%s\n' \
-            "$POSTGRES_PASSWORD" "$SESSION_SECRET" > .env.prod
+            "$POSTGRES_PASSWORD" "$SESSION_SECRET" > "$ENV_FILE"
 
           # Pull new images, then roll forward. --wait blocks until every service
           # passes its HEALTHCHECK; a broken image returns non-zero here and aborts
@@ -155,11 +161,13 @@ jobs:
           docker compose -f deploy/docker/compose.site.yml pull
           docker compose -f deploy/docker/compose.site.yml up -d --wait
 
-          # Log out so no GHCR credentials linger on the host.
-          docker logout ghcr.io
-
           # Prune old branchout images (label-scoped; running images are in-use
           # and kept; a cohosted stack's images are untouched).
           docker image prune -af \
             --filter "label=org.opencontainers.image.source=https://github.com/rogueoak/branchout"
           REMOTE
+          } | ssh -i ~/.ssh/deploy_key \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            -o StrictHostKeyChecking=yes \
+            "$USER@$HOST" bash -s
