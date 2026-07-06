@@ -16,6 +16,9 @@ next-env.d.ts
 
 # Local env
 .env
+# Production secrets file the deploy job writes on the host; never track it.
+.env.prod
+deploy/docker/.env.prod
 
 # Generated brand rasters (produced by packages/brand build)
 apps/web/public/favicon-16.png

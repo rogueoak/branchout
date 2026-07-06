@@ -10,6 +10,11 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Branch out Confetti theme on canopy, light + dark, AA-verified (spec `0002`).
 - [x] Brand assets - icon, favicon, wordmark lockup, OG image; `packages/brand` re-exports
       SVGs and generates rasters at build time (spec `0003`).
+- [~] Hosting and deploy - `branchout.games` on a DigitalOcean droplet behind a Caddy edge proxy
+      (auto-TLS, HSTS, same-origin `/api` + `/ws` routing), the three apps as private GHCR images
+      plus Postgres + Redis, rolled forward hands-off by `release.yml` on every push to `main`
+      (health-gated `up -d --wait`, `sha-<commit>` pins, rollback by redeploy). Pipeline built in
+      spec `0011`; first cutover (one-time coming-soon decommission + secrets) is operator-run.
 
 ## Accounts and profiles
 

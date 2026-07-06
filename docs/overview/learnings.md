@@ -151,6 +151,25 @@ Capture durable lessons as they emerge.
   route or a wire field exposes it, and an identity kept in an httpOnly cookie cannot be echoed by
   client code. When a server spec precedes its UI, budget a read surface for that UI. Building the
   Trivia web client on `0006`/`0007` surfaced four such gaps at once. (Feedback `0010`.)
+
+## Deployment and infra
+
+- **Compose relative paths resolve against the compose file's directory, not the shell's cwd.**
+  `env_file`, build `context`, and bind-mount sources are all anchored to the directory the
+  compose file lives in (or `--project-directory`), regardless of where you run `docker compose`.
+  A deploy that wrote `.env.prod` to the repo root while `compose.site.yml` sat in `deploy/docker/`
+  would have started every service with empty secrets. Write host-side env files next to their
+  compose file. (Feedback `0011`.)
+- **Keep a tier off any network it has no need to reach - the web tier does not belong on the data
+  network.** The web app reaches the API tier over the shared `edge` network, so joining it to the
+  internal `db` network only hands a compromised web container direct TCP to Postgres and Redis.
+  The cheapest segmentation win is refusing the unnecessary network membership. (Feedback `0011`.)
+- **Pass deploy secrets over SSH stdin, not on the remote command line.** Interpolating a secret
+  into the SSH command argument puts it in the remote command that sshd can log at VERBOSE/DEBUG
+  and breaks on a quote in the value. Stream `printf %q` export lines plus the script body through
+  `... | ssh host bash -s` so secrets stay off argv and are safe for any value. Pair GHCR
+  `docker login` with a `trap '... logout' EXIT` so credentials never linger on a failed run.
+  (Feedback `0011`.)
 - **A new field on a versioned envelope is optional-and-defaulted unless you bump the version.**
   The version stamp exists so a shape can grow without breaking older peers; adding a *required*
   field under the same version voids that guarantee - a peer predating the field passes the version

@@ -6,3 +6,6 @@
 .git
 .worktrees
 .env
+# Never bake a production secrets file into an image.
+.env.prod
+**/.env.prod
