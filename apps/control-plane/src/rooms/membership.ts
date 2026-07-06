@@ -5,8 +5,19 @@
  * member's per-game nickname.
  */
 
+import { randomBytes } from 'node:crypto';
+
 /** A member's role in a room. The host owns it; players play; observers only watch. */
 export type Role = 'host' | 'player' | 'observer';
+
+/**
+ * Mint a member's public `playerId`: an unguessable, url-safe token (128 bits), distinct from the
+ * session id. It is safe to hand to the browser (it grants nothing on its own), so it can be the
+ * engine roster/`join` identity a non-host device reads back, while `sessionId` stays host-only.
+ */
+export function newPlayerId(): string {
+  return randomBytes(16).toString('base64url');
+}
 
 /** A player's chosen mode. `interactive` is a viewer + remote on one screen; `remote` is a
  * controller only. Observers have no mode (they only watch). */
@@ -20,6 +31,14 @@ export type Mode = 'interactive' | 'remote';
  */
 export interface RoomMember {
   sessionId: string;
+  /**
+   * A stable, public, NON-sensitive identity for this member within the room, minted on join and
+   * distinct from `sessionId`. This is the identity the engine roster and `join` key on, and the
+   * only one safe to hand to the browser: unlike `sessionId` (the httpOnly cookie value, the kick /
+   * rejoin key) it grants nothing, and it is already broadcast to every device inside the engine
+   * `state` frame's `players[].player`. Echo `playerId` to JS; never echo `sessionId`.
+   */
+  playerId: string;
   /** The durable account id when the member signed in; absent for an anonymous member. */
   accountId?: string;
   role: Role;

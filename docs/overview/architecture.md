@@ -121,7 +121,20 @@ so a shape can change without breaking older peers:
 
 - **Player <-> engine (WebSocket).** Client frames `join`, `answer`, `vote`; server frames
   `prompt`, `reveal`, `leaderboard`, `state`. Each game frame is keyed by room + game (client
-  frames also by player). `parseMessage` validates ingress; the engine constructs egress.
+  frames also by player). `parseMessage` validates ingress; the engine constructs egress. The
+  `state` frame carries the round's `disputes` (playerIds) so a client can render the voting phase.
+
+### Player identity: public `playerId` vs private `sessionId` (spec 0012)
+
+A room member has two ids. `sessionId` is the value of the httpOnly auth cookie: it authenticates
+control-plane calls, is the kick/rejoin key, and is never exposed to JS (only the host sees other
+members' session ids, for kicking). `playerId` is a separate random token minted on create/join and
+stored beside `sessionId` in Redis membership; it is the *public* identity - the engine
+start-handoff roster (`toHandoffPlayers`) and the engine `join` key on it, and it is echoed to the
+browser on join and in `/members`, because the engine already broadcasts it in every `state` frame's
+`players[].player`. This split lets a non-host browser (which cannot read its httpOnly cookie) learn
+an engine identity without ever exposing the session token. Rule: a browser-facing service echoes
+the *public* identity a UI needs, never the secret that authenticates the caller.
 - **Engine <-> control-plane (REST).** `start` handoff (control-plane -> engine), `round` result
   and `game-complete` standings (engine -> control-plane). Each report carries a stable id
   (`roundId`, `gameId`) so a retry never double-bills - the transport is internal REST, chosen

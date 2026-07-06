@@ -84,6 +84,7 @@ describe('GameClient', () => {
         round: 1,
         players: [{ player: 'p1', nickname: 'Ada', connected: true }],
         scores: { p1: 0 },
+        disputes: [],
       }),
     );
 
@@ -134,6 +135,7 @@ describe('GameClient', () => {
         round: 1,
         players: [],
         scores: {},
+        disputes: [],
       }),
     );
 

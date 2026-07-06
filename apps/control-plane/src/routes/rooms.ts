@@ -95,13 +95,15 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
       const roleRaw = asString(request.body, 'role');
       const role = roleRaw === 'observer' ? 'observer' : 'player';
       const modeRaw = asString(request.body, 'mode');
-      const room = await rooms.join(code, session, {
+      const { room, playerId } = await rooms.join(code, session, {
         role,
         nickname: asString(request.body, 'nickname'),
         mode:
           modeRaw === 'remote' ? 'remote' : modeRaw === 'interactive' ? 'interactive' : undefined,
       });
-      return reply.code(200).send({ room });
+      // Return the caller's public playerId so a non-host device can `join` the engine with it.
+      // `sessionId` (the httpOnly cookie value) is never echoed to JS.
+      return reply.code(200).send({ room, playerId });
     }),
   );
 
@@ -136,13 +138,13 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
     }),
   );
 
-  // Host control: pause / restart / exit (exit returns the room to lobby).
+  // Host control: pause / advance / restart / exit (exit returns the room to lobby).
   app.post('/rooms/:code/control', async (request, reply) =>
     withSession(request, reply, async (session) => {
       const { code } = request.params as { code: string };
       const action = asString(request.body, 'action') as ControlAction;
-      if (action !== 'pause' && action !== 'restart' && action !== 'exit') {
-        return reply.code(400).send({ error: 'action must be pause, restart, or exit.' });
+      if (action !== 'pause' && action !== 'advance' && action !== 'restart' && action !== 'exit') {
+        return reply.code(400).send({ error: 'action must be pause, advance, restart, or exit.' });
       }
       const room = await rooms.control(code, session, action);
       return reply.code(200).send({ room });

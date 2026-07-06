@@ -487,6 +487,7 @@ export class GameEngine {
       round: state.round,
       players: state.players.map((p) => ({ ...p })),
       scores: { ...state.scores },
+      disputes: [...state.disputes],
     };
   }
 

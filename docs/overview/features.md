@@ -95,10 +95,16 @@ What the product does for users, grouped by area. Each capability maps to one or
       leaderboard, host controls (advance/pause/restart/exit), and a final results screen with
       stars. A protocol-typed WebSocket client (`lib/game-client.ts`) folds prompt/reveal/
       leaderboard/state into a pure state machine and reconnects. Built on canopy + the Confetti
-      theme, light/dark, responsive, a11y. Known cross-spec gaps (browser player identity, an
-      `advance` proxy, the disputers in the state frame) are in
-      `docs/feedback/0010-web-client-integration-gaps.md`, deferred to a control-plane/protocol
-      follow-up.
+      theme, light/dark, responsive, a11y (spec `0010`).
+- [x] Trivia end-to-end integration - closes the three integration gaps from `0010` so a full
+      game is playable by the host and non-host players (spec `0012`). Each room member gets a
+      public `playerId` (minted on create/join, stored beside the private `sessionId` in Redis)
+      that keys the engine start-handoff roster and the engine `join`; `POST /rooms/:code/join`
+      returns it and `/members` carries it on every row, while `sessionId` stays host-only.
+      `advance` is on the `/rooms/:code/control` allow-list, and the protocol `state` frame now
+      carries `disputes` (the round's disputers) so the vote UI targets exactly them. The Trivia
+      affordability pre-gate still relies on the server's `insufficient_credits` refusal (gap 4,
+      accepted as-is).
 - [ ] Profile pages and friend search/invite.
 
 ## Future

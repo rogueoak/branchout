@@ -77,6 +77,32 @@ describe('joining', () => {
       service.join('ZZZZZ', anon(), { role: 'player', nickname: 'X' }),
     ).rejects.toMatchObject({ code: 'not_found' });
   });
+
+  it('mints a public playerId per member, distinct from the session id, and returns it on join', async () => {
+    const { service, membership } = harness();
+    const room = await service.createRoom(account());
+    const player = anon('Speedy');
+    const { playerId } = await service.join(room.code, player, {
+      role: 'player',
+      nickname: 'Speedy',
+    });
+    // The join echoes a non-empty playerId that is NOT the session id (the httpOnly cookie value).
+    expect(playerId).toBeTruthy();
+    expect(playerId).not.toBe(player.id);
+    // It is stored beside the session id in membership.
+    const stored = await membership.get(room.id, player.id);
+    expect(stored?.playerId).toBe(playerId);
+    expect(stored?.sessionId).toBe(player.id);
+  });
+
+  it('keeps a session its playerId across a rejoin', async () => {
+    const { service } = harness();
+    const room = await service.createRoom(account());
+    const player = anon('Sam');
+    const first = await service.join(room.code, player, { role: 'player', nickname: 'Sam' });
+    const second = await service.join(room.code, player, { role: 'player', nickname: 'Sam' });
+    expect(second.playerId).toBe(first.playerId);
+  });
 });
 
 describe('kick', () => {
@@ -187,6 +213,27 @@ describe('start rule and gates', () => {
     expect(engine.starts[0]!.config).toEqual({ questions: 5 });
     expect(engine.starts[0]!.room).toBe(room.id);
     expect(engine.starts[0]!.game).toBe('trivia');
+  });
+
+  it('keys the engine handoff roster by the public playerId, never the session id', async () => {
+    const { service, membership, room, host, engine } = await readyRoom({ host_acct: 'party' });
+    const player = anon('Racer');
+    const { playerId } = await service.join(room.code, player, {
+      role: 'player',
+      nickname: 'Racer',
+      mode: 'interactive',
+    });
+    await service.start(room.code, host, 1);
+    const roster = engine.starts[0]!.players;
+    const racer = roster.find((p) => p.nickname === 'Racer');
+    // The roster identity the engine (and thus the browser's `join`) keys on is the public
+    // playerId - exactly what `join` returned to the device - and NOT the httpOnly session id.
+    expect(racer?.player).toBe(playerId);
+    expect(racer?.player).not.toBe(player.id);
+    // And the stored member confirms the two ids are distinct.
+    const stored = await membership.get(room.id, player.id);
+    expect(stored?.playerId).toBe(playerId);
+    expect(stored?.sessionId).toBe(player.id);
   });
 
   it('only the host can select or start', async () => {
