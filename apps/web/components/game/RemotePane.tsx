@@ -14,10 +14,18 @@ import type { PlayerView } from '@branchout/protocol';
 import { Button, Input } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
 import type { GameState } from '../../lib/game-state';
+import { FinalResults } from './FinalResults';
+import { Leaderboard } from './Leaderboard';
 
 interface RemotePaneProps {
   state: GameState;
   me: string;
+  /**
+   * True when the controller is the only pane on screen (a remote-only player). Then it must also
+   * render the between-round leaderboard and the final results, which an interactive player instead
+   * reads from the viewer pane beside it.
+   */
+  showResults?: boolean;
   onAnswer: (round: number, answer: string) => void;
   onDispute: (round: number) => void;
   onBallot: (round: number, target: string, agree: boolean) => void;
@@ -27,7 +35,14 @@ function nicknameOf(players: PlayerView[], id: string): string {
   return players.find((player) => player.player === id)?.nickname ?? id;
 }
 
-export function RemotePane({ state, me, onAnswer, onDispute, onBallot }: RemotePaneProps) {
+export function RemotePane({
+  state,
+  me,
+  showResults = false,
+  onAnswer,
+  onDispute,
+  onBallot,
+}: RemotePaneProps) {
   const { phase, reveal, round } = state;
   const [answer, setAnswer] = useState('');
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
@@ -83,7 +98,8 @@ export function RemotePane({ state, me, onAnswer, onDispute, onBallot }: RemoteP
           {wasMarkedWrong ? (
             <>
               <p className="text-body text-text">
-                Your answer was marked wrong. Think it should count?
+                Your answer was marked wrong. Think it should count? Dispute quickly - the window is
+                brief.
               </p>
               <Button
                 type="button"
@@ -108,36 +124,52 @@ export function RemotePane({ state, me, onAnswer, onDispute, onBallot }: RemoteP
           <p className="text-body text-text">Should a disputed answer count?</p>
           {(reveal?.wrong ?? [])
             .filter((id) => id !== me)
-            .map((id) => (
-              <div key={id} className="flex items-center justify-between gap-3">
-                <span className="text-body-sm text-text">{nicknameOf(state.players, id)}</span>
-                <span className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onBallot(round, id, true)}
-                  >
-                    Should count
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onBallot(round, id, false)}
-                  >
-                    Should not
-                  </Button>
-                </span>
-              </div>
-            ))}
+            .map((id) => {
+              const name = nicknameOf(state.players, id);
+              return (
+                <div key={id} className="flex items-center justify-between gap-3">
+                  <span className="text-body-sm text-text">{name}</span>
+                  <span className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      aria-label={`${name}'s answer should count`}
+                      onClick={() => onBallot(round, id, true)}
+                    >
+                      Should count
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      aria-label={`${name}'s answer should not count`}
+                      onClick={() => onBallot(round, id, false)}
+                    >
+                      Should not
+                    </Button>
+                  </span>
+                </div>
+              );
+            })}
           {(reveal?.wrong ?? []).filter((id) => id !== me).length === 0 ? (
             <p className="text-body-sm text-text-muted">Nothing for you to vote on this round.</p>
           ) : null}
         </div>
+      ) : showResults && phase === 'complete' ? (
+        <FinalResults standings={state.standings} me={me} />
+      ) : showResults && phase === 'leaderboard' ? (
+        <div className="flex flex-col gap-3">
+          <Leaderboard standings={state.standings} me={me} />
+          <p className="text-body-sm text-text-muted">
+            Waiting for the host to start the next round.
+          </p>
+        </div>
       ) : (
         <p className="text-body-sm text-text-muted">
-          Watch the viewer - the next question is coming up.
+          {phase === 'complete'
+            ? 'The game is over - see the results on the viewer.'
+            : 'Watch the viewer - the next question is coming up.'}
         </p>
       )}
     </section>

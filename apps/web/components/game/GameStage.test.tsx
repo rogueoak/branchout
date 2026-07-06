@@ -82,23 +82,57 @@ describe('GameStage per-phase rendering', () => {
     expect(onAnswer).toHaveBeenCalledWith(1, 'water');
   });
 
+  it('lets a player resubmit their answer until the round closes', () => {
+    const onAnswer = vi.fn();
+    renderStage({ onAnswer });
+    const input = screen.getByLabelText('Your answer') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'ice' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+    expect(screen.getByText(/Answer submitted/)).toBeDefined();
+    // The button now offers a resubmit and a second answer is sent.
+    fireEvent.change(input, { target: { value: 'water' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Resubmit' }));
+    expect(onAnswer).toHaveBeenLastCalledWith(1, 'water');
+  });
+
   it('disputing offers the dispute button to a player marked wrong', () => {
     const onDispute = vi.fn();
+    // The reveal question is the prompt text; the answer is answers[0]. Use distinct values so the
+    // viewer showing the question as the answer would fail this test.
     const state = build({
       phase: 'disputing',
       prompt: collecting.prompt,
       reveal: {
         round: 1,
-        question: 'Water',
+        question: 'What is H2O?',
         answers: ['Water'],
         correct: ['p3'],
         wrong: ['p1', 'p2'],
       },
     });
     renderStage({ state, onDispute });
+    // The viewer shows the answer (answers[0]), not the question text.
+    within(screen.getByLabelText('Game viewer')).getByText('Water');
     const button = screen.getByRole('button', { name: 'Dispute' });
     fireEvent.click(button);
     expect(onDispute).toHaveBeenCalledWith(1);
+  });
+
+  it('does not offer the dispute button to a player who was not marked wrong', () => {
+    const state = build({
+      phase: 'disputing',
+      prompt: collecting.prompt,
+      reveal: {
+        round: 1,
+        question: 'What is H2O?',
+        answers: ['Water'],
+        correct: ['p1'],
+        wrong: ['p2'],
+      },
+    });
+    // me is p1, who answered correctly, so no dispute button appears.
+    renderStage({ state, role: 'player', mode: 'remote' });
+    expect(screen.queryByRole('button', { name: 'Dispute' })).toBeNull();
   });
 
   it('voting shows a ballot to the other players and reports the vote', () => {
@@ -108,7 +142,7 @@ describe('GameStage per-phase rendering', () => {
       prompt: collecting.prompt,
       reveal: {
         round: 1,
-        question: 'Water',
+        question: 'What is H2O?',
         answers: ['Water'],
         correct: ['p1'],
         wrong: ['p2', 'p3'],
@@ -119,8 +153,24 @@ describe('GameStage per-phase rendering', () => {
     const controller = screen.getByLabelText('Your controller');
     within(controller).getByText('Bo');
     within(controller).getByText('Cy');
-    fireEvent.click(within(controller).getAllByRole('button', { name: 'Should count' })[0]);
+    fireEvent.click(within(controller).getByRole('button', { name: "Bo's answer should count" }));
     expect(onBallot).toHaveBeenCalledWith(1, 'p2', true);
+  });
+
+  it('offers no ballot when the voter is the only disputed player', () => {
+    const state = build({
+      phase: 'voting',
+      prompt: collecting.prompt,
+      reveal: {
+        round: 1,
+        question: 'What is H2O?',
+        answers: ['Water'],
+        correct: [],
+        wrong: ['p1'],
+      },
+    });
+    renderStage({ state, role: 'player', mode: 'remote' });
+    expect(screen.getByText(/Nothing for you to vote on/)).toBeDefined();
   });
 
   it('leaderboard shows the between-round standings', () => {
@@ -147,8 +197,57 @@ describe('GameStage per-phase rendering', () => {
     });
     renderStage({ state, role: 'host', mode: undefined, isHost: true });
     expect(screen.getByText(/Final results/)).toBeDefined();
-    // Rank 1 earns three stars, labelled for assistive tech.
+    // Rank 1 earns three stars, rank 2 earns two, both labelled for assistive tech.
     expect(screen.getByLabelText('3 stars')).toBeDefined();
+    expect(screen.getByLabelText('2 stars')).toBeDefined();
     expect(screen.getByRole('button', { name: 'Back to lobby' })).toBeDefined();
+  });
+});
+
+describe('GameStage connection, paused, and error surfaces', () => {
+  it('shows a reconnecting banner while the socket is down', () => {
+    renderStage({ state: { ...collecting, connection: 'reconnecting' } });
+    expect(screen.getByText('Reconnecting...')).toBeDefined();
+  });
+
+  it('shows the paused badge and flips the host Pause control to Resume', () => {
+    const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
+    renderStage({ state, role: 'host', mode: undefined, isHost: true });
+    expect(screen.getByText('Paused by the host')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Resume' })).toBeDefined();
+  });
+
+  it('surfaces a protocol error frame as an alert', () => {
+    renderStage({ state: { ...collecting, error: 'join a session first' } });
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toContain('join a session first');
+  });
+});
+
+describe('GameStage remote-only player sees results without a viewer', () => {
+  it('renders the leaderboard on the controller between rounds', () => {
+    const state = build({
+      phase: 'leaderboard',
+      standings: [
+        { player: 'p1', nickname: 'Ada', score: 100, rank: 1 },
+        { player: 'p2', nickname: 'Bo', score: 50, rank: 2 },
+      ],
+    });
+    renderStage({ state, role: 'player', mode: 'remote' });
+    expect(screen.queryByLabelText('Game viewer')).toBeNull();
+    const controller = screen.getByLabelText('Your controller');
+    within(controller).getByLabelText('Leaderboard');
+    within(controller).getByText(/Ada/);
+  });
+
+  it('renders the final results on the controller when the game ends', () => {
+    const state = build({
+      phase: 'complete',
+      standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
+    });
+    renderStage({ state, role: 'player', mode: 'remote' });
+    const controller = screen.getByLabelText('Your controller');
+    within(controller).getByText(/Final results/);
+    within(controller).getByLabelText('3 stars');
   });
 });

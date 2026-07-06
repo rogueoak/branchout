@@ -101,7 +101,7 @@ export function JoinForm({ initialCode }: JoinFormProps) {
             id="nickname"
             value={nickname}
             autoComplete="nickname"
-            placeholder="What should we call you?"
+            placeholder="Pick a name to show others"
             onChange={(event) => setNickname(event.target.value)}
             required
           />

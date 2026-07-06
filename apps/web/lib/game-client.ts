@@ -6,7 +6,12 @@
 // It is transport-injectable: `socketFactory` defaults to the browser's native WebSocket but a
 // test passes a mock, so the message handling is verifiable without a real server.
 
-import { serializeMessage, type ClientMessage, type ServerMessage } from '@branchout/protocol';
+import {
+  PROTOCOL_VERSION,
+  serializeMessage,
+  type ClientMessage,
+  type ServerMessage,
+} from '@branchout/protocol';
 import {
   initialGameState,
   reduceGameState,
@@ -38,11 +43,14 @@ export interface GameClientOptions {
   nickname: string;
   /** Override the socket transport (tests inject a mock). */
   socketFactory?: (url: string) => GameSocket;
-  /** Delay before a reconnect attempt, in ms. */
+  /** Base delay before the first reconnect attempt, in ms; doubles each failed attempt. */
   reconnectDelayMs?: number;
+  /** Cap on the reconnect backoff, in ms. */
+  maxReconnectDelayMs?: number;
 }
 
 const DEFAULT_RECONNECT_DELAY_MS = 2000;
+const DEFAULT_MAX_RECONNECT_DELAY_MS = 30_000;
 
 /** Adapt the browser's native WebSocket to {@link GameSocket}. */
 function nativeSocketFactory(url: string): GameSocket {
@@ -82,17 +90,24 @@ function asServerFrame(value: unknown): ServerMessage | { type: 'error'; message
  * from the engine's snapshot. Call `close` to stop reconnecting and drop the socket.
  */
 export class GameClient {
-  private readonly options: Required<Pick<GameClientOptions, 'reconnectDelayMs'>> &
+  private readonly options: Required<
+    Pick<GameClientOptions, 'reconnectDelayMs' | 'maxReconnectDelayMs'>
+  > &
     GameClientOptions;
   private readonly factory: (url: string) => GameSocket;
   private socket: GameSocket | null = null;
   private state: GameState = initialGameState();
   private listeners = new Set<(state: GameState) => void>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempts = 0;
   private closed = false;
 
   constructor(options: GameClientOptions) {
-    this.options = { reconnectDelayMs: DEFAULT_RECONNECT_DELAY_MS, ...options };
+    this.options = {
+      reconnectDelayMs: DEFAULT_RECONNECT_DELAY_MS,
+      maxReconnectDelayMs: DEFAULT_MAX_RECONNECT_DELAY_MS,
+      ...options,
+    };
     this.factory = options.socketFactory ?? nativeSocketFactory;
   }
 
@@ -115,9 +130,10 @@ export class GameClient {
     this.socket = socket;
 
     socket.onopen = () => {
+      this.reconnectAttempts = 0; // A clean open resets the backoff.
       this.setConnection('live');
       this.send({
-        v: 1,
+        v: PROTOCOL_VERSION,
         type: 'join',
         room: this.options.room,
         game: this.options.game,
@@ -145,7 +161,7 @@ export class GameClient {
   /** Submit this player's free-text answer for a round. */
   submitAnswer(round: number, answer: string): void {
     this.send({
-      v: 1,
+      v: PROTOCOL_VERSION,
       type: 'answer',
       room: this.options.room,
       game: this.options.game,
@@ -170,7 +186,7 @@ export class GameClient {
 
   private vote(round: number, target: string, agree: boolean): void {
     this.send({
-      v: 1,
+      v: PROTOCOL_VERSION,
       type: 'vote',
       room: this.options.room,
       game: this.options.game,
@@ -203,7 +219,14 @@ export class GameClient {
     if (this.closed) return;
     this.setConnection('reconnecting');
     this.clearReconnect();
-    this.reconnectTimer = setTimeout(() => this.connect(), this.options.reconnectDelayMs);
+    // Exponential backoff capped at maxReconnectDelayMs, so a persistently-down engine is retried
+    // without hammering it. The delay resets to the base on the next clean open.
+    const delay = Math.min(
+      this.options.reconnectDelayMs * 2 ** this.reconnectAttempts,
+      this.options.maxReconnectDelayMs,
+    );
+    this.reconnectAttempts += 1;
+    this.reconnectTimer = setTimeout(() => this.connect(), delay);
   }
 
   private clearReconnect(): void {

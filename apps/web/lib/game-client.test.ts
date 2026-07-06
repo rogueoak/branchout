@@ -53,10 +53,10 @@ describe('GameClient', () => {
     client.connect();
     expect(client.getState().connection).toBe('connecting');
 
-    sockets[0].onopen?.();
+    sockets[0]!.onopen?.();
     expect(client.getState().connection).toBe('live');
 
-    const join = sockets[0].frames()[0];
+    const join = sockets[0]!.frames()[0];
     expect(join).toMatchObject({
       type: 'join',
       room: 'room1',
@@ -71,9 +71,9 @@ describe('GameClient', () => {
     const seen: string[] = [];
     client.subscribe((state) => seen.push(state.phase));
     client.connect();
-    sockets[0].onopen?.();
+    sockets[0]!.onopen?.();
 
-    sockets[0].onmessage?.(
+    sockets[0]!.onmessage?.(
       JSON.stringify({
         v: 1,
         type: 'state',
@@ -95,22 +95,22 @@ describe('GameClient', () => {
   it('ignores an unparseable or unknown frame', () => {
     const { client, sockets } = makeClient();
     client.connect();
-    sockets[0].onopen?.();
-    sockets[0].onmessage?.('not json');
-    sockets[0].onmessage?.(JSON.stringify({ type: 'mystery' }));
+    sockets[0]!.onopen?.();
+    sockets[0]!.onmessage?.('not json');
+    sockets[0]!.onmessage?.(JSON.stringify({ type: 'mystery' }));
     expect(client.getState().joined).toBe(false);
   });
 
   it('sends answer, dispute, and ballot frames', () => {
     const { client, sockets } = makeClient();
     client.connect();
-    sockets[0].onopen?.();
+    sockets[0]!.onopen?.();
 
     client.submitAnswer(2, 'water');
     client.raiseDispute(2);
     client.castBallot(2, 'p3', true);
 
-    const frames = sockets[0].frames().slice(1); // drop the join
+    const frames = sockets[0]!.frames().slice(1); // drop the join
     expect(frames[0]).toMatchObject({ type: 'answer', round: 2, answer: 'water', player: 'p1' });
     // A dispute is a vote targeting the player themselves.
     expect(frames[1]).toMatchObject({ type: 'vote', round: 2, target: 'p1', agree: true });
@@ -121,9 +121,9 @@ describe('GameClient', () => {
     vi.useFakeTimers();
     const { client, sockets } = makeClient();
     client.connect();
-    sockets[0].onopen?.();
+    sockets[0]!.onopen?.();
     // Prove we are joined so the reconnect status (not the first connect) is asserted.
-    sockets[0].onmessage?.(
+    sockets[0]!.onmessage?.(
       JSON.stringify({
         v: 1,
         type: 'state',
@@ -137,27 +137,48 @@ describe('GameClient', () => {
       }),
     );
 
-    sockets[0].onclose?.();
+    sockets[0]!.onclose?.();
     expect(client.getState().connection).toBe('reconnecting');
 
     vi.advanceTimersByTime(10);
     expect(sockets).toHaveLength(2);
-    sockets[1].onopen?.();
-    expect(sockets[1].frames()[0]).toMatchObject({ type: 'join' });
+    sockets[1]!.onopen?.();
+    expect(sockets[1]!.frames()[0]).toMatchObject({ type: 'join' });
+  });
+
+  it('backs off exponentially across repeated failures', () => {
+    vi.useFakeTimers();
+    const { client, sockets } = makeClient({ reconnectDelayMs: 100, maxReconnectDelayMs: 1000 });
+    client.connect();
+    sockets[0]!.onopen?.();
+
+    // First failure: base delay of 100ms.
+    sockets[0]!.onclose?.();
+    vi.advanceTimersByTime(99);
+    expect(sockets).toHaveLength(1);
+    vi.advanceTimersByTime(1);
+    expect(sockets).toHaveLength(2);
+
+    // Second failure without a clean open in between: the delay doubles to 200ms.
+    sockets[1]!.onclose?.();
+    vi.advanceTimersByTime(199);
+    expect(sockets).toHaveLength(2);
+    vi.advanceTimersByTime(1);
+    expect(sockets).toHaveLength(3);
   });
 
   it('stops reconnecting once closed', () => {
     vi.useFakeTimers();
     const { client, sockets } = makeClient();
     client.connect();
-    sockets[0].onopen?.();
+    sockets[0]!.onopen?.();
 
     client.close();
     expect(client.getState().connection).toBe('closed');
-    expect(sockets[0].closed).toBe(true);
+    expect(sockets[0]!.closed).toBe(true);
 
     // A late close event must not schedule a reconnect.
-    sockets[0].onclose?.();
+    sockets[0]!.onclose?.();
     vi.advanceTimersByTime(50);
     expect(sockets).toHaveLength(1);
   });

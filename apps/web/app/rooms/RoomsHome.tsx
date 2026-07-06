@@ -74,8 +74,13 @@ export function RoomsHome() {
               </a>
             </div>
           ) : (
-            <Button type="button" variant="primary" onClick={onCreate} disabled={creating}>
-              {creating ? 'Creating...' : 'Create a room'}
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onCreate}
+              disabled={creating || isAccount === null}
+            >
+              {creating ? 'Creating...' : isAccount === null ? 'Loading...' : 'Create a room'}
             </Button>
           )}
           {error ? (

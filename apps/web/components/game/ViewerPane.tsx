@@ -53,7 +53,7 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
           {reveal ? (
             <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">
               <p className="text-body-sm text-text-muted">Answer</p>
-              <p className="text-h4 text-text">{reveal.question ?? 'No answer'}</p>
+              <p className="text-h4 text-text">{reveal.answers[0] ?? 'No answer'}</p>
               {reveal.answers.length > 1 ? (
                 <p className="text-body-sm text-text-muted">
                   Also accepted: {reveal.answers.slice(1).join(', ')}

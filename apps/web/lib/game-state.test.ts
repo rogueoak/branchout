@@ -127,7 +127,7 @@ describe('reduceGameState', () => {
     };
     const next = reduceGameState(initialGameState(), leaderboard);
     expect(next.standings).toHaveLength(2);
-    expect(next.standings[0].rank).toBe(1);
+    expect(next.standings[0]!.rank).toBe(1);
   });
 
   it('captures an error frame without disturbing the game state', () => {

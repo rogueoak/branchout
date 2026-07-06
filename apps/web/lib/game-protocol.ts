@@ -15,8 +15,9 @@ export interface TriviaPrompt {
 /** The reveal payload Trivia streams when the answer round closes (`reveal`). */
 export interface TriviaRoundReveal {
   round: number;
-  /** The correct answer text, or null if the round had no question. */
+  /** The question prompt text (echoed from the prompt), or null if the round had no question. */
   question: string | null;
+  /** The accepted answers; the first is the canonical answer, the rest are also accepted. */
   answers: string[];
   /** Player ids who answered correctly. */
   correct: string[];

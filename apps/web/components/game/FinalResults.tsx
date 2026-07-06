@@ -13,14 +13,28 @@ interface FinalResultsProps {
   me?: string;
 }
 
-/** A row of filled/empty stars for a placing, labelled for screen readers. */
+/** A single filled star, drawn as an SVG so it renders crisply and identically across platforms. */
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="size-5">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
+
+/** A row of stars for a placing, labelled for screen readers. */
 function Stars({ count }: { count: number }) {
   if (count === 0) {
     return <span className="text-caption text-text-subtle">No stars</span>;
   }
   return (
-    <span aria-label={`${count} star${count === 1 ? '' : 's'}`} className="text-warning">
-      {'★'.repeat(count)}
+    <span
+      aria-label={`${count} star${count === 1 ? '' : 's'}`}
+      className="flex items-center gap-0.5 text-warning"
+    >
+      {Array.from({ length: count }, (_, index) => (
+        <StarIcon key={index} />
+      ))}
     </span>
   );
 }

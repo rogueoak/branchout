@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CONFIGURABLE_CATEGORIES,
   DEFAULT_DIFFICULTY,
   DEFAULT_ROUNDS,
   RANDOM_CATEGORY,
@@ -13,6 +14,25 @@ const base: TriviaHostConfig = {
   rounds: DEFAULT_ROUNDS,
   difficulty: DEFAULT_DIFFICULTY,
 };
+
+// This list mirrors the engine's source of truth (apps/game-engine/.../trivia.ts). It is pinned
+// here so an accidental edit to the client mirror fails loudly rather than drifting silently; if
+// the engine ever changes its categories, update both together.
+describe('category parity with the engine', () => {
+  it('offers the eight engine categories plus Random, in order', () => {
+    expect(CONFIGURABLE_CATEGORIES).toEqual([
+      'Nature',
+      'Food',
+      'Animals',
+      'Science',
+      'People',
+      'Places',
+      'Things',
+      'History',
+      'Random',
+    ]);
+  });
+});
 
 describe('validateTriviaConfig', () => {
   it('accepts the defaults (Random, 10 rounds, difficulty 5)', () => {

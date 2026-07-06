@@ -3,8 +3,10 @@ import {
   RoomApiError,
   controlGame,
   createRoom,
+  fetchIdentity,
   joinRoom,
   listMembers,
+  startAnonymousSession,
   startGame,
 } from './room-api';
 
@@ -46,7 +48,7 @@ describe('room-api', () => {
   it('joins a room by code with role, nickname, and mode in the body', async () => {
     const fetchMock = mockFetch({ ok: true, body: { room } });
     await joinRoom('ABC12', { role: 'player', nickname: 'Ada', mode: 'interactive' });
-    const [, init] = fetchMock.mock.calls[0];
+    const [, init] = fetchMock.mock.calls[0]!;
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual({
       role: 'player',
@@ -81,14 +83,49 @@ describe('room-api', () => {
     });
     const members = await listMembers('ABC12');
     expect(members).toHaveLength(1);
-    expect(members[0].role).toBe('host');
+    expect(members[0]!.role).toBe('host');
   });
 
   it('sends the advance control action (typed for the coming control-plane proxy)', async () => {
     const fetchMock = mockFetch({ ok: true, body: { room } });
     await controlGame('ABC12', 'advance');
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain('/rooms/ABC12/control');
     expect(JSON.parse(init.body as string)).toEqual({ action: 'advance' });
+  });
+
+  it('maps an account identity to its nickname', async () => {
+    mockFetch({
+      ok: true,
+      body: { kind: 'account', account: { nickname: 'Ada', gamerTag: 'AdaX' } },
+    });
+    expect(await fetchIdentity()).toEqual({ kind: 'account', displayName: 'Ada' });
+  });
+
+  it('falls back to the gamer tag when an account has no nickname', async () => {
+    mockFetch({ ok: true, body: { kind: 'account', account: { gamerTag: 'AdaX' } } });
+    expect(await fetchIdentity()).toEqual({ kind: 'account', displayName: 'AdaX' });
+  });
+
+  it('maps an anonymous identity to its display name', async () => {
+    mockFetch({ ok: true, body: { kind: 'anonymous', displayName: 'Guest' } });
+    expect(await fetchIdentity()).toEqual({ kind: 'anonymous', displayName: 'Guest' });
+  });
+
+  it('reports an unauthenticated identity', async () => {
+    mockFetch({ ok: true, body: { kind: 'unauthenticated' } });
+    expect(await fetchIdentity()).toEqual({ kind: 'unauthenticated', displayName: null });
+  });
+
+  it('mints an anonymous session with the code and display name', async () => {
+    const fetchMock = mockFetch({
+      ok: true,
+      status: 201,
+      body: { kind: 'anonymous', displayName: 'Guest' },
+    });
+    await startAnonymousSession('ABC12', 'Guest');
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toContain('/auth/anonymous');
+    expect(JSON.parse(init.body as string)).toEqual({ code: 'ABC12', displayName: 'Guest' });
   });
 });

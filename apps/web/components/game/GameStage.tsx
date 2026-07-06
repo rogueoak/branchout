@@ -93,6 +93,12 @@ export function GameStage({
         </Badge>
       ) : null}
 
+      {state.error ? (
+        <p role="alert" className="text-body-sm text-danger">
+          {state.error}
+        </p>
+      ) : null}
+
       <div
         className={
           viewerVisible && remoteVisible
@@ -110,6 +116,9 @@ export function GameStage({
             <RemotePane
               state={state}
               me={me}
+              // A remote-only player has no viewer pane, so the controller must also show the
+              // between-round leaderboard and the final results.
+              showResults={!viewerVisible}
               onAnswer={onAnswer}
               onDispute={onDispute}
               onBallot={onBallot}

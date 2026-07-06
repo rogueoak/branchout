@@ -34,7 +34,9 @@ interface RoomClientProps {
 }
 
 export function RoomClient({ code }: RoomClientProps) {
-  const [membership, setMembership] = useState<Membership | null>(null);
+  // `undefined` means "still hydrating from session storage"; `null` means "hydrated, not a member
+  // of this room". Distinguishing them avoids flashing the join prompt to a valid member on load.
+  const [membership, setMembership] = useState<Membership | null | undefined>(undefined);
   const [room, setRoom] = useState<RoomView | null>(null);
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [config, setConfig] = useState<TriviaHostConfig>(defaultTriviaConfig);
@@ -46,7 +48,7 @@ export function RoomClient({ code }: RoomClientProps) {
   // known member of the room, so send them to the join screen.
   useEffect(() => {
     const recalled = recallMembership(code);
-    setMembership(recalled);
+    setMembership(recalled ?? null);
     setRoom(recalled?.room ?? null);
   }, [code]);
 
@@ -150,7 +152,9 @@ export function RoomClient({ code }: RoomClientProps) {
         const next = await controlGame(code, action);
         if (action === 'exit') persist(next);
       } catch (error) {
-        if (error instanceof RoomApiError) setStartError(error.message);
+        // While running, the Lobby (and its startError) is not on screen, so route control
+        // failures to loadError, which renders above both the lobby and the game stage.
+        if (error instanceof RoomApiError) setLoadError(error.message);
       }
     },
     [code, persist],
@@ -167,6 +171,16 @@ export function RoomClient({ code }: RoomClientProps) {
     },
     [code],
   );
+
+  if (membership === undefined) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
+        <p className="text-body text-text-muted" role="status">
+          Loading room {code.toUpperCase()}...
+        </p>
+      </main>
+    );
+  }
 
   if (!membership || !room) {
     return (

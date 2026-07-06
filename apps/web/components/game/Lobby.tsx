@@ -5,9 +5,34 @@
 // state only. Presentational and controlled; the parent owns the data and the actions.
 
 import { Badge, Button } from '@rogueoak/canopy';
+import { useState } from 'react';
 import type { RoomMember, RoomView, Mode, Role } from '../../lib/room-api';
 import type { TriviaHostConfig } from '../../lib/trivia-config';
 import { HostConfigPanel } from './HostConfigPanel';
+
+/** The share link with a copy-to-clipboard shortcut, falling back to a plain link. */
+function ShareLink({ href }: { href: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked (no permission or insecure context): the visible link still works.
+    }
+  }
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <a className="text-primary underline-offset-4 hover:underline" href={href}>
+        {href}
+      </a>
+      <Button type="button" variant="outline" size="sm" onClick={copy}>
+        {copied ? 'Copied' : 'Copy link'}
+      </Button>
+    </span>
+  );
+}
 
 interface LobbyProps {
   room: RoomView;
@@ -59,12 +84,10 @@ export function Lobby({
       <header className="flex flex-col gap-2">
         <p className="text-body-sm text-text-muted">Room code</p>
         <p className="text-display tabular-nums tracking-widest text-text">{room.code}</p>
-        <p className="text-body-sm text-text-muted break-all">
-          Share this link:{' '}
-          <a className="text-primary underline-offset-4 hover:underline" href={room.shareLink}>
-            {room.shareLink}
-          </a>
-        </p>
+        <div className="flex flex-col gap-1 text-body-sm text-text-muted">
+          <span>Share this link:</span>
+          <ShareLink href={room.shareLink} />
+        </div>
       </header>
 
       <section aria-label="Players" className="flex flex-col gap-3">
