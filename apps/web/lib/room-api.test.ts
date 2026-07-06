@@ -35,14 +35,18 @@ afterEach(() => {
 });
 
 describe('room-api', () => {
-  it('creates a room with the session cookie and returns the room view', async () => {
+  it('creates a room as a bodyless POST with no JSON content-type', async () => {
     const fetchMock = mockFetch({ ok: true, status: 201, body: { room } });
     const result = await createRoom();
     expect(result.code).toBe('ABC12');
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/rooms'),
-      expect.objectContaining({ method: 'POST', credentials: 'include' }),
-    );
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toContain('/rooms');
+    expect(init.method).toBe('POST');
+    expect(init.credentials).toBe('include');
+    // No body, and crucially NO `content-type: application/json` - Fastify rejects an
+    // empty body with that content-type (FST_ERR_CTP_EMPTY_JSON_BODY), which 400d createRoom.
+    expect(init.body).toBeUndefined();
+    expect((init.headers as Record<string, string>)['content-type']).toBeUndefined();
   });
 
   it('joins a room by code and returns the caller playerId', async () => {
@@ -54,6 +58,8 @@ describe('room-api', () => {
     });
     const [, init] = fetchMock.mock.calls[0]!;
     expect(init.method).toBe('POST');
+    // A bodied POST does declare the JSON content-type.
+    expect((init.headers as Record<string, string>)['content-type']).toBe('application/json');
     expect(JSON.parse(init.body as string)).toEqual({
       role: 'player',
       nickname: 'Ada',

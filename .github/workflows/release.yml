@@ -142,8 +142,12 @@ jobs:
             -v "$PWD/deploy/docker/Caddyfile:/etc/caddy/Caddyfile:ro" \
             caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
 
-          # Bring up (or update) the proxy stack.
-          docker compose -f deploy/docker/compose.proxy.yml up -d --wait
+          # Bring up (or update) the proxy stack. --force-recreate is required: the
+          # Caddyfile is a bind-mounted file, and `git reset --hard` above replaces it
+          # with a new inode, so a plain `up -d` (which does not recreate an unchanged
+          # service) keeps the container bound to the STALE inode - a Caddyfile change
+          # would silently not take effect. Recreating re-binds the current file.
+          docker compose -f deploy/docker/compose.proxy.yml up -d --wait --force-recreate
 
           # Log in to GHCR with the run-scoped token (packages:read, ephemeral).
           # Pipe via stdin so the token never appears in process arguments or logs.
