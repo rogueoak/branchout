@@ -195,6 +195,12 @@ export class RoomService {
       );
     }
 
+    // Affordability is checked but nothing is reserved or debited at start (spec 0006 scopes
+    // single-game credit reservation out; debits happen per reported round). Known, explicitly
+    // deferred limitation: a host with several concurrent running rooms can drive the ledger
+    // negative, since each start sees the same balance. A hold-at-start reservation and/or a
+    // one-running-game-per-host cap is deferred to the Purchases/reservation spec. See
+    // docs/feedback/0004-rooms-security-review.md.
     const affordability = await this.ledger.canAfford(room.hostAccountId, requested);
     if (!affordability.ok) {
       throw new RoomError('insufficient_credits', affordability.reason!);
@@ -242,10 +248,29 @@ export class RoomService {
     await this.membership.kick(room.id, targetSessionId);
   }
 
-  /** List a room's members (host view of the lobby). */
-  async members(code: string): Promise<RoomMember[]> {
+  /**
+   * List a room's members. The caller must be a member (knowing a 5-character code is not enough to
+   * enumerate a room), and only the host sees each member's `sessionId` - it is the kick target and
+   * rejoin key, so it stays host-only.
+   */
+  async members(
+    code: string,
+    session: Session,
+  ): Promise<Array<Omit<RoomMember, 'sessionId'> & { sessionId?: string }>> {
     const room = await this.requireRoom(code);
-    return this.membership.list(room.id);
+    const caller = await this.membership.get(room.id, session.id);
+    if (!caller) {
+      throw new RoomError('forbidden', 'Join the room to see its members.');
+    }
+    const all = await this.membership.list(room.id);
+    if (caller.role === 'host') {
+      return all;
+    }
+    return all.map((m) => {
+      const redacted: Omit<RoomMember, 'sessionId'> & { sessionId?: string } = { ...m };
+      delete redacted.sessionId;
+      return redacted;
+    });
   }
 
   /**
@@ -267,11 +292,12 @@ export class RoomService {
       scores: report.scores,
       standings: report.standings,
     });
-    if (recorded) {
-      // Debit only on the first record so a round is billed exactly once; the ledger's own
-      // idempotency on `roundId` is the backstop against any race.
-      await this.ledger.debitRound(room.hostAccountId, report.roundId);
-    }
+    // Debit unconditionally: the ledger is idempotent by `roundId`, so a round is still billed
+    // exactly once, AND a retried report heals a debit that failed after a prior record had
+    // already succeeded. Gating the debit on `recorded` would silently drop the charge in that
+    // crash-between-two-awaits case (feedback 0003: dedupe alone turns a transient failure into
+    // silent loss).
+    await this.ledger.debitRound(room.hostAccountId, report.roundId);
     return recorded ? 'recorded' : 'duplicate';
   }
 

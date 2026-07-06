@@ -158,11 +158,11 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
     }),
   );
 
-  // Members list (host or member view of the lobby).
+  // Members list: caller must be a member; only the host sees session ids.
   app.get('/rooms/:code/members', async (request, reply) =>
-    withSession(request, reply, async () => {
+    withSession(request, reply, async (session) => {
       const { code } = request.params as { code: string };
-      const members = await rooms.members(code);
+      const members = await rooms.members(code, session);
       return reply.code(200).send({ members });
     }),
   );

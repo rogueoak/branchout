@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { ProtocolError, parseGameCompleteReport, parseRoundReport } from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -24,10 +25,20 @@ export function registerEngineRoutes(app: FastifyInstance, deps: EngineRoutesDep
   /** Guard the internal surface with the shared token when one is configured. */
   const authorized = (request: FastifyRequest, reply: FastifyReply): boolean => {
     if (!internalToken) {
+      // Fail closed in production: an unset token must never silently ship an open money
+      // endpoint. Only a trusted local/dev network may run without one, by explicit opt-in.
+      if (
+        process.env.NODE_ENV === 'production' &&
+        process.env.ALLOW_UNAUTHENTICATED_ENGINE !== '1'
+      ) {
+        reply.code(401).send({ error: 'Unauthorized.' });
+        return false;
+      }
       return true;
     }
-    const presented = request.headers['x-internal-token'];
-    if (presented !== internalToken) {
+    const header = request.headers['x-internal-token'];
+    const presented = Array.isArray(header) ? header[0] : header;
+    if (!presented || !safeEqual(presented, internalToken)) {
       reply.code(401).send({ error: 'Unauthorized.' });
       return false;
     }
@@ -63,6 +74,17 @@ export function registerEngineRoutes(app: FastifyInstance, deps: EngineRoutesDep
     }
     return reply.code(200).send({ v: PROTOCOL_VERSION, status });
   });
+}
+
+/**
+ * Constant-time comparison of the bearer secret so response latency does not leak how much of the
+ * token matched. A length mismatch is an early, safe reject (timingSafeEqual requires equal-length
+ * buffers); the only thing leaked is the token's length, which is not the secret.
+ */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
 /** A malformed envelope is a 400; an unknown room is a 404; anything else propagates. */

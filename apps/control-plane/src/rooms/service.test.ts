@@ -201,6 +201,25 @@ describe('start rule and gates', () => {
   });
 });
 
+describe('members roster', () => {
+  it('requires membership and hides sessionId from non-host members', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const room = await h.service.createRoom(host);
+    const player = anon();
+    await h.service.join(room.code, player, { role: 'player', nickname: 'Sam', mode: 'remote' });
+
+    const hostView = await h.service.members(room.code, host);
+    expect(hostView.every((m) => typeof m.sessionId === 'string')).toBe(true);
+
+    const playerView = await h.service.members(room.code, player);
+    expect(playerView.length).toBe(hostView.length);
+    expect(playerView.every((m) => m.sessionId === undefined)).toBe(true);
+
+    await expect(h.service.members(room.code, anon())).rejects.toThrow();
+  });
+});
+
 describe('host controls', () => {
   async function runningRoom() {
     const h = harness({ host_acct: 'party' });
@@ -217,7 +236,7 @@ describe('host controls', () => {
     await service.control(room.code, host, 'pause');
     await service.control(room.code, host, 'restart');
     expect(engine.controls.map((c) => c.action)).toEqual(['pause', 'restart']);
-    const after = await service.members(room.code); // room still exists; status unaffected
+    const after = await service.members(room.code, host); // room still exists; status unaffected
     expect(after.length).toBeGreaterThan(0);
   });
 
