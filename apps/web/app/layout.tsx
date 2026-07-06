@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Logo } from '../components/Logo';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -23,12 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        <header className="flex items-center px-6 py-4">
-          <Logo />
-        </header>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
