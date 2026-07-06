@@ -1,0 +1,83 @@
+// Decoders for Trivia's opaque prompt/reveal payloads. The protocol (spec 0007) types the
+// envelope but leaves `prompt`/`reveal` as `unknown` - each game defines their shape (spec 0008,
+// apps/game-engine/src/games/trivia/trivia.ts). These guards turn the opaque field into a typed
+// value at the client boundary, so a shape the UI does not understand is a null (a skipped render),
+// never a thrown render.
+
+/** The prompt payload Trivia streams on `startRound`. */
+export interface TriviaPrompt {
+  round: number;
+  category: string;
+  difficulty: number;
+  question: string;
+}
+
+/** The reveal payload Trivia streams when the answer round closes (`reveal`). */
+export interface TriviaRoundReveal {
+  round: number;
+  /** The question prompt text (echoed from the prompt), or null if the round had no question. */
+  question: string | null;
+  /** The accepted answers; the first is the canonical answer, the rest are also accepted. */
+  answers: string[];
+  /** Player ids who answered correctly. */
+  correct: string[];
+  /** Player ids marked wrong - the dispute-eligible set. */
+  wrong: string[];
+}
+
+/** The follow-up reveal Trivia streams after disputes resolve (`disputeVote`). */
+export interface TriviaDisputeReveal {
+  round: number;
+  /** Player ids whose dispute the other players upheld. */
+  upheld: string[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+/** Decode a `prompt` payload as a Trivia prompt, or null if it is not one. */
+export function asTriviaPrompt(value: unknown): TriviaPrompt | null {
+  if (!isRecord(value)) return null;
+  const { round, category, difficulty, question } = value;
+  if (
+    typeof round === 'number' &&
+    typeof category === 'string' &&
+    typeof difficulty === 'number' &&
+    typeof question === 'string'
+  ) {
+    return { round, category, difficulty, question };
+  }
+  return null;
+}
+
+/** Decode a `reveal` payload as the answer-round reveal, or null if it is the dispute reveal. */
+export function asTriviaRoundReveal(value: unknown): TriviaRoundReveal | null {
+  if (!isRecord(value)) return null;
+  const { round, question, answers, correct, wrong } = value;
+  if (
+    typeof round === 'number' &&
+    (question === null || typeof question === 'string') &&
+    isStringArray(answers) &&
+    isStringArray(correct) &&
+    isStringArray(wrong)
+  ) {
+    return { round, question, answers, correct, wrong };
+  }
+  return null;
+}
+
+/** Decode a `reveal` payload as the post-dispute reveal, or null if it is the answer reveal. */
+export function asTriviaDisputeReveal(value: unknown): TriviaDisputeReveal | null {
+  if (!isRecord(value)) return null;
+  const { round, upheld } = value;
+  // The dispute reveal is distinguished by `upheld` with no `answers` field.
+  if (typeof round === 'number' && isStringArray(upheld) && !('answers' in value)) {
+    return { round, upheld };
+  }
+  return null;
+}
