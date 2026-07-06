@@ -4,6 +4,13 @@ import { InMemoryAccountRepository } from './accounts/repository.memory';
 import { AccountService } from './accounts/service';
 import { createApp } from './app';
 import type { SessionCookieConfig } from './config';
+import { CreditLedger } from './credits/ledger';
+import { InMemoryLedgerRepository } from './credits/repository.memory';
+import { FreeTierProvider } from './credits/tiers';
+import { FakeEngineClient } from './rooms/engine-client.fake';
+import { InMemoryMembershipStore } from './rooms/membership.memory';
+import { InMemoryRoomRepository } from './rooms/repository.memory';
+import { RoomService } from './rooms/service';
 import { InMemorySessionStore } from './sessions/store.memory';
 
 const fakeHasher: PasswordHasher = {
@@ -22,10 +29,19 @@ function makeApp() {
   const repo = new InMemoryAccountRepository();
   const accounts = new AccountService(repo, fakeHasher);
   const sessions = new InMemorySessionStore(3600_000);
+  const ledger = new CreditLedger(new InMemoryLedgerRepository(), new FreeTierProvider());
+  const engine = new FakeEngineClient();
+  const rooms = new RoomService(
+    new InMemoryRoomRepository(),
+    new InMemoryMembershipStore(),
+    ledger,
+    engine,
+  );
   const app = createApp({
     checks: { checkPostgres: async () => true, checkRedis: async () => true },
     accounts,
     sessions,
+    rooms,
     cookie: cookieConfig,
     webOrigins: ['http://localhost:3000'],
   });
@@ -310,3 +326,181 @@ describe('PATCH /auth/nickname', () => {
     await app.close();
   });
 });
+
+/** Sign up and return the app plus the host's session cookie. */
+async function withHost(app: ReturnType<typeof makeApp>['app']) {
+  const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+  return sessionCookie(signup);
+}
+
+describe('POST /rooms (create + share link)', () => {
+  it('a signed-in host creates a room with a 5-char code and a /join share link', async () => {
+    const { app } = makeApp();
+    const cookie = await withHost(app);
+    const res = await app.inject({ method: 'POST', url: '/rooms', headers: { cookie } });
+    expect(res.statusCode).toBe(201);
+    const { room } = res.json();
+    expect(room.code).toMatch(/^[A-Z2-9]{5}$/);
+    expect(room.shareLink).toBe(`/join?code=${room.code}`);
+    await app.close();
+  });
+
+  it('an unauthenticated request cannot create a room', async () => {
+    const { app } = makeApp();
+    const res = await app.inject({ method: 'POST', url: '/rooms' });
+    expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('an anonymous session cannot host (403)', async () => {
+    const { app } = makeApp();
+    const join = await app.inject({
+      method: 'POST',
+      url: '/auth/anonymous',
+      payload: { code: 'ROOM42', displayName: 'Guest' },
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/rooms',
+      headers: { cookie: sessionCookie(join) },
+    });
+    expect(res.statusCode).toBe(403);
+    await app.close();
+  });
+});
+
+describe('POST /rooms/:code/join and kick over HTTP', () => {
+  it('a joiner picks a per-game nickname and appears in the members list', async () => {
+    const { app } = makeApp();
+    const hostCookie = await withHost(app);
+    const create = await app.inject({
+      method: 'POST',
+      url: '/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { code } = create.json().room;
+
+    const guestJoin = await app.inject({
+      method: 'POST',
+      url: '/auth/anonymous',
+      payload: { code, displayName: 'GuestName' },
+    });
+    const guestCookie = sessionCookie(guestJoin);
+    const joined = await app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/join`,
+      headers: { cookie: guestCookie },
+      payload: { role: 'player', nickname: 'ArcadeAce', mode: 'interactive' },
+    });
+    expect(joined.statusCode).toBe(200);
+
+    const members = await app.inject({
+      method: 'GET',
+      url: `/rooms/${code}/members`,
+      headers: { cookie: hostCookie },
+    });
+    const names = members.json().members.map((m: { nickname: string }) => m.nickname);
+    expect(names).toContain('ArcadeAce');
+    await app.close();
+  });
+
+  it('the host kicks a member and that session can no longer rejoin', async () => {
+    const { app } = makeApp();
+    const hostCookie = await withHost(app);
+    const create = await app.inject({
+      method: 'POST',
+      url: '/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { code } = create.json().room;
+
+    const guestJoin = await app.inject({
+      method: 'POST',
+      url: '/auth/anonymous',
+      payload: { code, displayName: 'Victim' },
+    });
+    const guestCookie = sessionCookie(guestJoin);
+    await app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/join`,
+      headers: { cookie: guestCookie },
+      payload: { role: 'player', nickname: 'Victim' },
+    });
+    const guestSessionId = guestCookie.split('=')[1]!;
+
+    const kick = await app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/kick`,
+      headers: { cookie: hostCookie },
+      payload: { sessionId: guestSessionId },
+    });
+    expect(kick.statusCode).toBe(200);
+
+    const rejoin = await app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/join`,
+      headers: { cookie: guestCookie },
+      payload: { role: 'player', nickname: 'Victim' },
+    });
+    expect(rejoin.statusCode).toBe(403);
+    expect(rejoin.json().code).toBe('kicked');
+    await app.close();
+  });
+});
+
+describe('engine report intake (internal token)', () => {
+  it('rejects a report without the internal token when one is configured', async () => {
+    const { app } = makeAppWithToken('s3cret');
+    const res = await app.inject({
+      method: 'POST',
+      url: '/engine/rounds',
+      payload: {
+        v: 1,
+        room: 'r',
+        game: 'trivia',
+        round: 1,
+        roundId: 'x',
+        scores: [],
+        standings: [],
+      },
+    });
+    expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('accepts a well-formed report with the token and rejects a malformed body with 400', async () => {
+    const { app } = makeAppWithToken('s3cret');
+    const bad = await app.inject({
+      method: 'POST',
+      url: '/engine/rounds',
+      headers: { 'x-internal-token': 's3cret' },
+      payload: { v: 1 },
+    });
+    expect(bad.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+/** An app whose engine intake is guarded by a shared internal token. */
+function makeAppWithToken(token: string) {
+  const repo = new InMemoryAccountRepository();
+  const accounts = new AccountService(repo, fakeHasher);
+  const sessions = new InMemorySessionStore(3600_000);
+  const ledger = new CreditLedger(new InMemoryLedgerRepository(), new FreeTierProvider());
+  const rooms = new RoomService(
+    new InMemoryRoomRepository(),
+    new InMemoryMembershipStore(),
+    ledger,
+    new FakeEngineClient(),
+  );
+  const app = createApp({
+    checks: { checkPostgres: async () => true, checkRedis: async () => true },
+    accounts,
+    sessions,
+    rooms,
+    cookie: cookieConfig,
+    webOrigins: ['http://localhost:3000'],
+    internalToken: token,
+  });
+  return { app };
+}

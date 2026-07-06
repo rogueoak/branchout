@@ -82,6 +82,11 @@ Capture durable lessons as they emerge.
   failed migration must abort boot, not serve 500s while `/health` reports the DB "ok"). These
   were all caught in persona review of `0004`, not by the passing happy-path tests. (Feedback
   `0003`.)
+- **A money endpoint must fail closed, and a dedupe key is not a transaction.** An unset internal
+  secret should reject in production (open only by explicit dev opt-in), a bearer-token check is
+  constant-time, and a debit gated behind a "recorded" flag loses the charge when the two
+  non-transactional awaits split on a crash - debit unconditionally under an idempotency key so a
+  retry both bills once and heals a prior failure. (Feedback `0004`.)
 
 ## Module boundaries
 

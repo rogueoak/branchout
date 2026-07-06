@@ -29,6 +29,9 @@ importers:
 
   apps/control-plane:
     dependencies:
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
       '@branchout/service-runtime':
         specifier: workspace:*
         version: link:../../packages/service-runtime
