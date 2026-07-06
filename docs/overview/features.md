@@ -48,8 +48,12 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Trivia question bank - 1600 validated questions across 8 categories (Nature, Food, Animals,
       Science, People, Places, Things, History), 200 per category, with loader and validator module
       enforcing schema, difficulty-tier balance, and uniqueness constraints (spec `0009`).
-- [ ] First reference game - proves the full loop end to end (Trivia, spec `0008`; a stub game
-      drives the lifecycle in engine tests today).
+- [x] First reference game - Trivia: host-configured category (8 + Random), rounds (1-100,
+      default 10) and difficulty (1-10, default 5) driving a blended easy/medium/hard question
+      draw; free-text answer matching (normalized exact plus Levenshtein-1 for 5+ char answers);
+      100 points for a correct answer; a 10s dispute window with a majority vote of the other
+      players awarding 50; between-round leaderboard, host-advance, and final standings for stars
+      (spec `0008`). Registered in the engine registry alongside the lifecycle stub.
 
 ## Web
 

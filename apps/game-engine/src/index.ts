@@ -9,6 +9,8 @@ import { HttpControlPlaneReporter, NoopReporter, type ControlPlaneReporter } fro
 import { RedisSessionStore } from './session';
 import { attachGameSocket } from './socket';
 import { stubGame } from './stub-game';
+import { createTriviaGame } from './games/trivia';
+import { loadQuestionBank } from './question-bank';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -32,8 +34,13 @@ async function main(): Promise<void> {
   const cache = await pingRedis(redis);
   console.log(`[game-engine] startup check redis=${cache ? 'ok' : 'unreachable'}`);
 
+  // Load the Trivia question bank once at boot so the module can draw synchronously per round.
+  // A failed load aborts boot (via main().catch) rather than serving a broken game.
+  const questionBank = await loadQuestionBank();
+  console.log(`[game-engine] loaded ${questionBank.length} trivia questions`);
+
   // The modular game registry. Adding a game is registering its module here.
-  const registry = new GameRegistry([stubGame]);
+  const registry = new GameRegistry([stubGame, createTriviaGame(questionBank)]);
 
   const reporter: ControlPlaneReporter = config.controlPlaneUrl
     ? new HttpControlPlaneReporter({ baseUrl: config.controlPlaneUrl })
