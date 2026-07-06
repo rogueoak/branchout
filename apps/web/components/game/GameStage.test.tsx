@@ -140,6 +140,7 @@ describe('GameStage per-phase rendering', () => {
     const state = build({
       phase: 'voting',
       prompt: collecting.prompt,
+      disputes: ['p2', 'p3'],
       reveal: {
         round: 1,
         question: 'What is H2O?',
@@ -149,7 +150,7 @@ describe('GameStage per-phase rendering', () => {
       },
     });
     renderStage({ state, onBallot });
-    // p1 (me) is not in `wrong`, so both other disputed players appear as ballots.
+    // p1 (me) did not dispute, so both other disputers appear as ballots.
     const controller = screen.getByLabelText('Your controller');
     within(controller).getByText('Bo');
     within(controller).getByText('Cy');
@@ -157,10 +158,31 @@ describe('GameStage per-phase rendering', () => {
     expect(onBallot).toHaveBeenCalledWith(1, 'p2', true);
   });
 
+  it('lists exactly the disputers, not every wrong answer', () => {
+    const state = build({
+      phase: 'voting',
+      prompt: collecting.prompt,
+      // p2 and p3 were both wrong, but only p2 actually disputed.
+      disputes: ['p2'],
+      reveal: {
+        round: 1,
+        question: 'What is H2O?',
+        answers: ['Water'],
+        correct: ['p1'],
+        wrong: ['p2', 'p3'],
+      },
+    });
+    renderStage({ state });
+    const controller = screen.getByLabelText('Your controller');
+    within(controller).getByText('Bo');
+    expect(within(controller).queryByText('Cy')).toBeNull();
+  });
+
   it('offers no ballot when the voter is the only disputed player', () => {
     const state = build({
       phase: 'voting',
       prompt: collecting.prompt,
+      disputes: ['p1'],
       reveal: {
         round: 1,
         question: 'What is H2O?',

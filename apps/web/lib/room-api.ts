@@ -25,6 +25,8 @@ export interface RoomView {
 /** One member of a room. `sessionId` is present only when the caller is the host. */
 export interface RoomMember {
   sessionId?: string;
+  /** The member's public engine identity (present on every row; the host reads its own from here). */
+  playerId: string;
   accountId?: string;
   role: Role;
   mode?: Mode;
@@ -104,16 +106,22 @@ export async function createRoom(): Promise<RoomView> {
   return room;
 }
 
+/** The room the caller joined, plus their own public engine `playerId` (used to join the engine). */
+export interface JoinResult {
+  room: RoomView;
+  playerId: string;
+}
+
 /** Join a room by code as a player or observer, with a per-game nickname and (for a player) mode. */
 export async function joinRoom(
   code: string,
   input: { role: Role; nickname: string; mode?: Mode },
-): Promise<RoomView> {
-  const { room } = await request<{ room: RoomView }>(`/rooms/${encodeURIComponent(code)}/join`, {
+): Promise<JoinResult> {
+  const { room, playerId } = await request<JoinResult>(`/rooms/${encodeURIComponent(code)}/join`, {
     method: 'POST',
     body: JSON.stringify(input),
   });
-  return room;
+  return { room, playerId };
 }
 
 /** A player switches interactive/remote mode. */
@@ -143,10 +151,9 @@ export async function startGame(code: string, rounds: number): Promise<RoomView>
 }
 
 /**
- * Host control: advance, pause, restart, or exit (exit returns the room to the lobby). `advance` is
- * a valid engine action but the control-plane's browser route does not yet proxy it - see
- * docs/feedback/0010-web-client-integration-gaps.md; sending it today returns a 400 until the
- * allow-list adds it. It is typed here so the client is correct the moment that lands.
+ * Host control: advance, pause, restart, or exit (exit returns the room to the lobby). `advance`
+ * steps the round lifecycle forward (the host-driven collecting -> reveal and leaderboard ->
+ * next-round transitions); the control-plane route proxies it to the engine (spec 0012).
  */
 export async function controlGame(
   code: string,

@@ -12,7 +12,13 @@ import { canHost } from '../sessions/session';
 import { validateDisplayName } from '../validation/display-name';
 import { generateCode, shareLink } from './code';
 import type { ControlAction, EngineClient } from './engine-client';
-import { hasViewer, type Mode, type MembershipStore, type RoomMember } from './membership';
+import {
+  hasViewer,
+  newPlayerId,
+  type Mode,
+  type MembershipStore,
+  type RoomMember,
+} from './membership';
 import { DuplicateCodeError, type Room, type RoomConfig, type RoomRepository } from './repository';
 
 /** How many fresh codes to try before giving up when they keep colliding (astronomically rare). */
@@ -54,6 +60,16 @@ export interface RoomView {
   hostAccountId: string;
 }
 
+/**
+ * What `join` returns: the room, plus the caller's own public `playerId`. The browser needs its
+ * `playerId` to `join` the engine (the roster is keyed by it), and a non-host cannot read it from
+ * `/members` (it cannot tell which row is its own without a `sessionId`), so `join` echoes it back.
+ */
+export interface JoinResult {
+  room: RoomView;
+  playerId: string;
+}
+
 function toView(room: Room): RoomView {
   return {
     id: room.id,
@@ -92,6 +108,7 @@ export class RoomService {
     const room = await this.createWithUniqueCode(session.accountId);
     const host: RoomMember = {
       sessionId: session.id,
+      playerId: newPlayerId(),
       accountId: session.accountId,
       role: 'host',
       nickname: session.displayName,
@@ -120,7 +137,7 @@ export class RoomService {
    * may not rejoin (the code still works for everyone else). A player's mode defaults to
    * `interactive`; an observer has no mode.
    */
-  async join(code: string, session: Session, input: JoinInput): Promise<RoomView> {
+  async join(code: string, session: Session, input: JoinInput): Promise<JoinResult> {
     const room = await this.requireRoom(code);
     if (await this.membership.isKicked(room.id, session.id)) {
       throw new RoomError('kicked', 'You were removed from this room and cannot rejoin.');
@@ -132,8 +149,12 @@ export class RoomService {
     if (input.role !== 'player' && input.role !== 'observer') {
       throw new RoomError('invalid', 'Choose to join as a player or an observer.');
     }
+    // Reuse the playerId if this session is already a member (a rejoin), so a reconnecting device
+    // keeps the identity the engine roster already knows; mint a fresh one for a first join.
+    const existing = await this.membership.get(room.id, session.id);
     const member: RoomMember = {
       sessionId: session.id,
+      playerId: existing?.playerId ?? newPlayerId(),
       ...(session.accountId ? { accountId: session.accountId } : {}),
       role: input.role,
       ...(input.role === 'player' ? { mode: normalizeMode(input.mode) } : {}),
@@ -141,7 +162,7 @@ export class RoomService {
       connected: true,
     };
     await this.membership.put(room.id, member);
-    return toView(room);
+    return { room: toView(room), playerId: member.playerId };
   }
 
   /** A player switches interactive/remote mode. Observers and the host have no mode to set. */
@@ -251,7 +272,8 @@ export class RoomService {
   /**
    * List a room's members. The caller must be a member (knowing a 5-character code is not enough to
    * enumerate a room), and only the host sees each member's `sessionId` - it is the kick target and
-   * rejoin key, so it stays host-only.
+   * rejoin key, so it stays host-only. `playerId` is public (the engine broadcasts it in `state`),
+   * so it stays on every row: it is how the host reads its own engine identity from its host row.
    */
   async members(
     code: string,
@@ -353,9 +375,13 @@ function normalizeMode(mode: Mode | undefined): Mode {
   return mode === 'remote' ? 'remote' : 'interactive';
 }
 
-/** Map room members to the engine's handoff players. Observers do not play; only players go. */
+/**
+ * Map room members to the engine's handoff players. Observers do not play; only players go. The
+ * roster is keyed by the public `playerId` (not the httpOnly `sessionId`), so a non-host browser
+ * that only ever learns its `playerId` can `join` the engine and match its slot.
+ */
 function toHandoffPlayers(members: readonly RoomMember[]): HandoffPlayer[] {
   return members
     .filter((member) => member.role === 'player')
-    .map((member) => ({ player: member.sessionId, nickname: member.nickname }));
+    .map((member) => ({ player: member.playerId, nickname: member.nickname }));
 }

@@ -46,22 +46,25 @@ export function JoinForm({ initialCode }: JoinFormProps) {
       });
 
     try {
-      let room;
+      let result;
       try {
-        room = await attempt();
+        result = await attempt();
       } catch (err) {
         // No session yet: mint an anonymous one for this code, then retry the join once.
         if (err instanceof RoomApiError && err.status === 401) {
           await startAnonymousSession(trimmedCode, trimmedName);
-          room = await attempt();
+          result = await attempt();
         } else {
           throw err;
         }
       }
+      const { room, playerId } = result;
       rememberMembership(trimmedCode, {
         role,
         ...(role === 'player' ? { mode } : {}),
         nickname: trimmedName,
+        // The public engine identity join returned, so this device can connect to the engine.
+        player: playerId,
         room,
       });
       router.push(`/rooms/${room.code}`);

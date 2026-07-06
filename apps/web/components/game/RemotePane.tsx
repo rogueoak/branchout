@@ -5,10 +5,8 @@
 // window, and shows the ballot to the other players while a dispute is voted on. It never runs the
 // timer or tallies - it sends frames and reflects the phase the engine reports.
 //
-// Note (integration gap, see docs/feedback/0010-web-client-integration-gaps.md): the wire `state`
-// frame does not carry the list of disputers, so the ballot is offered over the round's
-// wrong-answer set (the dispute-eligible players); the engine ignores a ballot cast on a player who
-// did not actually dispute, so this reflects engine state as closely as the wire allows.
+// The `state` frame carries `disputes` (the playerIds who actually raised a dispute this round -
+// spec 0012), so the ballot is offered over exactly those players, minus the voter themselves.
 
 import type { PlayerView } from '@branchout/protocol';
 import { Button, Input } from '@rogueoak/canopy';
@@ -43,7 +41,7 @@ export function RemotePane({
   onDispute,
   onBallot,
 }: RemotePaneProps) {
-  const { phase, reveal, round } = state;
+  const { phase, reveal, round, disputes } = state;
   const [answer, setAnswer] = useState('');
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
   const [disputedRound, setDisputedRound] = useState<number | null>(null);
@@ -122,7 +120,7 @@ export function RemotePane({
       ) : phase === 'voting' ? (
         <div className="flex flex-col gap-3">
           <p className="text-body text-text">Should a disputed answer count?</p>
-          {(reveal?.wrong ?? [])
+          {disputes
             .filter((id) => id !== me)
             .map((id) => {
               const name = nicknameOf(state.players, id);
@@ -152,7 +150,7 @@ export function RemotePane({
                 </div>
               );
             })}
-          {(reveal?.wrong ?? []).filter((id) => id !== me).length === 0 ? (
+          {disputes.filter((id) => id !== me).length === 0 ? (
             <p className="text-body-sm text-text-muted">Nothing for you to vote on this round.</p>
           ) : null}
         </div>

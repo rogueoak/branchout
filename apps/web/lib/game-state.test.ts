@@ -30,6 +30,7 @@ function state(overrides: Partial<StateMessage> = {}): StateMessage {
       { player: 'p2', nickname: 'Bo', connected: true },
     ],
     scores: { p1: 100, p2: 0 },
+    disputes: [],
     ...overrides,
   };
 }
@@ -47,13 +48,18 @@ function prompt(): PromptMessage {
 }
 
 describe('reduceGameState', () => {
-  it('folds a state frame into phase, round, players, and scores', () => {
-    const next = reduceGameState(initialGameState(), state({ phase: 'disputing', round: 3 }));
+  it('folds a state frame into phase, round, players, scores, and disputers', () => {
+    const next = reduceGameState(
+      initialGameState(),
+      state({ phase: 'voting', round: 3, disputes: ['p2'] }),
+    );
     expect(next.joined).toBe(true);
-    expect(next.phase).toBe('disputing');
+    expect(next.phase).toBe('voting');
     expect(next.round).toBe(3);
     expect(next.players).toHaveLength(2);
     expect(next.scores).toEqual({ p1: 100, p2: 0 });
+    // The disputers ride the state frame so the vote UI can name exactly them (spec 0012).
+    expect(next.disputes).toEqual(['p2']);
   });
 
   it('decodes a Trivia prompt and clears the prior round results', () => {

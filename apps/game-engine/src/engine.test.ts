@@ -150,6 +150,89 @@ describe('GameEngine lifecycle', () => {
     ]);
   });
 
+  it('plays a full round driven by a non-host player who joined with its handoff playerId', async () => {
+    // Mirror the control-plane handoff: the roster is keyed by opaque public playerIds (the tokens
+    // a browser gets back from join), not control-plane session ids. The host is p_host; p_guest is
+    // a non-host player on its own device.
+    const roster = [
+      { player: 'p_host', nickname: 'Host' },
+      { player: 'kQ9m-tokenA', nickname: 'Guest' },
+      { player: 'Zr3x-tokenB', nickname: 'Other' },
+    ];
+    await h.engine.start(
+      handoff({ players: roster, config: { rounds: 2, secrets: ['blue', 'green'] } }),
+    );
+
+    // The non-host device binds to the session with the playerId it was handed - no session id.
+    const joined = await h.engine.join('r1', STUB_GAME_ID, 'kQ9m-tokenA', 'Guest');
+    expect(joined.type).toBe('state');
+    expect(joined.players.find((p) => p.player === 'kQ9m-tokenA')?.connected).toBe(true);
+
+    // Round 1: host correct, guest wrong (will dispute), other wrong.
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p_host', 1, 'blue');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'kQ9m-tokenA', 1, 'bleu');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'Zr3x-tokenB', 1, 'red');
+
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // collecting -> disputing (reveal)
+    // The non-host raises a dispute from its own device.
+    await h.engine.submitVote('r1', STUB_GAME_ID, 'kQ9m-tokenA', 1, 'kQ9m-tokenA', false);
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // disputing -> voting
+
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.disputes).toEqual(['kQ9m-tokenA']);
+    // The other two uphold the guest's dispute.
+    await h.engine.submitVote('r1', STUB_GAME_ID, 'p_host', 1, 'kQ9m-tokenA', true);
+    await h.engine.submitVote('r1', STUB_GAME_ID, 'Zr3x-tokenB', 1, 'kQ9m-tokenA', true);
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // voting -> leaderboard
+
+    let state = await h.engine.getState('r1', STUB_GAME_ID);
+    expect(state?.phase).toBe('leaderboard');
+    expect(state?.scores).toEqual({ p_host: 100, 'kQ9m-tokenA': 50, 'Zr3x-tokenB': 0 });
+
+    // The host advances to the next round.
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // leaderboard -> round 2 collecting
+    state = await h.engine.getState('r1', STUB_GAME_ID);
+    expect(state?.round).toBe(2);
+    expect(state?.phase).toBe('collecting');
+    expect(h.reporter.rounds.map((r) => r.round)).toEqual([1]);
+  });
+
+  it('projects the current disputers in the state frame during voting', async () => {
+    await h.engine.start(
+      handoff({
+        players: [
+          { player: 'p1', nickname: 'Ada' },
+          { player: 'p2', nickname: 'Bo' },
+          { player: 'p3', nickname: 'Cy' },
+        ],
+        config: { rounds: 2, secrets: ['blue', 'green'] },
+      }),
+    );
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // correct
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'bleu'); // wrong, disputes
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p3', 1, 'red'); // wrong, does not dispute
+
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // reveal -> disputing
+    // Only p2 raises a dispute; p3 was also wrong but stays silent.
+    await h.engine.submitVote('r1', STUB_GAME_ID, 'p2', 1, 'p2', false);
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // disputing -> voting
+
+    // The wire projection names exactly the disputers - p2 - not the whole wrong-answer set.
+    const snapshot = await h.engine.getSnapshot('r1', STUB_GAME_ID);
+    expect(snapshot?.phase).toBe('voting');
+    expect(snapshot?.disputes).toEqual(['p2']);
+
+    // A device that joins mid-vote (e.g. a non-host reconnecting) sees the disputers too.
+    const joinFrame = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    expect(joinFrame.disputes).toEqual(['p2']);
+
+    // The disputers are a per-round fact: a fresh round starts with none.
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // voting -> leaderboard
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // leaderboard -> round 2 collecting
+    const round2 = await h.engine.getSnapshot('r1', STUB_GAME_ID);
+    expect(round2?.round).toBe(2);
+    expect(round2?.disputes).toEqual([]);
+  });
+
   it('awards nothing when a dispute lacks a majority', async () => {
     await h.engine.start(
       handoff({

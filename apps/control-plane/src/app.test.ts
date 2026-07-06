@@ -45,7 +45,7 @@ function makeApp() {
     cookie: cookieConfig,
     webOrigins: ['http://localhost:3000'],
   });
-  return { app, accounts, sessions, repo };
+  return { app, accounts, sessions, repo, engine };
 }
 
 /** Pull the session cookie value out of a response's set-cookie header. */
@@ -394,6 +394,11 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
     });
     expect(joined.statusCode).toBe(200);
 
+    // Join returns the caller's own public playerId (its engine identity), never the session id.
+    expect(typeof joined.json().playerId).toBe('string');
+    expect(joined.json().playerId.length).toBeGreaterThan(0);
+    expect(JSON.stringify(joined.json())).not.toContain(guestCookie.split('=')[1]!);
+
     const members = await app.inject({
       method: 'GET',
       url: `/rooms/${code}/members`,
@@ -401,6 +406,41 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
     });
     const names = members.json().members.map((m: { nickname: string }) => m.nickname);
     expect(names).toContain('ArcadeAce');
+    await app.close();
+  });
+
+  it('never returns a session id to a non-host, but does give them a playerId', async () => {
+    const { app } = makeApp();
+    const hostCookie = await withHost(app);
+    const create = await app.inject({
+      method: 'POST',
+      url: '/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { code } = create.json().room;
+
+    const guestJoin = await app.inject({
+      method: 'POST',
+      url: '/auth/anonymous',
+      payload: { code, displayName: 'Watcher' },
+    });
+    const guestCookie = sessionCookie(guestJoin);
+    await app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/join`,
+      headers: { cookie: guestCookie },
+      payload: { role: 'observer', nickname: 'Watcher' },
+    });
+
+    // The non-host's own members view redacts every sessionId but keeps the public playerId.
+    const members = await app.inject({
+      method: 'GET',
+      url: `/rooms/${code}/members`,
+      headers: { cookie: guestCookie },
+    });
+    const rows = members.json().members as Array<{ sessionId?: string; playerId?: string }>;
+    expect(rows.every((m) => m.sessionId === undefined)).toBe(true);
+    expect(rows.every((m) => typeof m.playerId === 'string' && m.playerId.length > 0)).toBe(true);
     await app.close();
   });
 
@@ -444,6 +484,52 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
     });
     expect(rejoin.statusCode).toBe(403);
     expect(rejoin.json().code).toBe('kicked');
+    await app.close();
+  });
+});
+
+describe('POST /rooms/:code/control allow-list', () => {
+  async function hostedRoomWithGame() {
+    const ctx = makeApp();
+    const hostCookie = await withHost(ctx.app);
+    const create = await ctx.app.inject({
+      method: 'POST',
+      url: '/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { code } = create.json().room;
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/select`,
+      headers: { cookie: hostCookie },
+      payload: { game: 'trivia', config: { questions: 3 } },
+    });
+    return { ...ctx, hostCookie, code };
+  }
+
+  it('accepts advance and forwards it to the engine', async () => {
+    const { app, engine, hostCookie, code } = await hostedRoomWithGame();
+    const res = await app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/control`,
+      headers: { cookie: hostCookie },
+      payload: { action: 'advance' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(engine.controls.map((c) => c.action)).toContain('advance');
+    await app.close();
+  });
+
+  it('rejects an unknown action with 400 and no engine call', async () => {
+    const { app, engine, hostCookie, code } = await hostedRoomWithGame();
+    const res = await app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/control`,
+      headers: { cookie: hostCookie },
+      payload: { action: 'nuke' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(engine.controls).toHaveLength(0);
     await app.close();
   });
 });

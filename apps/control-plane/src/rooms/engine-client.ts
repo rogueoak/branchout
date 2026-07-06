@@ -1,8 +1,12 @@
 import type { StartHandoffRequest, StartHandoffResponse } from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 
-/** A host control proxied to the engine. `exit` also returns the room to the lobby (see service). */
-export type ControlAction = 'pause' | 'restart' | 'exit';
+/**
+ * A host control proxied to the engine. `advance` steps the round lifecycle forward (the Trivia
+ * collecting -> reveal and leaderboard -> next-round transitions are host-driven, not timed).
+ * `exit` also returns the room to the lobby (see service).
+ */
+export type ControlAction = 'pause' | 'advance' | 'restart' | 'exit';
 
 /**
  * The control-plane's view of the engine: start a game and proxy host controls. Behind an
@@ -12,7 +16,7 @@ export type ControlAction = 'pause' | 'restart' | 'exit';
 export interface EngineClient {
   /** Hand a room + opaque config to the engine to start a game (protocol `StartHandoffRequest`). */
   start(request: StartHandoffRequest): Promise<StartHandoffResponse>;
-  /** Proxy a host control (pause / restart / exit) to the running session. */
+  /** Proxy a host control (pause / advance / restart / exit) to the running session. */
   control(room: string, game: string, action: ControlAction): Promise<void>;
 }
 
