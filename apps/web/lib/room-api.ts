@@ -47,12 +47,19 @@ export class RoomApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit): Promise<T> {
+  // Only declare a JSON content-type when there is actually a body. Fastify rejects an
+  // empty body sent with `content-type: application/json` (FST_ERR_CTP_EMPTY_JSON_BODY),
+  // which 400s every bodyless POST (e.g. createRoom).
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
+  if (init.body != null) {
+    headers['content-type'] = 'application/json';
+  }
   let res: Response;
   try {
     res = await fetch(`${CONTROL_PLANE_URL}${path}`, {
       credentials: 'include',
-      headers: { 'content-type': 'application/json' },
       ...init,
+      headers,
     });
   } catch {
     throw new RoomApiError(0, null, 'Could not reach the server. Check your connection.');
