@@ -66,6 +66,11 @@ jobs:
           context: .
           file: apps/${{ matrix.app }}/Dockerfile
           platforms: linux/amd64
+          # Browser-facing URLs baked into the web bundle at build time. The other
+          # apps' Dockerfiles do not declare these ARGs, so they ignore them.
+          build-args: |
+            NEXT_PUBLIC_CONTROL_PLANE_URL=/api
+            NEXT_PUBLIC_ENGINE_WS_URL=wss://branchout.games/ws
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -152,8 +157,22 @@ jobs:
           # on the host; it is gitignored and never committed.
           ENV_FILE="deploy/docker/.env.prod"
           install -m 0600 /dev/null "$ENV_FILE"
-          printf 'POSTGRES_PASSWORD=%s\nSESSION_SECRET=%s\n' \
-            "$POSTGRES_PASSWORD" "$SESSION_SECRET" > "$ENV_FILE"
+          # Full runtime env for the app services. DATABASE_URL/REDIS_URL are required
+          # by control-plane and game-engine; the rest wire the services to each other
+          # over the container network and set the browser origin for CORS.
+          {
+            printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
+            printf 'SESSION_SECRET=%s\n' "$SESSION_SECRET"
+            printf 'DATABASE_URL=postgres://branchout:%s@postgres:5432/branchout\n' "$POSTGRES_PASSWORD"
+            printf 'REDIS_URL=redis://redis:6379\n'
+            printf 'ENGINE_URL=http://game-engine:4001\n'
+            printf 'CONTROL_PLANE_URL=http://control-plane:4000\n'
+            printf 'WEB_ORIGIN=https://branchout.games\n'
+            # The engine reaches the report intake over the container network and does
+            # not present a token yet (follow-up). Caddy blocks /api/engine/* from the
+            # internet, so the intake is only reachable internally - open here is safe.
+            printf 'ALLOW_UNAUTHENTICATED_ENGINE=1\n'
+          } > "$ENV_FILE"
 
           # Pull new images, then roll forward. --wait blocks until every service
           # passes its HEALTHCHECK; a broken image returns non-zero here and aborts

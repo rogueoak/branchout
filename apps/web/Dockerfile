@@ -8,6 +8,12 @@ WORKDIR /repo
 
 COPY . .
 RUN pnpm install --frozen-lockfile
+# NEXT_PUBLIC_* are inlined into the browser bundle at BUILD time. In production the browser
+# reaches the backend same-origin through Caddy: /api -> control-plane, /ws -> game-engine.
+ARG NEXT_PUBLIC_CONTROL_PLANE_URL=/api
+ARG NEXT_PUBLIC_ENGINE_WS_URL=wss://branchout.games/ws
+ENV NEXT_PUBLIC_CONTROL_PLANE_URL=$NEXT_PUBLIC_CONTROL_PLANE_URL
+ENV NEXT_PUBLIC_ENGINE_WS_URL=$NEXT_PUBLIC_ENGINE_WS_URL
 RUN pnpm --filter @branchout/web... build
 
 EXPOSE 3000
