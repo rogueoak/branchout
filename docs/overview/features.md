@@ -75,7 +75,10 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 ## Web
 
-- [ ] Marketing site - what Branch out is, tiers, sign-up.
+- [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, tier table
+      (Free / Gathering / Party with prices and daily credits), Trivia games teaser, footer.
+      Signed-in visitors see "Play now" instead of "Sign up free" via a server-side session
+      check; graceful fallback to anonymous view if the control plane is unreachable (spec `0005`).
 - [ ] Game client shell - lobby, interactive/remote layout, in-game screens.
 - [ ] Profile pages and friend search/invite.
 

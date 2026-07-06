@@ -1,11 +1,11 @@
-import { HomeShowcase } from '../components/home-showcase';
+import { LandingContent } from '../components/LandingContent';
+import { getSignedIn } from '../lib/session';
 
-// Home page: a themed canopy showcase. The Confetti brand comes entirely from the token layer
-// (spec 0002); toggling `.dark` on <html> flips the whole page.
-export default function HomePage() {
-  return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 bg-bg p-8 text-text">
-      <HomeShowcase />
-    </main>
-  );
+// Home page: the Branch out marketing landing page (spec 0005). Server-rendered so the
+// signed-in vs anonymous CTA swap happens before the first byte, with no layout shift. The
+// session read lives in ../lib/session so it stays unit-testable (a Next.js page file may only
+// export the default component and route config).
+export default async function HomePage() {
+  const signedIn = await getSignedIn();
+  return <LandingContent signedIn={signedIn} />;
 }
