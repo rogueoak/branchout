@@ -12,6 +12,15 @@ describe('normalizeAnswer', () => {
     expect(normalizeAnswer('E = mc^2')).toBe('e mc 2');
   });
 
+  it('joins numeric separators instead of splitting the number', () => {
+    // A thousands comma / decimal point sits between digits, so it is removed, not spaced.
+    expect(normalizeAnswer('1,000')).toBe('1000');
+    expect(normalizeAnswer('3.14')).toBe('314');
+    expect(normalizeAnswer('1,000,000')).toBe('1000000');
+    // So `1,000` matches `1000` despite the number being under the fuzzy length.
+    expect(isCorrectAnswer('1,000', ['1000'])).toBe(true);
+  });
+
   it('strips a single leading article (a / an / the)', () => {
     expect(normalizeAnswer('The Beatles')).toBe('beatles');
     expect(normalizeAnswer('a whale')).toBe('whale');

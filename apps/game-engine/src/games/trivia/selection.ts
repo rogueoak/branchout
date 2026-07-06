@@ -13,13 +13,11 @@ export const RANDOM_CATEGORY = 'Random';
 export interface QuestionIndex {
   /** category -> tier -> questions; `RANDOM_CATEGORY` holds the cross-category pools. */
   readonly byCategoryTier: ReadonlyMap<string, ReadonlyMap<Difficulty, readonly TriviaQuestion[]>>;
-  readonly categories: readonly string[];
 }
 
 /** Build the category+tier index once, including the cross-category `Random` pools. */
 export function indexQuestions(bank: readonly TriviaQuestion[]): QuestionIndex {
   const byCategoryTier = new Map<string, Map<Difficulty, TriviaQuestion[]>>();
-  const categories = new Set<string>();
 
   const put = (category: string, q: TriviaQuestion): void => {
     let tiers = byCategoryTier.get(category);
@@ -33,12 +31,11 @@ export function indexQuestions(bank: readonly TriviaQuestion[]): QuestionIndex {
   };
 
   for (const q of bank) {
-    categories.add(q.category);
     put(q.category, q);
     put(RANDOM_CATEGORY, q);
   }
 
-  return { byCategoryTier, categories: [...categories] };
+  return { byCategoryTier };
 }
 
 /**
@@ -63,8 +60,8 @@ export function pickQuestion(
     if (!pool || pool.length === 0) continue;
     const available = pool.filter((q) => !usedIds.has(q.id));
     if (available.length === 0) continue;
-    const choice = available[Math.floor(rng() * available.length)];
-    return choice ?? available[0] ?? null;
+    // rng() is in [0, 1) and available is non-empty, so the index is always in bounds.
+    return available[Math.floor(rng() * available.length)]!;
   }
   return null;
 }

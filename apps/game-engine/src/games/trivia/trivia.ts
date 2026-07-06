@@ -75,10 +75,10 @@ interface TriviaScratch {
   rounds: number;
   /** Ids drawn so far this game - the no-repeat guarantee. */
   usedIds: string[];
-  /** Per round (string key): the drawn question and the play state. */
+  // Per-round working state, keyed by round number. Only the current round is ever read, so
+  // startRound prunes finalized rounds to keep the persisted blob and the clone cost O(1round).
   questions: Record<string, StoredQuestion>;
   submitted: Record<string, Record<string, string>>;
-  correct: Record<string, string[]>;
   /** Players who submitted an answer that was marked wrong: the dispute-eligible set. */
   wrong: Record<string, string[]>;
   disputers: Record<string, string[]>;
@@ -93,7 +93,6 @@ function emptyScratch(cfg: ResolvedTriviaConfig): TriviaScratch {
     usedIds: [],
     questions: {},
     submitted: {},
-    correct: {},
     wrong: {},
     disputers: {},
     ballots: {},
@@ -109,7 +108,6 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): TriviaScratch {
     usedIds: s.usedIds ?? [],
     questions: s.questions ?? {},
     submitted: s.submitted ?? {},
-    correct: s.correct ?? {},
     wrong: s.wrong ?? {},
     disputers: s.disputers ?? {},
     ballots: s.ballots ?? {},
@@ -188,14 +186,22 @@ export function createTriviaGame(
         throw new Error(`trivia ran out of questions for category "${scratch.category}"`);
       }
       scratch.usedIds.push(question.id);
-      scratch.questions[key] = {
-        id: question.id,
-        category: question.category,
-        prompt: question.prompt,
-        answers: [...question.answers],
-        difficulty: question.difficulty,
+      // Prior rounds are finalized (their scores already applied on the engine); only the current
+      // round's working state is ever read again, so drop the rest. This keeps the Redis-persisted
+      // scratch and the per-frame clone cost flat instead of growing with every round played.
+      scratch.questions = {
+        [key]: {
+          id: question.id,
+          category: question.category,
+          prompt: question.prompt,
+          answers: [...question.answers],
+          difficulty: question.difficulty,
+        },
       };
-      scratch.submitted[key] ??= {};
+      scratch.submitted = { [key]: {} };
+      scratch.wrong = {};
+      scratch.disputers = {};
+      scratch.ballots = {};
       return {
         scratch: toRecord(scratch),
         prompt: {
@@ -227,7 +233,8 @@ export function createTriviaGame(
         if (question && isCorrectAnswer(answer, question.answers)) correct.push(player);
         else wrong.push(player);
       }
-      scratch.correct[key] = correct;
+      // Only `wrong` is persisted - it gates dispute eligibility. `correct` is streamed in the
+      // reveal payload but never read back, so it is not kept in scratch.
       scratch.wrong[key] = wrong;
 
       const scores: ScoreEvent[] = correct.map((player) => ({
@@ -289,9 +296,11 @@ export function createTriviaGame(
       const scores: ScoreEvent[] = [];
 
       for (const disputer of disputers) {
-        // Denominator is every *other* player (eligible voters), not just those who voted, so a
-        // silent player counts against the dispute - a strict majority of the others must agree.
-        const otherPlayers = ctx.players.filter((p) => p.player !== disputer).length;
+        // Denominator is every *connected other* player (the eligible voters), not just those who
+        // cast a ballot, so a present-but-silent player counts against the dispute. Disconnected
+        // players are excluded - in a party game where devices drop, counting an offline player as
+        // an implicit "no" could make a legitimate dispute mathematically impossible to win.
+        const otherPlayers = ctx.players.filter((p) => p.player !== disputer && p.connected).length;
         const perTarget = ballots[disputer] ?? {};
         const agrees = Object.values(perTarget).filter(Boolean).length;
         if (otherPlayers > 0 && agrees * 2 > otherPlayers) {

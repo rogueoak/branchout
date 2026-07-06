@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundContext, SessionPlayer } from '../../lifecycle';
 import { CATEGORIES, type Difficulty, type TriviaQuestion } from '../../question-bank';
-import { blendWeights } from './difficulty';
 import { createTriviaGame, DISPUTE_WINDOW_MS, MAX_ROUNDS, validateConfig } from './trivia';
 
 /** Deterministic PRNG so an entire game replays identically. */
@@ -109,7 +108,9 @@ describe('configure', () => {
     const game = createTriviaGame(makeBank(2));
     const result = game.configure({ category: 'Food', rounds: 7 }, players);
     expect(result.rounds).toBe(7);
-    expect(result.disputeWindowMs).toBe(DISPUTE_WINDOW_MS);
+    // Pin the literal so a change to the window duration is caught (Acceptance 3: 10s).
+    expect(DISPUTE_WINDOW_MS).toBe(10_000);
+    expect(result.disputeWindowMs).toBe(10_000);
   });
 
   it('throws on invalid config so the engine rejects the start', () => {
@@ -139,6 +140,23 @@ describe('reveal scoring', () => {
     );
     const reveal = revealed.reveal as { wrong: string[] };
     expect(reveal.wrong).toEqual(['p3']);
+  });
+
+  it('marks a blank submission wrong and excludes a non-submitter entirely', () => {
+    let scratch = game.configure({ category: 'Nature', difficulty: 5 }, players).scratch;
+    const started = game.startRound(ctx(scratch));
+    scratch = started.scratch;
+    const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
+
+    scratch = game.collectAnswer(ctx(scratch), 'p1', answer).scratch; // correct
+    scratch = game.collectAnswer(ctx(scratch), 'p2', '   ').scratch; // blank -> wrong
+    // p3 never submits.
+
+    const revealed = game.reveal(ctx(scratch));
+    const reveal = revealed.reveal as { correct: string[]; wrong: string[] };
+    expect(reveal.correct).toEqual(['p1']);
+    expect(reveal.wrong).toEqual(['p2']); // blank is dispute-eligible; p3 is absent from both
+    expect(revealed.scores.map((s) => s.player)).toEqual(['p1']);
   });
 });
 
@@ -242,8 +260,106 @@ describe('dispute resolution', () => {
   });
 });
 
+// A 3-player roster keeps "others" = 2, where several wrong majority denominators collapse to the
+// same verdict. These tests use 4-5 players so the denominator is genuinely falsifiable: the
+// majority is of the *other connected* players, not the ballots cast nor the whole roster.
+describe('dispute majority denominator (larger rosters)', () => {
+  const game = createTriviaGame(makeBank(2), mulberry32(11));
+
+  function roster(n: number, disconnected: string[] = []): SessionPlayer[] {
+    return Array.from({ length: n }, (_, i) => {
+      const id = `p${i + 1}`;
+      return { player: id, nickname: id, connected: !disconnected.includes(id) };
+    });
+  }
+
+  /** Play a round where p1 is correct and everyone else is wrong; return post-reveal scratch. */
+  function toReveal(seats: SessionPlayer[]): Record<string, unknown> {
+    const scores = Object.fromEntries(seats.map((p) => [p.player, 0]));
+    const c = (s: Record<string, unknown>, phase: RoundContext['phase'] = 'collecting') =>
+      ctx(s, { players: seats, scores, phase });
+    let s = game.configure({ category: 'Nature' }, seats).scratch;
+    s = game.startRound(c(s)).scratch;
+    const answer = `${questionAt(s, 1).id}-answer`;
+    s = game.collectAnswer(c(s), 'p1', answer).scratch;
+    for (const p of seats.slice(1)) s = game.collectAnswer(c(s), p.player, 'nope').scratch;
+    return game.reveal(c(s)).scratch;
+  }
+
+  function dispute(
+    seats: SessionPlayer[],
+    disputer: string,
+    agreers: string[],
+    disagreers: string[] = [],
+  ) {
+    const scores = Object.fromEntries(seats.map((p) => [p.player, 0]));
+    const c = (s: Record<string, unknown>, phase: RoundContext['phase']) =>
+      ctx(s, { players: seats, scores, phase });
+    let s = toReveal(seats);
+    s = game.collectVote(c(s, 'disputing'), {
+      player: disputer,
+      target: disputer,
+      agree: true,
+    }).scratch;
+    for (const v of agreers)
+      s = game.collectVote(c(s, 'voting'), { player: v, target: disputer, agree: true }).scratch;
+    for (const v of disagreers)
+      s = game.collectVote(c(s, 'voting'), { player: v, target: disputer, agree: false }).scratch;
+    return game.disputeVote(c(s, 'voting'));
+  }
+
+  it('upholds when 2 of 3 other players agree (not caught by an all-players denominator)', () => {
+    // 4 players, disputer p2, others {p1,p3,p4}. 2 agree, 1 silent: 2*2 > 3 upholds.
+    const result = dispute(roster(4), 'p2', ['p1', 'p3']);
+    expect(result.scores).toEqual([{ player: 'p2', points: 50, reason: 'dispute upheld' }]);
+  });
+
+  it('awards nothing when only 1 of 3 agrees and 2 stay silent (not ballots-cast)', () => {
+    // If the denominator were "ballots cast" (=1), this would wrongly uphold. Others=3: 1*2 !> 3.
+    const result = dispute(roster(4), 'p2', ['p1']);
+    expect(result.scores).toEqual([]);
+  });
+
+  it('counts only connected others, so a disconnected player cannot block a dispute', () => {
+    // 5 players, p5 disconnected. Connected others of p2 = {p1,p3,p4} = 3. 2 agree, 1 silent:
+    // 2*2 > 3 upholds. Were the offline p5 counted (others=4), 2*2 !> 4 would wrongly fail.
+    const result = dispute(roster(5, ['p5']), 'p2', ['p1', 'p3']);
+    expect(result.scores).toEqual([{ player: 'p2', points: 50, reason: 'dispute upheld' }]);
+  });
+
+  it('resolves multiple disputers independently in one round', () => {
+    // p2 and p3 both dispute (4 players). p2's others {p1,p3,p4}: 2 agree -> upheld.
+    // p3's others {p1,p2,p4}: only 1 agrees -> not upheld.
+    const seats = roster(4);
+    const scores = Object.fromEntries(seats.map((p) => [p.player, 0]));
+    const c = (s: Record<string, unknown>, phase: RoundContext['phase']) =>
+      ctx(s, { players: seats, scores, phase });
+    let s = toReveal(seats);
+    s = game.collectVote(c(s, 'disputing'), { player: 'p2', target: 'p2', agree: true }).scratch;
+    s = game.collectVote(c(s, 'disputing'), { player: 'p3', target: 'p3', agree: true }).scratch;
+    expect(new Set(game.disputeWindow(c(s, 'disputing')).disputes)).toEqual(new Set(['p2', 'p3']));
+    // p2 upheld by p1 + p4.
+    s = game.collectVote(c(s, 'voting'), { player: 'p1', target: 'p2', agree: true }).scratch;
+    s = game.collectVote(c(s, 'voting'), { player: 'p4', target: 'p2', agree: true }).scratch;
+    // p3 supported by only p1.
+    s = game.collectVote(c(s, 'voting'), { player: 'p1', target: 'p3', agree: true }).scratch;
+    const result = game.disputeVote(c(s, 'voting'));
+    expect(result.scores).toEqual([{ player: 'p2', points: 50, reason: 'dispute upheld' }]);
+    expect((result.reveal as { upheld: string[] }).upheld).toEqual(['p2']);
+  });
+});
+
 describe('end-game ranking', () => {
   const game = createTriviaGame(makeBank(2));
+
+  it('ranks distinct scores strictly highest-first (1/2/3)', () => {
+    const standings = game.endGame(ctx({}, { scores: { p1: 100, p2: 250, p3: 50 } }));
+    expect(standings.map((s) => [s.player, s.rank])).toEqual([
+      ['p2', 1],
+      ['p1', 2],
+      ['p3', 3],
+    ]);
+  });
 
   it('ranks by score, highest first, with shared ranks on ties', () => {
     const standings = game.endGame(ctx({}, { scores: { p1: 200, p2: 200, p3: 50 } }));
@@ -251,6 +367,13 @@ describe('end-game ranking', () => {
     expect(byPlayer.p1).toBe(1);
     expect(byPlayer.p2).toBe(1); // tie for first
     expect(byPlayer.p3).toBe(3); // rank skips 2 (competition ranking)
+  });
+
+  it('leaderboard between rounds reflects current scores', () => {
+    const standings = game.leaderboard(ctx({}, { scores: { p1: 100, p2: 300, p3: 200 } }));
+    expect(standings.map((s) => s.player)).toEqual(['p2', 'p3', 'p1']);
+    expect(standings.map((s) => s.rank)).toEqual([1, 2, 3]);
+    expect(standings.find((s) => s.player === 'p2')?.score).toBe(300);
   });
 
   it('advance reports done only on the final round', () => {
@@ -291,12 +414,13 @@ describe('no-repeat selection over a full game', () => {
     expect(categories.size).toBeGreaterThan(1); // genuinely spanned categories
   });
 
-  it('draws difficulty tiers matching the blend table over a full game', () => {
-    // Plenty of questions per tier so no fallback distorts the draw; measure the sampled tier.
+  it('threads the configured difficulty into the per-round draw', () => {
+    // The exact weight distribution is proven in difficulty.test.ts (20k draws); here we only
+    // confirm the config setting reaches the draw - at difficulty 8 (15/37/48) the tiers a full
+    // game selects lean hard > medium > easy, which a difficulty-5 game would not.
     const game = createTriviaGame(makeBank(50), mulberry32(99));
-    const difficulty = 8;
     let scratch = game.configure(
-      { category: 'People', rounds: MAX_ROUNDS, difficulty },
+      { category: 'People', rounds: MAX_ROUNDS, difficulty: 8 },
       players,
     ).scratch;
     const counts: Record<Difficulty, number> = { easy: 0, medium: 0, hard: 0 };
@@ -304,14 +428,8 @@ describe('no-repeat selection over a full game', () => {
       scratch = game.startRound(ctx(scratch, { round })).scratch;
       counts[questionAt(scratch, round).difficulty] += 1;
     }
-    const [easy, medium, hard] = blendWeights(difficulty);
-    // 100 draws is noisy; assert the ordering the 15/37/48 table implies rather than tight bands.
+    expect(counts.easy + counts.medium + counts.hard).toBe(MAX_ROUNDS);
     expect(counts.hard).toBeGreaterThan(counts.medium);
     expect(counts.medium).toBeGreaterThan(counts.easy);
-    // Sanity: totals add up and roughly track the weights (wide tolerance for n=100).
-    expect(counts.easy + counts.medium + counts.hard).toBe(MAX_ROUNDS);
-    expect(Math.abs(counts.easy - easy)).toBeLessThan(15);
-    expect(Math.abs(counts.hard - hard)).toBeLessThan(20);
-    void medium;
   });
 });
