@@ -4,6 +4,7 @@
 // 1600 total). IDs use a lowercase-category prefix, e.g. `nature-001`.
 
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -61,11 +62,33 @@ const VALID_DIFFICULTIES: ReadonlySet<string> = new Set(['easy', 'medium', 'hard
 // ---------------------------------------------------------------------------
 
 /**
+ * Locates `data/trivia` by walking up from this module to the game-engine app root that owns it.
+ * Robust to where the code runs from: source at `src/games/trivia/` under tsx in dev, or bundled
+ * into `dist/index.js` in prod - both sit under `apps/game-engine`, which holds `data/`, never
+ * `dist/`. A fixed number of `..` would differ between the two, so we search instead.
+ */
+function resolveTriviaDataDir(): string {
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 8; i++) {
+    const candidate = path.join(dir, 'data', 'trivia');
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      break; // reached the filesystem root
+    }
+    dir = parent;
+  }
+  throw new Error('question-bank: could not locate the data/trivia directory');
+}
+
+/**
  * Reads all 8 trivia JSON files and returns the combined question array.
  * Resolves paths relative to this module so it works wherever the process is launched from.
  */
 export async function loadQuestionBank(): Promise<TriviaQuestion[]> {
-  const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data', 'trivia');
+  const dir = resolveTriviaDataDir();
 
   const perCategory = await Promise.all(
     CATEGORIES.map(async (category) => {

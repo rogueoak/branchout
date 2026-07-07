@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TriviaQuestion } from '../../question-bank';
+import type { TriviaQuestion } from './question-bank';
 import { indexQuestions, pickQuestion, RANDOM_CATEGORY } from './selection';
 
 function q(id: string, category: string, difficulty: TriviaQuestion['difficulty']): TriviaQuestion {

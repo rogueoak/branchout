@@ -5,7 +5,7 @@
 // state is the pre-indexed question bank and an rng, both fixed when the module is built.
 
 import { rankStandings, type ScoreEvent, type Standing } from '@branchout/protocol';
-import { CATEGORIES, type Difficulty, type TriviaQuestion } from '../../question-bank';
+import { CATEGORIES, type Difficulty, type TriviaQuestion } from './question-bank';
 import type {
   AdvanceResult,
   ConfigureResult,
