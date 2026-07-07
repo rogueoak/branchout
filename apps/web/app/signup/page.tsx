@@ -54,7 +54,7 @@ export default function SignupPage() {
         <p className="text-gray-600">
           Your account is ready, {gamerTag}. Head back to{' '}
           <a className="underline" href="/">
-            Branch out
+            Branch Out Games
           </a>{' '}
           and start a room.
         </p>

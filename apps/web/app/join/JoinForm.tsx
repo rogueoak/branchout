@@ -8,7 +8,7 @@
 import { Button, Input, Label, buttonVariants, inputVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
-import { Logo } from '../../components/Logo';
+import { Wordmark } from '../../components/Wordmark';
 import { rememberMembership } from '../../lib/membership';
 import {
   RoomApiError,
@@ -82,7 +82,7 @@ export function JoinForm({ initialCode }: JoinFormProps) {
         noValidate
       >
         <header className="flex flex-col items-center gap-3 text-center">
-          <Logo className="h-9" />
+          <Wordmark />
           <h1 className="text-h2 text-text">Join the game</h1>
         </header>
 

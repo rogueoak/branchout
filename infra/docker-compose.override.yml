@@ -6,6 +6,12 @@
 services:
   web:
     command: pnpm --filter @branchout/web dev
+    # The web image bakes in production NEXT_PUBLIC_* defaults (/api via Caddy, wss://...). Local
+    # dev has no proxy, so point the browser straight at the published control-plane / engine
+    # ports. `next dev` reads these from the process env, so no rebuild is needed.
+    environment:
+      NEXT_PUBLIC_CONTROL_PLANE_URL: http://localhost:4000
+      NEXT_PUBLIC_ENGINE_WS_URL: ws://localhost:4001
     volumes:
       - ..:/repo
       - /repo/node_modules

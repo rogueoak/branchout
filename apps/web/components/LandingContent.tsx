@@ -9,11 +9,10 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@rogueoak/canopy/twigs';
-import { Logo } from './Logo';
+import { Wordmark } from './Wordmark';
 
 interface LandingContentProps {
   signedIn: boolean;
@@ -38,42 +37,6 @@ const HOW_IT_WORKS = [
   },
 ];
 
-// Pricing tiers: Free / Gathering / Party (spec 0005, amounts from spec 0006). `price` is the
-// prominent USD figure; `priceAlt` is the CAD equivalent, shown as a quieter second line so the
-// two currencies are easy to scan rather than crammed onto one line.
-const TIERS = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: 'Free',
-    priceAlt: null,
-    period: null,
-    credits: '10 credits per day',
-    href: '/signup',
-    highlight: false,
-  },
-  {
-    id: 'gathering',
-    name: 'Gathering',
-    price: '7 USD',
-    priceAlt: '10 CAD',
-    period: 'per month',
-    credits: '50 credits per day',
-    href: '/signup',
-    highlight: true,
-  },
-  {
-    id: 'party',
-    name: 'Party',
-    price: '10 USD',
-    priceAlt: '14 CAD',
-    period: 'per month',
-    credits: 'Unlimited credits',
-    href: '/signup',
-    highlight: false,
-  },
-] as const;
-
 export function LandingContent({ signedIn }: LandingContentProps) {
   const primaryCta = signedIn
     ? { label: 'Play now', href: '/rooms' }
@@ -85,7 +48,7 @@ export function LandingContent({ signedIn }: LandingContentProps) {
           authenticated, so the "Log in" link is hidden rather than contradicting the hero's
           "Play now" CTA. */}
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-        <Logo className="h-10" />
+        <Wordmark />
         <nav aria-label="Site navigation">
           {signedIn ? null : (
             <a
@@ -137,56 +100,6 @@ export function LandingContent({ signedIn }: LandingContentProps) {
         </ol>
       </section>
 
-      {/* Tiers */}
-      <section aria-labelledby="tiers-heading" className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-        <h2 id="tiers-heading" className="text-h2 mb-10 text-center text-text">
-          Pick a plan
-        </h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          {TIERS.map((tier) => (
-            <Card
-              key={tier.id}
-              className={tier.highlight ? 'border-primary ring-1 ring-primary' : undefined}
-            >
-              <CardHeader>
-                <CardTitle asChild>
-                  <h3>{tier.name}</h3>
-                </CardTitle>
-                {tier.highlight ? (
-                  <Badge variant="primary" className="mt-1 w-fit">
-                    Popular
-                  </Badge>
-                ) : null}
-                <CardDescription>{tier.credits}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-h3 text-text">{tier.price}</p>
-                {tier.priceAlt ? (
-                  <p className="text-body-sm text-text-muted">{tier.priceAlt}</p>
-                ) : null}
-                {tier.period ? (
-                  <p className="text-caption text-text-subtle">{tier.period}</p>
-                ) : null}
-              </CardContent>
-              <CardFooter>
-                {/* Tier CTAs never use `primary`: the hero owns the single primary action. The
-                    highlighted tier earns emphasis from its Popular badge + ring, and a slightly
-                    stronger `secondary` button - not a competing primary. */}
-                <a
-                  href={tier.href}
-                  className={buttonVariants({
-                    variant: tier.highlight ? 'secondary' : 'outline',
-                    size: 'sm',
-                  })}
-                >
-                  Get started
-                </a>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </section>
-
       {/* Games teaser */}
       <section
         id="games"
@@ -197,31 +110,41 @@ export function LandingContent({ signedIn }: LandingContentProps) {
           What you can play
         </h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle asChild>
-                <h3>Trivia</h3>
-              </CardTitle>
-              <Badge variant="info" className="mt-1 w-fit">
-                Featured
-              </Badge>
-              <CardDescription>
-                800+ questions across 8 categories. Rounds are fast; scores settle the debate.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-body-sm text-text-muted">
-                Nature, Food, Animals, Science, People, Places, Things, History
-              </p>
-            </CardContent>
-          </Card>
+          {/* The Trivia card is a link into the play path: an anonymous visitor lands on signup,
+              a signed-in one on the rooms home to start a game. The whole card is the target so
+              it is an easy tap on a phone. */}
+          <a
+            href={primaryCta.href}
+            aria-label="Play Trivia - start a game"
+            className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <Card className="h-full transition-colors hover:border-primary">
+              <CardHeader>
+                <CardTitle asChild>
+                  <h3>Trivia</h3>
+                </CardTitle>
+                <Badge variant="info" className="mt-1 w-fit">
+                  Featured
+                </Badge>
+                <CardDescription>
+                  800+ questions across 8 categories. Rounds are fast; scores settle the debate.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-body-sm text-text-muted">
+                  Nature, Food, Animals, Science, People, Places, Things, History
+                </p>
+                <p className="text-body-sm mt-4 font-medium text-primary">Start a game -&gt;</p>
+              </CardContent>
+            </Card>
+          </a>
         </div>
         <p className="mt-6 text-body-sm text-text-muted">More games on the way.</p>
       </section>
 
       {/* Footer */}
       <footer className="mx-auto max-w-5xl border-t border-border px-4 py-8 sm:px-6">
-        <p className="text-body-sm text-text-muted">Branch out - where game night grows.</p>
+        <p className="text-body-sm text-text-muted">Branch Out Games - where game night grows.</p>
       </footer>
     </div>
   );
