@@ -6,5 +6,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    // Unit tests assert on className strings, not applied styles. Treating CSS imports as no-ops
+    // lets a test import layout.tsx (which pulls in globals.css / Tailwind directives) without
+    // running the full CSS pipeline in jsdom.
+    css: false,
   },
 });

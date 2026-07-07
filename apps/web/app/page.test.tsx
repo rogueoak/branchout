@@ -38,18 +38,22 @@ describe('home page - anonymous visitor', () => {
     screen.getByRole('heading', { name: /play together/i });
   });
 
-  it('renders the tier table with all three tiers', () => {
+  it('does not render any pricing or plan content', () => {
     render(<LandingContent signedIn={false} />);
-    screen.getByRole('heading', { name: /pick a plan/i });
-    screen.getByRole('heading', { name: 'Free' });
-    screen.getByRole('heading', { name: 'Gathering' });
-    screen.getByRole('heading', { name: 'Party' });
+    expect(screen.queryByRole('heading', { name: /pick a plan/i })).toBeNull();
+    expect(screen.queryByText(/USD|CAD|per month/i)).toBeNull();
   });
 
   it('renders the games teaser with Trivia featured', () => {
     render(<LandingContent signedIn={false} />);
     screen.getByRole('heading', { name: /what you can play/i });
     screen.getByRole('heading', { name: 'Trivia' });
+  });
+
+  it('makes the Trivia card a link into the play path (signup when anonymous)', () => {
+    render(<LandingContent signedIn={false} />);
+    const card = screen.getByRole('link', { name: /play trivia/i });
+    expect(card).toHaveProperty('href', expect.stringContaining('/signup'));
   });
 
   it('renders a footer landmark', () => {
@@ -59,7 +63,7 @@ describe('home page - anonymous visitor', () => {
 
   it('has a single primary CTA so the page has one clear action', () => {
     render(<LandingContent signedIn={false} />);
-    // "Sign up free" is the single primary action; "Browse games" and tier CTAs are secondary.
+    // "Sign up free" is the single primary action; "Browse games" is secondary.
     const signupLinks = screen
       .getAllByRole('link')
       .filter((el) => el.textContent === 'Sign up free');
@@ -74,6 +78,12 @@ describe('home page - signed-in visitor', () => {
     expect(screen.getByRole('link', { name: 'Play now' })).toBeDefined();
   });
 
+  it('points the Trivia card at the rooms home once signed in', () => {
+    render(<LandingContent signedIn={true} />);
+    const card = screen.getByRole('link', { name: /play trivia/i });
+    expect(card).toHaveProperty('href', expect.stringContaining('/rooms'));
+  });
+
   it('hides the header "Log in" link (a signed-in visitor is already authenticated)', () => {
     render(<LandingContent signedIn={true} />);
     expect(screen.queryByRole('link', { name: 'Log in' })).toBeNull();
@@ -83,7 +93,6 @@ describe('home page - signed-in visitor', () => {
     render(<LandingContent signedIn={true} />);
     screen.getByRole('heading', { level: 1 });
     screen.getByRole('heading', { name: /how it works/i });
-    screen.getByRole('heading', { name: /pick a plan/i });
     screen.getByRole('heading', { name: /what you can play/i });
   });
 });
@@ -99,16 +108,16 @@ describe('home page - a11y basics', () => {
     expect(screen.getByRole('banner')).toBeDefined();
   });
 
-  it('all sections have accessible headings covering hero, steps, tiers, and games', () => {
+  it('all sections have accessible headings covering hero, steps, and games', () => {
     render(<LandingContent signedIn={false} />);
     const headings = screen.getAllByRole('heading');
-    // At minimum: h1 (tagline), h2 (how it works, tiers, games) = 4, h3 (3 steps + 3 tiers + trivia)
-    expect(headings.length).toBeGreaterThanOrEqual(7);
+    // At minimum: h1 (tagline), h2 (how it works, games) = 3, h3 (3 steps + trivia)
+    expect(headings.length).toBeGreaterThanOrEqual(6);
   });
 
-  it('logo has an accessible label', () => {
+  it('wordmark has an accessible label', () => {
     render(<LandingContent signedIn={false} />);
-    // The Logo span has role="img"; getAllByRole handles any SVG internals that also match.
+    // The Wordmark span has role="img"; getAllByRole handles any SVG internals that also match.
     const logoImgs = screen.getAllByRole('img', { name: /branch out/i });
     expect(logoImgs.length).toBeGreaterThanOrEqual(1);
   });

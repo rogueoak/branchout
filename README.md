@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branchout-logo.svg" width="320" alt="Branch out" />
+  <img src="assets/branchout-logo.svg" width="320" alt="Branch Out Games" />
 </p>
 
 <p align="center"><strong>where game night grows.</strong></p>
@@ -13,9 +13,9 @@
 
 ## What this is
 
-Branch out is a subscription platform for online shared games - mostly party games you play
-together, with a few solo ones. Get friends into a game in seconds, keep it fair and social,
-and let people play free without being cornered into paying.
+Branch Out Games is a platform for online shared games - mostly party games you play
+together, with a few solo ones. Get friends into a game in seconds, and keep it fair and
+social.
 
 This repo is the monorepo for the whole platform. Everything is TypeScript, on pnpm workspaces
 and Turborepo.

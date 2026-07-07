@@ -7,7 +7,7 @@
 import { Button, Input, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Logo } from '../../components/Logo';
+import { Wordmark } from '../../components/Wordmark';
 import { rememberMembership } from '../../lib/membership';
 import { RoomApiError, createRoom, fetchIdentity } from '../../lib/room-api';
 
@@ -55,7 +55,7 @@ export function RoomsHome() {
     <main className="min-h-screen bg-bg text-text">
       <div className="mx-auto flex max-w-2xl flex-col gap-10 px-4 py-16 sm:px-6">
         <header className="flex flex-col items-center gap-4 text-center">
-          <Logo className="h-10" />
+          <Wordmark />
           <h1 className="text-display text-text">Play a game</h1>
           <p className="text-body text-text-muted">
             Start a room and share the code, or join a game a friend already started.

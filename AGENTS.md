@@ -1,3 +1,15 @@
+# Branch Out Games - product rules
+
+Non-negotiables for every change. These live outside the Trellis/Spectra managed blocks below
+so updates to those tools never clobber them.
+
+1. **Mobile-first.** Our players are mobile-web users first. Design and build for a phone
+   screen, then make it responsive up to larger screens - never the other way around. Every
+   player-facing surface must be usable and good-looking at ~360px wide and scale up cleanly.
+2. **End-to-end tests for large features.** Large or multi-surface features ship with
+   end-to-end tests that prove the flow works and keep it working. No "ship and pray" - if a
+   feature matters, its happy path (and the obvious failure paths) are covered by an automated
+   test that a change can break.
 
 <!-- trellis:start -->
 ## Trellis conventions

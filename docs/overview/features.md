@@ -80,8 +80,9 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 ## Web
 
-- [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, tier table
-      (Free / Gathering / Party with prices and daily credits), Trivia games teaser, footer.
+- [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, Trivia games
+      teaser (the whole card is a link into the play path - signup when anonymous, rooms when
+      signed in), footer. Dark theme by default; pricing/tier content is dropped for now.
       Signed-in visitors see "Play now" instead of "Sign up free" via a server-side session
       check; graceful fallback to anonymous view if the control plane is unreachable (spec `0005`).
 - [x] Game client shell - the browser client for Trivia (spec `0010`). A rooms home to create a
