@@ -3,7 +3,7 @@
 // samples one tier by these weights, so the *distribution* over a game matches the table (not an
 // exact quota per game).
 
-import type { Difficulty } from '../../question-bank';
+import type { Difficulty } from './question-bank';
 
 export const MIN_DIFFICULTY = 1;
 export const MAX_DIFFICULTY = 10;

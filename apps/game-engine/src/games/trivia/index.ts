@@ -24,3 +24,10 @@ export {
   DEFAULT_DIFFICULTY,
 } from './difficulty';
 export { indexQuestions, pickQuestion, RANDOM_CATEGORY, type QuestionIndex } from './selection';
+export {
+  loadQuestionBank,
+  validateQuestionBank,
+  CATEGORIES,
+  type TriviaQuestion,
+  type Difficulty,
+} from './question-bank';

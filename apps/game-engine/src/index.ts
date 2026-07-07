@@ -9,8 +9,7 @@ import { HttpControlPlaneReporter, NoopReporter, type ControlPlaneReporter } fro
 import { RedisSessionStore } from './session';
 import { attachGameSocket } from './socket';
 import { stubGame } from './stub-game';
-import { createTriviaGame } from './games/trivia';
-import { loadQuestionBank } from './question-bank';
+import { createTriviaGame, loadQuestionBank } from './games/trivia';
 
 async function main(): Promise<void> {
   const config = loadConfig();

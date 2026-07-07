@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundContext, SessionPlayer } from '../../lifecycle';
-import { CATEGORIES, type Difficulty, type TriviaQuestion } from '../../question-bank';
+import { CATEGORIES, type Difficulty, type TriviaQuestion } from './question-bank';
 import { createTriviaGame, DISPUTE_WINDOW_MS, MAX_ROUNDS, validateConfig } from './trivia';
 
 /** Deterministic PRNG so an entire game replays identically. */

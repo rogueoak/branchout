@@ -3,7 +3,7 @@
 // If the sampled tier is exhausted for the category, fall back to the nearest tier; never repeat
 // a question within a game.
 
-import type { Difficulty, TriviaQuestion } from '../../question-bank';
+import type { Difficulty, TriviaQuestion } from './question-bank';
 import { tiersByProximity } from './difficulty';
 
 /** The sentinel category that draws across all eight categories. */
