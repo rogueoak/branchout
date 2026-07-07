@@ -29,7 +29,7 @@ export function Wordmark({ className }: WordmarkProps) {
       />
       <span className="flex items-end font-bold leading-none tracking-tight text-text">
         <span className="text-xl sm:text-2xl">Branch Out</span>
-        <span className="ml-1 -translate-y-1 -rotate-12 text-[0.6rem] font-semibold uppercase tracking-wide text-primary sm:text-xs">
+        <span className="ml-1 -translate-y-0.5 -rotate-6 text-xs font-semibold uppercase tracking-wide text-primary sm:text-sm">
           games
         </span>
       </span>
