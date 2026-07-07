@@ -5,13 +5,7 @@
 'use client';
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@rogueoak/canopy/twigs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
 import { Wordmark } from './Wordmark';
 
 interface LandingContentProps {
