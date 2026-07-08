@@ -43,7 +43,8 @@ function prompt(): PromptMessage {
     game: GAME,
     round: 2,
     phase: 'collecting',
-    prompt: { round: 2, category: 'Science', difficulty: 5, question: 'What is H2O?' },
+    // difficulty is the question's tier string ('easy'|'medium'|'hard'), not the numeric setting.
+    prompt: { round: 2, category: 'Science', difficulty: 'medium', question: 'What is H2O?' },
   };
 }
 
@@ -81,7 +82,7 @@ describe('reduceGameState', () => {
     expect(next.prompt).toEqual({
       round: 2,
       category: 'Science',
-      difficulty: 5,
+      difficulty: 'medium',
       question: 'What is H2O?',
     });
     expect(next.reveal).toBeNull();

@@ -53,13 +53,16 @@ export function attachGameSocket(
       subscription,
     });
     try {
-      const snapshot = await engine.join(
+      // The engine returns the ordered catch-up frames (prompt/reveal/leaderboard/state) this
+      // device needs to render the current phase, since pub/sub only carries frames sent after it
+      // subscribed. Forward them in order.
+      const frames = await engine.join(
         message.room,
         message.game,
         message.player,
         message.nickname,
       );
-      connection.send(snapshot);
+      for (const frame of frames) connection.send(frame);
     } catch (error) {
       await subscription.unsubscribe();
       bindings.delete(connection);

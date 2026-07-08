@@ -113,6 +113,17 @@ What the product does for users, grouped by area. Each capability maps to one or
       carries `disputes` (the round's disputers) so the vote UI targets exactly them. The Trivia
       affordability pre-gate still relies on the server's `insufficient_credits` refusal (gap 4,
       accepted as-is).
+- [x] Trivia is playable end to end (feedback `0014`) - the fixes that turned a broken flow into a
+      real round: the control-plane reaches the engine over `ENGINE_URL` (a network failure is a
+      logged 502, not a silent 500); the engine persists the round's prompt/reveal/standings and
+      replays them as catch-up on `join`, so a late joiner or reconnecting device sees the current
+      question; a `GET /rooms/:code` room-view endpoint, polled in the lobby, lets a non-host device
+      detect `running` and enter the game; the web prompt decoder accepts the question's tier-string
+      difficulty; and the controller shows the question to a remote-only player.
+- [x] Host-disconnect pause (spec `0014`) - the game auto-pauses when the host's device drops
+      mid-game and resumes when it reconnects, so a stranded round waits for the host rather than
+      hanging. The engine carries `isHost` on its roster (from the handoff) to know whom to watch;
+      a deliberate host pause is tracked separately so an unrelated reconnect never un-pauses it.
 - [ ] Profile pages and friend search/invite.
 
 ## Future

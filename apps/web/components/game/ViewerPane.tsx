@@ -26,12 +26,8 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
 
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-5">
-      {state.paused ? (
-        <Badge variant="warning" className="w-fit">
-          Paused by the host
-        </Badge>
-      ) : null}
-
+      {/* The paused banner lives once at the GameStage level (host-aware, honest for both a
+          deliberate pause and a host disconnect), so the viewer pane does not carry its own. */}
       {phase === 'complete' ? (
         <FinalResults standings={standings} me={me} />
       ) : phase === 'leaderboard' ? (

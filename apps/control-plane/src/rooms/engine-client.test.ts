@@ -1,0 +1,51 @@
+import { describe, expect, it } from 'vitest';
+import { PROTOCOL_VERSION, type StartHandoffRequest } from '@branchout/protocol';
+import { EngineError, HttpEngineClient } from './engine-client';
+
+const request: StartHandoffRequest = {
+  v: PROTOCOL_VERSION,
+  room: 'r1',
+  game: 'trivia',
+  players: [{ player: 'p1', nickname: 'Ada', isHost: true }],
+  config: {},
+};
+
+describe('HttpEngineClient error mapping', () => {
+  it('maps an unreachable engine (fetch rejects) to a 502 EngineError, not a raw throw', async () => {
+    // A rejected fetch (ECONNREFUSED when the engine is down or the URL is wrong) would otherwise
+    // escape the room route as an unlogged 500. It must surface as a mapped 502.
+    const fetchImpl = (async () => {
+      throw new TypeError('fetch failed');
+    }) as unknown as typeof fetch;
+    const client = new HttpEngineClient('http://engine:4001', undefined, fetchImpl);
+
+    const error = await client.start(request).catch((e) => e);
+    expect(error).toBeInstanceOf(EngineError);
+    expect((error as EngineError).status).toBe(502);
+  });
+
+  it('maps a non-ok engine response to an EngineError carrying that status', async () => {
+    const fetchImpl = (async () =>
+      new Response('nope', { status: 503 })) as unknown as typeof fetch;
+    const client = new HttpEngineClient('http://engine:4001', undefined, fetchImpl);
+
+    const error = await client.start(request).catch((e) => e);
+    expect(error).toBeInstanceOf(EngineError);
+    expect((error as EngineError).status).toBe(503);
+  });
+
+  it('sends the internal token header when configured', async () => {
+    let seen: Headers | undefined;
+    const fetchImpl = (async (_url: string, init: RequestInit) => {
+      seen = new Headers(init.headers);
+      return new Response(
+        JSON.stringify({ v: PROTOCOL_VERSION, room: 'r1', game: 'trivia', status: 'started' }),
+        { status: 200 },
+      );
+    }) as unknown as typeof fetch;
+    const client = new HttpEngineClient('http://engine:4001', 'secret-token', fetchImpl);
+
+    await client.start(request);
+    expect(seen?.get('x-internal-token')).toBe('secret-token');
+  });
+});

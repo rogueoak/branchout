@@ -14,6 +14,7 @@ import { recallMembership, rememberMembership, type Membership } from '../../../
 import {
   RoomApiError,
   controlGame,
+  getRoom,
   listMembers,
   selectGame,
   setMode,
@@ -65,15 +66,27 @@ export function RoomClient({ code }: RoomClientProps) {
     return membership?.player;
   }, [isHost, members, membership]);
 
-  // Poll the roster while in the lobby so the host sees joins and the viewer gate updates. During
-  // the game the roster arrives over the engine `state` frame instead.
+  // Poll the room status the whole time a member is on this page - a non-host never runs the
+  // host's start/exit handler, so this poll is its only way to observe the host starting the game
+  // (lobby -> running: enter the game and open the engine socket) or exiting it (running -> lobby:
+  // return to the lobby). Also poll the roster, but only in the lobby: during the game it arrives
+  // on the engine `state` frame, so there is nothing to poll for. Deliberately NOT gated on
+  // `running`, so both transitions are caught.
   useEffect(() => {
-    if (!membership || running) return;
+    if (!membership) return;
     let active = true;
     const load = async () => {
       try {
-        const next = await listMembers(code);
-        if (active) setMembers(next);
+        const nextRoom = await getRoom(code);
+        if (!active) return;
+        setRoom(nextRoom);
+        // Persist the fresh status to storage (no React state churn) so a reload lands in the
+        // right view rather than the stale status the join step remembered.
+        rememberMembership(code, { ...membership, room: nextRoom });
+        if (nextRoom.status !== 'running') {
+          const nextMembers = await listMembers(code);
+          if (active) setMembers(nextMembers);
+        }
       } catch (error) {
         if (active && error instanceof RoomApiError) setLoadError(error.message);
       }
@@ -84,7 +97,7 @@ export function RoomClient({ code }: RoomClientProps) {
       active = false;
       clearInterval(timer);
     };
-  }, [code, membership, running]);
+  }, [code, membership]);
 
   const gameOptions =
     running && me && room?.selectedGame

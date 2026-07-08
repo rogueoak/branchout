@@ -15,6 +15,7 @@ function makeState(overrides: Partial<SessionState> = {}): SessionState {
     runId: 1,
     phase: 'collecting',
     paused: false,
+    hostPaused: false,
     round: 1,
     rounds: 3,
     disputeWindowMs: 0,

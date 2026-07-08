@@ -162,6 +162,43 @@ Capture durable lessons as they emerge.
   actor: when the caller is the one who can lift the gate, point at their own control instead of
   telling them to wait. (Review `0013`.)
 
+## Live game state and the seam
+
+- **A frame you only ever *stream* is invisible to anyone not subscribed the instant you send it.**
+  The engine published the Trivia `prompt` at start - before any device had opened its socket - so
+  it was lost for everyone, and `join` returned a `state`-only snapshot with no way to recover the
+  question. Persist the current phase's frames (`prompt`/`reveal`/`standings`) in the session and
+  replay them as ordered catch-up on `join`; a late joiner or reconnecting device must reconstruct
+  the current phase from stored state, not from a publish it missed. (Feedback `0014`.)
+- **A field wired end to end can still die at the validator in the middle.** `isHost` had a
+  matching type, sender, and reader, yet was `false` everywhere because the ingress parser
+  (`parseStartHandoff` -> `requirePlayers`) rebuilt each player field-by-field and never copied it.
+  When you add a field to a message, add it to the *parser* too and pin it with a round-trip test
+  through the actual validator - the seam, not just the two ends. (Feedback `0014`.)
+- **A convenience mock that is easier to type than the real payload hides decoder bugs.** The web
+  prompt test used `difficulty: 5` (a number) while the engine sends a tier *string*; the decoder
+  rejected every real prompt and the UI showed nothing, yet the test stayed green. Mock the shape
+  the producer actually emits (copy a real frame). (Feedback `0014`.)
+- **A client that flips state off its own action must also detect the same flip driven by another
+  peer.** The room went `running` inside the host's start handler, so only the host advanced; every
+  other device had no read to observe it and sat in the lobby forever. When one peer's action
+  changes shared state, give the others a poll or a push to detect it - never assume they ran the
+  same code path. (Feedback `0014`.)
+- **"The message arrives" and "the UI updates" are two assertions.** The engine delivered the
+  prompt (provable at the socket) while the screen stayed blank, because the decoder dropped it.
+  For a player-facing flow, test through to the rendered surface, not just the wire. (Feedback
+  `0014`.)
+- **When the bug is client-side, the fix's test must exercise the client - not just the server
+  surface the client needed.** Bug #3 was the web client never polling room status, yet the first
+  cut tested only the new `GET /rooms/:code` and `service.view`; the actual lobby<->game transition
+  stayed unproven and a revert would keep every test green. Add the test at the layer the bug lived
+  on (a `RoomClient` render/poll test), covering both transition directions. (Review `0014`.)
+- **A blocked/paused state that has more than one cause needs copy honest to every cause.** "Paused
+  by the host" was fine for a deliberate pause but misleading once a host *disconnect* also set
+  `paused` - it read as a permanent, deliberate stop with no hint of resumption. When the client
+  cannot distinguish the causes, write neutral copy true for all of them ("waiting for the host")
+  and keep it in one place, not duplicated per layout with drifting wording. (Review `0014`.)
+
 ## Client-server contracts
 
 - **A service that a browser will later consume must project outward the reads that consumer needs -

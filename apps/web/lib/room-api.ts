@@ -189,6 +189,18 @@ export async function kickMember(code: string, sessionId: string): Promise<void>
   });
 }
 
+/**
+ * Fetch the current room view (caller must be a member). Polled in the lobby so a non-host device
+ * learns when the host starts the game (status -> running) or exits it back to the lobby - the
+ * non-host never runs the host's start/control handler, so this is how it transitions.
+ */
+export async function getRoom(code: string): Promise<RoomView> {
+  const { room } = await request<{ room: RoomView }>(`/rooms/${encodeURIComponent(code)}`, {
+    method: 'GET',
+  });
+  return room;
+}
+
 /** List a room's members (caller must be a member; only the host sees session ids). */
 export async function listMembers(code: string): Promise<RoomMember[]> {
   const { members } = await request<{ members: RoomMember[] }>(

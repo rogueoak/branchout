@@ -162,6 +162,16 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
     }),
   );
 
+  // Room view: caller must be a member. Polled so a non-host device learns when the host starts
+  // the game (status -> running) or exits back to the lobby, since it never runs the host handler.
+  app.get('/rooms/:code', async (request, reply) =>
+    withSession(request, reply, async (session) => {
+      const { code } = request.params as { code: string };
+      const room = await rooms.view(code, session);
+      return reply.code(200).send({ room });
+    }),
+  );
+
   // Members list: caller must be a member; only the host sees session ids.
   app.get('/rooms/:code/members', async (request, reply) =>
     withSession(request, reply, async (session) => {

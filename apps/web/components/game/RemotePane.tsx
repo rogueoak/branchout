@@ -9,7 +9,7 @@
 // spec 0012), so the ballot is offered over exactly those players, minus the voter themselves.
 
 import type { PlayerView } from '@branchout/protocol';
-import { Button, Input } from '@rogueoak/canopy';
+import { Badge, Button, Input } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
 import type { GameState } from '../../lib/game-state';
 import { FinalResults } from './FinalResults';
@@ -71,6 +71,18 @@ export function RemotePane({
     <section aria-label="Your controller" className="flex flex-col gap-4">
       {phase === 'collecting' ? (
         <div className="flex flex-col gap-3">
+          {/* A remote-only player has no viewer pane beside them, so the question has to live here
+              too or they answer blind. An interactive player reads it from the viewer instead. */}
+          {showResults && state.prompt ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="info">Round {state.prompt.round}</Badge>
+                <Badge variant="neutral">{state.prompt.category}</Badge>
+                <Badge variant="neutral">Difficulty {state.prompt.difficulty}</Badge>
+              </div>
+              <h2 className="text-h3 text-text">{state.prompt.question}</h2>
+            </div>
+          ) : null}
           <label htmlFor="answer-input" className="text-body-sm font-medium text-text">
             Your answer
           </label>

@@ -23,7 +23,8 @@ function build(overrides: Partial<GameState>): GameState {
 
 const collecting = build({
   phase: 'collecting',
-  prompt: { round: 1, category: 'Science', difficulty: 5, question: 'What is H2O?' },
+  // difficulty is the question's tier string ('easy'|'medium'|'hard'), not the numeric 1-10 setting.
+  prompt: { round: 1, category: 'Science', difficulty: 'easy', question: 'What is H2O?' },
 });
 
 function noop() {}
@@ -242,11 +243,19 @@ describe('GameStage connection, paused, and error surfaces', () => {
     expect(screen.getByText('Reconnecting...')).toBeDefined();
   });
 
-  it('shows the paused badge and flips the host Pause control to Resume', () => {
+  it('shows a host-aware paused banner and flips the host Pause control to Resume', () => {
     const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
     renderStage({ state, role: 'player', mode: 'interactive', isHost: true });
-    expect(screen.getByText('Paused by the host')).toBeDefined();
+    // One banner at the stage level, host-aware (the viewer pane no longer carries its own).
+    expect(screen.getByText(/resume when you are ready/i)).toBeDefined();
     expect(screen.getByRole('button', { name: 'Resume' })).toBeDefined();
+  });
+
+  it('tells a non-host viewer the game is paused waiting on the host (not that it ended)', () => {
+    // A host disconnect also sets paused; the copy must not read as a deliberate, permanent stop.
+    const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
+    renderStage({ state, role: 'observer', mode: undefined, isHost: false });
+    expect(screen.getByText(/waiting for the host/i)).toBeDefined();
   });
 
   it('surfaces a protocol error frame as an alert', () => {
@@ -270,6 +279,28 @@ describe('GameStage remote-only player sees results without a viewer', () => {
     const controller = screen.getByLabelText('Your controller');
     within(controller).getByLabelText('Leaderboard');
     within(controller).getByText(/Ada/);
+  });
+
+  it('shows the question on the controller so a remote-only player does not answer blind', () => {
+    renderStage({ role: 'player', mode: 'remote' });
+    const controller = screen.getByLabelText('Your controller');
+    // No viewer beside them, so the question must live on the controller itself.
+    within(controller).getByText('What is H2O?');
+    within(controller).getByLabelText('Your answer');
+  });
+
+  it('does not duplicate the question on the controller for an interactive player', () => {
+    renderStage({ role: 'player', mode: 'interactive' });
+    // The interactive player reads the question from the viewer; the controller stays answer-only.
+    const controller = screen.getByLabelText('Your controller');
+    expect(within(controller).queryByText('What is H2O?')).toBeNull();
+    within(screen.getByLabelText('Game viewer')).getByText('What is H2O?');
+  });
+
+  it('shows a paused banner to a remote-only player who has no viewer', () => {
+    const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
+    renderStage({ state, role: 'player', mode: 'remote' });
+    expect(screen.getByText(/waiting for the host/i)).toBeDefined();
   });
 
   it('renders the final results on the controller when the game ends', () => {

@@ -148,8 +148,12 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   persistence, and reporting; the module owns what each phase means. Adding a game is registering
   a module; a stub game drives the lifecycle in tests (Trivia is spec `0008`).
 - **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for
-  the life of a game, recovered on reconnect. Per-session operations are serialized in-process so
-  concurrent frames cannot lose an update; cross-instance locking is a future concern.
+  the life of a game, recovered on reconnect. It also persists the current phase's streamed frames
+  (prompt/reveal/standings) so `join` can replay them as ordered catch-up - pub/sub only reaches
+  devices subscribed at publish time, so a late joiner would otherwise never see the question
+  (feedback `0014`). The roster carries `isHost` (from the handoff) so the engine auto-pauses while
+  the host is disconnected. Per-session operations are serialized in-process so concurrent frames
+  cannot lose an update; cross-instance locking is a future concern.
 - **Streaming over Redis pub/sub** - the engine publishes server frames to a per-session channel;
   each connected device subscribes and forwards them to its socket. Both the store and pub/sub
   sit behind interfaces with in-memory implementations for tests.

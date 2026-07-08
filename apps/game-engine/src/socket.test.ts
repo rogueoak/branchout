@@ -148,6 +148,90 @@ describe('game-engine websocket', () => {
     socket.close();
   });
 
+  /** Resolve with the first frame matching the predicate this socket receives. */
+  const waitForMatch = (
+    socket: WebSocket,
+    predicate: (frame: Record<string, unknown>) => boolean,
+  ): Promise<Record<string, unknown>> =>
+    new Promise((resolve) => {
+      const onMessage = (data: WebSocket.RawData) => {
+        const parsed = JSON.parse(data.toString()) as Record<string, unknown>;
+        if (predicate(parsed)) {
+          socket.off('message', onMessage);
+          resolve(parsed);
+        }
+      };
+      socket.on('message', onMessage);
+    });
+
+  const joinFrame = (room: string, player: string, nickname: string) =>
+    JSON.stringify({
+      v: PROTOCOL_VERSION,
+      type: 'join',
+      room,
+      game: STUB_GAME_ID,
+      player,
+      nickname,
+    });
+
+  it('replays the current prompt to a device that joins mid-round (fixes the blank screen)', async () => {
+    // The prompt is published at start, before any socket exists. A joining device only sees the
+    // question because join replays the persisted prompt - this is the end-to-end proof through the
+    // real socket + pubsub, not just the engine method.
+    await engine.start({
+      v: PROTOCOL_VERSION,
+      room: 'r3',
+      game: STUB_GAME_ID,
+      players: [{ player: 'p1', nickname: 'Ada' }],
+      config: { rounds: 1, secrets: ['blue'] },
+    });
+
+    const socket = await open();
+    const prompt = waitFor(socket, 'prompt');
+    socket.send(joinFrame('r3', 'p1', 'Ada'));
+    expect(await prompt).toMatchObject({ type: 'prompt', round: 1 });
+    socket.close();
+  });
+
+  it('pauses for the others when the host disconnects and resumes when it returns', async () => {
+    // Two devices, p1 is the host. When the host socket drops, the still-connected player must see
+    // paused: true; when the host reconnects, paused: false.
+    await engine.start({
+      v: PROTOCOL_VERSION,
+      room: 'r4',
+      game: STUB_GAME_ID,
+      players: [
+        { player: 'p1', nickname: 'Ada', isHost: true },
+        { player: 'p2', nickname: 'Bo' },
+      ],
+      config: { rounds: 1, secrets: ['blue'] },
+    });
+
+    const host = await open();
+    const hostJoined = waitFor(host, 'state');
+    host.send(joinFrame('r4', 'p1', 'Ada'));
+    await hostJoined;
+
+    const player = await open();
+    const playerJoined = waitFor(player, 'state');
+    player.send(joinFrame('r4', 'p2', 'Bo'));
+    await playerJoined;
+
+    // The host drops: its socket close triggers engine.disconnect -> auto-pause -> state broadcast.
+    const paused = waitForMatch(player, (f) => f.type === 'state' && f.paused === true);
+    host.close();
+    expect(await paused).toMatchObject({ type: 'state', paused: true });
+
+    // The host reconnects and the game resumes for everyone.
+    const resumed = waitForMatch(player, (f) => f.type === 'state' && f.paused === false);
+    const host2 = await open();
+    host2.send(joinFrame('r4', 'p1', 'Ada'));
+    expect(await resumed).toMatchObject({ type: 'state', paused: false });
+
+    host2.close();
+    player.close();
+  });
+
   describe('authorization guards', () => {
     const join = (socket: WebSocket, over: Record<string, unknown> = {}) =>
       socket.send(

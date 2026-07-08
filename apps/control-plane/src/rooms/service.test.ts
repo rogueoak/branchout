@@ -168,11 +168,12 @@ describe('host plays as a player', () => {
     // The interactive host is a viewer, so a solo host can start.
     await service.start(room.code, host, 1);
 
-    // Seam: the host's public playerId + nickname reach the engine, and it is not dropped.
+    // Seam: the host's public playerId + nickname reach the engine, and it is not dropped. The
+    // host slot carries isHost so the engine can auto-pause while the host is disconnected (0014).
     const stored = await membership.get(room.id, host.id);
     const roster = engine.starts[0]!.players;
     const hostSlot = roster.find((p) => p.player === stored?.playerId);
-    expect(hostSlot).toEqual({ player: stored?.playerId, nickname: 'Ada' });
+    expect(hostSlot).toEqual({ player: stored?.playerId, nickname: 'Ada', isHost: true });
     // The observer is excluded from the roster.
     expect(roster.some((p) => p.nickname === 'Watcher')).toBe(false);
   });
@@ -449,6 +450,30 @@ describe('members roster', () => {
     expect(playerView.every((m) => m.sessionId === undefined)).toBe(true);
 
     await expect(h.service.members(room.code, anon())).rejects.toThrow();
+  });
+});
+
+describe('room view (poll for status)', () => {
+  it('lets a member read the current status so a non-host learns the game started', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await h.service.createRoom(host);
+    const player = anon();
+    await h.service.join(room.code, player, { role: 'observer', nickname: 'Eyes' });
+    await h.service.selectGame(room.code, host, 'trivia', {});
+
+    // Before start, both see the lobby.
+    expect((await h.service.view(room.code, player)).status).toBe('lobby');
+    await h.service.start(room.code, host, 1);
+    // After the host starts, the non-host's poll observes 'running' - how it transitions in.
+    expect((await h.service.view(room.code, player)).status).toBe('running');
+  });
+
+  it('refuses a non-member (knowing the code is not enough)', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await h.service.createRoom(host);
+    await expect(h.service.view(room.code, anon())).rejects.toThrow();
   });
 });
 
