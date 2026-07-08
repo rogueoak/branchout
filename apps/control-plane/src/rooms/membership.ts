@@ -7,8 +7,9 @@
 
 import { randomBytes } from 'node:crypto';
 
-/** A member's role in a room. The host owns it; players play; observers only watch. */
-export type Role = 'host' | 'player' | 'observer';
+/** A member's role in a room. Players play; observers only watch. The host is a player too - the
+ * host privilege is the orthogonal `isHost` flag on {@link RoomMember}, not a role. */
+export type Role = 'player' | 'observer';
 
 /**
  * Mint a member's public `playerId`: an unguessable, url-safe token (128 bits), distinct from the
@@ -42,7 +43,13 @@ export interface RoomMember {
   /** The durable account id when the member signed in; absent for an anonymous member. */
   accountId?: string;
   role: Role;
-  /** Set for a player; absent for host and observers. */
+  /**
+   * True for the room's host - the person who created it. The host is a full player (it has a role,
+   * a mode, and plays), and this flag additionally carries the admin powers: game controls, kick,
+   * and seeing other members' `sessionId`. The host is never kickable.
+   */
+  isHost: boolean;
+  /** Set for a player (the host is a player, so it has a mode too); absent for observers. */
   mode?: Mode;
   /** Per-game display name chosen at join. */
   nickname: string;

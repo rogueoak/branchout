@@ -115,6 +115,13 @@ Capture durable lessons as they emerge.
 
 ## Module boundaries
 
+- **A privilege that is orthogonal to a role is a flag, not a role.** Modeling the host as a third
+  `role` ('host' | 'player' | 'observer') forced every "is this a participant" site to special-case
+  it, and quietly excluded the host from the roster/standings the whole time. Collapsing it to a
+  boolean (`isHost` on a `'player'` member) let the host flow through the existing player machinery
+  untouched while the flag localizes the admin concern (controls, kick, sessionId visibility) to the
+  few sites that actually differ. Prefer a flag when the extra state is independent of the enum it
+  was crammed into. (Spec `0013`.)
 - **Place a module by the concern it owns, not the file you were editing.** Service-wide infra
   (the migration runner) and cross-domain rules (display-name validation) belong in neutral
   homes (`db/`, `validation/`), not inside the first domain that needed them (`accounts/`) -

@@ -64,9 +64,19 @@ describe('GameStage layout by mode and role', () => {
     expect(screen.queryByLabelText('Your controller')).toBeNull();
   });
 
-  it('host sees the viewer and the control bar', () => {
-    renderStage({ role: 'host', mode: undefined, isHost: true });
+  it('an interactive host sees the viewer, the controller, and the control bar', () => {
+    renderStage({ role: 'player', mode: 'interactive', isHost: true });
     expect(screen.getByLabelText('Game viewer')).toBeDefined();
+    expect(screen.getByLabelText('Your controller')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
+  });
+
+  it('a remote host sees the controller and the control bar but no viewer', () => {
+    renderStage({ role: 'player', mode: 'remote', isHost: true });
+    expect(screen.queryByLabelText('Game viewer')).toBeNull();
+    expect(screen.getByLabelText('Your controller')).toBeDefined();
+    // The host plays: the answer UI is present on the controller.
+    expect(screen.getByLabelText('Your answer')).toBeDefined();
     expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
   });
 });
@@ -217,7 +227,7 @@ describe('GameStage per-phase rendering', () => {
         { player: 'p2', nickname: 'Bo', score: 50, rank: 2 },
       ],
     });
-    renderStage({ state, role: 'host', mode: undefined, isHost: true });
+    renderStage({ state, role: 'player', mode: 'interactive', isHost: true });
     expect(screen.getByText(/Final results/)).toBeDefined();
     // Rank 1 earns three stars, rank 2 earns two, both labelled for assistive tech.
     expect(screen.getByLabelText('3 stars')).toBeDefined();
@@ -234,7 +244,7 @@ describe('GameStage connection, paused, and error surfaces', () => {
 
   it('shows the paused badge and flips the host Pause control to Resume', () => {
     const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
-    renderStage({ state, role: 'host', mode: undefined, isHost: true });
+    renderStage({ state, role: 'player', mode: 'interactive', isHost: true });
     expect(screen.getByText('Paused by the host')).toBeDefined();
     expect(screen.getByRole('button', { name: 'Resume' })).toBeDefined();
   });

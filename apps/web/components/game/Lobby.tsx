@@ -35,7 +35,7 @@ function hasViewer(members: RoomMember[]): boolean {
 }
 
 function memberLabel(member: RoomMember): string {
-  if (member.role === 'host') return 'Host';
+  if (member.isHost) return 'Host';
   if (member.role === 'observer') return 'Observer';
   return member.mode === 'remote' ? 'Remote' : 'Interactive';
 }
@@ -84,7 +84,7 @@ export function Lobby({
                 <span className="text-body text-text">{member.nickname}</span>
                 <Badge variant="neutral">{memberLabel(member)}</Badge>
               </span>
-              {isHost && member.role !== 'host' && member.sessionId ? (
+              {isHost && !member.isHost && member.sessionId ? (
                 <Button
                   type="button"
                   variant="ghost"

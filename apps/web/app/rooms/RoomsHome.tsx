@@ -8,8 +8,9 @@ import { Button, Input, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Wordmark } from '../../components/Wordmark';
+import { defaultMode } from '../../lib/default-mode';
 import { rememberMembership } from '../../lib/membership';
-import { RoomApiError, createRoom, fetchIdentity } from '../../lib/room-api';
+import { RoomApiError, createRoom, fetchIdentity, setMode } from '../../lib/room-api';
 
 export function RoomsHome() {
   const router = useRouter();
@@ -38,7 +39,25 @@ export function RoomsHome() {
     setError(null);
     try {
       const room = await createRoom();
-      rememberMembership(room.code, { role: 'host', nickname: hostName, room });
+      // The host is a full player: remember it as such with the host flag, and set its mode from
+      // the device (createRoom seeds `interactive` server-side; this refines it, and the host can
+      // still change it in the lobby).
+      const mode = defaultMode(typeof navigator === 'undefined' ? '' : navigator.userAgent);
+      rememberMembership(room.code, {
+        role: 'player',
+        isHost: true,
+        mode,
+        nickname: hostName,
+        room,
+      });
+      if (mode !== 'interactive') {
+        try {
+          await setMode(room.code, mode);
+        } catch {
+          // Best-effort: the server default (interactive) stands and the host can still pick in
+          // the lobby, so a failed refinement should not block entering the room.
+        }
+      }
       router.push(`/rooms/${room.code}`);
     } catch (err) {
       setError(err instanceof RoomApiError ? err.message : 'Could not create a room. Try again.');

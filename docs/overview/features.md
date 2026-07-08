@@ -50,7 +50,14 @@ What the product does for users, grouped by area. Each capability maps to one or
       code still works for others). Live membership/presence in Redis, durable room + history in
       Postgres (spec `0006`).
 - [x] Modes - each player picks interactive (viewer + remote) or remote; the "at least one viewer"
-      rule (an observer or an interactive player) gates start (spec `0006`).
+      rule (an observer or an interactive player) gates start (spec `0006`). The picker defaults from
+      the device (mobile -> remote, TV -> interactive, else interactive) and is always overridable
+      (spec `0013`).
+- [x] Host is a player - the host is a full player (`role: 'player'` with an `isHost` flag), not a
+      separate role: it appears in the engine roster, answers, disputes, and lands in the final
+      standings earning stars like anyone. `isHost` carries only the admin powers (controls, kick,
+      seeing others' `sessionId`); the host is never kickable and cannot opt out of playing. An
+      interactive host is a viewer, so a solo host satisfies the start gate (spec `0013`).
 - [x] Game selection and start handoff - the host selects a game and an opaque config (passed
       through unchanged); start runs the affordability check then hands off to the engine via the
       protocol `StartHandoffRequest`; pause, restart, and exit proxy to the engine, and exit

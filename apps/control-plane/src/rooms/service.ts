@@ -98,8 +98,12 @@ export class RoomService {
 
   /**
    * Create a room for a signed-in host. Only an account session may host (anonymous players never
-   * host - spec 0004's `canHost`). The host joins as the `host` member with their session nickname.
-   * A fresh 5-character code is generated and retried on the astronomically rare collision.
+   * host - spec 0004's `canHost`). The host joins as a full player (`role: 'player'`) with
+   * `isHost: true` and their session nickname, so it flows through the same roster/answer/standings
+   * machinery as any player while `isHost` carries the admin powers. Its mode defaults to
+   * `interactive` here (a safe viewer fallback); the client refines it from the device via
+   * `setMode`. A fresh 5-character code is generated and retried on the astronomically rare
+   * collision.
    */
   async createRoom(session: Session): Promise<RoomView> {
     if (!canHost(session) || !session.accountId) {
@@ -110,7 +114,9 @@ export class RoomService {
       sessionId: session.id,
       playerId: newPlayerId(),
       accountId: session.accountId,
-      role: 'host',
+      role: 'player',
+      isHost: true,
+      mode: normalizeMode(undefined),
       nickname: session.displayName,
       connected: true,
     };
@@ -157,6 +163,8 @@ export class RoomService {
       playerId: existing?.playerId ?? newPlayerId(),
       ...(session.accountId ? { accountId: session.accountId } : {}),
       role: input.role,
+      // A join only ever creates a player or observer; the host is minted by createRoom.
+      isHost: false,
       ...(input.role === 'player' ? { mode: normalizeMode(input.mode) } : {}),
       nickname: name.value!,
       connected: true,
@@ -165,7 +173,8 @@ export class RoomService {
     return { room: toView(room), playerId: member.playerId };
   }
 
-  /** A player switches interactive/remote mode. Observers and the host have no mode to set. */
+  /** A player switches interactive/remote mode. The host is a player, so it sets its mode here too;
+   * only observers have no mode. */
   async setMode(code: string, session: Session, mode: Mode): Promise<void> {
     const room = await this.requireRoom(code);
     const member = await this.membership.get(room.id, session.id);
@@ -259,21 +268,27 @@ export class RoomService {
 
   /**
    * The host kicks a member: they are removed from membership and barred from rejoining on the
-   * same session; the code still works for anyone else. A host cannot kick themselves.
+   * same session; the code still works for anyone else. The host is not kickable - neither itself
+   * (the self-kick guard) nor via another host session (the `isHost` guard).
    */
   async kick(code: string, session: Session, targetSessionId: string): Promise<void> {
     const room = await this.requireHost(code, session);
     if (!targetSessionId || targetSessionId === session.id) {
       throw new RoomError('invalid', 'Choose another member to remove.');
     }
+    const target = await this.membership.get(room.id, targetSessionId);
+    if (target?.isHost) {
+      throw new RoomError('invalid', 'The host cannot be removed.');
+    }
     await this.membership.kick(room.id, targetSessionId);
   }
 
   /**
    * List a room's members. The caller must be a member (knowing a 5-character code is not enough to
-   * enumerate a room), and only the host sees each member's `sessionId` - it is the kick target and
-   * rejoin key, so it stays host-only. `playerId` is public (the engine broadcasts it in `state`),
-   * so it stays on every row: it is how the host reads its own engine identity from its host row.
+   * enumerate a room), and only the host (`isHost`) sees each member's `sessionId` - it is the kick
+   * target and rejoin key, so it stays host-only. `playerId` is public (the engine broadcasts it in
+   * `state`), so it stays on every row: it is how the host reads its own engine identity from its
+   * own row.
    */
   async members(
     code: string,
@@ -285,7 +300,7 @@ export class RoomService {
       throw new RoomError('forbidden', 'Join the room to see its members.');
     }
     const all = await this.membership.list(room.id);
-    if (caller.role === 'host') {
+    if (caller.isHost) {
       return all;
     }
     return all.map((m) => {
@@ -377,8 +392,10 @@ function normalizeMode(mode: Mode | undefined): Mode {
 
 /**
  * Map room members to the engine's handoff players. Observers do not play; only players go. The
- * roster is keyed by the public `playerId` (not the httpOnly `sessionId`), so a non-host browser
- * that only ever learns its `playerId` can `join` the engine and match its slot.
+ * host is a `player` (with `isHost: true`), so it is intentionally included here and plays like any
+ * other - this is what puts the host in the engine roster, the leaderboard, and the final
+ * standings. The roster is keyed by the public `playerId` (not the httpOnly `sessionId`), so a
+ * non-host browser that only ever learns its `playerId` can `join` the engine and match its slot.
  */
 function toHandoffPlayers(members: readonly RoomMember[]): HandoffPlayer[] {
   return members

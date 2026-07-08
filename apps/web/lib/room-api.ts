@@ -6,10 +6,11 @@
 
 const CONTROL_PLANE_URL = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? 'http://localhost:4000';
 
-/** A member's role in a room. */
-export type Role = 'host' | 'player' | 'observer';
+/** A member's role in a room. The host is a player too - the `isHost` flag on {@link RoomMember}
+ * carries the host privilege, not a role. */
+export type Role = 'player' | 'observer';
 
-/** A player's mode; observers and the host have none. */
+/** A player's mode; observers have none. The host is a player, so it picks a mode too. */
 export type Mode = 'interactive' | 'remote';
 
 /** A room as the control-plane returns it. */
@@ -29,6 +30,8 @@ export interface RoomMember {
   playerId: string;
   accountId?: string;
   role: Role;
+  /** True for the room's host: a player that also holds the admin powers (controls, kick). */
+  isHost: boolean;
   mode?: Mode;
   nickname: string;
   connected: boolean;

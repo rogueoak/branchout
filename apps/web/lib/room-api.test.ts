@@ -92,11 +92,16 @@ describe('room-api', () => {
   it('returns the members list', async () => {
     mockFetch({
       ok: true,
-      body: { members: [{ role: 'host', nickname: 'Ada', connected: true }] },
+      body: {
+        members: [
+          { role: 'player', isHost: true, mode: 'interactive', nickname: 'Ada', connected: true },
+        ],
+      },
     });
     const members = await listMembers('ABC12');
     expect(members).toHaveLength(1);
-    expect(members[0]!.role).toBe('host');
+    expect(members[0]!.role).toBe('player');
+    expect(members[0]!.isHost).toBe(true);
   });
 
   it('sends the advance control action to the control-plane proxy', async () => {

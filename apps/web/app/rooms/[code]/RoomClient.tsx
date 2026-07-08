@@ -52,15 +52,15 @@ export function RoomClient({ code }: RoomClientProps) {
     setRoom(recalled?.room ?? null);
   }, [code]);
 
-  const isHost = membership?.role === 'host';
+  const isHost = membership?.isHost ?? false;
   const running = room?.status === 'running';
 
-  // The host reads its own public playerId from the members list (its host row); a non-host relies
-  // on the playerId join returned and stored in membership. This is the identity the engine roster
-  // and `join` key on (spec 0012), never the httpOnly session id.
+  // The host reads its own public playerId from the members list (its own host row); a non-host
+  // relies on the playerId join returned and stored in membership. This is the identity the engine
+  // roster and `join` key on (spec 0012), never the httpOnly session id.
   const me = useMemo(() => {
     if (isHost) {
-      return members.find((member) => member.role === 'host')?.playerId ?? membership?.player;
+      return members.find((member) => member.isHost)?.playerId ?? membership?.player;
     }
     return membership?.player;
   }, [isHost, members, membership]);

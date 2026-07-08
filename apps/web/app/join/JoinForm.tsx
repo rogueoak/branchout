@@ -9,6 +9,7 @@ import { Button, Input, Label, buttonVariants, inputVariants } from '@rogueoak/c
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { Wordmark } from '../../components/Wordmark';
+import { defaultMode } from '../../lib/default-mode';
 import { rememberMembership } from '../../lib/membership';
 import {
   RoomApiError,
@@ -27,7 +28,10 @@ export function JoinForm({ initialCode }: JoinFormProps) {
   const [code, setCode] = useState(initialCode);
   const [nickname, setNickname] = useState('');
   const [role, setRole] = useState<Role>('player');
-  const [mode, setMode] = useState<Mode>('interactive');
+  // Default the mode from the device (a phone -> remote, a TV -> interactive); always overridable.
+  const [mode, setMode] = useState<Mode>(() =>
+    defaultMode(typeof navigator === 'undefined' ? '' : navigator.userAgent),
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

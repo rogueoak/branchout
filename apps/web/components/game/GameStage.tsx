@@ -2,8 +2,9 @@
 
 // The in-game layout, keyed by mode and role - one component, no forked screens (spec 0010's
 // "layout from mode"). Interactive shows the viewer left and the remote right (stacked on narrow
-// screens); a remote player sees the remote only; an observer or the host sees the viewer only.
-// The host also gets the control bar (advance / pause / restart / exit).
+// screens); a remote player sees the remote only; an observer sees the viewer only. The host is a
+// full player, so it renders by its chosen mode like any player AND additionally gets the control
+// bar (advance / pause / restart / exit).
 
 import { Badge, Button } from '@rogueoak/canopy';
 import type { Role, Mode } from '../../lib/room-api';
@@ -19,7 +20,7 @@ interface GameStageProps {
   state: GameState;
   me: string;
   role: Role;
-  /** The player's chosen mode; absent for the host and observers. */
+  /** The player's chosen mode (the host is a player, so it has one too); absent for observers. */
   mode?: Mode;
   isHost: boolean;
   onAnswer: (round: number, answer: string) => void;
