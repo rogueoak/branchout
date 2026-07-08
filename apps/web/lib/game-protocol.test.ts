@@ -26,6 +26,14 @@ describe('asTriviaPrompt', () => {
       asTriviaPrompt({ round: '1', category: 'Things', difficulty: 'easy', question: 'x' }),
     ).toBeNull();
   });
+
+  it('rejects a numeric difficulty (guards against re-tightening to the old wrong type)', () => {
+    // The original bug: the decoder demanded a number, so every real (tier-string) prompt was
+    // dropped. Pin the boundary so a future change back to `number` fails here.
+    expect(
+      asTriviaPrompt({ round: 1, category: 'Things', difficulty: 5, question: 'x' }),
+    ).toBeNull();
+  });
 });
 
 describe('asTriviaRoundReveal', () => {

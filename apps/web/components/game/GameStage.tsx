@@ -111,11 +111,13 @@ export function GameStage({
         </p>
       ) : null}
 
-      {/* A remote-only player has no viewer pane, which is where the paused badge otherwise lives,
-          so surface it here too. Paused covers both a deliberate host pause and the engine
-          auto-pausing while the host is disconnected (spec 0014); either way the player waits on
-          the host, while a remote host sees its own resume control below. */}
-      {state.paused && !isComplete(state) && !viewerVisible ? (
+      {/* One paused banner for every layout (the viewer pane no longer carries its own, so the
+          copy is consistent and host-aware). Paused covers both a deliberate host pause and the
+          engine auto-pausing while the host is disconnected (spec 0014) - the client cannot tell
+          them apart, so the non-host copy ("waiting for the host") reads correctly for either: the
+          game is paused, not over, and resumes when the host acts or reconnects. A host sees its
+          own resume control below. */}
+      {state.paused && !isComplete(state) ? (
         <Badge variant="warning" className="w-fit" role="status">
           {isHost ? 'Game paused - resume when you are ready.' : 'Paused - waiting for the host.'}
         </Badge>

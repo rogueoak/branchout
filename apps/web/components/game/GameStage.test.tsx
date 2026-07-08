@@ -243,11 +243,19 @@ describe('GameStage connection, paused, and error surfaces', () => {
     expect(screen.getByText('Reconnecting...')).toBeDefined();
   });
 
-  it('shows the paused badge and flips the host Pause control to Resume', () => {
+  it('shows a host-aware paused banner and flips the host Pause control to Resume', () => {
     const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
     renderStage({ state, role: 'player', mode: 'interactive', isHost: true });
-    expect(screen.getByText('Paused by the host')).toBeDefined();
+    // One banner at the stage level, host-aware (the viewer pane no longer carries its own).
+    expect(screen.getByText(/resume when you are ready/i)).toBeDefined();
     expect(screen.getByRole('button', { name: 'Resume' })).toBeDefined();
+  });
+
+  it('tells a non-host viewer the game is paused waiting on the host (not that it ended)', () => {
+    // A host disconnect also sets paused; the copy must not read as a deliberate, permanent stop.
+    const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
+    renderStage({ state, role: 'observer', mode: undefined, isHost: false });
+    expect(screen.getByText(/waiting for the host/i)).toBeDefined();
   });
 
   it('surfaces a protocol error frame as an alert', () => {

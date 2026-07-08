@@ -508,4 +508,26 @@ describe('host-disconnect auto-pause (spec 0014)', () => {
     // The manual pause (hostPaused=false) is left intact.
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.paused).toBe(true);
   });
+
+  it('re-arms a timed dispute window when the host reconnects so the round does not stall', async () => {
+    // A host who drops mid-`disputing` auto-pauses (cancelling the window); its reconnect must
+    // re-arm the timer, mirroring a manual pause/resume, or the round stalls on a dead timer.
+    await h.engine.start(
+      handoff({
+        players: [{ player: 'p1', nickname: 'Ada', isHost: true }],
+        config: { rounds: 1, secrets: ['blue'], disputeWindowMs: 10000 },
+      }),
+    );
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'); // host connects (so disconnect fires)
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> disputing, arms the window
+
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p1'); // host drops: auto-pause
+    h.scheduler.flush(); // the original timer no-ops while paused
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'); // host returns: resume + re-arm
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+  });
 });
