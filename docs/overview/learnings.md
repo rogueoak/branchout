@@ -188,6 +188,16 @@ Capture durable lessons as they emerge.
   prompt (provable at the socket) while the screen stayed blank, because the decoder dropped it.
   For a player-facing flow, test through to the rendered surface, not just the wire. (Feedback
   `0014`.)
+- **When the bug is client-side, the fix's test must exercise the client - not just the server
+  surface the client needed.** Bug #3 was the web client never polling room status, yet the first
+  cut tested only the new `GET /rooms/:code` and `service.view`; the actual lobby<->game transition
+  stayed unproven and a revert would keep every test green. Add the test at the layer the bug lived
+  on (a `RoomClient` render/poll test), covering both transition directions. (Review `0014`.)
+- **A blocked/paused state that has more than one cause needs copy honest to every cause.** "Paused
+  by the host" was fine for a deliberate pause but misleading once a host *disconnect* also set
+  `paused` - it read as a permanent, deliberate stop with no hint of resumption. When the client
+  cannot distinguish the causes, write neutral copy true for all of them ("waiting for the host")
+  and keep it in one place, not duplicated per layout with drifting wording. (Review `0014`.)
 
 ## Client-server contracts
 
