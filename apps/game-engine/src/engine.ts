@@ -28,6 +28,13 @@ import { sessionKey, type SessionState, type SessionStore } from './session';
 /** Host controls applied to a running session. */
 export type HostAction = 'pause' | 'advance' | 'restart' | 'exit';
 
+/**
+ * Grace period before the engine auto-closes an answer round once every connected player has
+ * submitted (feedback 0015). Short enough that a finished table is not left waiting, long enough
+ * that a player can still tweak a just-typed answer before the reveal.
+ */
+export const AUTO_ADVANCE_MS = 2000;
+
 export class NoSessionError extends Error {
   constructor(room: string, game: string) {
     super(`no session for room "${room}" game "${game}"`);
@@ -230,6 +237,7 @@ export class GameEngine {
       const result = module.collectAnswer(this.context(state), player, answer);
       state.scratch = result.scratch;
       await this.store.save(state);
+      if (result.allAnswered) this.armAutoAdvance(state, module, round);
     });
   }
 
@@ -496,6 +504,27 @@ export class GameEngine {
     await this.publish(state, this.stateMessage(state));
     await this.reportComplete(state, standings);
     await this.store.delete(state.room, state.game);
+  }
+
+  /**
+   * Arm the "everyone answered" auto-advance: after {@link AUTO_ADVANCE_MS} close the answer round
+   * unless it has already moved on. The fire-time guard re-checks phase/round/pause, so a host who
+   * advances first, a pause, or a new round all cancel it harmlessly; re-arming on each late submit
+   * is safe because a stale timer finds a changed phase/round and no-ops. Skipped while paused.
+   */
+  private armAutoAdvance(state: SessionState, module: GameModule, round: number): void {
+    if (state.paused) return;
+    const room = state.room;
+    const game = state.game;
+    this.scheduler.schedule(AUTO_ADVANCE_MS, () => {
+      void this.run(sessionKey(room, game), async () => {
+        const current = await this.store.load(room, game);
+        if (!current || current.paused || current.phase !== 'collecting' || current.round !== round) {
+          return;
+        }
+        await this.advanceLocked(current, module);
+      });
+    });
   }
 
   /** Arm the dispute-window timer; a no-op when the window is manual (0) or paused. */

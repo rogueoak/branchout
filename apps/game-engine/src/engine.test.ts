@@ -283,6 +283,49 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
   });
 
+  it('auto-advances the answer round 2s after every connected player has answered', async () => {
+    await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
+    // Both roster players connect - the auto-advance only fires once *every connected* device has
+    // answered.
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    // One of two answered: nothing scheduled, still collecting.
+    expect(h.scheduler.pending).toBe(0);
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'green');
+    // Everyone has answered now: the grace timer is armed but has not fired yet.
+    expect(h.scheduler.pending).toBe(1);
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+
+    h.scheduler.flush(); // fire the 2s grace timer
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+    // p1 answered correctly, so the reveal already scored the round.
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.scores.p1).toBe(100);
+  });
+
+  it('does not auto-advance while a disconnected player has yet to answer', async () => {
+    await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
+    // Only p1 connects; p2 never joins (a dropped device must not hold the round open, but a
+    // present device that has not answered must).
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    // p2 is connected and silent, so the round stays open with nothing scheduled.
+    expect(h.scheduler.pending).toBe(0);
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+
+    // p2 drops; the remaining connected players have all answered, so it closes.
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p2');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // p1 resubmits, now sole voter
+    expect(h.scheduler.pending).toBe(1);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+  });
+
   it('closes the dispute window on a timer when one is configured', async () => {
     await h.engine.start(
       handoff({ config: { rounds: 1, secrets: ['blue'], disputeWindowMs: 10000 } }),

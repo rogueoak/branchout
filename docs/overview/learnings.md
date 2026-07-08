@@ -198,6 +198,20 @@ Capture durable lessons as they emerge.
   `paused` - it read as a permanent, deliberate stop with no hint of resumption. When the client
   cannot distinguish the causes, write neutral copy true for all of them ("waiting for the host")
   and keep it in one place, not duplicated per layout with drifting wording. (Review `0014`.)
+- **A phase that can end by consensus needs a consensus signal, not just a host tap or a timer.**
+  The engine advanced the answer round on a host tap or the dispute-window timer, but had no read
+  for "everyone has answered", so a finished table sat in `collecting`. Give the module a way to
+  report the natural completion condition (`collectAnswer` -> `allAnswered` over *connected*
+  players) and let the engine close the phase after a short grace timer; count only connected
+  players so a dropped device never holds the round open, and re-check phase/round/pause at fire
+  time so a host advance, pause, or new round cancels a stale timer harmlessly. (Feedback `0015`.)
+- **Store the canonical form; compute the display form at the view - never make storage carry
+  presentation.** Trivia answers are stored lowercase because matching is case-insensitive; the
+  fix for shouty display was a title-case transform in the viewer, not a data change or a second
+  stored field. It is best-effort by nature (casing reconstructed from lowercase cannot recover
+  `CO2`/`iPhone`), and the dispute vote remains the human fallback. A control that only makes sense
+  with other participants (Dispute) gates on the live *connected* count from the roster the client
+  already holds, not on the local player's state alone. (Feedback `0015`.)
 
 ## Client-server contracts
 

@@ -101,7 +101,12 @@ export const stubGame: GameModule = {
     const key = String(ctx.round);
     const round = (scratch.submitted[key] ??= {});
     round[player] = answer;
-    return { scratch: scratch as unknown as Record<string, unknown> };
+    // Mirror the generic "everyone answered" signal the engine auto-advances on (feedback 0015):
+    // true once every connected player has submitted this round.
+    const connected = ctx.players.filter((p) => p.connected);
+    const allAnswered =
+      connected.length > 0 && connected.every((p) => round[p.player] !== undefined);
+    return { scratch: scratch as unknown as Record<string, unknown>, allAnswered };
   },
 
   reveal(ctx: RoundContext): RevealResult {

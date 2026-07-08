@@ -237,7 +237,14 @@ export function createTriviaGame(
       const key = String(ctx.round);
       const round = (scratch.submitted[key] ??= {});
       round[player] = answer;
-      return { scratch: toRecord(scratch) };
+      // Signal the engine to auto-close the round once every connected player has answered. Only
+      // connected players count: a dropped device must not hold the round open (and the roster
+      // always has at least the submitter connected, so this is never a vacuous true on an empty
+      // table).
+      const connected = ctx.players.filter((p) => p.connected);
+      const allAnswered =
+        connected.length > 0 && connected.every((p) => round[p.player] !== undefined);
+      return { scratch: toRecord(scratch), allAnswered };
     },
 
     reveal(ctx: RoundContext): RevealResult {
