@@ -101,12 +101,16 @@ export const stubGame: GameModule = {
     const key = String(ctx.round);
     const round = (scratch.submitted[key] ??= {});
     round[player] = answer;
-    // Mirror the generic "everyone answered" signal the engine auto-advances on (feedback 0015):
-    // true once every connected player has submitted this round.
+    return { scratch: scratch as unknown as Record<string, unknown> };
+  },
+
+  // Mirror the generic "everyone answered" predicate the engine auto-advances on (feedback 0015):
+  // true once every connected player has submitted this round.
+  allAnswered(ctx: RoundContext): boolean {
+    const scratch = asScratch(ctx.scratch);
+    const round = scratch.submitted[String(ctx.round)] ?? {};
     const connected = ctx.players.filter((p) => p.connected);
-    const allAnswered =
-      connected.length > 0 && connected.every((p) => round[p.player] !== undefined);
-    return { scratch: scratch as unknown as Record<string, unknown>, allAnswered };
+    return connected.length > 0 && connected.every((p) => round[p.player] !== undefined);
   },
 
   reveal(ctx: RoundContext): RevealResult {

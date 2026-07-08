@@ -205,6 +205,13 @@ Capture durable lessons as they emerge.
   players) and let the engine close the phase after a short grace timer; count only connected
   players so a dropped device never holds the round open, and re-check phase/round/pause at fire
   time so a host advance, pause, or new round cancels a stale timer harmlessly. (Feedback `0015`.)
+- **Arm a completion-triggered action at *every* event that can satisfy the condition, not just the
+  obvious one.** The auto-advance was armed only on `submitAnswer`, but a *disconnect* also completes
+  the round (the leaver was the last one it waited on) - so a drop-instead-of-answer left the round
+  hanging. When "everyone is done" drives an action, evaluate the predicate on every state change
+  that can flip it (answer *and* disconnect), and make the fire-time guard include `runId` so a
+  restart's reused round number cannot let a stale timer fire on the fresh run. (Engineer review of
+  PR #25, feedback `0015`.)
 - **Store the canonical form; compute the display form at the view - never make storage carry
   presentation.** Trivia answers are stored lowercase because matching is case-insensitive; the
   fix for shouty display was a title-case transform in the viewer, not a data change or a second

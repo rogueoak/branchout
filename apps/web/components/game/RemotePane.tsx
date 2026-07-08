@@ -132,6 +132,13 @@ export function RemotePane({
                 {disputedRound === round ? 'Dispute raised' : 'Dispute'}
               </Button>
             </>
+          ) : wasMarkedWrong ? (
+            // Marked wrong but nobody else is here to vote, so no dispute is possible - say so
+            // plainly rather than dangling a vote that cannot happen for them (feedback 0015).
+            <p className="text-body-sm text-text-muted">
+              Your answer was marked wrong. With no one else here to vote, there is no dispute this
+              round.
+            </p>
           ) : (
             <p className="text-body-sm text-text-muted">
               The answer is on the viewer. A disputed round may go to a vote.

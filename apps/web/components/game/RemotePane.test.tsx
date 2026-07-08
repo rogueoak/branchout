@@ -53,10 +53,12 @@ describe('RemotePane dispute button', () => {
     expect(screen.getByRole('button', { name: 'Dispute' })).toBeDefined();
   });
 
-  it('hides Dispute in a solo game (no other player to vote)', () => {
+  it('hides Dispute in a solo game and explains why to the marked-wrong player', () => {
     const state = disputingState([{ player: 'p1', nickname: 'Ada', connected: true }]);
     renderRemote(state);
     expect(screen.queryByRole('button', { name: 'Dispute' })).toBeNull();
+    // Honest, closed copy instead of a dangling "may go to a vote".
+    expect(screen.getByText(/no one else here to vote/i)).toBeDefined();
   });
 
   it('hides Dispute when the only other player is disconnected', () => {

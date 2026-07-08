@@ -3,10 +3,45 @@
 // and unchanged by this). That is correct for matching but shouty on screen - `the beatles`,
 // `carbon dioxide` - so the viewer runs the canonical answer through this before showing it.
 //
-// Best-effort by nature: casing is being reconstructed from lowercase, so acronyms and stylized
-// forms cannot be recovered (`co2` -> `Co2`, not `CO2`; `iphone` -> `Iphone`). Proper nouns and
-// ordinary words come out right, and the in-play dispute vote remains the human fallback for the
-// rest. This is presentation only; never write the result back into the bank or the comparison.
+// Casing is reconstructed from lowercase, so it is best-effort. A small allowlist (`STYLIZED`) fixes
+// the common trivia forms plain title-casing would mangle - acronyms (`co2` -> `CO2`, `nasa` ->
+// `NASA`) and stylized brands (`iphone` -> `iPhone`). Anything not on the list falls through to the
+// generic word caser, which cannot recover an unlisted acronym; the in-play dispute vote remains the
+// human fallback. This is presentation only; never write the result back into the bank or comparison.
+
+// Lowercase token -> its canonical display form. Keep this to genuinely common, unambiguous trivia
+// answers; when in doubt leave a token off and let the generic caser handle it.
+const STYLIZED: Readonly<Record<string, string>> = {
+  co2: 'CO2',
+  h2o: 'H2O',
+  dna: 'DNA',
+  rna: 'RNA',
+  ph: 'pH',
+  uv: 'UV',
+  usa: 'USA',
+  us: 'US',
+  uk: 'UK',
+  un: 'UN',
+  eu: 'EU',
+  ussr: 'USSR',
+  nasa: 'NASA',
+  fbi: 'FBI',
+  cia: 'CIA',
+  nato: 'NATO',
+  wwi: 'WWI',
+  wwii: 'WWII',
+  tv: 'TV',
+  dc: 'DC',
+  led: 'LED',
+  hiv: 'HIV',
+  aids: 'AIDS',
+  iphone: 'iPhone',
+  ipad: 'iPad',
+  ipod: 'iPod',
+  imac: 'iMac',
+  macos: 'macOS',
+  ios: 'iOS',
+};
 
 // Short function words kept lowercase inside a title (but capitalized if first or last, below).
 const MINOR_WORDS = new Set([
@@ -49,6 +84,9 @@ export function toDisplayAnswer(raw: string): string {
   return words
     .map((word, i) => {
       const isEdge = i === 0 || i === words.length - 1;
+      // A known stylized form (acronym or brand) wins over generic casing.
+      const styled = STYLIZED[word.toLowerCase()];
+      if (styled) return styled;
       // Respect an author-supplied interior capital rather than flattening it.
       if (/[A-Z]/.test(word.slice(1))) return word;
       if (!isEdge && MINOR_WORDS.has(word.toLowerCase())) return word.toLowerCase();

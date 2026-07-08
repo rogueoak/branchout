@@ -306,24 +306,72 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.scores.p1).toBe(100);
   });
 
-  it('does not auto-advance while a disconnected player has yet to answer', async () => {
+  it('lets the host advance before the grace timer, and the stale timer then no-ops', async () => {
     await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
-    // Only p1 connects; p2 never joins (a dropped device must not hold the round open, but a
-    // present device that has not answered must).
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'green');
+    expect(h.scheduler.pending).toBe(1); // grace timer armed
+
+    // The host does not wait for the 2s grace - it advances now.
+    await h.engine.control('r1', STUB_GAME_ID, 'advance');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+
+    // The still-pending grace timer must find the phase already moved on and do nothing (no double
+    // advance out of disputing).
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+  });
+
+  it('does not auto-advance while a connected player is still silent', async () => {
+    await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
     await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
 
     await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
-    // p2 is connected and silent, so the round stays open with nothing scheduled.
+    // p2 is present and has not answered: the round stays open with nothing scheduled.
     expect(h.scheduler.pending).toBe(0);
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+  });
 
-    // p2 drops; the remaining connected players have all answered, so it closes.
+  it('auto-advances when the last silent player drops, without needing a resubmit', async () => {
+    await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    expect(h.scheduler.pending).toBe(0); // p2 still silent
+
+    // p2 drops. Nobody resubmits: the disconnect alone completes the round for the remaining
+    // connected players, so the engine arms the grace timer.
     await h.engine.disconnect('r1', STUB_GAME_ID, 'p2');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // p1 resubmits, now sole voter
     expect(h.scheduler.pending).toBe(1);
     h.scheduler.flush();
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+  });
+
+  it('does not auto-advance on a host drop (the game pauses instead)', async () => {
+    await h.engine.start(
+      handoff({
+        players: [
+          { player: 'p1', nickname: 'Ada', isHost: true },
+          { player: 'p2', nickname: 'Bo' },
+        ],
+        config: { rounds: 1, secrets: ['blue'] },
+      }),
+    );
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'); // host
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'green');
+    expect(h.scheduler.pending).toBe(0); // host p1 still silent
+
+    // The host drops: that pauses the game (spec 0014), so even though the only remaining connected
+    // player has answered, the round must not auto-advance while paused.
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p1');
+    expect(h.scheduler.pending).toBe(0);
+    const state = await h.engine.getState('r1', STUB_GAME_ID);
+    expect(state?.paused).toBe(true);
+    expect(state?.phase).toBe('collecting');
   });
 
   it('closes the dispute window on a timer when one is configured', async () => {

@@ -83,12 +83,6 @@ export interface AdvanceResult {
 /** A callback that only mutates the module's scratch (collecting answers and votes). */
 export interface ScratchResult {
   scratch: Record<string, unknown>;
-  /**
-   * Set by `collectAnswer` when every connected player has now submitted an answer for the current
-   * round. The engine uses it to auto-close the answer round after a short grace period instead of
-   * waiting on a host tap; omitted/false means keep collecting. It is meaningless for `collectVote`.
-   */
-  allAnswered?: boolean;
 }
 
 export interface GameModule {
@@ -103,6 +97,14 @@ export interface GameModule {
 
   /** Record one player's answer for the current round. */
   collectAnswer(ctx: RoundContext, player: string, answer: string): ScratchResult;
+
+  /**
+   * True when the current answer round is complete - every connected player has submitted - so the
+   * engine can auto-close it after a short grace period instead of waiting on a host tap. The engine
+   * asks after each answer *and* when a player disconnects (a drop can complete the round for the
+   * remaining players). Optional: a game that omits it never auto-advances and relies on the host.
+   */
+  allAnswered?(ctx: RoundContext): boolean;
 
   /** Score the round and produce the reveal payload. */
   reveal(ctx: RoundContext): RevealResult;

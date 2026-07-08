@@ -37,6 +37,26 @@ independent of the difficulty-model rework (spec `0016`) and ship first as one s
 3. The remote hides the Dispute button unless at least one *other connected* player is present -
    the same population the dispute vote needs.
 
+## Review refinements (PR #25 personas)
+
+- **Engineer (major):** auto-advance was armed only on `submitAnswer`, so a round hung when the
+  last silent player *dropped* instead of answering. Fixed: the engine also re-checks and arms on
+  `disconnect` while `collecting`. `allAnswered` moved off `ScratchResult` to a `GameModule`
+  method so both paths can ask it. Added a `runId` guard to the fire-time check so a restart's
+  reused round number cannot fire a stale timer.
+- **Tester (minor):** added the host-advances-before-grace stale-timer no-op test and split the
+  disconnect coverage so the "silent player drops -> auto-advances without a resubmit" partition is
+  asserted directly.
+- **User (Player) (minor):** a solo marked-wrong player now gets honest closed copy instead of a
+  dangling "may go to a vote"; a `STYLIZED` allowlist fixes common acronym/brand casing (`CO2`,
+  `NASA`, `iPhone`) that plain title-casing mangled.
+
+Deferred (tracked as follow-ups, non-blocking):
+- **User (Player):** the auto-advance transition is silent on the remote; a "everyone answered -
+  revealing..." cue needs a wire signal (a `state`-frame flag), out of scope for this polish PR.
+- **Architect:** the engine could also no-op a voterless dispute (defense in depth); today the
+  client gate prevents it and `disputeVote` already cannot uphold one with zero connected voters.
+
 ## Learning
 
 - **A phase that can end by consensus needs a consensus signal, not just a host tap or a timer.**

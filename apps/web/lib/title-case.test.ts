@@ -27,8 +27,17 @@ describe('toDisplayAnswer', () => {
     expect(toDisplayAnswer('   ')).toBe('');
   });
 
-  it('cannot recover acronyms from lowercase (documented best-effort limit)', () => {
-    // The bank stores 'co2' lowercase; casing is reconstructed, so this becomes 'Co2', not 'CO2'.
-    expect(toDisplayAnswer('co2')).toBe('Co2');
+  it('fixes common stylized forms via the allowlist', () => {
+    expect(toDisplayAnswer('co2')).toBe('CO2');
+    expect(toDisplayAnswer('nasa')).toBe('NASA');
+    expect(toDisplayAnswer('iphone')).toBe('iPhone');
+    // Applied per word, inside a longer answer.
+    expect(toDisplayAnswer('the uk')).toBe('The UK');
+    expect(toDisplayAnswer('deoxyribonucleic acid dna')).toBe('Deoxyribonucleic Acid DNA');
+  });
+
+  it('cannot recover an unlisted acronym from lowercase (documented best-effort limit)', () => {
+    // Not on the allowlist: casing is reconstructed generically, so this becomes 'Fdic', not 'FDIC'.
+    expect(toDisplayAnswer('fdic')).toBe('Fdic');
   });
 });
