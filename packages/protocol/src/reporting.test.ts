@@ -17,6 +17,24 @@ describe('parseStartHandoff', () => {
     expect(parsed.config).toEqual(config);
   });
 
+  it('carries the host flag through ingress validation, defaulting its absence (spec 0014)', () => {
+    // Ingress must not silently drop isHost, or the engine can never identify the host to pause on
+    // its disconnect - the flag is set upstream but never reaches the roster.
+    const parsed = parseStartHandoff({
+      v: PROTOCOL_VERSION,
+      room: 'r1',
+      game: 'stub',
+      players: [
+        { player: 'p1', nickname: 'Ada', isHost: true },
+        { player: 'p2', nickname: 'Bo' },
+      ],
+      config: {},
+    });
+    expect(parsed.players[0]).toEqual({ player: 'p1', nickname: 'Ada', isHost: true });
+    // A player with no flag stays flag-less (absent, not false) so an older peer is unchanged.
+    expect(parsed.players[1]).toEqual({ player: 'p2', nickname: 'Bo' });
+  });
+
   it('rejects a bad version', () => {
     expect(() => parseStartHandoff({ v: 2, room: 'r', game: 'g', players: [] })).toThrow(
       ProtocolError,

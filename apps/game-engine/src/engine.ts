@@ -104,6 +104,8 @@ export class GameEngine {
         player: p.player,
         nickname: p.nickname,
         connected: false,
+        // Absent flag defaults to false (additive handoff field, spec 0014).
+        isHost: p.isHost ?? false,
       }));
       const cfg = module.configure(req.config, players);
       if (!Number.isInteger(cfg.rounds) || cfg.rounds < 1) {
@@ -115,6 +117,7 @@ export class GameEngine {
         runId: 1,
         phase: 'configuring',
         paused: false,
+        hostPaused: false,
         round: 1,
         rounds: cfg.rounds,
         disputeWindowMs: cfg.disputeWindowMs ?? 0,
@@ -135,12 +138,23 @@ export class GameEngine {
   }
 
   /**
-   * Bind a device to a session; mark the player connected and return a state snapshot. The player
-   * must be in the roster the control-plane handed off - a device cannot inject a new player id or
-   * take over another player's slot. (This is input validation at the boundary; per-player auth
-   * arrives with the control-plane session, a later spec.)
+   * Bind a device to a session; mark the player connected and return the catch-up frames the
+   * joiner needs to render the current phase. The player must be in the roster the control-plane
+   * handed off - a device cannot inject a new player id or take over another player's slot. (This
+   * is input validation at the boundary; per-player auth arrives with the control-plane session, a
+   * later spec.)
+   *
+   * Returns the frames a fresh device would have received had it been subscribed all along, in
+   * reducer-safe order: the persisted `prompt` (which clears any stale reveal/standings on the
+   * client), then `reveal`, then `leaderboard`, then the authoritative `state` last. Without this,
+   * a late joiner or reconnecting device would see only a state snapshot and never the question.
    */
-  async join(room: string, game: string, player: string, nickname: string): Promise<StateMessage> {
+  async join(
+    room: string,
+    game: string,
+    player: string,
+    nickname: string,
+  ): Promise<ServerMessage[]> {
     const key = sessionKey(room, game);
     return this.run(key, async () => {
       const state = await this.requireState(room, game);
@@ -150,11 +164,32 @@ export class GameEngine {
       }
       existing.connected = true;
       if (nickname) existing.nickname = nickname;
+      // A reconnecting host lifts the auto-pause its disconnect set (a deliberate host pause has
+      // hostPaused=false and is left alone). Re-arm a timed window as a manual resume would.
+      if (existing.isHost && state.hostPaused) {
+        state.paused = false;
+        state.hostPaused = false;
+        if (state.phase === 'disputing' || state.phase === 'voting') {
+          this.armWindow(state, this.registry.resolve(state.game), state.phase);
+        }
+      }
       await this.store.save(state);
-      // Others see the (re)connection; the joiner gets the snapshot as its return value.
+      // Others see the (re)connection and any resume; the joiner gets the catch-up frames.
       await this.publish(state, this.stateMessage(state));
-      return this.stateMessage(state);
+      return this.catchUpFrames(state);
     });
+  }
+
+  /** The ordered frames that reconstruct the current phase for a joining device (see {@link join}). */
+  private catchUpFrames(state: SessionState): ServerMessage[] {
+    const frames: ServerMessage[] = [];
+    if (state.prompt !== undefined) frames.push(this.promptMessage(state, state.prompt));
+    if (state.reveal !== undefined) frames.push(this.revealMessage(state, state.reveal));
+    if (state.standings !== undefined) {
+      frames.push(this.leaderboardMessage(state, state.standings));
+    }
+    frames.push(this.stateMessage(state));
+    return frames;
   }
 
   /** Mark a player disconnected (their session state survives for reconnect). */
@@ -166,6 +201,13 @@ export class GameEngine {
       const existing = state.players.find((p) => p.player === player);
       if (!existing || !existing.connected) return;
       existing.connected = false;
+      // The host runs the game (only it advances rounds), so if it drops mid-game the round would
+      // strand. Auto-pause and flag it so the host's reconnect - and only that - lifts it. A game
+      // already paused (manually or otherwise) or finished is left as-is (spec 0014).
+      if (existing.isHost && !state.paused && state.phase !== 'complete') {
+        state.paused = true;
+        state.hostPaused = true;
+      }
       await this.store.save(state);
       await this.publish(state, this.stateMessage(state));
     });
@@ -293,6 +335,11 @@ export class GameEngine {
     const result = module.startRound(this.context(state));
     state.scratch = result.scratch;
     state.phase = 'collecting';
+    // Persist the current prompt for join catch-up; a new round clears the prior reveal/standings
+    // (mirrors what the `prompt` frame does on the client).
+    state.prompt = result.prompt;
+    state.reveal = undefined;
+    state.standings = undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
     await this.publish(state, this.stateMessage(state));
   }
@@ -309,6 +356,7 @@ export class GameEngine {
         state.scratch = result.scratch;
         this.applyScores(state, result.scores);
         state.phase = 'disputing';
+        state.reveal = result.reveal;
         await this.publish(state, this.revealMessage(state, result.reveal));
         await this.publish(state, this.stateMessage(state));
         this.armWindow(state, module, 'disputing');
@@ -332,6 +380,7 @@ export class GameEngine {
         state.scratch = result.scratch;
         this.applyScores(state, result.scores);
         if (result.reveal !== undefined) {
+          state.reveal = result.reveal;
           await this.publish(state, this.revealMessage(state, result.reveal));
         }
         await this.finalizeRound(state, module);
@@ -359,6 +408,7 @@ export class GameEngine {
   private async finalizeRound(state: SessionState, module: GameModule): Promise<void> {
     state.phase = 'leaderboard';
     const standings = module.leaderboard(this.context(state));
+    state.standings = standings;
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
 
@@ -399,6 +449,7 @@ export class GameEngine {
   private async endGame(state: SessionState, module: GameModule): Promise<void> {
     state.phase = 'complete';
     const standings = module.endGame(this.context(state));
+    state.standings = standings;
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
     // Drain any straggler round reports before the completion report.
@@ -426,6 +477,7 @@ export class GameEngine {
     state.rounds = cfg.rounds;
     state.disputeWindowMs = cfg.disputeWindowMs ?? 0;
     state.paused = false;
+    state.hostPaused = false;
     state.scratch = cfg.scratch;
     state.roundScores = [];
     state.disputes = [];
@@ -439,6 +491,7 @@ export class GameEngine {
     // End the game now, report final standings, then drop the session so the room can reset.
     const standings = module.endGame(this.context(state));
     state.phase = 'complete';
+    state.standings = standings;
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
     await this.reportComplete(state, standings);
@@ -485,7 +538,12 @@ export class GameEngine {
       phase: state.phase,
       paused: state.paused,
       round: state.round,
-      players: state.players.map((p) => ({ ...p })),
+      // Project only the public PlayerView fields; `isHost` is engine-internal (spec 0014).
+      players: state.players.map((p) => ({
+        player: p.player,
+        nickname: p.nickname,
+        connected: p.connected,
+      })),
       scores: { ...state.scores },
       disputes: [...state.disputes],
     };

@@ -13,8 +13,12 @@
 
 import type { Phase, PlayerView, ScoreEvent, Standing } from '@branchout/protocol';
 
-/** A player in a session: identity, display name, and live connection state. */
-export type SessionPlayer = PlayerView;
+/**
+ * A player in a session: identity, display name, and live connection state, plus whether they are
+ * the room host (the engine auto-pauses while the host is disconnected - spec 0014). `isHost` is
+ * engine-internal; it is not projected onto the wire `state` frame's `players`.
+ */
+export type SessionPlayer = PlayerView & { isHost?: boolean };
 
 /** What a module reads for a round. `scratch` is the module's own persisted state. */
 export interface RoundContext {

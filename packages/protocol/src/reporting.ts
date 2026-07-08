@@ -25,6 +25,12 @@ import {
 export interface HandoffPlayer {
   player: string;
   nickname: string;
+  /**
+   * True for the room host. Optional and defaulted-absent (additive under the same protocol
+   * version): the engine treats a missing flag as `false`. The engine uses it to auto-pause the
+   * game while the host is disconnected (spec 0014).
+   */
+  isHost?: boolean;
 }
 
 /**
@@ -89,6 +95,10 @@ function requirePlayers(data: Record<string, unknown>): HandoffPlayer[] {
     return {
       player: requireId(entry, 'player'),
       nickname: requireString(entry, 'nickname'),
+      // Carry the optional host flag through ingress validation; absent stays absent so a peer
+      // predating the field is unchanged (spec 0014). Dropping it here would silently un-host the
+      // roster no matter what the sender set.
+      ...(typeof entry.isHost === 'boolean' ? { isHost: entry.isHost } : {}),
     };
   });
 }

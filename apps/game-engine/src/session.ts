@@ -4,7 +4,7 @@
 // and runs against Redis in production behind the same shape.
 
 import type { RedisClientType } from 'redis';
-import type { Phase, RoundReport, ScoreEvent } from '@branchout/protocol';
+import type { Phase, RoundReport, ScoreEvent, Standing } from '@branchout/protocol';
 import type { SessionPlayer } from './lifecycle';
 
 /** The full live state of one game session. */
@@ -24,6 +24,21 @@ export interface SessionState {
   roundScores: ScoreEvent[];
   /** Players whose results are under dispute in the current round. */
   disputes: string[];
+  /**
+   * The frames a joining or reconnecting device needs to render the *current* phase, persisted
+   * because pub/sub only reaches devices subscribed at publish time (a late joiner missed them).
+   * `prompt` is the current round's question, `reveal` its answer/dispute outcome, `standings` the
+   * latest leaderboard/final results. Each is replayed on join and cleared when a new round starts.
+   */
+  prompt?: unknown;
+  reveal?: unknown;
+  standings?: Standing[];
+  /**
+   * True when the engine auto-paused because the host disconnected (spec 0014), distinct from a
+   * deliberate host pause. Only an auto-pause is cleared when the host reconnects, so a manual
+   * pause is never silently undone.
+   */
+  hostPaused: boolean;
   /** Module-owned scratch space. Opaque to the engine. */
   scratch: Record<string, unknown>;
   /** The opaque config the control-plane handed in. */

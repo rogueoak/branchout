@@ -14,6 +14,7 @@ import { recallMembership, rememberMembership, type Membership } from '../../../
 import {
   RoomApiError,
   controlGame,
+  getRoom,
   listMembers,
   selectGame,
   setMode,
@@ -65,15 +66,24 @@ export function RoomClient({ code }: RoomClientProps) {
     return membership?.player;
   }, [isHost, members, membership]);
 
-  // Poll the roster while in the lobby so the host sees joins and the viewer gate updates. During
-  // the game the roster arrives over the engine `state` frame instead.
+  // Poll the roster AND the room status while in the lobby: the roster so the host sees joins and
+  // the viewer gate updates, the room status so a non-host device learns when the host starts the
+  // game. A non-host never runs the host's start handler, so without polling the room it would sit
+  // in the lobby forever while the game runs (it never connects the engine). When status flips to
+  // `running`, `running` turns true, this effect's guard stops the poll, and the engine socket
+  // opens. During the game the roster arrives over the engine `state` frame instead.
   useEffect(() => {
     if (!membership || running) return;
     let active = true;
     const load = async () => {
       try {
-        const next = await listMembers(code);
-        if (active) setMembers(next);
+        const [nextMembers, nextRoom] = await Promise.all([listMembers(code), getRoom(code)]);
+        if (!active) return;
+        setMembers(nextMembers);
+        setRoom(nextRoom);
+        // Persist the fresh status to storage (no React state churn) so a reload lands in the
+        // right view rather than the stale lobby the join step remembered.
+        if (membership) rememberMembership(code, { ...membership, room: nextRoom });
       } catch (error) {
         if (active && error instanceof RoomApiError) setLoadError(error.message);
       }

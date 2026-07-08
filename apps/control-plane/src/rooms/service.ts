@@ -318,6 +318,21 @@ export class RoomService {
    * `state`), so it stays on every row: it is how the host reads its own engine identity from its
    * own row.
    */
+  /**
+   * The current room view for a member. Callers poll this to learn when the host has started the
+   * game (`status` flips to `running`) or returned it to the lobby, so a non-host device - which
+   * never runs the host's start handler - can transition into and out of the game. The caller must
+   * be a member; knowing the code is not enough.
+   */
+  async view(code: string, session: Session): Promise<RoomView> {
+    const room = await this.requireRoom(code);
+    const caller = await this.membership.get(room.id, session.id);
+    if (!caller) {
+      throw new RoomError('forbidden', 'Join the room to see it.');
+    }
+    return toView(room);
+  }
+
   async members(
     code: string,
     session: Session,
@@ -428,5 +443,10 @@ function normalizeMode(mode: Mode | undefined): Mode {
 function toHandoffPlayers(members: readonly RoomMember[]): HandoffPlayer[] {
   return members
     .filter((member) => member.role === 'player')
-    .map((member) => ({ player: member.playerId, nickname: member.nickname }));
+    .map((member) => ({
+      player: member.playerId,
+      nickname: member.nickname,
+      // Carry host identity so the engine can auto-pause while the host is disconnected (0014).
+      isHost: member.isHost,
+    }));
 }

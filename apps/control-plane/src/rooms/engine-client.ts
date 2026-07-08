@@ -51,12 +51,26 @@ export class HttpEngineClient implements EngineClient {
     return headers;
   }
 
+  /**
+   * Perform a fetch, turning a transport failure (the engine is down or unreachable) into an
+   * {@link EngineError} the room route maps to a 502. Without this, a rejected `fetch` is a raw
+   * `TypeError` that escapes the route's error handling as an unlogged 500.
+   */
+  private async request(url: string, body: unknown, what: string): Promise<Response> {
+    try {
+      return await this.fetchImpl(url, {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(body),
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new EngineError(`engine ${what} unreachable: ${detail}`, 502);
+    }
+  }
+
   async start(request: StartHandoffRequest): Promise<StartHandoffResponse> {
-    const response = await this.fetchImpl(`${this.baseUrl}/sessions`, {
-      method: 'POST',
-      headers: this.headers(),
-      body: JSON.stringify(request),
-    });
+    const response = await this.request(`${this.baseUrl}/sessions`, request, 'start');
     if (!response.ok) {
       throw new EngineError(`engine start failed (${response.status})`, response.status);
     }
@@ -64,13 +78,10 @@ export class HttpEngineClient implements EngineClient {
   }
 
   async control(room: string, game: string, action: ControlAction): Promise<void> {
-    const response = await this.fetchImpl(
+    const response = await this.request(
       `${this.baseUrl}/sessions/${encodeURIComponent(room)}/${encodeURIComponent(game)}/control`,
-      {
-        method: 'POST',
-        headers: this.headers(),
-        body: JSON.stringify({ v: PROTOCOL_VERSION, action }),
-      },
+      { v: PROTOCOL_VERSION, action },
+      'control',
     );
     if (!response.ok) {
       throw new EngineError(`engine control failed (${response.status})`, response.status);

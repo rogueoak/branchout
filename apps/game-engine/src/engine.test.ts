@@ -1,7 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { GameCompleteReport, RoundReport, StartHandoffRequest } from '@branchout/protocol';
+import type {
+  GameCompleteReport,
+  RoundReport,
+  ServerMessage,
+  StartHandoffRequest,
+  StateMessage,
+} from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import { GameEngine, NoSessionError, UnknownPlayerError } from './engine';
+
+/** `join` returns the ordered catch-up frames; the authoritative `state` frame is the last one. */
+function stateFrame(frames: ServerMessage[]): StateMessage {
+  const frame = frames.find((f): f is StateMessage => f.type === 'state');
+  if (!frame) throw new Error('join returned no state frame');
+  return frame;
+}
 import { InMemoryPubSub } from './pubsub';
 import { GameRegistry } from './registry';
 import type { ControlPlaneReporter } from './reporter';
@@ -164,7 +177,7 @@ describe('GameEngine lifecycle', () => {
     );
 
     // The non-host device binds to the session with the playerId it was handed - no session id.
-    const joined = await h.engine.join('r1', STUB_GAME_ID, 'kQ9m-tokenA', 'Guest');
+    const joined = stateFrame(await h.engine.join('r1', STUB_GAME_ID, 'kQ9m-tokenA', 'Guest'));
     expect(joined.type).toBe('state');
     expect(joined.players.find((p) => p.player === 'kQ9m-tokenA')?.connected).toBe(true);
 
@@ -222,7 +235,7 @@ describe('GameEngine lifecycle', () => {
     expect(snapshot?.disputes).toEqual(['p2']);
 
     // A device that joins mid-vote (e.g. a non-host reconnecting) sees the disputers too.
-    const joinFrame = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    const joinFrame = stateFrame(await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'));
     expect(joinFrame.disputes).toEqual(['p2']);
 
     // The disputers are a per-round fact: a fresh round starts with none.
@@ -347,13 +360,13 @@ describe('GameEngine lifecycle', () => {
     await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await playRoundNoDispute(h.engine, 'r1');
 
-    const snapshot = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    const snapshot = stateFrame(await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'));
     expect(snapshot).toMatchObject({ type: 'state', phase: 'leaderboard', scores: { p1: 100 } });
     const player = snapshot.players.find((p) => p.player === 'p1');
     expect(player?.connected).toBe(true);
 
     await h.engine.disconnect('r1', STUB_GAME_ID, 'p1');
-    const again = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    const again = stateFrame(await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'));
     expect(again.scores.p1).toBe(100); // score recovered after a reconnect
   });
 
@@ -409,5 +422,90 @@ describe('GameEngine lifecycle', () => {
     await expect(h.engine.control('ghost', STUB_GAME_ID, 'advance')).rejects.toThrow(
       NoSessionError,
     );
+  });
+});
+
+describe('join catch-up', () => {
+  let h: Harness;
+  beforeEach(() => {
+    h = harness();
+  });
+
+  it('replays the current prompt so a device that joins mid-round sees the question', async () => {
+    // The prompt is published at start, before any device is subscribed - so a joiner only sees
+    // the question if join replays it. Without the catch-up the joiner would get state only.
+    await h.engine.start(handoff({ config: { rounds: 2, secrets: ['blue', 'green'] } }));
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    const prompt = frames.find((f) => f.type === 'prompt');
+    expect(prompt).toBeDefined();
+    expect(prompt).toMatchObject({ round: 1, prompt: { round: 1, question: 'stub round 1' } });
+    // The state frame is last so the client's phase is authoritative after the replay.
+    expect(frames.at(-1)?.type).toBe('state');
+  });
+
+  it('replays reveal and standings when a device joins after the round closes', async () => {
+    await h.engine.start(handoff({ config: { rounds: 2, secrets: ['blue', 'green'] } }));
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1'); // -> leaderboard
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    expect(frames.some((f) => f.type === 'reveal')).toBe(true);
+    expect(frames.some((f) => f.type === 'leaderboard')).toBe(true);
+    expect(stateFrame(frames).phase).toBe('leaderboard');
+  });
+
+  it('drops the stale reveal from catch-up once the next round opens', async () => {
+    await h.engine.start(handoff({ config: { rounds: 2, secrets: ['blue', 'green'] } }));
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1'); // round 1 -> leaderboard
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> round 2 collecting
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    // A new round cleared the prior reveal/standings; only the round-2 prompt replays.
+    expect(frames.some((f) => f.type === 'reveal')).toBe(false);
+    expect(frames.some((f) => f.type === 'leaderboard')).toBe(false);
+    expect(frames.find((f) => f.type === 'prompt')).toMatchObject({ round: 2 });
+  });
+});
+
+describe('host-disconnect auto-pause (spec 0014)', () => {
+  let h: Harness;
+  beforeEach(() => {
+    h = harness();
+  });
+
+  // p1 is the host, p2 a regular player.
+  const hosted = () =>
+    handoff({
+      players: [
+        { player: 'p1', nickname: 'Ada', isHost: true },
+        { player: 'p2', nickname: 'Bo' },
+      ],
+      config: { rounds: 2, secrets: ['blue', 'green'] },
+    });
+
+  it('pauses a live game when the host disconnects and resumes when it reconnects', async () => {
+    await h.engine.start(hosted());
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p1');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.paused).toBe(true);
+
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.paused).toBe(false);
+  });
+
+  it('does not pause when a non-host disconnects', async () => {
+    await h.engine.start(hosted());
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p2');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.paused).toBe(false);
+  });
+
+  it('does not undo a deliberate host pause when a non-host reconnects', async () => {
+    await h.engine.start(hosted());
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    await h.engine.control('r1', STUB_GAME_ID, 'pause'); // host pauses on purpose
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p2');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo'); // non-host returns
+    // The manual pause (hostPaused=false) is left intact.
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.paused).toBe(true);
   });
 });

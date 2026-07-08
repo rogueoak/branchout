@@ -72,6 +72,8 @@ services:
       PORT: 4000
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
+      # The engine is a separate container; reach it by service name, not the localhost default.
+      ENGINE_URL: http://game-engine:4001
     ports:
       - '${CONTROL_PLANE_PORT:-4000}:4000'
     depends_on:
