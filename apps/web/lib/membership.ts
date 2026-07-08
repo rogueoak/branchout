@@ -9,6 +9,8 @@ import type { Mode, Role, RoomView } from './room-api';
 /** What the browser remembers about the current player between the join step and the room page. */
 export interface Membership {
   role: Role;
+  /** True when this browser created the room and holds the host powers (controls, kick). */
+  isHost?: boolean;
   mode?: Mode;
   nickname: string;
   /**

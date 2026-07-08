@@ -24,6 +24,9 @@ interface RemotePaneProps {
    * reads from the viewer pane beside it.
    */
   showResults?: boolean;
+  /** True when the controller belongs to the host, who advances rounds itself (spec 0013). Used to
+   * make between-round copy self-aware ("Tap Next when you're ready") instead of "waiting". */
+  isHost?: boolean;
   onAnswer: (round: number, answer: string) => void;
   onDispute: (round: number) => void;
   onBallot: (round: number, target: string, agree: boolean) => void;
@@ -37,6 +40,7 @@ export function RemotePane({
   state,
   me,
   showResults = false,
+  isHost = false,
   onAnswer,
   onDispute,
   onBallot,
@@ -160,7 +164,9 @@ export function RemotePane({
         <div className="flex flex-col gap-3">
           <Leaderboard standings={state.standings} me={me} />
           <p className="text-body-sm text-text-muted">
-            Waiting for the host to start the next round.
+            {isHost
+              ? 'Tap Next when you are ready for the next round.'
+              : 'Waiting for the host to start the next round.'}
           </p>
         </div>
       ) : (

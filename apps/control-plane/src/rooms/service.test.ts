@@ -6,6 +6,7 @@ import { InMemoryLedgerRepository } from '../credits/repository.memory';
 import { StaticTierProvider, type Tier } from '../credits/tiers';
 import type { Session } from '../sessions/session';
 import { FakeEngineClient } from './engine-client.fake';
+import { newPlayerId } from './membership';
 import { InMemoryMembershipStore } from './membership.memory';
 import { InMemoryRoomRepository } from './repository.memory';
 import { RoomError, RoomService } from './service';
@@ -35,16 +36,29 @@ async function standing(player: string, rank: number): Promise<Standing> {
 }
 
 describe('room creation and hosting', () => {
-  it('a signed-in host creates a room with a 5-char code, a share link, and joins as host', async () => {
+  it('a signed-in host creates a room and joins as a full player with the host flag and a mode', async () => {
     const { service, membership } = harness();
     const host = account();
-    const room = await service.createRoom(host);
+    const { room, playerId } = await service.createRoom(host);
     expect(room.code).toMatch(/^[A-Z2-9]{5}$/);
     expect(room.shareLink).toBe(`/join?code=${room.code}`);
     expect(room.status).toBe('lobby');
     const members = await membership.list(room.id);
     expect(members).toHaveLength(1);
-    expect(members[0]).toMatchObject({ role: 'host', sessionId: host.id });
+    // The host is a player (so it flows through the roster/standings) with isHost true, a default
+    // mode (interactive; the client refines it from the device via setMode), and is connected -
+    // presence tracks it like any player.
+    expect(members[0]).toMatchObject({
+      role: 'player',
+      isHost: true,
+      mode: 'interactive',
+      sessionId: host.id,
+      connected: true,
+    });
+    // createRoom echoes the host's public playerId (like join) so the browser has its engine
+    // identity without waiting on the members list - it matches the stored host row.
+    expect(playerId).toBeTruthy();
+    expect(playerId).toBe(members[0]!.playerId);
   });
 
   it('an anonymous session cannot host', async () => {
@@ -56,7 +70,7 @@ describe('room creation and hosting', () => {
 describe('joining', () => {
   it('anonymous users join as players or observers, each with a per-game nickname', async () => {
     const { service, membership } = harness();
-    const room = await service.createRoom(account());
+    const { room } = await service.createRoom(account());
     await service.join(room.code, anon(), { role: 'player', nickname: 'Speedy', mode: 'remote' });
     await service.join(room.code, anon(), { role: 'observer', nickname: 'Watcher' });
     const members = await membership.list(room.id);
@@ -69,7 +83,7 @@ describe('joining', () => {
 
   it('rejects an empty nickname and an unknown code', async () => {
     const { service } = harness();
-    const room = await service.createRoom(account());
+    const { room } = await service.createRoom(account());
     await expect(
       service.join(room.code, anon(), { role: 'player', nickname: '' }),
     ).rejects.toMatchObject({ code: 'invalid' });
@@ -80,7 +94,7 @@ describe('joining', () => {
 
   it('mints a public playerId per member, distinct from the session id, and returns it on join', async () => {
     const { service, membership } = harness();
-    const room = await service.createRoom(account());
+    const { room } = await service.createRoom(account());
     const player = anon('Speedy');
     const { playerId } = await service.join(room.code, player, {
       role: 'player',
@@ -97,7 +111,7 @@ describe('joining', () => {
 
   it('keeps a session its playerId across a rejoin', async () => {
     const { service } = harness();
-    const room = await service.createRoom(account());
+    const { room } = await service.createRoom(account());
     const player = anon('Sam');
     const first = await service.join(room.code, player, { role: 'player', nickname: 'Sam' });
     const second = await service.join(room.code, player, { role: 'player', nickname: 'Sam' });
@@ -109,7 +123,7 @@ describe('kick', () => {
   it('removes a member, blocks their rejoin, and leaves the code working for others', async () => {
     const { service, membership } = harness();
     const host = account();
-    const room = await service.createRoom(host);
+    const { room } = await service.createRoom(host);
     const victim = anon('Victim');
     await service.join(room.code, victim, { role: 'player', nickname: 'Victim' });
 
@@ -131,7 +145,7 @@ describe('kick', () => {
   it('only the host can kick, and the host cannot kick themselves', async () => {
     const { service } = harness();
     const host = account();
-    const room = await service.createRoom(host);
+    const { room } = await service.createRoom(host);
     const player = anon('P');
     await service.join(room.code, player, { role: 'player', nickname: 'P' });
     // A non-host cannot kick.
@@ -143,18 +157,189 @@ describe('kick', () => {
   });
 });
 
+describe('host plays as a player', () => {
+  it('carries the host into the engine handoff roster (playerId + nickname), excluding observers', async () => {
+    const { service, membership, engine } = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'trivia', {});
+    // An observer that must NOT reach the engine roster.
+    await service.join(room.code, anon(), { role: 'observer', nickname: 'Watcher' });
+    // The interactive host is a viewer, so a solo host can start.
+    await service.start(room.code, host, 1);
+
+    // Seam: the host's public playerId + nickname reach the engine, and it is not dropped.
+    const stored = await membership.get(room.id, host.id);
+    const roster = engine.starts[0]!.players;
+    const hostSlot = roster.find((p) => p.player === stored?.playerId);
+    expect(hostSlot).toEqual({ player: stored?.playerId, nickname: 'Ada' });
+    // The observer is excluded from the roster.
+    expect(roster.some((p) => p.nickname === 'Watcher')).toBe(false);
+  });
+
+  it('scores the host end to end: reaches the engine roster and earns stars by final rank', async () => {
+    // A full arc, not just the input seam: the host plays a game and, ranked first in the final
+    // standings, is awarded the winner's stars. A regression that drops the host from scoring
+    // (roster or standings) breaks this.
+    const { service, repo, engine } = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    const { room, playerId } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'trivia', {});
+    const other = anon('Bo');
+    const { playerId: bo } = await service.join(room.code, other, {
+      role: 'player',
+      nickname: 'Bo',
+      mode: 'remote',
+    });
+    await service.start(room.code, host, 1);
+    // The host is a scored participant in the roster the engine received.
+    expect(engine.starts[0]!.players.some((p) => p.player === playerId)).toBe(true);
+
+    // The engine reports the host first in the final standings; recordGameComplete converts rank
+    // to stars and persists them (repo.recordedGames mirrors the Postgres store's stars column).
+    const report: GameCompleteReport = {
+      v: PROTOCOL_VERSION,
+      room: room.id,
+      game: 'trivia',
+      gameId: 'g1',
+      standings: [
+        { player: playerId, nickname: 'Ada', score: 30, rank: 1 },
+        { player: bo, nickname: 'Bo', score: 10, rank: 2 },
+      ],
+    };
+    expect(await service.recordGameComplete(report)).toBe('recorded');
+    const recorded = repo.recordedGames();
+    expect(recorded).toHaveLength(1);
+    // The host earns the winner's three stars for rank 1 - the user-visible outcome, not just the
+    // handoff input.
+    expect(recorded[0]!.stars.find((s) => s.player === playerId)).toMatchObject({
+      rank: 1,
+      stars: 3,
+    });
+  });
+
+  it('lets a solo interactive host satisfy the viewer gate and start', async () => {
+    const { service, engine } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'trivia', {});
+    // No other members at all - the interactive host is the only viewer.
+    await service.start(room.code, host, 1);
+    expect(engine.starts).toHaveLength(1);
+  });
+
+  it('blocks a remote-only host with no other viewer', async () => {
+    const { service, engine } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'trivia', {});
+    // The host switches to remote, so it is no longer a viewer, and no one else is present.
+    await service.setMode(room.code, host, 'remote');
+    await expect(service.start(room.code, host, 1)).rejects.toMatchObject({ code: 'no_viewer' });
+    expect(engine.starts).toHaveLength(0);
+    // Add a remote player: still no viewer.
+    await service.join(room.code, anon(), { role: 'player', nickname: 'R', mode: 'remote' });
+    await expect(service.start(room.code, host, 1)).rejects.toMatchObject({ code: 'no_viewer' });
+  });
+
+  it('lets the host set and change its mode', async () => {
+    const { service, membership } = harness();
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    expect((await membership.get(room.id, host.id))?.mode).toBe('interactive');
+    await service.setMode(room.code, host, 'remote');
+    expect((await membership.get(room.id, host.id))?.mode).toBe('remote');
+  });
+
+  it('keeps a host a host across a rejoin, even if it rejoins as an observer', async () => {
+    const { service, membership } = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    const { room, playerId } = await service.createRoom(host);
+    // The host re-enters through the join path (e.g. the Rejoin link) asking to observe. The room
+    // is the authority for host status, so the request cannot demote the host: it stays a player
+    // with isHost, keeps its playerId, and holds its chosen mode.
+    await service.setMode(room.code, host, 'remote');
+    const rejoin = await service.join(room.code, host, { role: 'observer', nickname: 'Ada' });
+    expect(rejoin.playerId).toBe(playerId);
+    const stored = await membership.get(room.id, host.id);
+    expect(stored).toMatchObject({ role: 'player', isHost: true, mode: 'remote', playerId });
+    // And the host is still a viewer-capable participant in the roster machinery: it can flip back
+    // to interactive and start solo, which a demoted observer/host could not.
+    await service.setMode(room.code, host, 'interactive');
+    await service.selectGame(room.code, host, 'trivia', {});
+    await expect(service.start(room.code, host, 1)).resolves.toBeTruthy();
+  });
+
+  it('shows the host every member sessionId but redacts it from a non-host player', async () => {
+    const { service } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    const player = anon('Sam');
+    await service.join(room.code, player, { role: 'player', nickname: 'Sam', mode: 'remote' });
+
+    const hostView = await service.members(room.code, host);
+    expect(hostView.every((m) => typeof m.sessionId === 'string')).toBe(true);
+    // The host row is flagged isHost so the browser can find its own engine identity.
+    expect(hostView.find((m) => m.isHost)?.nickname).toBe('Host');
+
+    const playerView = await service.members(room.code, player);
+    expect(playerView.every((m) => m.sessionId === undefined)).toBe(true);
+  });
+
+  it('will not kick the host but will kick a player', async () => {
+    const { service, membership } = harness();
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    const player = anon('P');
+    await service.join(room.code, player, { role: 'player', nickname: 'P' });
+    // The host cannot kick itself (self-kick guard), so the host is not removable.
+    await expect(service.kick(room.code, host, host.id)).rejects.toMatchObject({ code: 'invalid' });
+    expect(await membership.get(room.id, host.id)).not.toBeNull();
+    // A regular player still is kickable.
+    await service.kick(room.code, host, player.id);
+    expect(await membership.get(room.id, player.id)).toBeNull();
+  });
+
+  it('refuses to kick an isHost member held under a different session id', async () => {
+    const { service, membership } = harness();
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    // A second membership row that is isHost under a DIFFERENT session id (the same host account
+    // re-entering on another device/tab). This exercises the isHost guard itself, not the
+    // self-kick guard - targetSessionId is not the caller's session id.
+    const secondSession = 'sess_host_2';
+    await membership.put(room.id, {
+      sessionId: secondSession,
+      playerId: newPlayerId(),
+      accountId: 'host_acct',
+      role: 'player',
+      isHost: true,
+      mode: 'interactive',
+      nickname: 'Host',
+      connected: true,
+    });
+    await expect(service.kick(room.code, host, secondSession)).rejects.toMatchObject({
+      code: 'invalid',
+    });
+    // The isHost row is not removed.
+    expect(await membership.get(room.id, secondSession)).not.toBeNull();
+  });
+});
+
 describe('start rule and gates', () => {
   async function readyRoom(tiers: Record<string, Tier> = {}) {
     const h = harness(tiers);
     const host = account('Host', 'host_acct');
-    const room = await h.service.createRoom(host);
+    const { room } = await h.service.createRoom(host);
     await h.service.selectGame(room.code, host, 'trivia', { questions: 5 });
     return { ...h, host, room };
   }
 
   it('blocks start with no viewer (only remote players) and allows it once a viewer is present', async () => {
     const { service, room, host, engine } = await readyRoom();
-    // A single remote player is not a viewer.
+    // The host defaults to interactive (a viewer). Switch it to remote so this exercises the gate:
+    // with only remote players and no viewer at all, a start must be blocked.
+    await service.setMode(room.code, host, 'remote');
     await service.join(room.code, anon(), {
       role: 'player',
       nickname: 'RemoteOnly',
@@ -183,7 +368,7 @@ describe('start rule and gates', () => {
   it('refuses to start without a selected game', async () => {
     const { service } = harness();
     const host = account();
-    const room = await service.createRoom(host);
+    const { room } = await service.createRoom(host);
     await service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
     await expect(service.start(room.code, host, 1)).rejects.toMatchObject({ code: 'no_game' });
   });
@@ -252,7 +437,7 @@ describe('members roster', () => {
   it('requires membership and hides sessionId from non-host members', async () => {
     const h = harness({ host_acct: 'party' });
     const host = account('Host', 'host_acct');
-    const room = await h.service.createRoom(host);
+    const { room } = await h.service.createRoom(host);
     const player = anon();
     await h.service.join(room.code, player, { role: 'player', nickname: 'Sam', mode: 'remote' });
 
@@ -271,7 +456,7 @@ describe('host controls', () => {
   async function runningRoom() {
     const h = harness({ host_acct: 'party' });
     const host = account('Host', 'host_acct');
-    const room = await h.service.createRoom(host);
+    const { room } = await h.service.createRoom(host);
     await h.service.selectGame(room.code, host, 'trivia', {});
     await h.service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
     await h.service.start(room.code, host, 1);
@@ -300,7 +485,7 @@ describe('round and game-complete intake', () => {
   async function runningRoom(tier: Tier = 'free') {
     const h = harness({ host_acct: tier });
     const host = account('Host', 'host_acct');
-    const room = await h.service.createRoom(host);
+    const { room } = await h.service.createRoom(host);
     await h.service.selectGame(room.code, host, 'trivia', {});
     await h.service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
     await h.service.start(room.code, host, 5);

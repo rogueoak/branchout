@@ -6,10 +6,11 @@
 
 const CONTROL_PLANE_URL = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? 'http://localhost:4000';
 
-/** A member's role in a room. */
-export type Role = 'host' | 'player' | 'observer';
+/** A member's role in a room. The host is a player too - the `isHost` flag on {@link RoomMember}
+ * carries the host privilege, not a role. */
+export type Role = 'player' | 'observer';
 
-/** A player's mode; observers and the host have none. */
+/** A player's mode; observers have none. The host is a player, so it picks a mode too. */
 export type Mode = 'interactive' | 'remote';
 
 /** A room as the control-plane returns it. */
@@ -29,6 +30,8 @@ export interface RoomMember {
   playerId: string;
   accountId?: string;
   role: Role;
+  /** True for the room's host: a player that also holds the admin powers (controls, kick). */
+  isHost: boolean;
   mode?: Mode;
   nickname: string;
   connected: boolean;
@@ -107,16 +110,21 @@ export async function startAnonymousSession(code: string, displayName: string): 
   });
 }
 
-/** Host creates a room; returns the room with its share link. */
-export async function createRoom(): Promise<RoomView> {
-  const { room } = await request<{ room: RoomView }>('/rooms', { method: 'POST' });
-  return room;
-}
-
-/** The room the caller joined, plus their own public engine `playerId` (used to join the engine). */
+/** The room the caller created/joined, plus their own public engine `playerId` (used to join the
+ * engine). Shared shape for both create and join. */
 export interface JoinResult {
   room: RoomView;
   playerId: string;
+}
+
+/**
+ * Host creates a room; returns the room with its share link and the host's own public engine
+ * `playerId`. The host needs its `playerId` to connect to the engine, so - like `join` - `createRoom`
+ * echoes it back, letting a host reload mid-game without being bounced to rejoin.
+ */
+export async function createRoom(): Promise<JoinResult> {
+  const { room, playerId } = await request<JoinResult>('/rooms', { method: 'POST' });
+  return { room, playerId };
 }
 
 /** Join a room by code as a player or observer, with a per-game nickname and (for a player) mode. */

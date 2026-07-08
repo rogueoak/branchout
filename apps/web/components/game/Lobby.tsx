@@ -35,7 +35,9 @@ function hasViewer(members: RoomMember[]): boolean {
 }
 
 function memberLabel(member: RoomMember): string {
-  if (member.role === 'host') return 'Host';
+  // The host is always a player with a mode; surface it beside the Host badge so the roster shows
+  // whether the host is holding the shared viewer (interactive) or is a controller only (remote).
+  if (member.isHost) return `Host - ${member.mode === 'remote' ? 'Remote' : 'Interactive'}`;
   if (member.role === 'observer') return 'Observer';
   return member.mode === 'remote' ? 'Remote' : 'Interactive';
 }
@@ -84,7 +86,7 @@ export function Lobby({
                 <span className="text-body text-text">{member.nickname}</span>
                 <Badge variant="neutral">{memberLabel(member)}</Badge>
               </span>
-              {isHost && member.role !== 'host' && member.sessionId ? (
+              {isHost && !member.isHost && member.sessionId ? (
                 <Button
                   type="button"
                   variant="ghost"
@@ -139,6 +141,10 @@ export function Lobby({
             onChange={onConfigChange}
             onStart={onStart}
             hasViewer={hasViewer(members)}
+            // When the only would-be viewer is the host itself (a remote host with no other
+            // viewer), the host can fix the blocked start on its own by switching to interactive -
+            // so point the copy at the host's own mode toggle instead of "wait for a viewer".
+            hostCanSelfFix={mode === 'remote'}
             starting={starting}
             serverReason={startError}
           />

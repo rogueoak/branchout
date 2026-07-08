@@ -28,6 +28,12 @@ interface HostConfigPanelProps {
   onStart: () => void;
   /** True once at least one viewer (observer or interactive player) is present. */
   hasViewer: boolean;
+  /**
+   * True when the blocked-start can be fixed by the host alone - a remote host that is the only
+   * viewer-capable device. Then the "needs a viewer" copy points at the host's own mode toggle
+   * ("switch yourself to Interactive") instead of "wait for someone to join".
+   */
+  hostCanSelfFix?: boolean;
   /** A start in flight - disables the button and shows a busy label. */
   starting: boolean;
   /** The server's reason a start was refused (e.g. insufficient credits), shown as-is. */
@@ -43,6 +49,7 @@ export function HostConfigPanel({
   onChange,
   onStart,
   hasViewer,
+  hostCanSelfFix = false,
   starting,
   serverReason,
 }: HostConfigPanelProps) {
@@ -51,8 +58,13 @@ export function HostConfigPanel({
 
   // One plain reason the start is blocked, in priority order. `serverReason` (e.g. an
   // affordability refusal the server returned) is shown once known, after the client-side gates.
+  // When no viewer is present, the copy is host-aware: a remote host that is the only
+  // viewer-capable device can fix it itself, so point at its own toggle rather than "wait".
+  const noViewerReason = hostCanSelfFix
+    ? "You're the only viewer-capable device here. Switch yourself to Interactive above to start."
+    : 'Waiting for a viewer to join - an observer or an interactive player.';
   const blockedReason = !hasViewer
-    ? 'Waiting for a viewer to join - an observer or an interactive player.'
+    ? noViewerReason
     : !configValid
       ? 'Fix the game settings to start.'
       : serverReason;
