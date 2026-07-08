@@ -14,9 +14,20 @@ import {
  */
 export class InMemoryRoomRepository implements RoomRepository {
   private readonly byId = new Map<string, Room>();
-  private readonly rounds = new Set<string>();
-  private readonly games = new Set<string>();
+  private readonly rounds = new Map<string, RecordedRound>();
+  private readonly games = new Map<string, RecordedGame>();
   private counter = 0;
+
+  /** Test accessor: the completed games recorded so far (with their standings + stars), so a test
+   * can assert the awarded stars the way the Postgres store persists them. */
+  recordedGames(): RecordedGame[] {
+    return [...this.games.values()];
+  }
+
+  /** Test accessor: the rounds recorded so far (with their scoring + standings). */
+  recordedRounds(): RecordedRound[] {
+    return [...this.rounds.values()];
+  }
 
   async create(hostAccountId: string, code: string): Promise<Room> {
     for (const room of this.byId.values()) {
@@ -78,7 +89,7 @@ export class InMemoryRoomRepository implements RoomRepository {
     if (this.rounds.has(round.roundId)) {
       return false;
     }
-    this.rounds.add(round.roundId);
+    this.rounds.set(round.roundId, round);
     return true;
   }
 
@@ -86,7 +97,7 @@ export class InMemoryRoomRepository implements RoomRepository {
     if (this.games.has(game.gameId)) {
       return false;
     }
-    this.games.add(game.gameId);
+    this.games.set(game.gameId, game);
     return true;
   }
 }

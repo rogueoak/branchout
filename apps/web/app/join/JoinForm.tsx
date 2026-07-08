@@ -7,7 +7,7 @@
 
 import { Button, Input, Label, buttonVariants, inputVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { Wordmark } from '../../components/Wordmark';
 import { defaultMode } from '../../lib/default-mode';
 import { rememberMembership } from '../../lib/membership';
@@ -28,12 +28,18 @@ export function JoinForm({ initialCode }: JoinFormProps) {
   const [code, setCode] = useState(initialCode);
   const [nickname, setNickname] = useState('');
   const [role, setRole] = useState<Role>('player');
-  // Default the mode from the device (a phone -> remote, a TV -> interactive); always overridable.
-  const [mode, setMode] = useState<Mode>(() =>
-    defaultMode(typeof navigator === 'undefined' ? '' : navigator.userAgent),
-  );
+  // Start on a stable, SSR-safe default so the server and first client render agree (no hydration
+  // mismatch), then refine to the device default (a phone -> remote, a TV -> interactive) once
+  // mounted. Always overridable by the player.
+  const [mode, setMode] = useState<Mode>('interactive');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Apply the device-aware default after mount, where `navigator` is available (it is not during
+  // SSR). Runs once; a later user choice sticks because this effect does not re-run.
+  useEffect(() => {
+    setMode(defaultMode(navigator.userAgent));
+  }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

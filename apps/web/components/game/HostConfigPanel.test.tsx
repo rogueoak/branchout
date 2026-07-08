@@ -8,11 +8,13 @@ import { HostConfigPanel } from './HostConfigPanel';
 function Harness({
   initial = defaultTriviaConfig(),
   hasViewer = true,
+  hostCanSelfFix = false,
   serverReason = null,
   onStart = () => {},
 }: {
   initial?: TriviaHostConfig;
   hasViewer?: boolean;
+  hostCanSelfFix?: boolean;
   serverReason?: string | null;
   onStart?: () => void;
 }) {
@@ -23,6 +25,7 @@ function Harness({
       onChange={setValue}
       onStart={onStart}
       hasViewer={hasViewer}
+      hostCanSelfFix={hostCanSelfFix}
       starting={false}
       serverReason={serverReason}
     />
@@ -54,6 +57,13 @@ describe('HostConfigPanel', () => {
       true,
     );
     expect(screen.getByText(/Waiting for a viewer/)).toBeDefined();
+  });
+
+  it('points a remote host that is the only viewer-capable device at its own toggle', () => {
+    render(<Harness hasViewer={false} hostCanSelfFix />);
+    // Instead of "wait for a viewer", the copy tells the host how to fix the block itself.
+    expect(screen.getByText(/Switch yourself to Interactive/)).toBeDefined();
+    expect(screen.queryByText(/Waiting for a viewer/)).toBeNull();
   });
 
   it('shows a field error and blocks start when rounds are out of range', () => {

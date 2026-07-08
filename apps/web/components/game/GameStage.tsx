@@ -44,28 +44,39 @@ function HostControls({
   onControl: (action: HostControl) => void;
 }) {
   const done = isComplete(state);
+  // While a question is answerable the player's own "Submit" is the clear primary action, so the
+  // advance control is de-emphasized (outline) to avoid two competing primaries for a remote host
+  // mid-question. A labelled, bordered bar separates the host controls from the player's remote.
+  const answerable = state.phase === 'collecting';
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
-      {done ? (
-        <Button type="button" variant="primary" onClick={() => onControl('exit')}>
-          Back to lobby
-        </Button>
-      ) : (
-        <>
-          <Button type="button" variant="primary" onClick={() => onControl('advance')}>
-            Next
+    <div className="flex flex-col gap-2 border-t border-border pt-4">
+      <p className="text-body-sm font-medium text-text-muted">Host controls</p>
+      <div className="flex flex-wrap items-center gap-2">
+        {done ? (
+          <Button type="button" variant="primary" onClick={() => onControl('exit')}>
+            Back to lobby
           </Button>
-          <Button type="button" variant="outline" onClick={() => onControl('pause')}>
-            {state.paused ? 'Resume' : 'Pause'}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => onControl('restart')}>
-            Restart
-          </Button>
-          <Button type="button" variant="ghost" onClick={() => onControl('exit')}>
-            Exit
-          </Button>
-        </>
-      )}
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant={answerable ? 'outline' : 'primary'}
+              onClick={() => onControl('advance')}
+            >
+              Next
+            </Button>
+            <Button type="button" variant="outline" onClick={() => onControl('pause')}>
+              {state.paused ? 'Resume' : 'Pause'}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => onControl('restart')}>
+              Restart
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => onControl('exit')}>
+              Exit
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -120,6 +131,7 @@ export function GameStage({
               // A remote-only player has no viewer pane, so the controller must also show the
               // between-round leaderboard and the final results.
               showResults={!viewerVisible}
+              isHost={isHost}
               onAnswer={onAnswer}
               onDispute={onDispute}
               onBallot={onBallot}

@@ -339,9 +339,12 @@ describe('POST /rooms (create + share link)', () => {
     const cookie = await withHost(app);
     const res = await app.inject({ method: 'POST', url: '/rooms', headers: { cookie } });
     expect(res.statusCode).toBe(201);
-    const { room } = res.json();
+    const { room, playerId } = res.json();
     expect(room.code).toMatch(/^[A-Z2-9]{5}$/);
     expect(room.shareLink).toBe(`/join?code=${room.code}`);
+    // Create echoes the host's public playerId (its engine identity), like join does.
+    expect(typeof playerId).toBe('string');
+    expect(playerId.length).toBeGreaterThan(0);
     await app.close();
   });
 

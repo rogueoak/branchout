@@ -122,6 +122,13 @@ Capture durable lessons as they emerge.
   untouched while the flag localizes the admin concern (controls, kick, sessionId visibility) to the
   few sites that actually differ. Prefer a flag when the extra state is independent of the enum it
   was crammed into. (Spec `0013`.)
+- **When a create path sets an invariant flag, every re-entry path must preserve or re-derive it -
+  from the authoritative source, not the request.** `createRoom` set `isHost: true`, but the
+  rejoin-through-`join` path rebuilt the member and hardcoded `isHost: false`, so a host re-entering
+  (even as an observer) was demoted out of the roster while Postgres `hostAccountId` still authorized
+  it - breaking `isHost => role === 'player'`. Re-derive the flag in `join` from the room
+  (`session.accountId === room.hostAccountId`) rather than trusting `input`. A caller can shape the
+  request; they cannot shape the authoritative record. (Review `0013`.)
 - **Place a module by the concern it owns, not the file you were editing.** Service-wide infra
   (the migration runner) and cross-domain rules (display-name validation) belong in neutral
   homes (`db/`, `validation/`), not inside the first domain that needed them (`accounts/`) -
@@ -148,6 +155,12 @@ Capture durable lessons as they emerge.
   theme (no hardcoded colors), keyboard/screen-reader accessible, and testable with
   `getByLabelText` + `fireEvent.change`. Reach for the compound component only when you need its
   custom rendering. (Spec `0010`.)
+- **A device-aware default must not silently break a gate; the blocked-state copy must tell the
+  actor how to self-fix.** Defaulting a phone host to `remote` (not a viewer) let a solo/all-phones
+  party hit the "at least one viewer" start gate showing "Waiting for a viewer to join" - misleading,
+  since the host could fix it by switching itself to Interactive. Make the blocked copy aware of the
+  actor: when the caller is the one who can lift the gate, point at their own control instead of
+  telling them to wait. (Review `0013`.)
 
 ## Client-server contracts
 
@@ -200,3 +213,9 @@ Capture durable lessons as they emerge.
   the member's `playerId`, and is NOT the `sessionId`). Testing "an id is minted" and "the engine
   accepts an id" separately leaves the load-bearing "it is the *right* id" line free to be reverted
   with the whole suite still green. (Feedback `0011`.)
+- **A rule-2 end-to-end must assert the user-visible outcome, not just the handoff input.** The
+  "host reaches the engine" test stopped at `engine.starts[0].players` (the input seam), so a
+  regression that carried the host into the roster but dropped it from the final standings - earning
+  no stars - stayed green. Drive the flow through to the scored result (host ranked first ->
+  `recordGameComplete` -> the persisted stars award) so the outcome the player sees is what breaks.
+  (Review `0013`.)

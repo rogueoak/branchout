@@ -282,4 +282,25 @@ describe('GameStage remote-only player sees results without a viewer', () => {
     within(controller).getByText(/Final results/);
     within(controller).getByLabelText('3 stars');
   });
+
+  it('tells a remote host to tap Next between rounds, not to wait', () => {
+    const state = build({
+      phase: 'leaderboard',
+      standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
+    });
+    renderStage({ state, role: 'player', mode: 'remote', isHost: true });
+    const controller = screen.getByLabelText('Your controller');
+    within(controller).getByText(/Tap Next when you are ready/);
+    expect(within(controller).queryByText(/Waiting for the host/)).toBeNull();
+  });
+});
+
+describe('GameStage host controls emphasis', () => {
+  it('labels the host control bar and de-emphasizes Next while a question is answerable', () => {
+    renderStage({ role: 'player', mode: 'remote', isHost: true });
+    expect(screen.getByText('Host controls')).toBeDefined();
+    // The player's answer Submit stays the clear primary; the advance control is an outline button.
+    const next = screen.getByRole('button', { name: 'Next' });
+    expect(next.className).toMatch(/outline|border/);
+  });
 });

@@ -83,8 +83,10 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
   // Create a room. Host only (an account session).
   app.post('/rooms', async (request, reply) =>
     withSession(request, reply, async (session) => {
-      const room = await rooms.createRoom(session);
-      return reply.code(201).send({ room });
+      const { room, playerId } = await rooms.createRoom(session);
+      // Echo the host's public playerId so it has its engine identity without waiting on
+      // `/members` (a host reloading mid-game would otherwise be bounced to rejoin).
+      return reply.code(201).send({ room, playerId });
     }),
   );
 

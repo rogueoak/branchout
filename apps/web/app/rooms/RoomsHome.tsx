@@ -38,16 +38,19 @@ export function RoomsHome() {
     setCreating(true);
     setError(null);
     try {
-      const room = await createRoom();
+      const { room, playerId } = await createRoom();
       // The host is a full player: remember it as such with the host flag, and set its mode from
       // the device (createRoom seeds `interactive` server-side; this refines it, and the host can
-      // still change it in the lobby).
+      // still change it in the lobby). Store the host's public playerId (echoed by createRoom) so
+      // the host has its engine identity immediately - a host reloading mid-game is not bounced to
+      // rejoin while the roster poll is skipped.
       const mode = defaultMode(typeof navigator === 'undefined' ? '' : navigator.userAgent);
       rememberMembership(room.code, {
         role: 'player',
         isHost: true,
         mode,
         nickname: hostName,
+        player: playerId,
         room,
       });
       if (mode !== 'interactive') {

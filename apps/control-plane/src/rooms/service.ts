@@ -70,6 +70,17 @@ export interface JoinResult {
   playerId: string;
 }
 
+/**
+ * What `createRoom` returns: the room plus the host's own public `playerId` (mirrors {@link
+ * JoinResult}). The host needs its `playerId` to `join` the engine as a player. Without it echoed
+ * here, a host reloading mid-game (when the roster poll is skipped) has no engine identity until
+ * `/members` loads, so it is wrongly bounced to the rejoin screen.
+ */
+export interface CreateResult {
+  room: RoomView;
+  playerId: string;
+}
+
 function toView(room: Room): RoomView {
   return {
     id: room.id,
@@ -105,7 +116,7 @@ export class RoomService {
    * `setMode`. A fresh 5-character code is generated and retried on the astronomically rare
    * collision.
    */
-  async createRoom(session: Session): Promise<RoomView> {
+  async createRoom(session: Session): Promise<CreateResult> {
     if (!canHost(session) || !session.accountId) {
       throw new RoomError('forbidden', 'Sign in to host a room.');
     }
@@ -121,7 +132,10 @@ export class RoomService {
       connected: true,
     };
     await this.membership.put(room.id, host);
-    return toView(room);
+    // Echo the host's public playerId (like `join` does) so the browser has its engine identity
+    // immediately, without waiting on the members list - a host reloading mid-game must not be
+    // bounced to rejoin for lack of an identity.
+    return { room: toView(room), playerId: host.playerId };
   }
 
   private async createWithUniqueCode(hostAccountId: string): Promise<Room> {
@@ -158,14 +172,28 @@ export class RoomService {
     // Reuse the playerId if this session is already a member (a rejoin), so a reconnecting device
     // keeps the identity the engine roster already knows; mint a fresh one for a first join.
     const existing = await this.membership.get(room.id, session.id);
+    // Derive host status from the room, never the request: the host is whoever owns the room in
+    // Postgres (`hostAccountId`). A host re-entering via the rejoin link - even as an observer -
+    // must not be able to demote itself, or the invariant `isHost => role === 'player'` breaks
+    // (host dropped from the roster, loses sessionId visibility, and the kick-guard is defeated)
+    // while `requireHost` still authorizes them. So we re-derive and force the host back to a
+    // full player here rather than trusting `input.role`/`isHost: false`.
+    const isHost = !!session.accountId && session.accountId === room.hostAccountId;
     const member: RoomMember = {
       sessionId: session.id,
       playerId: existing?.playerId ?? newPlayerId(),
       ...(session.accountId ? { accountId: session.accountId } : {}),
-      role: input.role,
-      // A join only ever creates a player or observer; the host is minted by createRoom.
-      isHost: false,
-      ...(input.role === 'player' ? { mode: normalizeMode(input.mode) } : {}),
+      // The host is always a player; a non-host joins with the role they asked for.
+      role: isHost ? 'player' : input.role,
+      isHost,
+      // A player has a mode; observers have none. The host keeps its existing mode across a rejoin
+      // (so it is not knocked off its chosen setup) and otherwise takes the requested/normalized
+      // default; a non-host player takes the mode it asked for.
+      ...(isHost
+        ? { mode: existing?.mode ?? normalizeMode(input.mode) }
+        : input.role === 'player'
+          ? { mode: normalizeMode(input.mode) }
+          : {}),
       nickname: name.value!,
       connected: true,
     };

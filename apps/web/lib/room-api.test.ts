@@ -36,9 +36,12 @@ afterEach(() => {
 
 describe('room-api', () => {
   it('creates a room as a bodyless POST with no JSON content-type', async () => {
-    const fetchMock = mockFetch({ ok: true, status: 201, body: { room } });
+    const fetchMock = mockFetch({ ok: true, status: 201, body: { room, playerId: 'pid_host' } });
     const result = await createRoom();
-    expect(result.code).toBe('ABC12');
+    expect(result.room.code).toBe('ABC12');
+    // Create echoes the host's public engine identity so the host can connect without waiting on
+    // the members list.
+    expect(result.playerId).toBe('pid_host');
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain('/rooms');
     expect(init.method).toBe('POST');
