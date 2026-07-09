@@ -194,7 +194,9 @@ export class GameEngine {
         state.paused = false;
         state.hostPaused = false;
         const module = this.registry.resolve(state.game);
-        if (state.phase === 'disputing' || state.phase === 'voting' || state.phase === 'guessing') {
+        if (state.phase === 'guessing') {
+          this.resumeDecisionWindow(state, module);
+        } else if (state.phase === 'disputing' || state.phase === 'voting') {
           this.armWindow(state, module, state.phase);
         } else {
           // Continue the answer countdown from where the host's drop froze it (spec 0017).
@@ -335,10 +337,9 @@ export class GameEngine {
           await this.publish(state, this.stateMessage(state));
           // Resuming inside a timed dispute/vote/guess window re-arms it, so a paused window does not
           // strand the round waiting for a manual advance.
-          if (
-            !state.paused &&
-            (state.phase === 'disputing' || state.phase === 'voting' || state.phase === 'guessing')
-          ) {
+          if (!state.paused && state.phase === 'guessing') {
+            this.resumeDecisionWindow(state, module);
+          } else if (!state.paused && (state.phase === 'disputing' || state.phase === 'voting')) {
             this.armWindow(state, module, state.phase);
           }
           return;
@@ -440,6 +441,13 @@ export class GameEngine {
         if (result.decision) {
           // A guess game (spec 0020): stream the options and open a guess window instead of the
           // dispute path. Trivia and every dispute game omit `decision` and fall through below.
+          // Fail fast at the declaration site: a game that opens a guess phase must resolve it, or
+          // the `guessing` case would throw a bare TypeError inside the scheduler after streaming.
+          if (!module.resolveDecision) {
+            throw new Error(
+              `game "${state.game}" returned a decision phase but implements no resolveDecision`,
+            );
+          }
           state.phase = 'guessing';
           state.decisionWindowMs = result.decision.windowMs ?? 0;
           await this.publish(state, this.revealMessage(state, result.reveal));
@@ -692,6 +700,19 @@ export class GameEngine {
     // The pause also cancelled the all-answered 2s grace, so if the table had already finished, the
     // round would otherwise wait out the full window on resume. Re-arm it (feedback 0015).
     if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
+  }
+
+  /**
+   * Resume the guess window after a pause or host-reconnect: re-arm the force-close timer and, if
+   * every connected player already guessed while the game was paused, re-arm the all-decided grace
+   * close too. The pause cancelled the in-flight grace timer, so without this an all-guessed round
+   * would strand until a manual advance - the `guessing` analogue of {@link resumeAnswerWindow}'s
+   * all-answered re-arm (feedback 0015).
+   */
+  private resumeDecisionWindow(state: SessionState, module: GameModule): void {
+    if (state.phase !== 'guessing' || state.paused) return;
+    this.armWindow(state, module, 'guessing');
+    if (module.allDecided?.(this.context(state))) this.armAutoAdvance(state, module, 'guessing');
   }
 
   /** The timed-window duration for a phase: the guess window for `guessing`, else the dispute window. */

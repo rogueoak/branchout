@@ -7,7 +7,8 @@ import type {
   StateMessage,
 } from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
-import { GameEngine, NoSessionError, UnknownPlayerError } from './engine';
+import type { GameModule } from '@branchout/game-sdk';
+import { GameEngine, NoSessionError, UnknownPlayerError, AUTO_ADVANCE_MS } from './engine';
 
 /** `join` returns the ordered catch-up frames; the authoritative `state` frame is the last one. */
 function stateFrame(frames: ServerMessage[]): StateMessage {
@@ -22,7 +23,7 @@ import {
   deciderGame,
   DECIDER_GAME_ID,
 } from '@branchout/game-sdk/testing';
-import { InMemoryPubSub } from './pubsub';
+import { InMemoryPubSub, streamChannel } from './pubsub';
 import { GameRegistry } from './registry';
 import type { ControlPlaneReporter } from './reporter';
 import { InMemorySessionStore } from './session';
@@ -820,11 +821,17 @@ describe('decision/guess phase (spec 0020)', () => {
     await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p1', 1, 'blue', true); // correct guess
     await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p2', 1, 'red', true); // fools p1
     await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p3', 1, 'green', true); // fools p2
-    h.scheduler.flush(); // all-decided grace timer -> advance guessing -> finalize
+
+    // Fire ONLY the 2s all-decided grace timer, not the 30s guess window: this proves the early
+    // close (not the window) advanced the round. Were armAutoAdvance('guessing') dead code, a 2s
+    // advance would fire nothing and the phase would stay 'guessing'.
+    h.scheduler.advance(AUTO_ADVANCE_MS);
 
     const state = await h.engine.getState('r1', DECIDER_GAME_ID);
     expect(state?.phase).toBe('leaderboard');
     expect(state?.scores).toEqual({ p1: 150, p2: 50, p3: 0 });
+    // The 30s guess window is still scheduled (it now no-ops), so the round closed on the grace timer.
+    expect(h.scheduler.pending).toBe(1);
   });
 
   it('closes the guess round when the window timer fires', async () => {
@@ -855,6 +862,12 @@ describe('decision/guess phase (spec 0020)', () => {
     await h.engine.join('r1', DECIDER_GAME_ID, 'p1', 'Ada');
     await h.engine.join('r1', DECIDER_GAME_ID, 'p2', 'Bo');
 
+    // Watch the broadcast channel: the reject must reach only the submitter, never the room.
+    const seen: ServerMessage[] = [];
+    await h.pubsub.subscribe(streamChannel('r1', DECIDER_GAME_ID), (f) =>
+      seen.push(f as ServerMessage),
+    );
+
     const ok = await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
     expect(ok.reject).toBeUndefined();
     const before = JSON.stringify((await h.engine.getState('r1', DECIDER_GAME_ID))?.scratch);
@@ -866,5 +879,90 @@ describe('decision/guess phase (spec 0020)', () => {
     // No scratch was written: p2's fake never landed, the round is exactly as it was.
     const after = JSON.stringify((await h.engine.getState('r1', DECIDER_GAME_ID))?.scratch);
     expect(after).toBe(before);
+    // The reject was a targeted reply, not a broadcast: no frame (least of all answer_rejected)
+    // reached the room stream, so other devices never learn a fake was rejected.
+    expect(seen).toHaveLength(0);
+  });
+
+  it('re-arms the guess window after a host disconnect and reconnect', async () => {
+    const h = deciderHarness();
+    const players = [
+      { player: 'p1', nickname: 'Ada', isHost: true },
+      { player: 'p2', nickname: 'Bo' },
+      { player: 'p3', nickname: 'Cy' },
+    ];
+    await h.engine.start(deciderHandoff({ players }));
+    for (const p of players) await h.engine.join('r1', DECIDER_GAME_ID, p.player, p.nickname);
+    await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
+    await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p2', 1, 'green');
+    await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p3', 1, 'yellow');
+    await h.engine.control('r1', DECIDER_GAME_ID, 'advance'); // -> guessing
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('guessing');
+
+    await h.engine.disconnect('r1', DECIDER_GAME_ID, 'p1'); // host drops -> auto-pause
+    h.scheduler.flush(); // the guess window no-ops while paused
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('guessing');
+
+    await h.engine.join('r1', DECIDER_GAME_ID, 'p1', 'Ada'); // host returns -> resume + re-arm
+    h.scheduler.flush(); // the re-armed window fires
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('leaderboard');
+  });
+
+  it('re-arms the all-decided close when a paused, fully-guessed round resumes', async () => {
+    const h = deciderHarness();
+    await startJoinSubmit(h.engine);
+    await h.engine.control('r1', DECIDER_GAME_ID, 'advance'); // -> guessing
+    // Everyone guesses (arming the 2s grace close), then the host pauses (cancelling it).
+    await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p1', 1, 'blue', true);
+    await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p2', 1, 'red', true);
+    await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p3', 1, 'green', true);
+    await h.engine.control('r1', DECIDER_GAME_ID, 'pause');
+    h.scheduler.flush(); // timers no-op while paused
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('guessing');
+
+    await h.engine.control('r1', DECIDER_GAME_ID, 'pause'); // resume must re-arm the all-decided close
+    h.scheduler.advance(AUTO_ADVANCE_MS); // fire only the re-armed 2s grace, not the 30s window
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('leaderboard');
+  });
+
+  it('fails fast if a game opens a guess phase but implements no resolveDecision', async () => {
+    // A misconfigured game: reveal declares a decision but there is no resolveDecision to score it.
+    const scratch = (ctx: { scratch: Readonly<Record<string, unknown>> }) => ({
+      scratch: ctx.scratch as Record<string, unknown>,
+    });
+    const badGame: GameModule = {
+      id: 'bad-decider',
+      configure: () => ({ scratch: {}, rounds: 1 }),
+      startRound: () => ({ scratch: {}, prompt: {} }),
+      collectAnswer: (ctx) => scratch(ctx),
+      reveal: (ctx) => ({ ...scratch(ctx), reveal: {}, scores: [], decision: { windowMs: 1000 } }),
+      collectVote: (ctx) => scratch(ctx),
+      disputeWindow: (ctx) => ({ ...scratch(ctx), disputes: [] }),
+      disputeVote: (ctx) => ({ ...scratch(ctx), scores: [] }),
+      leaderboard: () => [],
+      advance: () => ({ done: true }),
+      endGame: () => [],
+      // no resolveDecision on purpose
+    };
+    const engine = new GameEngine({
+      registry: new GameRegistry([badGame]),
+      store: new InMemorySessionStore(),
+      pubsub: new InMemoryPubSub(),
+      reporter: new CapturingReporter(),
+      scheduler: new ManualScheduler(),
+      logger: { error: () => {} },
+    });
+    await engine.start({
+      v: PROTOCOL_VERSION,
+      room: 'r1',
+      game: 'bad-decider',
+      players: [{ player: 'p1', nickname: 'Ada' }],
+      config: {},
+    });
+    // collecting -> reveal must throw a clear error rather than wedge the round in 'guessing'.
+    await expect(engine.control('r1', 'bad-decider', 'advance')).rejects.toThrow(
+      /no resolveDecision/,
+    );
+    expect((await engine.getState('r1', 'bad-decider'))?.phase).toBe('collecting');
   });
 });

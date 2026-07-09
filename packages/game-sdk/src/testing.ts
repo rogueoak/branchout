@@ -39,6 +39,20 @@ export class ManualScheduler implements ManualSchedulerLike {
     }
   }
 
+  /**
+   * Advance virtual time by `ms` and fire only the tasks now due (`at <= now`), in scheduled order,
+   * leaving later tasks pending. Lets a test target one timer (e.g. a 2s grace close) without also
+   * firing a longer one (a 30s window), so it can prove which timer closed a round.
+   */
+  advance(ms: number): void {
+    this.now += ms;
+    const due = [...this.tasks.entries()]
+      .filter(([, task]) => task.at <= this.now)
+      .sort((a, b) => a[1].at - b[1].at);
+    for (const [id] of due) this.tasks.delete(id);
+    for (const [, task] of due) task.fn();
+  }
+
   /** True while any task is still pending. */
   get pending(): number {
     return this.tasks.size;
