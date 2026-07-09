@@ -38,12 +38,12 @@ function renderStage(props: Partial<Parameters<typeof GameStage>[0]>) {
     <GameStage
       state={collecting}
       me="p1"
+      game="trivia"
       role="player"
       mode="interactive"
       isHost={false}
       onAnswer={noop}
-      onDispute={noop}
-      onBallot={noop}
+      onVote={noop}
       onControl={noop}
       {...props}
     />,
@@ -111,39 +111,44 @@ describe('GameStage per-phase rendering', () => {
   });
 
   it('disputing offers the dispute button to a player marked wrong', () => {
-    const onDispute = vi.fn();
+    const onVote = vi.fn();
     // The reveal question is the prompt text; the answer is answers[0]. Use distinct values so the
     // viewer showing the question as the answer would fail this test.
     const state = build({
       phase: 'disputing',
       prompt: collecting.prompt,
-      reveal: {
-        round: 1,
-        question: 'What is H2O?',
-        answers: ['Water'],
-        correct: ['p3'],
-        wrong: ['p1', 'p2'],
-      },
+      reveals: [
+        {
+          round: 1,
+          question: 'What is H2O?',
+          answers: ['Water'],
+          correct: ['p3'],
+          wrong: ['p1', 'p2'],
+        },
+      ],
     });
-    renderStage({ state, onDispute });
+    renderStage({ state, onVote });
     // The viewer shows the answer (answers[0]), not the question text.
     within(screen.getByLabelText('Game viewer')).getByText('Water');
     const button = screen.getByRole('button', { name: 'Dispute' });
     fireEvent.click(button);
-    expect(onDispute).toHaveBeenCalledWith(1);
+    // A dispute is a vote targeting the player themselves (spec 0007).
+    expect(onVote).toHaveBeenCalledWith(1, 'p1', true);
   });
 
   it('does not offer the dispute button to a player who was not marked wrong', () => {
     const state = build({
       phase: 'disputing',
       prompt: collecting.prompt,
-      reveal: {
-        round: 1,
-        question: 'What is H2O?',
-        answers: ['Water'],
-        correct: ['p1'],
-        wrong: ['p2'],
-      },
+      reveals: [
+        {
+          round: 1,
+          question: 'What is H2O?',
+          answers: ['Water'],
+          correct: ['p1'],
+          wrong: ['p2'],
+        },
+      ],
     });
     // me is p1, who answered correctly, so no dispute button appears.
     renderStage({ state, role: 'player', mode: 'remote' });
@@ -151,26 +156,28 @@ describe('GameStage per-phase rendering', () => {
   });
 
   it('voting shows a ballot to the other players and reports the vote', () => {
-    const onBallot = vi.fn();
+    const onVote = vi.fn();
     const state = build({
       phase: 'voting',
       prompt: collecting.prompt,
       disputes: ['p2', 'p3'],
-      reveal: {
-        round: 1,
-        question: 'What is H2O?',
-        answers: ['Water'],
-        correct: ['p1'],
-        wrong: ['p2', 'p3'],
-      },
+      reveals: [
+        {
+          round: 1,
+          question: 'What is H2O?',
+          answers: ['Water'],
+          correct: ['p1'],
+          wrong: ['p2', 'p3'],
+        },
+      ],
     });
-    renderStage({ state, onBallot });
+    renderStage({ state, onVote });
     // p1 (me) did not dispute, so both other disputers appear as ballots.
     const controller = screen.getByLabelText('Your controller');
     within(controller).getByText('Bo');
     within(controller).getByText('Cy');
     fireEvent.click(within(controller).getByRole('button', { name: "Bo's answer should count" }));
-    expect(onBallot).toHaveBeenCalledWith(1, 'p2', true);
+    expect(onVote).toHaveBeenCalledWith(1, 'p2', true);
   });
 
   it('lists exactly the disputers, not every wrong answer', () => {
@@ -179,13 +186,15 @@ describe('GameStage per-phase rendering', () => {
       prompt: collecting.prompt,
       // p2 and p3 were both wrong, but only p2 actually disputed.
       disputes: ['p2'],
-      reveal: {
-        round: 1,
-        question: 'What is H2O?',
-        answers: ['Water'],
-        correct: ['p1'],
-        wrong: ['p2', 'p3'],
-      },
+      reveals: [
+        {
+          round: 1,
+          question: 'What is H2O?',
+          answers: ['Water'],
+          correct: ['p1'],
+          wrong: ['p2', 'p3'],
+        },
+      ],
     });
     renderStage({ state });
     const controller = screen.getByLabelText('Your controller');
@@ -198,13 +207,15 @@ describe('GameStage per-phase rendering', () => {
       phase: 'voting',
       prompt: collecting.prompt,
       disputes: ['p1'],
-      reveal: {
-        round: 1,
-        question: 'What is H2O?',
-        answers: ['Water'],
-        correct: [],
-        wrong: ['p1'],
-      },
+      reveals: [
+        {
+          round: 1,
+          question: 'What is H2O?',
+          answers: ['Water'],
+          correct: [],
+          wrong: ['p1'],
+        },
+      ],
     });
     renderStage({ state, role: 'player', mode: 'remote' });
     expect(screen.getByText(/Nothing for you to vote on/)).toBeDefined();
@@ -351,12 +362,12 @@ describe('GameStage scroll-to-question', () => {
       <GameStage
         state={state}
         me="p1"
+        game="trivia"
         role="player"
         mode="remote"
         isHost={false}
         onAnswer={noop}
-        onDispute={noop}
-        onBallot={noop}
+        onVote={noop}
         onControl={noop}
         {...over}
       />

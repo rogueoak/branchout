@@ -8,6 +8,11 @@
 import type { PlayerView } from '@branchout/protocol';
 import { Badge } from '@rogueoak/canopy';
 import type { GameState } from '../../lib/game-state';
+import {
+  asTriviaPrompt,
+  pickTriviaRoundReveal,
+  pickTriviaDisputeReveal,
+} from '../../lib/games/trivia/protocol';
 import { difficultyBand } from '../../lib/trivia-config';
 import { toDisplayAnswer } from '../../lib/title-case';
 import { useAnswerCountdown } from '../../lib/use-answer-countdown';
@@ -25,7 +30,12 @@ function nicknameOf(players: PlayerView[], id: string): string {
 }
 
 export function ViewerPane({ state, me }: ViewerPaneProps) {
-  const { phase, prompt, reveal, disputeResult, standings, players } = state;
+  const { phase, standings, players } = state;
+  // Decode the opaque prompt/reveals into Trivia shapes at the render boundary (spec 0023): the
+  // reducer stores them raw; a shape this game does not recognize is a null, a skipped render.
+  const prompt = asTriviaPrompt(state.prompt);
+  const reveal = pickTriviaRoundReveal(state.reveals);
+  const disputeResult = pickTriviaDisputeReveal(state.reveals);
   const secondsLeft = useAnswerCountdown(state.answerMsRemaining, state.round, state.paused);
 
   return (

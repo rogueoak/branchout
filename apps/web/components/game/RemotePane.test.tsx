@@ -16,9 +16,7 @@ function build(overrides: Partial<GameState>): GameState {
 function noop() {}
 
 function renderRemote(state: GameState) {
-  return render(
-    <RemotePane state={state} me="p1" onAnswer={noop} onDispute={noop} onBallot={noop} />,
-  );
+  return render(<RemotePane state={state} me="p1" onAnswer={noop} onVote={noop} />);
 }
 
 // The local player (p1) was marked wrong, so the only variable is whether another connected player
@@ -27,13 +25,15 @@ function disputingState(players: GameState['players']): GameState {
   return build({
     phase: 'disputing',
     players,
-    reveal: {
-      round: 1,
-      question: 'Q?',
-      answers: ['answer'],
-      correct: [],
-      wrong: ['p1'],
-    },
+    reveals: [
+      {
+        round: 1,
+        question: 'Q?',
+        answers: ['answer'],
+        correct: [],
+        wrong: ['p1'],
+      },
+    ],
   });
 }
 
@@ -85,15 +85,7 @@ describe('RemotePane answer countdown', () => {
   it('auto-submits the typed draft when the countdown reaches zero', () => {
     vi.useFakeTimers();
     const onAnswer = vi.fn();
-    render(
-      <RemotePane
-        state={collecting(1_000)}
-        me="p1"
-        onAnswer={onAnswer}
-        onDispute={noop}
-        onBallot={noop}
-      />,
-    );
+    render(<RemotePane state={collecting(1_000)} me="p1" onAnswer={onAnswer} onVote={noop} />);
     fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'water' } });
     act(() => vi.advanceTimersByTime(1_000));
     expect(onAnswer).toHaveBeenCalledWith(1, 'water');
@@ -102,15 +94,7 @@ describe('RemotePane answer countdown', () => {
   it('does not auto-submit a whitespace-only draft at zero', () => {
     vi.useFakeTimers();
     const onAnswer = vi.fn();
-    render(
-      <RemotePane
-        state={collecting(1_000)}
-        me="p1"
-        onAnswer={onAnswer}
-        onDispute={noop}
-        onBallot={noop}
-      />,
-    );
+    render(<RemotePane state={collecting(1_000)} me="p1" onAnswer={onAnswer} onVote={noop} />);
     fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: '   ' } });
     act(() => vi.advanceTimersByTime(1_000));
     expect(onAnswer).not.toHaveBeenCalled();
@@ -126,9 +110,7 @@ describe('RemotePane answer countdown', () => {
       answerMsRemaining: 0,
       prompt: { round: 1, category: 'People', difficulty: 5, question: 'Q?' },
     });
-    render(
-      <RemotePane state={state} me="p1" onAnswer={onAnswer} onDispute={noop} onBallot={noop} />,
-    );
+    render(<RemotePane state={state} me="p1" onAnswer={onAnswer} onVote={noop} />);
     fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'water' } });
     expect(onAnswer).not.toHaveBeenCalled();
     expect(screen.getByText('Paused')).toBeDefined();

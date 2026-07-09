@@ -11,6 +11,8 @@ import { initialGameState, type GameState } from './game-state';
 
 export interface GameActions {
   submitAnswer: (round: number, answer: string) => void;
+  /** The generic vote action every game UI module uses (Trivia dispute/ballot, Liar Liar guess). */
+  submitVote: (round: number, target: string, agree: boolean) => void;
   raiseDispute: (round: number) => void;
   castBallot: (round: number, target: string, agree: boolean) => void;
 }
@@ -50,6 +52,7 @@ export function useGameClient(options: GameClientOptions | null): UseGameClientR
   return {
     state,
     submitAnswer: (round, answer) => clientRef.current?.submitAnswer(round, answer),
+    submitVote: (round, target, agree) => clientRef.current?.submitVote(round, target, agree),
     raiseDispute: (round) => clientRef.current?.raiseDispute(round),
     castBallot: (round, target, agree) => clientRef.current?.castBallot(round, target, agree),
   };

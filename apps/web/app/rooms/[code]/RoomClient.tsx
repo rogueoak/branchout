@@ -110,7 +110,7 @@ export function RoomClient({ code }: RoomClientProps) {
         }
       : null;
 
-  const { state, submitAnswer, raiseDispute, castBallot } = useGameClient(gameOptions);
+  const { state, submitAnswer, submitVote } = useGameClient(gameOptions);
 
   const persist = useCallback(
     (nextRoom: RoomView, patch?: Partial<Membership>) => {
@@ -241,12 +241,12 @@ export function RoomClient({ code }: RoomClientProps) {
               <GameStage
                 state={state}
                 me={me}
+                game={room?.selectedGame ?? TRIVIA_GAME_ID}
                 role={membership.role}
                 mode={membership.mode}
                 isHost={isHost}
                 onAnswer={submitAnswer}
-                onDispute={raiseDispute}
-                onBallot={castBallot}
+                onVote={submitVote}
                 onControl={onControl}
               />
             ) : (
