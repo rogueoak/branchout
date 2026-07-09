@@ -38,8 +38,7 @@ vi.mock('../../../lib/use-game-client', () => ({
   useGameClient: () => ({
     state: { connection: 'connecting', joined: false, phase: 'configuring', paused: false },
     submitAnswer: vi.fn(),
-    raiseDispute: vi.fn(),
-    castBallot: vi.fn(),
+    submitVote: vi.fn(),
   }),
 }));
 

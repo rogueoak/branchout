@@ -21,6 +21,10 @@ export const triviaGameUi: GameUiModule = {
     const errors = validateTriviaConfig(config as TriviaHostConfig);
     return errors.length === 0 ? { ok: true } : { ok: false, error: errors[0]?.message };
   },
+  roundsOf: (config) => {
+    const rounds = (config as TriviaHostConfig | undefined)?.rounds;
+    return typeof rounds === 'number' ? rounds : defaultTriviaConfig().rounds;
+  },
   ConfigPanel: TriviaConfigPanel,
   Viewer: ViewerPane,
   Remote: RemotePane,

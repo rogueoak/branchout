@@ -75,4 +75,44 @@ describe('LiarLiarViewer', () => {
     expect(screen.getByText(/fooled Cy/)).toBeDefined();
     expect(screen.getByText(/Guessed the truth: Bo/)).toBeDefined();
   });
+
+  it('highlights the current player own lie in the result', () => {
+    // p1 (Ada) authored the "buttons" fake; from Ada's own screen it reads "Your lie", not her name.
+    render(
+      <LiarLiarViewer
+        state={state({
+          phase: 'leaderboard',
+          round: 1,
+          prompt,
+          reveals: [optionsReveal, resultReveal],
+        })}
+        me="p1"
+      />,
+    );
+    expect(screen.getByText('Your lie')).toBeDefined();
+    expect(screen.queryByText(/Lie by Ada/)).toBeNull();
+  });
+
+  it('says nobody found the truth when no one guessed right', () => {
+    const noneCorrect = {
+      ...resultReveal,
+      correctGuessers: [],
+      options: [
+        { id: '0', text: 'ramen', kind: 'truth', pickedBy: [] },
+        { id: '1', text: 'buttons', kind: 'fake', author: 'p1', pickedBy: ['p2', 'p3'] },
+      ],
+    };
+    render(
+      <LiarLiarViewer
+        state={state({
+          phase: 'leaderboard',
+          round: 1,
+          prompt,
+          reveals: [optionsReveal, noneCorrect],
+        })}
+        me="p2"
+      />,
+    );
+    expect(screen.getByText(/Nobody found the truth/i)).toBeDefined();
+  });
 });

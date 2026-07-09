@@ -62,6 +62,39 @@ describe('LiarLiarRemote', () => {
     // Editing the draft dismisses the rejection so a retype reads clean.
     fireEvent.change(screen.getByLabelText(/write your lie/i), { target: { value: 'radishes' } });
     expect(screen.queryByRole('alert')).toBeNull();
+    // Re-submitting sends the retyped lie - the recovery path that actually matters.
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    expect(onAnswer).toHaveBeenLastCalledWith(1, 'radishes');
+  });
+
+  it('does not hide an option when the player own lie was rejected and abandoned', () => {
+    // The player submitted "buttons", the engine rejected it (it was the truth or a duplicate), and
+    // they never resubmitted. In guessing, "buttons" is a real option and must NOT be hidden.
+    const onVote = vi.fn();
+    const { rerender } = render(
+      <LiarLiarRemote
+        state={state({ phase: 'collecting', prompt })}
+        me="p1"
+        onAnswer={noop}
+        onVote={onVote}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/write your lie/i), { target: { value: 'buttons' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    rerender(
+      <LiarLiarRemote
+        state={state({
+          phase: 'guessing',
+          prompt,
+          reveals: [optionsReveal],
+          rejected: 'someone already submitted that',
+        })}
+        me="p1"
+        onAnswer={noop}
+        onVote={onVote}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'buttons' })).toBeDefined();
   });
 
   it('offers the options to guess and hides the player own lie', () => {

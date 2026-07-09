@@ -91,4 +91,30 @@ describe('Lobby', () => {
     expect(screen.getByRole('button', { name: /random \(all\)/i })).toBeDefined();
     expect(screen.getByText(/Bluff your friends/i)).toBeDefined();
   });
+
+  it('disables Start and does not fire onStart when the selected game config is invalid', () => {
+    // The Start gate moved here from the deleted HostConfigPanel: an out-of-range config blocks it.
+    const onStart = vi.fn();
+    renderLobby({ game: 'liar-liar', config: { categories: 'random', rounds: 0 }, onStart });
+    const start = screen.getByRole('button', { name: /start game/i });
+    expect((start as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(start);
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
+  it('enables Start and fires onStart when the config is valid', () => {
+    const onStart = vi.fn();
+    renderLobby({ game: 'liar-liar', config: defaultLiarLiarConfig(), onStart });
+    const start = screen.getByRole('button', { name: /start game/i });
+    expect((start as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(start);
+    expect(onStart).toHaveBeenCalled();
+  });
+
+  it('gates Start on an invalid Trivia config too', () => {
+    const onStart = vi.fn();
+    renderLobby({ game: 'trivia', config: { ...defaultTriviaConfig(), rounds: 0 }, onStart });
+    fireEvent.click(screen.getByRole('button', { name: /start game/i }));
+    expect(onStart).not.toHaveBeenCalled();
+  });
 });

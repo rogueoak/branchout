@@ -7,8 +7,7 @@
 // resolves the game's UI module by id (spec 0023) and renders that module's config panel.
 
 import { Badge, Button } from '@rogueoak/canopy';
-import { GAME_UI_LIST, getGameUi } from '../../lib/games/registry';
-import { triviaGameUi } from '../../lib/games/trivia';
+import { DEFAULT_GAME_UI, GAME_UI_LIST, getGameUi } from '../../lib/games/registry';
 import type { RoomMember, RoomView, Mode, Role } from '../../lib/room-api';
 import { ShareLink } from './ShareLink';
 
@@ -63,8 +62,9 @@ export function Lobby({
   onModeChange,
   onKick,
 }: LobbyProps) {
-  // Resolve the selected game's UI module (fall back to Trivia, the default, for safety).
-  const activeModule = getGameUi(game) ?? triviaGameUi;
+  // Resolve the selected game's UI module. `game` is always a registered id (the picker only sets
+  // ids from GAME_UI_LIST); fall back to the first registered game for an unexpected value.
+  const activeModule = getGameUi(game) ?? DEFAULT_GAME_UI;
   const ConfigPanel = activeModule.ConfigPanel;
   const validation = activeModule.validateConfig(config);
   const viewerPresent = hasViewer(members);

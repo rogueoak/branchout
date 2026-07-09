@@ -59,9 +59,13 @@ export function LiarLiarViewer({ state, me }: GameViewProps) {
                     {option.kind === 'truth' ? ' (the truth)' : ''}
                   </span>
                   <span className="text-caption text-text-subtle">
-                    {option.kind === 'fake' && option.author
-                      ? `Lie by ${nicknameOf(players, option.author)}`
-                      : 'The real answer'}
+                    {option.kind === 'fake' && option.author === me ? (
+                      <strong className="text-secondary">Your lie</strong>
+                    ) : option.kind === 'fake' && option.author ? (
+                      `Lie by ${nicknameOf(players, option.author)}`
+                    ) : (
+                      'The real answer'
+                    )}
                     {option.kind === 'fake' && option.pickedBy.length > 0
                       ? ` - fooled ${option.pickedBy.map((id) => nicknameOf(players, id)).join(', ')}`
                       : ''}
@@ -92,9 +96,18 @@ export function LiarLiarViewer({ state, me }: GameViewProps) {
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="info">Round {prompt.round}</Badge>
           <Badge variant="neutral">{label(prompt.category)}</Badge>
+          {secondsLeft !== null ? (
+            <Badge variant={secondsLeft <= 10 ? 'warning' : 'neutral'}>
+              <span role="timer" aria-label={`${secondsLeft} seconds left`}>
+                {secondsLeft}s left
+              </span>
+            </Badge>
+          ) : null}
         </div>
         <h2 className="text-h2 text-text">{prompt.clue}</h2>
-        <p className="text-body text-text-muted">Which one is the truth?</p>
+        <p className="text-body text-text-muted">
+          Which one is the truth? Pick the real answer on your phone.
+        </p>
         <ol aria-label="Answers to guess" className="flex flex-col gap-2">
           {(options?.options ?? []).map((option, index) => (
             <li

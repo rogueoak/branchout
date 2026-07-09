@@ -16,6 +16,10 @@ export const liarLiarGameUi: GameUiModule = {
     const errors = validateLiarLiarConfig(config as LiarLiarHostConfig);
     return errors.length === 0 ? { ok: true } : { ok: false, error: errors[0]?.message };
   },
+  roundsOf: (config) => {
+    const rounds = (config as LiarLiarHostConfig | undefined)?.rounds;
+    return typeof rounds === 'number' ? rounds : defaultLiarLiarConfig().rounds;
+  },
   ConfigPanel: LiarLiarConfigPanel,
   Viewer: LiarLiarViewer,
   Remote: LiarLiarRemote,

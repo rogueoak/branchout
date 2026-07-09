@@ -103,12 +103,21 @@ export function LiarLiarRemote({
   }
 
   if (phase === 'guessing') {
-    const options = pickOptions(state.reveals)?.options ?? [];
-    // A player cannot pick their own lie; hide it (the engine also ignores a self-pick as a backstop).
-    const guessable = options.filter((option) => normalize(option.text) !== normalize(myLie));
+    const guess = pickOptions(state.reveals);
+    const options = guess?.options ?? [];
+    // A player cannot pick their own lie; hide it - but ONLY when their submission was accepted. A
+    // lie that was rejected (a duplicate/the truth) and abandoned must not hide the matching real
+    // option from this player. The engine also ignores a self-pick by author id as a backstop.
+    const ownLie =
+      submittedRound === round && state.rejected === null && myLie ? normalize(myLie) : null;
+    const guessable = ownLie
+      ? options.filter((option) => normalize(option.text) !== ownLie)
+      : options;
     const guessed = guessedRound === round;
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
+        {/* A remote-only player has no viewer on their screen, so re-show the clue they are guessing on. */}
+        {showResults && guess?.clue ? <h2 className="text-h3 text-text">{guess.clue}</h2> : null}
         <p className="text-body text-text">Which one is the truth?</p>
         {guessed ? (
           <p role="status" className="text-body-sm text-success">

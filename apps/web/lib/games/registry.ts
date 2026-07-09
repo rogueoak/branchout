@@ -54,6 +54,11 @@ export interface GameUiModule {
   defaultConfig: () => unknown;
   /** Validate a host config against the game's rules (mirrors the engine; the engine re-checks). */
   validateConfig: (config: unknown) => ConfigValidation;
+  /**
+   * The number of rounds this config runs, read from the game's own config shape (the control-plane
+   * debits per round). Keeps the game-agnostic shell from reaching into a game-specific config field.
+   */
+  roundsOf: (config: unknown) => number;
   ConfigPanel: ComponentType<GameConfigPanelProps>;
   Viewer: ComponentType<GameViewProps>;
   Remote: ComponentType<GameRemoteProps>;
@@ -72,6 +77,9 @@ export const GAME_UI_MODULES: Record<string, GameUiModule> = {
 
 /** The host's game options, in display order. */
 export const GAME_UI_LIST: readonly GameUiModule[] = [triviaGameUi, liarLiarGameUi];
+
+/** The default game a fresh room starts on, and the safe fallback for an unknown id. */
+export const DEFAULT_GAME_UI: GameUiModule = triviaGameUi;
 
 /** Resolve a game UI module by id, or undefined for an unknown game. */
 export function getGameUi(id: string | undefined | null): GameUiModule | undefined {

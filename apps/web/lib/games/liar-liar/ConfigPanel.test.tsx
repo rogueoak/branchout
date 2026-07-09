@@ -36,4 +36,12 @@ describe('LiarLiarConfigPanel', () => {
     fireEvent.change(screen.getByLabelText(/rounds/i), { target: { value: '5' } });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ rounds: 5 }));
   });
+
+  it('shows the rounds error surface for an out-of-range value', () => {
+    const config: LiarLiarHostConfig = { categories: 'random', rounds: 0 };
+    render(<LiarLiarConfigPanel value={config} onChange={vi.fn()} />);
+    const input = screen.getByLabelText(/rounds/i);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByRole('alert').textContent).toMatch(/round/i);
+  });
 });

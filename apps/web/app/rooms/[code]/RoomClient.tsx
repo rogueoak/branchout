@@ -156,8 +156,9 @@ export function RoomClient({ code }: RoomClientProps) {
     setStartError(null);
     try {
       await selectGame(code, game, config);
-      // Both games carry `rounds` in their config; the control-plane debits per round.
-      const rounds = (config as { rounds?: number }).rounds ?? 10;
+      // The game module reads the round count from its own config shape - the shell stays
+      // game-agnostic and the control-plane debits per round.
+      const rounds = getGameUi(game)?.roundsOf(config) ?? 10;
       const started = await startGame(code, rounds);
       persist(started);
     } catch (error) {
