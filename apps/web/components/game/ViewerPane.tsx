@@ -8,6 +8,7 @@
 import type { PlayerView } from '@branchout/protocol';
 import { Badge } from '@rogueoak/canopy';
 import type { GameState } from '../../lib/game-state';
+import { toDisplayAnswer } from '../../lib/title-case';
 import { FinalResults } from './FinalResults';
 import { Leaderboard } from './Leaderboard';
 
@@ -49,10 +50,12 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
           {reveal ? (
             <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">
               <p className="text-body-sm text-text-muted">Answer</p>
-              <p className="text-h4 text-text">{reveal.answers[0] ?? 'No answer'}</p>
+              <p className="text-h4 text-text">
+                {reveal.answers[0] ? toDisplayAnswer(reveal.answers[0]) : 'No answer'}
+              </p>
               {reveal.answers.length > 1 ? (
                 <p className="text-body-sm text-text-muted">
-                  Also accepted: {reveal.answers.slice(1).join(', ')}
+                  Also accepted: {reveal.answers.slice(1).map(toDisplayAnswer).join(', ')}
                 </p>
               ) : null}
               <p className="text-body-sm text-success">

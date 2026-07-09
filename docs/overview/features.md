@@ -124,6 +124,10 @@ What the product does for users, grouped by area. Each capability maps to one or
       mid-game and resumes when it reconnects, so a stranded round waits for the host rather than
       hanging. The engine carries `isHost` on its roster (from the handoff) to know whom to watch;
       a deliberate host pause is tracked separately so an unrelated reconnect never un-pauses it.
+- [x] Trivia play polish (feedback `0015`) - the answer round auto-closes 2s after every connected
+      player has submitted (the host can still advance sooner); revealed answers are title-cased for
+      display while storage and matching stay lowercase; and the Dispute button is hidden in a solo
+      game, where no other player exists to vote.
 - [ ] Profile pages and friend search/invite.
 
 ## Future

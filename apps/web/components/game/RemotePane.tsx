@@ -59,6 +59,11 @@ export function RemotePane({
 
   const wasMarkedWrong = reveal?.wrong.includes(me) ?? false;
   const submitted = submittedRound === round;
+  // A dispute goes to a vote of the *other* connected players; with none there is nobody to vote
+  // and the engine can never uphold it, so the button would be a dead end in a solo game. Only
+  // offer it when at least one other connected player exists (feedback 0015).
+  const hasOtherVoters = state.players.some((p) => p.player !== me && p.connected);
+  const canDispute = wasMarkedWrong && hasOtherVoters;
 
   function submit() {
     const trimmed = answer.trim();
@@ -109,7 +114,7 @@ export function RemotePane({
         </div>
       ) : phase === 'disputing' ? (
         <div className="flex flex-col gap-3">
-          {wasMarkedWrong ? (
+          {canDispute ? (
             <>
               <p className="text-body text-text">
                 Your answer was marked wrong. Think it should count? Dispute quickly - the window is
@@ -127,6 +132,13 @@ export function RemotePane({
                 {disputedRound === round ? 'Dispute raised' : 'Dispute'}
               </Button>
             </>
+          ) : wasMarkedWrong ? (
+            // Marked wrong but nobody else is here to vote, so no dispute is possible - say so
+            // plainly rather than dangling a vote that cannot happen for them (feedback 0015).
+            <p className="text-body-sm text-text-muted">
+              Your answer was marked wrong. With no one else here to vote, there is no dispute this
+              round.
+            </p>
           ) : (
             <p className="text-body-sm text-text-muted">
               The answer is on the viewer. A disputed round may go to a vote.

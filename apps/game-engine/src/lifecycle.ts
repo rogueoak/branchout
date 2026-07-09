@@ -98,6 +98,14 @@ export interface GameModule {
   /** Record one player's answer for the current round. */
   collectAnswer(ctx: RoundContext, player: string, answer: string): ScratchResult;
 
+  /**
+   * True when the current answer round is complete - every connected player has submitted - so the
+   * engine can auto-close it after a short grace period instead of waiting on a host tap. The engine
+   * asks after each answer *and* when a player disconnects (a drop can complete the round for the
+   * remaining players). Optional: a game that omits it never auto-advances and relies on the host.
+   */
+  allAnswered?(ctx: RoundContext): boolean;
+
   /** Score the round and produce the reveal payload. */
   reveal(ctx: RoundContext): RevealResult;
 

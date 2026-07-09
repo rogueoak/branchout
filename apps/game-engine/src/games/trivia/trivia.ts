@@ -240,6 +240,16 @@ export function createTriviaGame(
       return { scratch: toRecord(scratch) };
     },
 
+    // The round is complete once every connected player has an answer this round. Only connected
+    // players count, so a dropped device never holds the round open; the empty-table guard keeps a
+    // roster with nobody connected from reading as "all answered".
+    allAnswered(ctx: RoundContext): boolean {
+      const scratch = asScratch(ctx.scratch);
+      const round = scratch.submitted[String(ctx.round)] ?? {};
+      const connected = ctx.players.filter((p) => p.connected);
+      return connected.length > 0 && connected.every((p) => round[p.player] !== undefined);
+    },
+
     reveal(ctx: RoundContext): RevealResult {
       const scratch = clone(asScratch(ctx.scratch));
       const key = String(ctx.round);
