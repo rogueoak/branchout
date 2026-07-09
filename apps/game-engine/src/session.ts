@@ -18,6 +18,16 @@ export interface SessionState {
   round: number;
   rounds: number;
   disputeWindowMs: number;
+  /** Answer-window duration in ms (0 = no timer). The per-round deadline derives from it. */
+  answerWindowMs: number;
+  /**
+   * When the current answer round auto-closes, as an epoch ms on the engine clock (spec 0017).
+   * Set while `collecting` with a timer; cleared once the round closes or while paused (the frozen
+   * remaining moves to `answerRemainingMs`).
+   */
+  answerDeadline?: number;
+  /** The answer time left, frozen while paused so a resume continues rather than restarting 60s. */
+  answerRemainingMs?: number;
   players: SessionPlayer[];
   scores: Record<string, number>;
   /** Scoring events accumulated for the in-flight round, reported when it finalizes. */

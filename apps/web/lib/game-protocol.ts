@@ -18,6 +18,13 @@ export interface TriviaPrompt {
   question: string;
 }
 
+/** One player's submitted answer for the round, with its verdict (spec 0017). */
+export interface TriviaSubmission {
+  player: string;
+  answer: string;
+  correct: boolean;
+}
+
 /** The reveal payload Trivia streams when the answer round closes (`reveal`). */
 export interface TriviaRoundReveal {
   round: number;
@@ -29,6 +36,12 @@ export interface TriviaRoundReveal {
   correct: string[];
   /** Player ids marked wrong - the dispute-eligible set. */
   wrong: string[];
+  /**
+   * Every player's submitted answer this round, so the viewer can show the whole table what each
+   * person said (spec 0017). Optional/additive: a pre-0017 engine omits it; the decoder defaults it
+   * to `[]` and readers treat absence as "no per-player answers".
+   */
+  submissions?: TriviaSubmission[];
 }
 
 /** The follow-up reveal Trivia streams after disputes resolve (`disputeVote`). */
@@ -44,6 +57,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+/** Decode the optional per-player submissions list, tolerating a pre-0017 payload that omits it. */
+function asSubmissions(value: unknown): TriviaSubmission[] {
+  if (!Array.isArray(value)) return [];
+  const out: TriviaSubmission[] = [];
+  for (const item of value) {
+    if (
+      isRecord(item) &&
+      typeof item.player === 'string' &&
+      typeof item.answer === 'string' &&
+      typeof item.correct === 'boolean'
+    ) {
+      out.push({ player: item.player, answer: item.answer, correct: item.correct });
+    }
+  }
+  return out;
 }
 
 /** Decode a `prompt` payload as a Trivia prompt, or null if it is not one. */
@@ -64,7 +94,7 @@ export function asTriviaPrompt(value: unknown): TriviaPrompt | null {
 /** Decode a `reveal` payload as the answer-round reveal, or null if it is the dispute reveal. */
 export function asTriviaRoundReveal(value: unknown): TriviaRoundReveal | null {
   if (!isRecord(value)) return null;
-  const { round, question, answers, correct, wrong } = value;
+  const { round, question, answers, correct, wrong, submissions } = value;
   if (
     typeof round === 'number' &&
     (question === null || typeof question === 'string') &&
@@ -72,7 +102,14 @@ export function asTriviaRoundReveal(value: unknown): TriviaRoundReveal | null {
     isStringArray(correct) &&
     isStringArray(wrong)
   ) {
-    return { round, question, answers, correct, wrong };
+    return {
+      round,
+      question,
+      answers,
+      correct,
+      wrong,
+      submissions: asSubmissions(submissions),
+    };
   }
   return null;
 }

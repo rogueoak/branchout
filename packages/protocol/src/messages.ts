@@ -127,6 +127,16 @@ export interface StateMessage {
    * always populates it.
    */
   disputes?: string[];
+  /**
+   * Milliseconds left in the answer window for the round in play, or absent when there is no timer
+   * (spec 0017). Sent as *remaining* rather than an absolute deadline so a client anchors it to its
+   * own clock (`Date.now() + answerMsRemaining`), immune to client/server clock skew, and a
+   * reconnecting device gets the true time left. While paused it carries the frozen remaining.
+   *
+   * Optional/additive under the same `PROTOCOL_VERSION`: a peer predating it still parses a valid
+   * `state` frame, and a reader treats its absence as "no answer timer".
+   */
+  answerMsRemaining?: number;
 }
 
 export type ServerMessage = PromptMessage | RevealMessage | LeaderboardMessage | StateMessage;

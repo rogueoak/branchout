@@ -45,6 +45,11 @@ export interface ConfigureResult {
   rounds: number;
   /** Dispute-window duration in ms. 0 (default) means the host advances it manually. */
   disputeWindowMs?: number;
+  /**
+   * Answer-window duration in ms: the engine force-closes the answer round to reveal when it
+   * expires (spec 0017). 0 (default) means no timer - the round waits on all-answered or the host.
+   */
+  answerWindowMs?: number;
 }
 
 export interface StartRoundResult {

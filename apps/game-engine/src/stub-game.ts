@@ -25,6 +25,7 @@ export const STUB_GAME_ID = 'stub';
 export interface StubConfig {
   rounds?: number;
   disputeWindowMs?: number;
+  answerWindowMs?: number;
   /** The correct answer for each round; the last entry repeats if there are more rounds. */
   secrets?: string[];
 }
@@ -83,6 +84,7 @@ export const stubGame: GameModule = {
       scratch: scratch as unknown as Record<string, unknown>,
       rounds,
       disputeWindowMs: cfg.disputeWindowMs ?? 0,
+      answerWindowMs: cfg.answerWindowMs ?? 0,
     };
   },
 

@@ -37,6 +37,9 @@ export const DEFAULT_ROUNDS = 10;
 /** The 10-second dispute window the spec mandates, in milliseconds. */
 export const DISPUTE_WINDOW_MS = 10_000;
 
+/** The 60-second answer window: a round auto-closes to reveal when it expires (spec 0017). */
+export const ANSWER_WINDOW_MS = 60_000;
+
 const CORRECT_POINTS = 100;
 const DISPUTE_POINTS = 50;
 
@@ -200,6 +203,7 @@ export function createTriviaGame(
         scratch: toRecord(emptyScratch(cfg)),
         rounds: cfg.rounds,
         disputeWindowMs: DISPUTE_WINDOW_MS,
+        answerWindowMs: ANSWER_WINDOW_MS,
       };
     },
 
@@ -272,9 +276,14 @@ export function createTriviaGame(
 
       const correct: string[] = [];
       const wrong: string[] = [];
+      // Every player's submitted answer, so the reveal can show the whole table what each other
+      // person said (spec 0017), with its correct/wrong verdict.
+      const submissions: { player: string; answer: string; correct: boolean }[] = [];
       for (const [player, answer] of Object.entries(submitted)) {
-        if (question && isCorrectAnswer(answer, question.answers)) correct.push(player);
+        const isCorrect = question ? isCorrectAnswer(answer, question.answers) : false;
+        if (isCorrect) correct.push(player);
         else wrong.push(player);
+        submissions.push({ player, answer, correct: isCorrect });
       }
       // Only `wrong` is persisted - it gates dispute eligibility. `correct` is streamed in the
       // reveal payload but never read back, so it is not kept in scratch.
@@ -294,6 +303,7 @@ export function createTriviaGame(
           answers: question?.answers ?? [],
           correct,
           wrong,
+          submissions,
         },
         scores,
       };

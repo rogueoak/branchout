@@ -55,6 +55,8 @@ export interface EngineDeps {
   pubsub: PubSub;
   reporter: ControlPlaneReporter;
   scheduler?: Scheduler;
+  /** Wall-clock seam for answer-window deadlines; defaults to `Date.now`. Injected for tests. */
+  clock?: () => number;
   /** Structured logger seam; defaults to console. */
   logger?: Pick<Console, 'error'>;
 }
@@ -65,6 +67,7 @@ export class GameEngine {
   private readonly pubsub: PubSub;
   private readonly reporter: ControlPlaneReporter;
   private readonly scheduler: Scheduler;
+  private readonly clock: () => number;
   private readonly logger: Pick<Console, 'error'>;
   /** Per-session promise chain: serializes reads-modify-writes within this process. */
   private readonly locks = new Map<string, Promise<unknown>>();
@@ -75,6 +78,7 @@ export class GameEngine {
     this.pubsub = deps.pubsub;
     this.reporter = deps.reporter;
     this.scheduler = deps.scheduler ?? realScheduler;
+    this.clock = deps.clock ?? Date.now;
     this.logger = deps.logger ?? console;
   }
 
@@ -128,6 +132,7 @@ export class GameEngine {
         round: 1,
         rounds: cfg.rounds,
         disputeWindowMs: cfg.disputeWindowMs ?? 0,
+        answerWindowMs: cfg.answerWindowMs ?? 0,
         players,
         scores: Object.fromEntries(players.map((p) => [p.player, 0])),
         roundScores: [],
@@ -176,8 +181,12 @@ export class GameEngine {
       if (existing.isHost && state.hostPaused) {
         state.paused = false;
         state.hostPaused = false;
+        const module = this.registry.resolve(state.game);
         if (state.phase === 'disputing' || state.phase === 'voting') {
-          this.armWindow(state, this.registry.resolve(state.game), state.phase);
+          this.armWindow(state, module, state.phase);
+        } else {
+          // Continue the answer countdown from where the host's drop froze it (spec 0017).
+          this.resumeAnswerWindow(state, module);
         }
       }
       await this.store.save(state);
@@ -214,6 +223,9 @@ export class GameEngine {
       if (existing.isHost && !state.paused && state.phase !== 'complete') {
         state.paused = true;
         state.hostPaused = true;
+        // The auto-pause must also hold the answer countdown, or it keeps ticking (and could
+        // force-close the round) while the host is away (spec 0017).
+        this.freezeAnswerWindow(state);
       }
       await this.store.save(state);
       await this.publish(state, this.stateMessage(state));
@@ -244,6 +256,12 @@ export class GameEngine {
       const result = module.collectAnswer(this.context(state), player, answer);
       state.scratch = result.scratch;
       await this.store.save(state);
+      // Self-heal the answer-window timer: it lives in memory, so an engine restart mid-round leaves
+      // the persisted deadline with nothing to fire it. Re-arming on a submit (a duplicate the
+      // deadline self-correction neutralizes) makes a live round close on time again after a restart.
+      if (state.answerDeadline !== undefined) {
+        this.armAnswerWindow(state, module, state.answerDeadline - this.clock());
+      }
       if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
     });
   }
@@ -279,6 +297,10 @@ export class GameEngine {
       switch (action) {
         case 'pause':
           state.paused = !state.paused;
+          // Hold or continue the answer countdown across the pause so it never ticks while stopped
+          // and a resume continues from the time left, not a fresh window (spec 0017).
+          if (state.paused) this.freezeAnswerWindow(state);
+          else this.resumeAnswerWindow(state, module);
           await this.store.save(state);
           await this.publish(state, this.stateMessage(state));
           // Resuming inside a timed dispute/vote window re-arms it, so a paused window does not
@@ -355,8 +377,15 @@ export class GameEngine {
     state.prompt = result.prompt;
     state.reveal = undefined;
     state.standings = undefined;
+    // Open the answer window: a fresh deadline the state frame projects as remaining ms, and a
+    // timer that force-closes the round if it expires before everyone answers (spec 0017).
+    state.answerRemainingMs = undefined;
+    state.answerDeadline =
+      state.answerWindowMs > 0 ? this.clock() + state.answerWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
     await this.publish(state, this.stateMessage(state));
+    if (state.answerDeadline !== undefined)
+      this.armAnswerWindow(state, module, state.answerWindowMs);
   }
 
   /** One phase transition. Saves once at the end and (re)arms the dispute-window timer. */
@@ -372,6 +401,10 @@ export class GameEngine {
         this.applyScores(state, result.scores);
         state.phase = 'disputing';
         state.reveal = result.reveal;
+        // The answer window is over; drop the deadline so the reveal-phase state frame carries no
+        // stale countdown.
+        state.answerDeadline = undefined;
+        state.answerRemainingMs = undefined;
         await this.publish(state, this.revealMessage(state, result.reveal));
         await this.publish(state, this.stateMessage(state));
         this.armWindow(state, module, 'disputing');
@@ -491,6 +524,7 @@ export class GameEngine {
     state.round = 1;
     state.rounds = cfg.rounds;
     state.disputeWindowMs = cfg.disputeWindowMs ?? 0;
+    state.answerWindowMs = cfg.answerWindowMs ?? 0;
     state.paused = false;
     state.hostPaused = false;
     state.scratch = cfg.scratch;
@@ -542,6 +576,62 @@ export class GameEngine {
     });
   }
 
+  /**
+   * Arm the answer-window force-close: after `delayMs` advance `collecting -> reveal` unless the
+   * round already moved on. The fire-time guard re-checks phase/round/runId/pause, so an early close
+   * (everyone answered), a host advance, a pause, or a new round all cancel it harmlessly. No-op
+   * while paused or when there is no timer.
+   */
+  private armAnswerWindow(state: SessionState, module: GameModule, delayMs: number): void {
+    if (state.paused || state.answerWindowMs <= 0) return;
+    const { room, game, round, runId } = state;
+    this.scheduler.schedule(Math.max(0, delayMs), () => {
+      void this.run(sessionKey(room, game), async () => {
+        const current = await this.store.load(room, game);
+        if (
+          !current ||
+          current.paused ||
+          current.phase !== 'collecting' ||
+          current.round !== round ||
+          current.runId !== runId ||
+          current.answerDeadline === undefined
+        ) {
+          return;
+        }
+        // Honor the current deadline, not this timer's original delay: a pause/resume pushes the
+        // deadline out, so a timer armed before the pause must re-arm for the time left rather than
+        // close the round early. Only when the deadline has truly passed do we advance.
+        const remaining = current.answerDeadline - this.clock();
+        if (remaining > 0) {
+          this.armAnswerWindow(current, module, remaining);
+          return;
+        }
+        await this.advanceLocked(current, module);
+      });
+    });
+  }
+
+  /** Freeze the answer countdown when the game pauses mid-`collecting` so it does not tick away. */
+  private freezeAnswerWindow(state: SessionState): void {
+    if (state.phase !== 'collecting' || state.answerDeadline === undefined) return;
+    state.answerRemainingMs = Math.max(0, state.answerDeadline - this.clock());
+    state.answerDeadline = undefined;
+  }
+
+  /** Continue a frozen answer countdown from the time left and re-arm the force-close timer. */
+  private resumeAnswerWindow(state: SessionState, module: GameModule): void {
+    if (state.phase !== 'collecting' || state.paused) return;
+    if (state.answerWindowMs > 0) {
+      const remaining = state.answerRemainingMs ?? state.answerWindowMs;
+      state.answerDeadline = this.clock() + remaining;
+      state.answerRemainingMs = undefined;
+      this.armAnswerWindow(state, module, remaining);
+    }
+    // The pause also cancelled the all-answered 2s grace, so if the table had already finished, the
+    // round would otherwise wait out the full window on resume. Re-arm it (feedback 0015).
+    if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
+  }
+
   /** Arm the dispute-window timer; a no-op when the window is manual (0) or paused. */
   private armWindow(state: SessionState, module: GameModule, phase: SessionState['phase']): void {
     if (state.disputeWindowMs <= 0 || state.paused) return;
@@ -590,6 +680,15 @@ export class GameEngine {
       })),
       scores: { ...state.scores },
       disputes: [...state.disputes],
+      // Project the live time left (or the frozen remaining while paused) so clients anchor a
+      // skew-proof countdown; absent when there is no answer timer for this phase. NOTE: this makes
+      // the frame time-dependent (`this.clock()`), so two `stateMessage` calls are not byte-equal -
+      // intended, since a joiner must see the *current* remaining, and persistence stores the
+      // absolute deadline, not this projection.
+      answerMsRemaining:
+        state.answerDeadline !== undefined
+          ? Math.max(0, state.answerDeadline - this.clock())
+          : state.answerRemainingMs,
     };
   }
 

@@ -212,6 +212,18 @@ Capture durable lessons as they emerge.
   that can flip it (answer *and* disconnect), and make the fire-time guard include `runId` so a
   restart's reused round number cannot let a stale timer fire on the fresh run. (Engineer review of
   PR #25, feedback `0015`.)
+- **Send a countdown as *remaining time*, not an absolute deadline, so the client anchors it to its
+  own clock.** A shared timer that ships an epoch deadline is only as correct as the gap between the
+  server and client clocks (which can be minutes). The engine holds an absolute deadline internally
+  (deterministic under an injected `clock` seam) but the `state` frame projects `answerMsRemaining`;
+  the client sets `localDeadline = Date.now() + remaining` on receipt, so skew never leaks in and a
+  reconnecting device gets the true time left because `join` resends a fresh remaining. (Spec `0017`.)
+- **A rescheduled timer should self-correct against the source of truth, not trust its own delay.**
+  Pausing pushes the answer deadline out, but a timer armed before the pause still fires at its
+  original wall time; cancelling handles need an in-memory map (state is Redis-serialized, no
+  functions). Instead the fire re-reads the current deadline: if time is left it re-arms for exactly
+  that, and only advances once the deadline has truly passed - so a stale timer becomes harmless
+  without any cancel bookkeeping. (Spec `0017`.)
 - **When a control needs to express a *range*, model the data for a range - don't overload one
   scalar over a coarse enum.** Trivia difficulty was one 1-10 knob mapped to a blend of three tiers,
   so it could never say "consistent middle": the fix was to re-rate the questions on a real 1-10

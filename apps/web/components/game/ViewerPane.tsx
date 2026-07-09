@@ -10,6 +10,7 @@ import { Badge } from '@rogueoak/canopy';
 import type { GameState } from '../../lib/game-state';
 import { difficultyBand } from '../../lib/trivia-config';
 import { toDisplayAnswer } from '../../lib/title-case';
+import { useAnswerCountdown } from '../../lib/use-answer-countdown';
 import { FinalResults } from './FinalResults';
 import { Leaderboard } from './Leaderboard';
 
@@ -25,6 +26,7 @@ function nicknameOf(players: PlayerView[], id: string): string {
 
 export function ViewerPane({ state, me }: ViewerPaneProps) {
   const { phase, prompt, reveal, disputeResult, standings, players } = state;
+  const secondsLeft = useAnswerCountdown(state.answerMsRemaining, state.round, state.paused);
 
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-5">
@@ -45,6 +47,13 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
             <Badge variant="info">Round {prompt.round}</Badge>
             <Badge variant="neutral">{prompt.category}</Badge>
             <Badge variant="neutral">{difficultyBand(prompt.difficulty)}</Badge>
+            {phase === 'collecting' && secondsLeft !== null ? (
+              <Badge variant={secondsLeft <= 10 ? 'warning' : 'neutral'}>
+                <span role="timer" aria-label={`${secondsLeft} seconds left`}>
+                  {secondsLeft}s left
+                </span>
+              </Badge>
+            ) : null}
           </div>
           <h2 className="text-h2 text-text">{prompt.question}</h2>
 
@@ -64,6 +73,29 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
                   ? 'Nobody got it.'
                   : `Correct: ${reveal.correct.map((id) => nicknameOf(players, id)).join(', ')}`}
               </p>
+              {(reveal.submissions ?? []).length > 0 ? (
+                <ul aria-label="Everyone's answers" className="flex flex-col gap-1">
+                  {(reveal.submissions ?? []).map((s) => (
+                    <li key={s.player} className="flex items-baseline justify-between gap-3">
+                      <span className="shrink-0 text-body-sm text-text-muted">
+                        {nicknameOf(players, s.player)}
+                      </span>
+                      {/* min-w-0 + break-words lets a long guess wrap instead of overflowing or
+                          squashing the nickname at ~360px (mobile-first). */}
+                      <span
+                        className={`min-w-0 break-words text-right text-body-sm ${
+                          s.correct ? 'text-success' : 'text-text'
+                        }`}
+                        aria-label={`${nicknameOf(players, s.player)} answered ${s.answer}, ${
+                          s.correct ? 'correct' : 'wrong'
+                        }`}
+                      >
+                        {s.correct ? '✓' : '✗'} {toDisplayAnswer(s.answer)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               {phase === 'voting' ? (
                 <p className="text-body-sm text-text-muted" role="status">
                   A dispute is being voted on.
