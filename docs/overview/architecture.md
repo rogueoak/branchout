@@ -15,6 +15,7 @@ packages/
   brand          logo, icon, and favicon assets (from assets/)
   game-sdk         the harness<->game plugin contract + dependency injection + test helpers
   games/trivia     the Trivia game as an independent @branchout/game-sdk plugin package
+  games/liar-liar  the Liar Liar bluffing game as an independent plugin package (engine logic)
   protocol         shared TypeScript types + contracts (control-plane <-> engine <-> web)
   service-runtime  shared Fastify-service helpers (env parsing, Redis client)
   config           shared tsconfig, eslint, prettier
