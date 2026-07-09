@@ -2,6 +2,7 @@
 
 export {
   createTriviaGame,
+  triviaPlugin,
   validateConfig,
   TRIVIA_GAME_ID,
   CONFIGURABLE_CATEGORIES,

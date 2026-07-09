@@ -4,12 +4,12 @@ import { createApp } from './app';
 import { loadConfig } from './config';
 import { GameEngine } from './engine';
 import { RedisPubSub } from './pubsub';
-import { GameRegistry } from './registry';
 import { HttpControlPlaneReporter, NoopReporter, type ControlPlaneReporter } from './reporter';
 import { RedisSessionStore } from './session';
 import { attachGameSocket } from './socket';
-import { stubGame } from './stub-game';
-import { createTriviaGame, loadQuestionBank } from './games/trivia';
+import { createGameServices } from './services';
+import { registerPlugins } from './plugins';
+import { triviaPlugin } from './games/trivia';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -33,13 +33,13 @@ async function main(): Promise<void> {
   const cache = await pingRedis(redis);
   console.log(`[game-engine] startup check redis=${cache ? 'ok' : 'unreachable'}`);
 
-  // Load the Trivia question bank once at boot so the module can draw synchronously per round.
-  // A failed load aborts boot (via main().catch) rather than serving a broken game.
-  const questionBank = await loadQuestionBank();
-  console.log(`[game-engine] loaded ${questionBank.length} trivia questions`);
-
-  // The modular game registry. Adding a game is registering its module here.
-  const registry = new GameRegistry([stubGame, createTriviaGame(questionBank)]);
+  // The plugin runtime: build the injected services, then instantiate each game plugin into the
+  // registry. Adding a game is adding its plugin to this list. A plugin's `create()` may load its
+  // data (e.g. the Trivia bank); a failure aborts boot via main().catch rather than serving a
+  // broken game.
+  const services = createGameServices();
+  const { registry, configSchemas } = await registerPlugins([triviaPlugin], services);
+  console.log(`[game-engine] registered games: ${registry.ids().join(', ')}`);
 
   const reporter: ControlPlaneReporter = config.controlPlaneUrl
     ? new HttpControlPlaneReporter({ baseUrl: config.controlPlaneUrl })
@@ -51,6 +51,7 @@ async function main(): Promise<void> {
   const pubsub = new RedisPubSub(redis, subscriber);
   const engine = new GameEngine({
     registry,
+    configSchemas,
     store: new RedisSessionStore(redis),
     pubsub,
     reporter,

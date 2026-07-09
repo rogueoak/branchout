@@ -18,29 +18,5 @@ export const realScheduler: Scheduler = {
   },
 };
 
-/** Test scheduler: nothing fires until `flush()` (or `advance(ms)`) is called. */
-export class ManualScheduler implements Scheduler {
-  private seq = 0;
-  private readonly tasks = new Map<number, { at: number; fn: () => void }>();
-  private now = 0;
-
-  schedule(delayMs: number, fn: () => void): () => void {
-    const id = this.seq++;
-    this.tasks.set(id, { at: this.now + delayMs, fn });
-    return () => this.tasks.delete(id);
-  }
-
-  /** Fire every pending task, in scheduled order. */
-  flush(): void {
-    const pending = [...this.tasks.entries()].sort((a, b) => a[1].at - b[1].at);
-    this.tasks.clear();
-    for (const [, task] of pending) {
-      task.fn();
-    }
-  }
-
-  /** True while any task is still pending. */
-  get pending(): number {
-    return this.tasks.size;
-  }
-}
+// The test scheduler (ManualScheduler) lives in @branchout/game-sdk/testing; it is structurally
+// compatible with the Scheduler seam above, so tests inject it wherever a Scheduler is expected.

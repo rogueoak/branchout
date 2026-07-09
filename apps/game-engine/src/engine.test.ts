@@ -15,12 +15,11 @@ function stateFrame(frames: ServerMessage[]): StateMessage {
   if (!frame) throw new Error('join returned no state frame');
   return frame;
 }
+import { ManualScheduler, stubGame, STUB_GAME_ID } from '@branchout/game-sdk/testing';
 import { InMemoryPubSub } from './pubsub';
 import { GameRegistry } from './registry';
 import type { ControlPlaneReporter } from './reporter';
-import { ManualScheduler } from './scheduler';
 import { InMemorySessionStore } from './session';
-import { stubGame, STUB_GAME_ID } from './stub-game';
 
 class CapturingReporter implements ControlPlaneReporter {
   rounds: RoundReport[] = [];

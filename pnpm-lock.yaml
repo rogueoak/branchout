@@ -81,6 +81,9 @@ importers:
 
   apps/game-engine:
     dependencies:
+      '@branchout/game-sdk':
+        specifier: workspace:*
+        version: link:../../packages/game-sdk
       '@branchout/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
@@ -227,6 +230,28 @@ importers:
       typescript-eslint:
         specifier: ^8.18.2
         version: 8.62.1(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
+
+  packages/game-sdk:
+    dependencies:
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+    devDependencies:
+      '@branchout/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.43
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
 
   packages/protocol:
     dependencies:

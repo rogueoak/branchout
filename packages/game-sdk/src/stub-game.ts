@@ -1,6 +1,7 @@
-// A minimal stub game for tests and local smoke runs. It is NOT Trivia (spec 0008) - it exists
-// only to drive the full generic lifecycle end to end, including the dispute paths and end-game
-// ranking, so the engine can be tested without any real game.
+// A minimal stub game for tests and local smoke runs. It is NOT a real game - it exists only to
+// drive the full generic lifecycle end to end, including the dispute paths and end-game ranking, so
+// the engine (harness) can be tested without any real game. It lives in the SDK's `./testing` entry
+// and never ships in a production bundle.
 //
 // Rules: each round has a secret answer. A player whose submitted answer equals the secret scores
 // 100. A wrong player may dispute (a `vote` during the dispute window, targeting themselves); the
@@ -19,6 +20,7 @@ import type {
   StartRoundResult,
   VoteInput,
 } from './lifecycle';
+import type { GamePlugin } from './plugin';
 
 export const STUB_GAME_ID = 'stub';
 
@@ -202,4 +204,15 @@ export const stubGame: GameModule = {
   endGame(ctx: RoundContext): Standing[] {
     return rankStandings(ctx.players, ctx.scores);
   },
+};
+
+/** The stub wrapped as a plugin, for exercising the engine's plugin runtime in tests. */
+export const stubPlugin: GamePlugin<StubConfig> = {
+  manifest: {
+    id: STUB_GAME_ID,
+    name: 'Stub',
+    version: '1.0.0',
+    configSchema: (raw: unknown) => (raw ?? {}) as StubConfig,
+  },
+  create: () => stubGame,
 };

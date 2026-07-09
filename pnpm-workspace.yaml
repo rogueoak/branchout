@@ -1,5 +1,6 @@
 packages:
   - 'packages/*'
+  - 'packages/games/*'
   - 'apps/*'
 
 allowBuilds:

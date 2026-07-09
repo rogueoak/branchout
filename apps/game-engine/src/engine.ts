@@ -18,6 +18,7 @@ import {
   type Standing,
   type ScoreEvent,
 } from '@branchout/protocol';
+import type { ConfigSchema } from '@branchout/game-sdk';
 import type { GameModule, RoundContext } from './lifecycle';
 import type { GameRegistry } from './registry';
 import type { ControlPlaneReporter } from './reporter';
@@ -59,6 +60,8 @@ export interface EngineDeps {
   clock?: () => number;
   /** Structured logger seam; defaults to console. */
   logger?: Pick<Console, 'error'>;
+  /** Per-game config validators (from each plugin's manifest); run at the start-handoff boundary. */
+  configSchemas?: Map<string, ConfigSchema<unknown>>;
 }
 
 export class GameEngine {
@@ -69,6 +72,7 @@ export class GameEngine {
   private readonly scheduler: Scheduler;
   private readonly clock: () => number;
   private readonly logger: Pick<Console, 'error'>;
+  private readonly configSchemas?: Map<string, ConfigSchema<unknown>>;
   /** Per-session promise chain: serializes reads-modify-writes within this process. */
   private readonly locks = new Map<string, Promise<unknown>>();
 
@@ -80,6 +84,7 @@ export class GameEngine {
     this.scheduler = deps.scheduler ?? realScheduler;
     this.clock = deps.clock ?? Date.now;
     this.logger = deps.logger ?? console;
+    this.configSchemas = deps.configSchemas;
   }
 
   /** Serialize operations on one session so concurrent frames cannot lose an update. */
@@ -111,6 +116,11 @@ export class GameEngine {
         return { v: PROTOCOL_VERSION, room: req.room, game: req.game, status: 'running' };
       }
       const module = this.registry.resolve(req.game);
+      // Validate the opaque handoff config against the game's manifest schema at the boundary. It
+      // throws on invalid config, which app.ts turns into a 400. The game's own configure() still
+      // runs below and remains the source of rounds/scratch.
+      const schema = this.configSchemas?.get(req.game);
+      if (schema) schema(req.config);
       const players = req.players.map((p) => ({
         player: p.player,
         nickname: p.nickname,
