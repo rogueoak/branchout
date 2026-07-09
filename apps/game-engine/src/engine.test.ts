@@ -396,6 +396,51 @@ describe('GameEngine lifecycle', () => {
     h.clock.advance(60_000);
     h.scheduler.flush();
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+    // The window is over: the reveal-phase state frame carries no stale countdown.
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBeUndefined();
+  });
+
+  it('re-arms the all-answered 2s grace on resume (a finished table closes promptly)', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+    );
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'green'); // everyone answered -> grace armed
+
+    // Pause for longer than the 2s grace, then resume: the grace must be re-armed, not lost.
+    await h.engine.control('r1', STUB_GAME_ID, 'pause');
+    h.clock.advance(10_000);
+    h.scheduler.flush(); // stale grace + answer timers no-op while paused
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+
+    await h.engine.control('r1', STUB_GAME_ID, 'pause'); // resume
+    h.scheduler.flush(); // the re-armed 2s grace fires and closes the finished round
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+  });
+
+  it('self-heals the answer-window timer after a restart when a player submits', async () => {
+    // Simulate an engine restart: a second engine over the same store has no in-memory timers.
+    await h.engine.start(
+      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+    );
+    const scheduler2 = new ManualScheduler();
+    const engine2 = new GameEngine({
+      registry: new GameRegistry([stubGame]),
+      store: h.store,
+      pubsub: h.pubsub,
+      reporter: h.reporter,
+      scheduler: scheduler2,
+      clock: h.clock.now,
+      logger: { error: () => {} },
+    });
+
+    // No timer is armed on engine2. A late answer re-arms the window from the persisted deadline.
+    await engine2.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'late');
+    h.clock.advance(60_000);
+    scheduler2.flush();
+    expect((await engine2.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
   });
 
   it('projects the answer time left on the state frame, ticking down with the clock', async () => {

@@ -99,7 +99,7 @@ describe('RemotePane answer countdown', () => {
     expect(onAnswer).toHaveBeenCalledWith(1, 'water');
   });
 
-  it('does not auto-submit a blank draft at zero', () => {
+  it('does not auto-submit a whitespace-only draft at zero', () => {
     vi.useFakeTimers();
     const onAnswer = vi.fn();
     render(
@@ -111,7 +111,26 @@ describe('RemotePane answer countdown', () => {
         onBallot={noop}
       />,
     );
+    fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: '   ' } });
     act(() => vi.advanceTimersByTime(1_000));
     expect(onAnswer).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-submit while paused at expiry (the engine would drop it)', () => {
+    const onAnswer = vi.fn();
+    // Paused with 0 remaining: the countdown reads 0 but the round is held, so nothing should send.
+    const state = build({
+      phase: 'collecting',
+      paused: true,
+      players: [{ player: 'p1', nickname: 'Ada', connected: true }],
+      answerMsRemaining: 0,
+      prompt: { round: 1, category: 'People', difficulty: 5, question: 'Q?' },
+    });
+    render(
+      <RemotePane state={state} me="p1" onAnswer={onAnswer} onDispute={noop} onBallot={noop} />,
+    );
+    fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'water' } });
+    expect(onAnswer).not.toHaveBeenCalled();
+    expect(screen.getByText('Paused')).toBeDefined();
   });
 });

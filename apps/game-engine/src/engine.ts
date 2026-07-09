@@ -256,6 +256,12 @@ export class GameEngine {
       const result = module.collectAnswer(this.context(state), player, answer);
       state.scratch = result.scratch;
       await this.store.save(state);
+      // Self-heal the answer-window timer: it lives in memory, so an engine restart mid-round leaves
+      // the persisted deadline with nothing to fire it. Re-arming on a submit (a duplicate the
+      // deadline self-correction neutralizes) makes a live round close on time again after a restart.
+      if (state.answerDeadline !== undefined) {
+        this.armAnswerWindow(state, module, state.answerDeadline - this.clock());
+      }
       if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
     });
   }
@@ -614,11 +620,16 @@ export class GameEngine {
 
   /** Continue a frozen answer countdown from the time left and re-arm the force-close timer. */
   private resumeAnswerWindow(state: SessionState, module: GameModule): void {
-    if (state.phase !== 'collecting' || state.answerWindowMs <= 0 || state.paused) return;
-    const remaining = state.answerRemainingMs ?? state.answerWindowMs;
-    state.answerDeadline = this.clock() + remaining;
-    state.answerRemainingMs = undefined;
-    this.armAnswerWindow(state, module, remaining);
+    if (state.phase !== 'collecting' || state.paused) return;
+    if (state.answerWindowMs > 0) {
+      const remaining = state.answerRemainingMs ?? state.answerWindowMs;
+      state.answerDeadline = this.clock() + remaining;
+      state.answerRemainingMs = undefined;
+      this.armAnswerWindow(state, module, remaining);
+    }
+    // The pause also cancelled the all-answered 2s grace, so if the table had already finished, the
+    // round would otherwise wait out the full window on resume. Re-arm it (feedback 0015).
+    if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
   }
 
   /** Arm the dispute-window timer; a no-op when the window is manual (0) or paused. */
@@ -670,7 +681,10 @@ export class GameEngine {
       scores: { ...state.scores },
       disputes: [...state.disputes],
       // Project the live time left (or the frozen remaining while paused) so clients anchor a
-      // skew-proof countdown; absent when there is no answer timer for this phase.
+      // skew-proof countdown; absent when there is no answer timer for this phase. NOTE: this makes
+      // the frame time-dependent (`this.clock()`), so two `stateMessage` calls are not byte-equal -
+      // intended, since a joiner must see the *current* remaining, and persistence stores the
+      // absolute deadline, not this projection.
       answerMsRemaining:
         state.answerDeadline !== undefined
           ? Math.max(0, state.answerDeadline - this.clock())

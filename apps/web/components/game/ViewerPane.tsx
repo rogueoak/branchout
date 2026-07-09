@@ -77,11 +77,15 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
                 <ul aria-label="Everyone's answers" className="flex flex-col gap-1">
                   {(reveal.submissions ?? []).map((s) => (
                     <li key={s.player} className="flex items-baseline justify-between gap-3">
-                      <span className="text-body-sm text-text-muted">
+                      <span className="shrink-0 text-body-sm text-text-muted">
                         {nicknameOf(players, s.player)}
                       </span>
+                      {/* min-w-0 + break-words lets a long guess wrap instead of overflowing or
+                          squashing the nickname at ~360px (mobile-first). */}
                       <span
-                        className={`text-body-sm ${s.correct ? 'text-success' : 'text-text'}`}
+                        className={`min-w-0 break-words text-right text-body-sm ${
+                          s.correct ? 'text-success' : 'text-text'
+                        }`}
                         aria-label={`${nicknameOf(players, s.player)} answered ${s.answer}, ${
                           s.correct ? 'correct' : 'wrong'
                         }`}

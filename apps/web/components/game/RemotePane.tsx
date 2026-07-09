@@ -65,14 +65,21 @@ export function RemotePane({
 
   // When the countdown hits zero, auto-submit whatever the player has typed (spec 0017). The engine
   // force-closes the round at the same moment; sending here is what makes a typed-but-unsent answer
-  // count. Blank drafts send nothing (a non-submitter is marked wrong, same as before).
+  // count. Blank drafts send nothing (a non-submitter is marked wrong, same as before). Skip while
+  // paused: `secondsLeft` can read 0 on a pause-at-expiry, and the engine drops a paused submit - so
+  // sending would lose the draft while the UI falsely marks it sent.
   useEffect(() => {
-    if (phase !== 'collecting' || secondsLeft !== 0 || submittedRound === round) return;
+    if (phase !== 'collecting' || state.paused || secondsLeft !== 0 || submittedRound === round) {
+      return;
+    }
     const trimmed = answer.trim();
     if (!trimmed) return;
     onAnswer(round, trimmed);
     setSubmittedRound(round);
-  }, [secondsLeft, phase, round, submittedRound, answer, onAnswer]);
+  }, [secondsLeft, phase, state.paused, round, submittedRound, answer, onAnswer]);
+
+  // "Time is up" only when the clock has truly run out (not merely paused at some remaining).
+  const timeUp = secondsLeft === 0 && !state.paused;
   // A dispute goes to a vote of the *other* connected players; with none there is nobody to vote
   // and the engine can never uphold it, so the button would be a dead end in a solo game. Only
   // offer it when at least one other connected player exists (feedback 0015).
@@ -107,10 +114,10 @@ export function RemotePane({
               role="timer"
               aria-label={`${secondsLeft} seconds left to answer`}
               className={`text-body-sm font-medium ${
-                secondsLeft <= 10 ? 'text-warning' : 'text-text-muted'
+                timeUp || secondsLeft <= 10 ? 'text-warning' : 'text-text-muted'
               }`}
             >
-              {state.paused ? 'Paused' : `${secondsLeft}s left to answer`}
+              {state.paused ? 'Paused' : timeUp ? "Time's up" : `${secondsLeft}s left to answer`}
             </p>
           ) : null}
           <label htmlFor="answer-input" className="text-body-sm font-medium text-text">
@@ -122,18 +129,30 @@ export function RemotePane({
               value={answer}
               autoComplete="off"
               placeholder="Type your answer"
+              disabled={timeUp}
               onChange={(event) => setAnswer(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') submit();
               }}
             />
-            <Button type="button" variant="primary" onClick={submit} disabled={!answer.trim()}>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={submit}
+              disabled={timeUp || !answer.trim()}
+            >
               {submitted ? 'Resubmit' : 'Submit'}
             </Button>
           </div>
           {submitted ? (
             <p role="status" className="text-body-sm text-success">
-              Answer submitted. You can change it until the round closes.
+              {timeUp
+                ? 'Answer locked in.'
+                : 'Answer submitted. You can change it until the round closes.'}
+            </p>
+          ) : secondsLeft !== null && !state.paused ? (
+            <p className="text-body-sm text-text-subtle">
+              Your answer sends automatically when the timer ends.
             </p>
           ) : null}
         </div>
