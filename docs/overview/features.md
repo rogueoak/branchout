@@ -10,14 +10,14 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] End-to-end tests - a Playwright harness (`e2e/`) drives a real browser against the full
       docker-compose stack (web + control-plane + game-engine + Postgres + Redis): the Open Graph
       share unfurls, a full two-player Trivia round, and a mobile-first render guard at a phone
-      viewport. Its own CI job (`pnpm e2e`); the fast unit run stays Docker-free (spec `0024`).
+      viewport. Its own CI job (`pnpm e2e`); the fast unit run stays Docker-free (spec `0026`).
 - [x] Branch out Confetti theme on canopy, light + dark, AA-verified (spec `0002`).
 - [x] Brand assets - icon, favicon, wordmark lockup, OG image; `packages/brand` re-exports
       SVGs and generates rasters at build time (spec `0003`).
 - [x] Per-game marks and social share cards - on-theme game logos (`Trivia` = a branch-graph
       question mark, `Liar Liar` = a masquerade mask on a stick, both keeping the gold-root rule),
       a home Open Graph card built around the wordmark + tagline, and per-game "Join my game" share
-      cards (game art + the mark, generic fallback) unfurled by share links (spec `0020`).
+      cards (game art + the mark, generic fallback) unfurled by share links (spec `0025`).
 - [~] Hosting and deploy - `branchout.games` on a DigitalOcean droplet behind a Caddy edge proxy
       (auto-TLS, HSTS, same-origin `/api` + `/ws` routing), the three apps as private GHCR images
       plus Postgres + Redis, rolled forward hands-off by `release.yml` on every push to `main`
@@ -130,7 +130,7 @@ What the product does for users, grouped by area. Each capability maps to one or
       Branch out mark in the corner. The join page's `generateMetadata` resolves the room's game
       server-side via a public `GET /rooms/:code/preview` (a crawler is not a member, so `getRoom`
       cannot serve it); any failure falls back to a generic invite card so every link unfurls.
-      `twitter:card` is `summary_large_image` for large cards on X/iMessage (spec `0020`).
+      `twitter:card` is `summary_large_image` for large cards on X/iMessage (spec `0025`).
 - [x] Trivia end-to-end integration - closes the three integration gaps from `0010` so a full
       game is playable by the host and non-host players (spec `0012`). Each room member gets a
       public `playerId` (minted on create/join, stored beside the private `sessionId` in Redis)

@@ -24,11 +24,11 @@ Capture durable lessons as they emerge.
 - **Keep card text in the SVG's system-font stack; the `sharp` pipeline embeds no fonts.**
   Composing OG cards with `sharp` renders any `<text>` via librsvg's fallback font - there are no
   font files in the pipeline. Set the same `-apple-system, ... , sans-serif` stack the wordmark
-  SVG uses (rather than a bespoke web font) so text rasterizes consistently. (Spec `0020`.)
+  SVG uses (rather than a bespoke web font) so text rasterizes consistently. (Spec `0025`.)
 - **A game mark is a sibling of the house icon, not a reskin.** Reuse the icon skeleton (radial
   tile, two-pass spark strokes, party leaf nodes, and the single gold root) and express the game
   by *bending the branch graph* - Trivia into a question mark, Liar Liar into a masquerade mask.
-  The gold-root rule holds for every mark; assert `#d2a463` is present in a test. (Spec `0020`.)
+  The gold-root rule holds for every mark; assert `#d2a463` is present in a test. (Spec `0025`.)
 
 ## Toolchain
 
@@ -90,11 +90,11 @@ Capture durable lessons as they emerge.
   local non-Docker dev and silently fell back everywhere else. Server-side fetches need the
   server-side URL (`CONTROL_PLANE_URL`), the split `lib/session.ts` already used; the e2e is what
   proves the tags a crawler actually receives. Drive the real stack for anything whose behavior
-  only emerges when the services are wired together. (Spec `0024`.)
+  only emerges when the services are wired together. (Spec `0026`.)
 - **Keep e2e out of the fast test loop.** The Playwright package exposes an `e2e` script, not
   `test`, so `turbo run test` never needs Docker; e2e runs as its own CI job. A dedicated compose
   project (`branchout-e2e`) on shifted ports lets a run coexist with a developer's dev stack.
-  (Spec `0024`.)
+  (Spec `0026`.)
 
 ## Services and state
 
@@ -138,7 +138,7 @@ Capture durable lessons as they emerge.
   join page's `generateMetadata` cannot reuse a member-only `getRoom`; it needs a purpose-built
   public endpoint that returns only what the unfurl needs (here `{ code, status, selectedGame }`)
   and nothing private. Keep that projection minimal and assert in a test that member/session
-  fields never appear, so a later change cannot widen it into a leak. (Spec `0020`.)
+  fields never appear, so a later change cannot widen it into a leak. (Spec `0025`.)
 
 ## Module boundaries
 

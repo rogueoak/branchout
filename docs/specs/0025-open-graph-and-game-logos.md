@@ -1,4 +1,4 @@
-# 0020 - Open Graph share cards and per-game logos
+# 0025 - Open Graph share cards and per-game logos
 
 ## Problem
 

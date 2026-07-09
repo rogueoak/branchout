@@ -1,13 +1,13 @@
-# Plan 0024 - End-to-end tests with Playwright
+# Plan 0026 - End-to-end tests with Playwright
 
-Source: `docs/specs/0024-e2e-playwright.md`.
+Source: `docs/specs/0026-e2e-playwright.md`.
 
 Core move: a root `e2e/` Playwright workspace that boots the real docker-compose stack (dev
 overlay, so the browser reaches services on published `localhost` ports) via `globalSetup`, drives
-it in a real browser, and tears it down. Ships the spec-0020 share-unfurl check and a full Trivia
+it in a real browser, and tears it down. Ships the spec-0025 share-unfurl check and a full Trivia
 round happy path, plus a mobile-first render guard, and runs as its own CI job.
 
-Built stacked on the OG branch (needs spec 0020's share cards + preview endpoint); PR retargets to
+Built stacked on the OG branch (needs spec 0025's share cards + preview endpoint); PR retargets to
 `main` once #32 merges.
 
 ## Step 1 - Precondition fix on the OG branch (done in #32)

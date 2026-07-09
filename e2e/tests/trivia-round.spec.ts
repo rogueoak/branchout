@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { createRoom, joinRoom, signUpHost } from '../lib/helpers';
 
-// The flagship happy-path e2e (spec 0024): a host and a second player play a full one-round Trivia
+// The flagship happy-path e2e (spec 0026): a host and a second player play a full one-round Trivia
 // game in two real browser contexts against the real stack (control-plane + game-engine + Redis +
 // Postgres). This proves the multi-device flow the unit/integration tests cannot: create -> join ->
 // start -> answer -> reveal -> final standings.

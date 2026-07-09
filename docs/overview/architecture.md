@@ -77,7 +77,7 @@ canopy component re-themes with no component changes, in light and dark, AA-veri
 ships upstream as `@rogueoak/roots/brand` (canopy PR #37 - a `buildBrand()` function + a
 `roots-brand` CLI); `packages/theme` consumes it once released. See spec `0002`.
 
-## Open Graph share cards (spec 0020)
+## Open Graph share cards (spec 0025)
 
 Link unfurls are driven by pre-rendered static images, not a runtime renderer. `packages/brand`
 rasterizes the SVG source (`sharp`) into the home wordmark card and one "Join my game" card per
@@ -138,7 +138,7 @@ the two services build with `tsup` (bundled ESM); services run with `tsx` in dev
 behind a transport-agnostic interface, so the realtime transport can change without touching
 game logic.
 
-## Testing (spec 0024)
+## Testing (spec 0026)
 
 Three layers, cheapest first. **Unit** (vitest) covers pure logic and components. **Integration**
 (Fastify `inject` with in-memory stores) covers each service's routes without infrastructure. Both

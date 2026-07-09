@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { createRoom, metaContent, signUpHost } from '../lib/helpers';
 
-// Open Graph share cards (spec 0020), proven end to end against the real stack: the meta tags a
+// Open Graph share cards (spec 0025), proven end to end against the real stack: the meta tags a
 // link crawler would read are served by the real web app, which resolves the room's game from the
-// real control-plane preview endpoint. This is the browser-level check the spec-0020 acceptance
+// real control-plane preview endpoint. This is the browser-level check the spec-0025 acceptance
 // asked for and the unit/integration tests could only approximate.
 
 test.describe('Open Graph share unfurls', () => {
