@@ -6,10 +6,34 @@
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
+import { liarLiarSvg } from '@branchout/brand/liarliar';
+import { triviaSvg } from '@branchout/brand/trivia';
 import { Wordmark } from './Wordmark';
 
 interface LandingContentProps {
   signedIn: boolean;
+}
+
+/**
+ * A right-pointing arrow, drawn as an SVG so the "Start a game" affordance is a real icon rather
+ * than an ASCII "->". Canopy does not export a general-purpose arrow, so we inline it the same way
+ * FinalResults draws its star; `currentColor` lets it inherit the link's primary colour.
+ */
+function ArrowRightIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="size-4"
+    >
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
 }
 
 // How it works: three steps from join code to playing.
@@ -37,6 +61,7 @@ const HOW_IT_WORKS = [
 const GAMES = [
   {
     name: 'Trivia',
+    icon: triviaSvg,
     badge: 'Featured',
     badgeVariant: 'info' as const,
     description: '1,600 questions across 8 categories. Rounds are fast; scores settle the debate.',
@@ -44,6 +69,7 @@ const GAMES = [
   },
   {
     name: 'Liar Liar',
+    icon: liarLiarSvg,
     badge: 'New',
     badgeVariant: 'success' as const,
     description:
@@ -137,9 +163,21 @@ export function LandingContent({ signedIn }: LandingContentProps) {
             >
               <Card className="h-full transition-colors hover:border-primary">
                 <CardHeader>
-                  <CardTitle asChild>
-                    <h3>{game.name}</h3>
-                  </CardTitle>
+                  {/* Icon and title sit on one row: the game mark leads, the name beside it. The
+                      mark is a build-time SVG string from the brand package (not user input),
+                      inlined the same way the Wordmark renders the app icon. It carries its own
+                      dark tile, so the wrapper just rounds it; aria-hidden because the card title
+                      and the link's aria-label already name the game. */}
+                  <div className="flex items-center gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-12 w-12 shrink-0 overflow-hidden rounded-xl [&>svg]:h-full [&>svg]:w-full"
+                      dangerouslySetInnerHTML={{ __html: game.icon }}
+                    />
+                    <CardTitle asChild>
+                      <h3>{game.name}</h3>
+                    </CardTitle>
+                  </div>
                   <Badge variant={game.badgeVariant} className="mt-1 w-fit">
                     {game.badge}
                   </Badge>
@@ -147,7 +185,10 @@ export function LandingContent({ signedIn }: LandingContentProps) {
                 </CardHeader>
                 <CardContent>
                   <p className="text-body-sm text-text-muted">{game.detail}</p>
-                  <p className="text-body-sm mt-4 font-medium text-primary">Start a game -&gt;</p>
+                  <p className="text-body-sm mt-4 flex items-center gap-1.5 font-medium text-primary">
+                    Start a game
+                    <ArrowRightIcon />
+                  </p>
                 </CardContent>
               </Card>
             </a>
