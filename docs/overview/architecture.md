@@ -14,6 +14,7 @@ packages/
   theme          Branch out brand theme built on @rogueoak/roots (the brandable API)
   brand          logo, icon, and favicon assets (from assets/)
   game-sdk         the harness<->game plugin contract + dependency injection + test helpers
+  games/trivia     the Trivia game as an independent @branchout/game-sdk plugin package
   protocol         shared TypeScript types + contracts (control-plane <-> engine <-> web)
   service-runtime  shared Fastify-service helpers (env parsing, Redis client)
   config           shared tsconfig, eslint, prettier

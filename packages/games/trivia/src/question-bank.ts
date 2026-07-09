@@ -1,12 +1,11 @@
 // Trivia question bank: loader and validator for the 8-category question set.
 //
-// Data lives at apps/game-engine/data/trivia/<category>.json (200 questions per file,
-// 1600 total). IDs use a lowercase-category prefix, e.g. `nature-001`.
+// Data lives at this package's data/trivia/<category>.json (200 questions per file, 1600 total).
+// IDs use a lowercase-category prefix, e.g. `nature-001`. The loader takes an injected AssetLoader
+// (from @branchout/game-sdk) rooted at this package, so it reads the data whether the code runs
+// from `src` under tsx or from the bundled `dist` - no self-locating filesystem walk.
 
-import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import type { AssetLoader } from '@branchout/game-sdk';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,44 +66,20 @@ const MIN_RATING_SPAN = 6;
 // ---------------------------------------------------------------------------
 
 /**
- * Locates `data/trivia` by walking up from this module to the game-engine app root that owns it.
- * Robust to where the code runs from: source at `src/games/trivia/` under tsx in dev, or bundled
- * into `dist/index.js` in prod - both sit under `apps/game-engine`, which holds `data/`, never
- * `dist/`. A fixed number of `..` would differ between the two, so we search instead.
+ * Reads all 8 trivia JSON files through the injected asset loader and returns the combined question
+ * array. The loader is rooted at this package (see the trivia plugin's `create`), so paths resolve
+ * to `data/trivia/<category>.json` regardless of where the process is launched from.
  */
-function resolveTriviaDataDir(): string {
-  let dir = path.dirname(fileURLToPath(import.meta.url));
-  for (let i = 0; i < 8; i++) {
-    const candidate = path.join(dir, 'data', 'trivia');
-    if (existsSync(candidate)) {
-      return candidate;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      break; // reached the filesystem root
-    }
-    dir = parent;
-  }
-  throw new Error('question-bank: could not locate the data/trivia directory');
-}
-
-/**
- * Reads all 8 trivia JSON files and returns the combined question array.
- * Resolves paths relative to this module so it works wherever the process is launched from.
- */
-export async function loadQuestionBank(): Promise<TriviaQuestion[]> {
-  const dir = resolveTriviaDataDir();
-
+export async function loadQuestionBank(assets: AssetLoader): Promise<TriviaQuestion[]> {
   const perCategory = await Promise.all(
     CATEGORIES.map(async (category) => {
       const filename = `${category.toLowerCase()}.json`;
-      const raw = await readFile(path.join(dir, filename), 'utf8');
-      const parsed: unknown = JSON.parse(raw);
+      const parsed = await assets.readJson<TriviaQuestion[]>(`data/trivia/${filename}`);
       if (!Array.isArray(parsed)) {
         throw new Error(`question-bank: ${filename} must be a JSON array`);
       }
       // Unchecked cast: validateQuestionBank() enforces the schema at runtime.
-      return parsed as TriviaQuestion[];
+      return parsed;
     }),
   );
   return perCategory.flat();

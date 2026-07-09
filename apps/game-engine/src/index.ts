@@ -9,7 +9,7 @@ import { RedisSessionStore } from './session';
 import { attachGameSocket } from './socket';
 import { createGameServices } from './services';
 import { registerPlugins } from './plugins';
-import { triviaPlugin } from './games/trivia';
+import { triviaPlugin } from '@branchout/game-trivia';
 
 async function main(): Promise<void> {
   const config = loadConfig();
