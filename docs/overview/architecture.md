@@ -100,7 +100,11 @@ Docker Compose, both locally and on a server. Kubernetes is a someday, not a now
 
 **Local dev** uses `infra/docker-compose.yml` (production-shaped base: build each image, run its
 `start` command, healthchecks) with `infra/docker-compose.override.yml` auto-merged by a plain
-`docker compose up` for hot reload (bind-mounts the repo, runs each app's `dev` script).
+`docker compose up` for hot reload (bind-mounts the repo, runs each app's `dev` script). For playing
+on real phones over the LAN, `pnpm dev:lan` (spec `0024`) detects the host's LAN IP (`lanIp()` in
+`service-runtime`), passes it as `LAN_HOST` into the override so the browser's `NEXT_PUBLIC_*` URLs,
+the control-plane CORS origin, and the session cookie target that IP, and prints the URL to open on
+phones - production stays same-origin behind Caddy and is untouched.
 
 **Production** (`branchout.games`, one DigitalOcean droplet - spec `0011`) runs two compose stacks
 on a shared external Docker network, `edge`, defined under `deploy/docker/`:

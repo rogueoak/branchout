@@ -55,6 +55,15 @@ describe('Lobby', () => {
     expect(screen.getByText('Host - Interactive')).toBeDefined();
   });
 
+  it('shows how to join on the same WiFi: the room code and the connect link', () => {
+    renderLobby({});
+    expect(screen.getByText('ABC12')).toBeDefined();
+    expect(screen.getByText(/on the same wifi/i)).toBeDefined();
+    // ShareLink resolves the join path to an absolute URL after mount; the code rides in the query.
+    const link = screen.getByRole('link', { name: /join\?code=ABC12/i });
+    expect(link.getAttribute('href')).toContain('code=ABC12');
+  });
+
   it('reflects a remote host in the roster badge', () => {
     renderLobby({ members: [hostMember('remote')], mode: 'remote' });
     expect(screen.getByText('Host - Remote')).toBeDefined();
