@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { defaultTriviaConfig } from '../../lib/trivia-config';
+import { defaultLiarLiarConfig } from '../../lib/games/liar-liar/config';
 import type { RoomMember, RoomView } from '../../lib/room-api';
 import { Lobby } from './Lobby';
 
@@ -34,6 +35,8 @@ function renderLobby(props: Partial<Parameters<typeof Lobby>[0]>) {
       mode="interactive"
       isHost
       me="pid_host"
+      game="trivia"
+      onGameChange={() => {}}
       config={defaultTriviaConfig()}
       onConfigChange={() => {}}
       onStart={() => {}}
@@ -71,5 +74,21 @@ describe('Lobby', () => {
     renderLobby({ members: [hostMember('interactive')], mode: 'interactive' });
     expect(screen.queryByText(/Switch yourself to Interactive/)).toBeNull();
     expect(screen.queryByText(/Waiting for a viewer/)).toBeNull();
+  });
+
+  it('lets the host pick a game and shows that game config panel', () => {
+    const onGameChange = vi.fn();
+    // The picker offers both registered games.
+    renderLobby({ onGameChange });
+    expect(screen.getByRole('button', { name: 'Trivia' })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Liar Liar' }));
+    expect(onGameChange).toHaveBeenCalledWith('liar-liar');
+  });
+
+  it('renders the selected game config panel (Liar Liar)', () => {
+    renderLobby({ game: 'liar-liar', config: defaultLiarLiarConfig() });
+    // Liar Liar's config panel, not Trivia's category select.
+    expect(screen.getByRole('button', { name: /random \(all\)/i })).toBeDefined();
+    expect(screen.getByText(/Bluff your friends/i)).toBeDefined();
   });
 });

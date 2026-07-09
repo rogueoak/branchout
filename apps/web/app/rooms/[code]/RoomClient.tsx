@@ -24,10 +24,10 @@ import {
   type RoomMember,
   type RoomView,
 } from '../../../lib/room-api';
-import { defaultTriviaConfig, type TriviaHostConfig } from '../../../lib/trivia-config';
+import { getGameUi } from '../../../lib/games/registry';
 import { useGameClient } from '../../../lib/use-game-client';
 
-const TRIVIA_GAME_ID = 'trivia';
+const DEFAULT_GAME_ID = 'trivia';
 const MEMBER_POLL_MS = 3000;
 
 interface RoomClientProps {
@@ -40,7 +40,10 @@ export function RoomClient({ code }: RoomClientProps) {
   const [membership, setMembership] = useState<Membership | null | undefined>(undefined);
   const [room, setRoom] = useState<RoomView | null>(null);
   const [members, setMembers] = useState<RoomMember[]>([]);
-  const [config, setConfig] = useState<TriviaHostConfig>(defaultTriviaConfig);
+  const [game, setGame] = useState<string>(DEFAULT_GAME_ID);
+  const [config, setConfig] = useState<unknown>(
+    () => getGameUi(DEFAULT_GAME_ID)?.defaultConfig() ?? {},
+  );
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -142,12 +145,20 @@ export function RoomClient({ code }: RoomClientProps) {
     [code],
   );
 
+  const onGameChange = useCallback((next: string) => {
+    setGame(next);
+    const module = getGameUi(next);
+    if (module) setConfig(module.defaultConfig());
+  }, []);
+
   const onStart = useCallback(async () => {
     setStarting(true);
     setStartError(null);
     try {
-      await selectGame(code, TRIVIA_GAME_ID, config);
-      const started = await startGame(code, config.rounds);
+      await selectGame(code, game, config);
+      // Both games carry `rounds` in their config; the control-plane debits per round.
+      const rounds = (config as { rounds?: number }).rounds ?? 10;
+      const started = await startGame(code, rounds);
       persist(started);
     } catch (error) {
       if (error instanceof RoomApiError) {
@@ -158,7 +169,7 @@ export function RoomClient({ code }: RoomClientProps) {
     } finally {
       setStarting(false);
     }
-  }, [code, config, persist]);
+  }, [code, game, config, persist]);
 
   const onControl = useCallback(
     async (action: HostControl) => {
@@ -241,7 +252,7 @@ export function RoomClient({ code }: RoomClientProps) {
               <GameStage
                 state={state}
                 me={me}
-                game={room?.selectedGame ?? TRIVIA_GAME_ID}
+                game={room?.selectedGame ?? game}
                 role={membership.role}
                 mode={membership.mode}
                 isHost={isHost}
@@ -272,8 +283,10 @@ export function RoomClient({ code }: RoomClientProps) {
             mode={membership.mode}
             isHost={isHost}
             me={me}
+            game={game}
+            onGameChange={onGameChange}
             config={config}
-            onConfigChange={setConfig}
+            onConfigChange={(next) => setConfig(next)}
             onStart={onStart}
             starting={starting}
             startError={startError}

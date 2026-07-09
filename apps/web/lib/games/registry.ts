@@ -62,17 +62,16 @@ export interface GameUiModule {
 // The registry is imported below its type declarations so the module files can import the prop types
 // from here without a cycle (types are erased; the value import lands last).
 import { triviaGameUi } from './trivia';
-// TODO(0023): the liar-liar UI module lands in the next run (Chunk B).
-// import { liarLiarGameUi } from './liar-liar';
+import { liarLiarGameUi } from './liar-liar';
 
 /** Every registered game UI module, keyed by game id. Adding a game is adding it here. */
 export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [triviaGameUi.id]: triviaGameUi,
-  // [liarLiarGameUi.id]: liarLiarGameUi,
+  [liarLiarGameUi.id]: liarLiarGameUi,
 };
 
 /** The host's game options, in display order. */
-export const GAME_UI_LIST: readonly GameUiModule[] = [triviaGameUi /*, liarLiarGameUi */];
+export const GAME_UI_LIST: readonly GameUiModule[] = [triviaGameUi, liarLiarGameUi];
 
 /** Resolve a game UI module by id, or undefined for an unknown game. */
 export function getGameUi(id: string | undefined | null): GameUiModule | undefined {
