@@ -81,6 +81,10 @@ describe('createLiarLiarGame - clue draw', () => {
       drawn.add(id);
     }
     expect(drawn.size).toBe(8);
+    // `random` must draw across categories, not just one: the ids carry a `<category>-NNN` prefix,
+    // so a single-category draw would collapse to one prefix. Assert the spread is genuinely mixed.
+    const categories = new Set([...drawn].map((id) => id.split('-')[0]));
+    expect(categories.size).toBeGreaterThan(1);
   });
 
   it('draws only from the chosen categories', () => {
@@ -169,6 +173,15 @@ describe('createLiarLiarGame - a round', () => {
   it('rejects the alias spelling of the truth', () => {
     const rej = game.collectAnswer(ctx(), 'p1', 'person one'); // alias of "Person 1"
     expect(rej.rejected?.reason).toBe('someone already submitted that');
+  });
+
+  it('rejects a fake that normalizes to nothing (blank or punctuation-only), writing no scratch', () => {
+    const before = JSON.stringify(scratch);
+    for (const junk of ['', '   ', '!!!']) {
+      const rej = game.collectAnswer(ctx(), 'p1', junk);
+      expect(rej.rejected?.reason).toBe('enter an answer');
+      expect(JSON.stringify(rej.scratch)).toBe(before);
+    }
   });
 
   it('reveals the truth plus every fake as shuffled options without naming the truth', () => {

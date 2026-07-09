@@ -32,7 +32,7 @@ import type {
 } from '@branchout/game-sdk';
 import { loadClueBank, type LiarLiarClue } from './clues';
 import { DEFAULT_ROUNDS, validateConfig, type ResolvedLiarLiarConfig } from './config';
-import { sameAnswer } from './matching';
+import { normalizeAnswer, sameAnswer } from './matching';
 
 export const LIAR_LIAR_GAME_ID = 'liar-liar';
 
@@ -193,7 +193,10 @@ export function createLiarLiarGame(
       const current = asScratch(ctx.scratch);
       const unchanged = ctx.scratch as Record<string, unknown>;
       const trimmed = answer.trim();
-      if (trimmed.length === 0) {
+      // Reject anything that normalizes to nothing - blank, whitespace, or punctuation-only like
+      // "!!!". Such a fake has no comparable form, so it can neither be a real bluff nor dedupe
+      // correctly (two junk fakes would both normalize to "" and the second look like a duplicate).
+      if (normalizeAnswer(trimmed).length === 0) {
         return { scratch: unchanged, rejected: { reason: 'enter an answer' } };
       }
       const clue = current.clue;

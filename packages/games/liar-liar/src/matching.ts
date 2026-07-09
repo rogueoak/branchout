@@ -1,8 +1,10 @@
 // Liar Liar answer matching (spec 0021). Fakes are free text, so two things need a canonical form:
 // rejecting a fake that equals the real answer, and rejecting a duplicate of another player's fake.
-// Normalization is intentionally EXACT-only (no fuzzy/Levenshtein): two genuinely different fakes
-// must never collapse into one, or a legitimate bluff would be wrongly rejected. This is the
-// deliberate difference from Trivia's matching, which adds a typo tolerance for scoring.
+// Matching is EXACT after normalization (no fuzzy/Levenshtein): two fakes built from different
+// words never collapse, so a legitimate bluff is never wrongly rejected - the deliberate difference
+// from Trivia's typo-tolerant scoring. Normalization does fold trivial variants (case, whitespace,
+// punctuation, a single leading article), so "The Cat" and "a cat" count as the same fake -
+// intended, to keep the revealed options free of confusing near-duplicates.
 //
 // Normalization order: lowercase -> collapse inner whitespace + trim -> strip a single leading
 // article (a/an/the) -> drop punctuation -> collapse/trim again.
