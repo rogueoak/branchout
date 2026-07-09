@@ -28,3 +28,16 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
 }
+
+/* iOS Safari auto-zooms a focused form control whose font-size is under 16px, and canopy's inputs
+   render `text-sm` (14px). On touch devices bump form controls to 16px so focusing them never
+   zooms the page - without disabling pinch-zoom (no `maximum-scale`/`user-scalable=no`), which
+   would break zoom for low-vision users. `:not([hidden])` lifts the selector's specificity to
+   0,1,1 so it beats the `text-sm` utility (0,1,0); a bare `input {}` (0,0,1) would lose (fb 0016). */
+@media (pointer: coarse) {
+  input:not([hidden]),
+  textarea:not([hidden]),
+  select:not([hidden]) {
+    font-size: 16px;
+  }
+}

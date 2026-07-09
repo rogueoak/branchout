@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../lib/game-state';
 import { GameStage } from './GameStage';
 
+// The stage scrolls to the top when a new question opens; jsdom leaves `scrollTo` unimplemented, so
+// stub it module-wide to keep test output clean. The scroll-to-question tests re-spy to assert.
+vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
 const players = [
   { player: 'p1', nickname: 'Ada', connected: true },
   { player: 'p2', nickname: 'Bo', connected: true },
@@ -333,5 +337,73 @@ describe('GameStage host controls emphasis', () => {
     // The player's answer Submit stays the clear primary; the advance control is an outline button.
     const next = screen.getByRole('button', { name: 'Next' });
     expect(next.className).toMatch(/outline|border/);
+  });
+});
+
+describe('GameStage scroll-to-question', () => {
+  function stage(state: GameState) {
+    return (
+      <GameStage
+        state={state}
+        me="p1"
+        role="player"
+        mode="remote"
+        isHost={false}
+        onAnswer={noop}
+        onDispute={noop}
+        onBallot={noop}
+        onControl={noop}
+      />
+    );
+  }
+
+  it('scrolls to the top when a new answer round opens', () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const { rerender } = render(
+      stage(
+        build({
+          phase: 'collecting',
+          round: 1,
+          prompt: { round: 1, category: 'Science', difficulty: 3, question: 'Q1?' },
+        }),
+      ),
+    );
+    scrollTo.mockClear(); // ignore the initial mount
+    rerender(
+      stage(
+        build({
+          phase: 'collecting',
+          round: 2,
+          prompt: { round: 2, category: 'Science', difficulty: 3, question: 'Q2?' },
+        }),
+      ),
+    );
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    scrollTo.mockRestore();
+  });
+
+  it('does not scroll when advancing to the leaderboard (no new question)', () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const { rerender } = render(
+      stage(
+        build({
+          phase: 'collecting',
+          round: 1,
+          prompt: { round: 1, category: 'Science', difficulty: 3, question: 'Q1?' },
+        }),
+      ),
+    );
+    scrollTo.mockClear();
+    rerender(
+      stage(
+        build({
+          phase: 'leaderboard',
+          round: 1,
+          standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
+        }),
+      ),
+    );
+    expect(scrollTo).not.toHaveBeenCalled();
+    scrollTo.mockRestore();
   });
 });
