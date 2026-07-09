@@ -119,9 +119,12 @@ export function validateSeedBank(clues: readonly LiarLiarClue[]): void {
 
   const byCategory = new Map<string, LiarLiarClue[]>();
   for (const clue of clues) {
-    (byCategory.get(clue.category) ?? byCategory.set(clue.category, []).get(clue.category)!).push(
-      clue,
-    );
+    let bucket = byCategory.get(clue.category);
+    if (!bucket) {
+      bucket = [];
+      byCategory.set(clue.category, bucket);
+    }
+    bucket.push(clue);
   }
 
   for (const category of CATEGORIES) {
