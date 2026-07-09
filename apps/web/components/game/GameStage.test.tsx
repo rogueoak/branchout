@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../lib/game-state';
 import { GameStage } from './GameStage';
 
@@ -341,7 +341,12 @@ describe('GameStage host controls emphasis', () => {
 });
 
 describe('GameStage scroll-to-question', () => {
-  function stage(state: GameState) {
+  // Assert against the module-level `window.scrollTo` stub (declared at top); clear between tests
+  // rather than restore, so the stub survives for later files/tests (keeps jsdom quiet).
+  const scrollTo = vi.mocked(window.scrollTo);
+  beforeEach(() => scrollTo.mockClear());
+
+  function stage(state: GameState, over: Partial<Parameters<typeof GameStage>[0]> = {}) {
     return (
       <GameStage
         state={state}
@@ -353,57 +358,64 @@ describe('GameStage scroll-to-question', () => {
         onDispute={noop}
         onBallot={noop}
         onControl={noop}
+        {...over}
       />
     );
   }
 
-  it('scrolls to the top when a new answer round opens', () => {
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-    const { rerender } = render(
-      stage(
-        build({
-          phase: 'collecting',
-          round: 1,
-          prompt: { round: 1, category: 'Science', difficulty: 3, question: 'Q1?' },
-        }),
-      ),
-    );
-    scrollTo.mockClear(); // ignore the initial mount
-    rerender(
-      stage(
-        build({
-          phase: 'collecting',
-          round: 2,
-          prompt: { round: 2, category: 'Science', difficulty: 3, question: 'Q2?' },
-        }),
-      ),
-    );
+  const round = (n: number): GameState =>
+    build({
+      phase: 'collecting',
+      round: n,
+      prompt: { round: n, category: 'Science', difficulty: 3, question: `Q${n}?` },
+    });
+
+  const leaderboard = (): GameState =>
+    build({
+      phase: 'leaderboard',
+      round: 1,
+      standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
+    });
+
+  it('scrolls to the top on mount into a fresh answer round', () => {
+    render(stage(round(1)));
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
-    scrollTo.mockRestore();
+  });
+
+  it('scrolls again when the next answer round opens', () => {
+    const { rerender } = render(stage(round(1)));
+    scrollTo.mockClear();
+    rerender(stage(round(2)));
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+  });
+
+  it('scrolls when a fresh collecting phase opens on the same round (restart to round 1)', () => {
+    // restart() re-enters collecting with round still 1, so phase flips but the round does not.
+    const { rerender } = render(stage(leaderboard()));
+    scrollTo.mockClear();
+    rerender(stage(round(1)));
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
 
   it('does not scroll when advancing to the leaderboard (no new question)', () => {
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-    const { rerender } = render(
-      stage(
-        build({
-          phase: 'collecting',
-          round: 1,
-          prompt: { round: 1, category: 'Science', difficulty: 3, question: 'Q1?' },
-        }),
-      ),
-    );
+    const { rerender } = render(stage(round(1)));
     scrollTo.mockClear();
-    rerender(
-      stage(
-        build({
-          phase: 'leaderboard',
-          round: 1,
-          standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
-        }),
-      ),
-    );
+    rerender(stage(leaderboard()));
     expect(scrollTo).not.toHaveBeenCalled();
-    scrollTo.mockRestore();
+  });
+
+  it('does not re-scroll on a re-render with the same round and phase', () => {
+    // A resync/reconnect state frame mid-collecting must not yank the viewport to the top.
+    const state = round(1);
+    const { rerender } = render(stage(state));
+    scrollTo.mockClear();
+    rerender(stage({ ...state, scores: { p1: 200, p2: 50 } }));
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('does not scroll a viewer-only screen (no controller below the fold)', () => {
+    // An observer sees only the viewer, so there is nothing to scroll past.
+    render(stage(round(1), { role: 'observer', mode: undefined }));
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 });
