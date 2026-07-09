@@ -7,17 +7,13 @@
 
 import type { PlayerView } from '@branchout/protocol';
 import { Badge } from '@rogueoak/canopy';
-import type { GameState } from '../../lib/game-state';
-import {
-  asTriviaPrompt,
-  pickTriviaRoundReveal,
-  pickTriviaDisputeReveal,
-} from '../../lib/games/trivia/protocol';
-import { difficultyBand } from '../../lib/trivia-config';
-import { toDisplayAnswer } from '../../lib/title-case';
-import { useAnswerCountdown } from '../../lib/use-answer-countdown';
-import { FinalResults } from './FinalResults';
-import { Leaderboard } from './Leaderboard';
+import type { GameState } from '../../game-state';
+import { asTriviaPrompt, pickTriviaRoundReveal, pickTriviaDisputeReveal } from './protocol';
+import { difficultyBand } from './config';
+import { toDisplayAnswer } from '../../title-case';
+import { useAnswerCountdown } from '../../use-answer-countdown';
+import { FinalResults } from '../../../components/game/FinalResults';
+import { Leaderboard } from '../../../components/game/Leaderboard';
 
 interface ViewerPaneProps {
   state: GameState;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asTriviaPrompt, asTriviaRoundReveal } from './game-protocol';
+import { asTriviaPrompt, asTriviaRoundReveal } from './protocol';
 
 describe('asTriviaPrompt', () => {
   it('accepts a prompt whose difficulty is the numeric rating the engine sends (spec 0016)', () => {

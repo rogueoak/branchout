@@ -9,7 +9,7 @@ import {
   difficultyBand,
   validateTriviaConfig,
   type TriviaHostConfig,
-} from './trivia-config';
+} from './config';
 
 const base: TriviaHostConfig = {
   category: RANDOM_CATEGORY,
