@@ -7,6 +7,7 @@
 // bar (advance / pause / restart / exit).
 
 import { Badge, Button } from '@rogueoak/canopy';
+import { useEffect } from 'react';
 import type { Role, Mode } from '../../lib/room-api';
 import type { ConnectionStatus, GameState } from '../../lib/game-state';
 import { isComplete } from '../../lib/game-state';
@@ -96,6 +97,17 @@ export function GameStage({
   const remoteVisible = role === 'player' && (mode === 'remote' || mode === 'interactive');
   const viewerVisible = role !== 'player' || isInteractivePlayer;
   const connectionNote = CONNECTION_LABEL[state.connection];
+
+  // When a new answer round opens, bring the fresh question into view - otherwise the viewport can
+  // stay scrolled down on the prior reveal/leaderboard and the player misses the new prompt (fb
+  // 0016). Keyed on the round so it fires once per new question, only while collecting. Gated on
+  // `remoteVisible`: only a player with a controller below the fold can have the question pushed
+  // off-screen; a viewer-only screen (observer/TV) has nothing to scroll past.
+  useEffect(() => {
+    if (state.phase === 'collecting' && remoteVisible) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [state.round, state.phase, remoteVisible]);
 
   return (
     <div className="flex flex-col gap-4">

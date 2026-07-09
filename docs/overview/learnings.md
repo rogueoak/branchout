@@ -137,6 +137,18 @@ Capture durable lessons as they emerge.
 
 ## UI and CTAs
 
+- **Prevent iOS input-zoom by sizing the field >= 16px, never by disabling zoom.** iOS Safari
+  auto-zooms a focused form control whose font-size is under 16px, and canopy inputs render
+  `text-sm` (14px). The one-line temptation - `maximum-scale=1` / `user-scalable=no` on the viewport
+  - breaks pinch-zoom for low-vision users; the correct fix is a 16px font-size on the control (on
+  touch devices via `@media (pointer: coarse)`). And because the offending size is a *utility class*
+  (`text-sm`, specificity 0,1,0), the override needs matching specificity: `input:not([hidden])`
+  (0,1,1) wins, a bare `input {}` (0,0,1) silently loses the cascade. (Feedback `0016`.)
+- **A phase change that swaps the primary content should scroll it into view.** When the app
+  replaces what the player is looking at without a navigation - a new question landing while the
+  viewport is still scrolled down on the prior reveal/leaderboard - the old scroll position is
+  stale. Scroll to the new content on the transition (an effect keyed on the round, guarded to the
+  answering phase). (Feedback `0016`.)
 - **Give a secondary element emphasis through a badge, ring, or border - not a second `primary`
   button.** On a view with a designated primary CTA (a marketing hero, a form's submit), a
   `primary` variant used to say "look here too" (a "popular" pricing tier) becomes a second

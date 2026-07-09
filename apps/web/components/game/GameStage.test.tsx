@@ -1,7 +1,11 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../lib/game-state';
 import { GameStage } from './GameStage';
+
+// The stage scrolls to the top when a new question opens; jsdom leaves `scrollTo` unimplemented, so
+// stub it module-wide to keep test output clean. The scroll-to-question tests re-spy to assert.
+vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
 const players = [
   { player: 'p1', nickname: 'Ada', connected: true },
@@ -333,5 +337,85 @@ describe('GameStage host controls emphasis', () => {
     // The player's answer Submit stays the clear primary; the advance control is an outline button.
     const next = screen.getByRole('button', { name: 'Next' });
     expect(next.className).toMatch(/outline|border/);
+  });
+});
+
+describe('GameStage scroll-to-question', () => {
+  // Assert against the module-level `window.scrollTo` stub (declared at top); clear between tests
+  // rather than restore, so the stub survives for later files/tests (keeps jsdom quiet).
+  const scrollTo = vi.mocked(window.scrollTo);
+  beforeEach(() => scrollTo.mockClear());
+
+  function stage(state: GameState, over: Partial<Parameters<typeof GameStage>[0]> = {}) {
+    return (
+      <GameStage
+        state={state}
+        me="p1"
+        role="player"
+        mode="remote"
+        isHost={false}
+        onAnswer={noop}
+        onDispute={noop}
+        onBallot={noop}
+        onControl={noop}
+        {...over}
+      />
+    );
+  }
+
+  const round = (n: number): GameState =>
+    build({
+      phase: 'collecting',
+      round: n,
+      prompt: { round: n, category: 'Science', difficulty: 3, question: `Q${n}?` },
+    });
+
+  const leaderboard = (): GameState =>
+    build({
+      phase: 'leaderboard',
+      round: 1,
+      standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
+    });
+
+  it('scrolls to the top on mount into a fresh answer round', () => {
+    render(stage(round(1)));
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+  });
+
+  it('scrolls again when the next answer round opens', () => {
+    const { rerender } = render(stage(round(1)));
+    scrollTo.mockClear();
+    rerender(stage(round(2)));
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+  });
+
+  it('scrolls when a fresh collecting phase opens on the same round (restart to round 1)', () => {
+    // restart() re-enters collecting with round still 1, so phase flips but the round does not.
+    const { rerender } = render(stage(leaderboard()));
+    scrollTo.mockClear();
+    rerender(stage(round(1)));
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+  });
+
+  it('does not scroll when advancing to the leaderboard (no new question)', () => {
+    const { rerender } = render(stage(round(1)));
+    scrollTo.mockClear();
+    rerender(stage(leaderboard()));
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('does not re-scroll on a re-render with the same round and phase', () => {
+    // A resync/reconnect state frame mid-collecting must not yank the viewport to the top.
+    const state = round(1);
+    const { rerender } = render(stage(state));
+    scrollTo.mockClear();
+    rerender(stage({ ...state, scores: { p1: 200, p2: 50 } }));
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('does not scroll a viewer-only screen (no controller below the fold)', () => {
+    // An observer sees only the viewer, so there is nothing to scroll past.
+    render(stage(round(1), { role: 'observer', mode: undefined }));
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 });
