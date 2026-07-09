@@ -31,6 +31,27 @@ const HOW_IT_WORKS = [
   },
 ];
 
+// The games teaser. Each card is a link into the play path (signup when anonymous, rooms when
+// signed in). Keep this a plain list so adding a game is adding an entry, matching the pluggable
+// game architecture behind it.
+const GAMES = [
+  {
+    name: 'Trivia',
+    badge: 'Featured',
+    badgeVariant: 'info' as const,
+    description: '1,600 questions across 8 categories. Rounds are fast; scores settle the debate.',
+    detail: 'Nature, Food, Animals, Science, People, Places, Things, History',
+  },
+  {
+    name: 'Liar Liar',
+    badge: 'New',
+    badgeVariant: 'success' as const,
+    description:
+      'Bluff your friends: write a convincing fake answer to a wild-but-true clue, then pick the real one hidden among all the fakes.',
+    detail: 'Famous People, Places, Events, Sports, Food, Nature, Animals, Things',
+  },
+];
+
 export function LandingContent({ signedIn }: LandingContentProps) {
   const primaryCta = signedIn
     ? { label: 'Play now', href: '/rooms' }
@@ -104,34 +125,33 @@ export function LandingContent({ signedIn }: LandingContentProps) {
           What you can play
         </h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          {/* The Trivia card is a link into the play path: an anonymous visitor lands on signup,
-              a signed-in one on the rooms home to start a game. The whole card is the target so
-              it is an easy tap on a phone. */}
-          <a
-            href={primaryCta.href}
-            aria-label="Play Trivia - start a game"
-            className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <Card className="h-full transition-colors hover:border-primary">
-              <CardHeader>
-                <CardTitle asChild>
-                  <h3>Trivia</h3>
-                </CardTitle>
-                <Badge variant="info" className="mt-1 w-fit">
-                  Featured
-                </Badge>
-                <CardDescription>
-                  800+ questions across 8 categories. Rounds are fast; scores settle the debate.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-body-sm text-text-muted">
-                  Nature, Food, Animals, Science, People, Places, Things, History
-                </p>
-                <p className="text-body-sm mt-4 font-medium text-primary">Start a game -&gt;</p>
-              </CardContent>
-            </Card>
-          </a>
+          {/* Each card is a link into the play path: an anonymous visitor lands on signup, a
+              signed-in one on the rooms home to start a game. The whole card is the target so it
+              is an easy tap on a phone. */}
+          {GAMES.map((game) => (
+            <a
+              key={game.name}
+              href={primaryCta.href}
+              aria-label={`Play ${game.name} - start a game`}
+              className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <Card className="h-full transition-colors hover:border-primary">
+                <CardHeader>
+                  <CardTitle asChild>
+                    <h3>{game.name}</h3>
+                  </CardTitle>
+                  <Badge variant={game.badgeVariant} className="mt-1 w-fit">
+                    {game.badge}
+                  </Badge>
+                  <CardDescription>{game.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-body-sm text-text-muted">{game.detail}</p>
+                  <p className="text-body-sm mt-4 font-medium text-primary">Start a game -&gt;</p>
+                </CardContent>
+              </Card>
+            </a>
+          ))}
         </div>
         <p className="mt-6 text-body-sm text-text-muted">More games on the way.</p>
       </section>
