@@ -81,6 +81,9 @@ importers:
 
   apps/game-engine:
     dependencies:
+      '@branchout/game-liar-liar':
+        specifier: workspace:*
+        version: link:../../packages/games/liar-liar
       '@branchout/game-sdk':
         specifier: workspace:*
         version: link:../../packages/game-sdk

@@ -1,0 +1,116 @@
+[
+  {
+    "id": "sports-001",
+    "category": "sports",
+    "clue": "The longest tennis match in history, between John Isner and Nicolas Mahut at Wimbledon 2010, ended with a final-set score of ___.",
+    "answer": "70-68",
+    "source": "https://en.wikipedia.org/wiki/Isner-Mahut_match_at_the_2010_Wimbledon_Championships"
+  },
+  {
+    "id": "sports-002",
+    "category": "sports",
+    "clue": "The last 'Timeless Test' cricket match in 1939 was abandoned as a draw after nine days of play because the England team had to ___.",
+    "answer": "catch their boat home",
+    "aliases": ["catch the boat home"],
+    "source": "https://en.wikipedia.org/wiki/Timeless_Test"
+  },
+  {
+    "id": "sports-003",
+    "category": "sports",
+    "clue": "The 1900 Paris Olympics featured live ___, the only time in Olympic history that animals were deliberately killed as part of an event.",
+    "answer": "pigeon shooting",
+    "source": "https://en.wikipedia.org/wiki/Shooting_at_the_1900_Summer_Olympics"
+  },
+  {
+    "id": "sports-004",
+    "category": "sports",
+    "clue": "Eddie Eagan is the only person ever to win Olympic gold at both the Summer and Winter Games in two different sports: boxing in 1920 and ___ in 1932.",
+    "answer": "bobsled",
+    "aliases": ["bobsleigh"],
+    "source": "https://en.wikipedia.org/wiki/Eddie_Eagan"
+  },
+  {
+    "id": "sports-005",
+    "category": "sports",
+    "clue": "The oldest Olympic medalist of all time is Swedish shooter Oscar Swahn, who won silver in 1920 at the age of ___.",
+    "answer": "72",
+    "aliases": ["72 years old"],
+    "source": "https://en.wikipedia.org/wiki/Oscar_Swahn"
+  },
+  {
+    "id": "sports-006",
+    "category": "sports",
+    "clue": "Cricket's famous 'Ashes' trophy urn is reputed to contain the burnt remains of a ___.",
+    "answer": "cricket bail",
+    "aliases": ["bail"],
+    "source": "https://en.wikipedia.org/wiki/The_Ashes_urn"
+  },
+  {
+    "id": "sports-007",
+    "category": "sports",
+    "clue": "Believe it or not, ___ was a full Olympic medal sport at every Summer Games from 1900 to 1920 before being dropped.",
+    "answer": "tug of war",
+    "source": "https://en.wikipedia.org/wiki/Tug_of_war_at_the_Summer_Olympics"
+  },
+  {
+    "id": "sports-008",
+    "category": "sports",
+    "clue": "A regulation badminton shuttlecock is built from exactly ___ feathers, usually taken from a goose or duck.",
+    "answer": "16 feathers",
+    "aliases": ["16", "sixteen"],
+    "source": "https://en.wikipedia.org/wiki/Shuttlecock"
+  },
+  {
+    "id": "sports-009",
+    "category": "sports",
+    "clue": "At the Man versus Horse Marathon in Llanwrtyd Wells, Wales, it took years before a runner on foot finally beat every horse, claiming a jackpot that had grown to ___ pounds.",
+    "answer": "25,000",
+    "aliases": ["25000"],
+    "source": "https://en.wikipedia.org/wiki/Man_versus_Horse_Marathon"
+  },
+  {
+    "id": "sports-010",
+    "category": "sports",
+    "clue": "In the Eton Wall Game's showcase St Andrew's Day match, goals are so rare that the last one was scored in the year ___.",
+    "answer": "1909",
+    "source": "https://en.wikipedia.org/wiki/Eton_wall_game"
+  },
+  {
+    "id": "sports-011",
+    "category": "sports",
+    "clue": "A chess boxing match alternates blitz chess with fistfights across a total of ___ rounds, starting and ending with chess.",
+    "answer": "eleven",
+    "aliases": ["11"],
+    "source": "https://en.wikipedia.org/wiki/Chess_boxing"
+  },
+  {
+    "id": "sports-012",
+    "category": "sports",
+    "clue": "The world altitude record for extreme ironing was set on Mount Everest at a height of ___ metres above sea level.",
+    "answer": "5,440",
+    "aliases": ["5440"],
+    "source": "https://en.wikipedia.org/wiki/Extreme_ironing"
+  },
+  {
+    "id": "sports-013",
+    "category": "sports",
+    "clue": "In sepak takraw, players volley a rattan ball over a net using their feet, knees, chest and head, but are strictly forbidden to use their ___.",
+    "answer": "hands and arms",
+    "aliases": ["hands", "arms"],
+    "source": "https://en.wikipedia.org/wiki/Sepak_takraw"
+  },
+  {
+    "id": "sports-014",
+    "category": "sports",
+    "clue": "The underwater sport now known as underwater hockey was invented in 1954 in Portsmouth under the original name ___.",
+    "answer": "Octopush",
+    "source": "https://en.wikipedia.org/wiki/Underwater_hockey"
+  },
+  {
+    "id": "sports-015",
+    "category": "sports",
+    "clue": "In kabaddi, to prove they are not inhaling, the raider must continuously chant the word ___ throughout their entire raid on a single breath.",
+    "answer": "kabaddi",
+    "source": "https://en.wikipedia.org/wiki/Kabaddi"
+  }
+]

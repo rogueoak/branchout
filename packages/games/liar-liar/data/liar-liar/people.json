@@ -1,0 +1,121 @@
+[
+  {
+    "id": "people-001",
+    "category": "people",
+    "clue": "When his brother died, a French newspaper mixed them up and ran an obituary calling ___ the 'merchant of death' for inventing dynamite; horrified, he left his fortune to a peace prize.",
+    "answer": "Alfred Nobel",
+    "aliases": ["Nobel"],
+    "source": "https://en.wikipedia.org/wiki/Alfred_Nobel"
+  },
+  {
+    "id": "people-002",
+    "category": "people",
+    "clue": "This inventor fed pigeons for hours in New York parks and said of one favorite white pigeon, 'I loved that pigeon as a man loves a woman.'",
+    "answer": "Nikola Tesla",
+    "aliases": ["Tesla"],
+    "source": "https://www.britannica.com/story/nikola-teslas-weird-obsession-with-pigeons"
+  },
+  {
+    "id": "people-003",
+    "category": "people",
+    "clue": "This 16th-century Danish astronomer wore a metal prosthetic nose after a duel and kept a pet moose that reportedly died falling down the stairs after drinking too much beer.",
+    "answer": "Tycho Brahe",
+    "aliases": ["Brahe"],
+    "source": "https://en.wikipedia.org/wiki/Tycho_Brahe"
+  },
+  {
+    "id": "people-004",
+    "category": "people",
+    "clue": "Composer ___ wrote a short piano piece with the instruction to repeat it 840 times in a row, making performances last around 24 hours.",
+    "answer": "Erik Satie",
+    "aliases": ["Satie"],
+    "source": "https://en.wikipedia.org/wiki/Vexations"
+  },
+  {
+    "id": "people-005",
+    "category": "people",
+    "clue": "To study how we see color, this scientist slid a blunt needle between his own eyeball and the bone of his eye socket and pressed on it to see what appeared.",
+    "answer": "Isaac Newton",
+    "aliases": ["Newton"],
+    "source": "https://en.wikipedia.org/wiki/Isaac_Newton"
+  },
+  {
+    "id": "people-006",
+    "category": "people",
+    "clue": "This ancient Greek philosopher ran a secretive cult that, among other rules, strictly forbade its members from eating beans.",
+    "answer": "Pythagoras",
+    "source": "https://en.wikipedia.org/wiki/Pythagoras"
+  },
+  {
+    "id": "people-007",
+    "category": "people",
+    "clue": "Told that dogs were banned from his Cambridge college, this poet kept a pet bear in his rooms instead and joked it should sit for a fellowship, since no rule mentioned bears.",
+    "answer": "Lord Byron",
+    "aliases": ["Byron"],
+    "source": "https://www.cam.ac.uk/research/news/lord-byron-and-the-bears-beneath-cambridge"
+  },
+  {
+    "id": "people-008",
+    "category": "people",
+    "clue": "Paid a bonus for every world record he set, this pole vaulter broke the world record 35 times, often raising it by just one centimeter at a time.",
+    "answer": "Sergey Bubka",
+    "aliases": ["Sergei Bubka", "Bubka"],
+    "source": "https://en.wikipedia.org/wiki/Sergey_Bubka"
+  },
+  {
+    "id": "people-009",
+    "category": "people",
+    "clue": "This famous composer held an elaborate funeral, complete with veiled mourners and a graveside poem, for his dead pet starling.",
+    "answer": "Mozart",
+    "aliases": ["Wolfgang Amadeus Mozart"],
+    "source": "https://en.wikipedia.org/wiki/Mozart's_starling"
+  },
+  {
+    "id": "people-010",
+    "category": "people",
+    "clue": "This U.S. president kept a pet badger named Josiah in the White House, an animal his son cheerfully noted 'bites legs sometimes, but never faces.'",
+    "answer": "Theodore Roosevelt",
+    "aliases": ["Teddy Roosevelt"],
+    "source": "https://www.presidentialpetmuseum.com/theodore-roosevelts-josiah/"
+  },
+  {
+    "id": "people-011",
+    "category": "people",
+    "clue": "In 1859 this bankrupt San Francisco resident declared himself 'Emperor of these United States' and issued decrees abolishing Congress; locals humored him and even honored his self-printed currency.",
+    "answer": "Emperor Norton",
+    "aliases": ["Joshua Norton", "Norton I"],
+    "source": "https://en.wikipedia.org/wiki/Emperor_Norton"
+  },
+  {
+    "id": "people-012",
+    "category": "people",
+    "clue": "This medieval king of France suffered the 'glass delusion,' convinced his body was made of glass, and had iron rods sewn into his clothing so he wouldn't shatter.",
+    "answer": "Charles VI",
+    "aliases": ["Charles VI of France"],
+    "source": "https://en.wikipedia.org/wiki/Charles_VI_of_France"
+  },
+  {
+    "id": "people-013",
+    "category": "people",
+    "clue": "After this Romantic poet drowned and was cremated on an Italian beach in 1822, his heart refused to burn and was plucked from the ashes; his widow kept it wrapped in silk for decades.",
+    "answer": "Percy Shelley",
+    "aliases": ["Percy Bysshe Shelley", "Shelley"],
+    "source": "https://en.wikipedia.org/wiki/Percy_Bysshe_Shelley"
+  },
+  {
+    "id": "people-014",
+    "category": "people",
+    "clue": "To preserve her famous complexion, this 19th-century empress slept wearing a leather facial mask lined with raw veal.",
+    "answer": "Empress Elisabeth",
+    "aliases": ["Empress Elisabeth of Austria", "Sisi", "Elisabeth of Austria"],
+    "source": "https://en.wikipedia.org/wiki/Empress_Elisabeth_of_Austria"
+  },
+  {
+    "id": "people-015",
+    "category": "people",
+    "clue": "This composer died in 1915 of blood poisoning after a pimple on his upper lip turned into a carbuncle and went septic.",
+    "answer": "Alexander Scriabin",
+    "aliases": ["Scriabin"],
+    "source": "https://en.wikipedia.org/wiki/Alexander_Scriabin"
+  }
+]

@@ -1,0 +1,113 @@
+[
+  {
+    "id": "food-001",
+    "category": "food",
+    "clue": "The most expensive spice in the world by weight, harvested by hand from crocus flowers, is ___.",
+    "answer": "saffron",
+    "source": "https://www.britannica.com/story/why-is-saffron-so-expensive"
+  },
+  {
+    "id": "food-002",
+    "category": "food",
+    "clue": "Its smell lingers for days, so hotels and public transit in Singapore and Bangkok ban the fruit called ___.",
+    "answer": "durian",
+    "source": "https://en.wikipedia.org/wiki/Durian"
+  },
+  {
+    "id": "food-003",
+    "category": "food",
+    "clue": "Despite its name, this common snack is botanically not a nut at all but a legume in the pea family: the ___.",
+    "answer": "peanut",
+    "aliases": ["groundnut"],
+    "source": "https://en.wikipedia.org/wiki/Peanut"
+  },
+  {
+    "id": "food-004",
+    "category": "food",
+    "clue": "With nearly 4 percent of it vanishing from stores worldwide each year, the most stolen food on Earth is ___.",
+    "answer": "cheese",
+    "source": "https://www.foodrepublic.com/1478370/cheese-most-stolen-food-world/"
+  },
+  {
+    "id": "food-005",
+    "category": "food",
+    "clue": "Before Dutch growers bred the familiar orange variety, cultivated carrots were mostly yellow and ___.",
+    "answer": "purple",
+    "source": "https://en.wikipedia.org/wiki/Carrot"
+  },
+  {
+    "id": "food-006",
+    "category": "food",
+    "clue": "Thanks to a protein called miraculin, one bite of this West African berry makes sour foods taste sweet: the ___.",
+    "answer": "miracle fruit",
+    "aliases": ["miracle berry"],
+    "source": "https://en.wikipedia.org/wiki/Synsepalum_dulcificum"
+  },
+  {
+    "id": "food-007",
+    "category": "food",
+    "clue": "Botanically, apples, pears, and cherries all belong to the same plant family as the ___.",
+    "answer": "rose",
+    "aliases": ["roses", "Rosaceae"],
+    "source": "https://en.wikipedia.org/wiki/Rosaceae"
+  },
+  {
+    "id": "food-008",
+    "category": "food",
+    "clue": "Long before coins, the peoples of Mesoamerica used these dried beans as everyday money: ___ beans.",
+    "answer": "cacao",
+    "aliases": ["cocoa", "cacao beans"],
+    "source": "https://en.wikipedia.org/wiki/Cocoa_bean"
+  },
+  {
+    "id": "food-009",
+    "category": "food",
+    "clue": "The red food coloring called carmine is made from crushed, dried ___ insects.",
+    "answer": "cochineal",
+    "source": "https://en.wikipedia.org/wiki/Carmine"
+  },
+  {
+    "id": "food-010",
+    "category": "food",
+    "clue": "Since 2023, the Guinness World Record for the hottest chili pepper has been held by a variety called ___.",
+    "answer": "Pepper X",
+    "source": "https://en.wikipedia.org/wiki/Carolina_Reaper"
+  },
+  {
+    "id": "food-011",
+    "category": "food",
+    "clue": "The traditional Sardinian cheese casu marzu is intentionally made to contain live ___.",
+    "answer": "maggots",
+    "aliases": ["fly larvae"],
+    "source": "https://en.wikipedia.org/wiki/Casu_martzu"
+  },
+  {
+    "id": "food-012",
+    "category": "food",
+    "clue": "The prized coffee kopi luwak is made from beans eaten and then excreted by an animal called the ___.",
+    "answer": "civet",
+    "aliases": ["palm civet"],
+    "source": "https://en.wikipedia.org/wiki/Kopi_luwak"
+  },
+  {
+    "id": "food-013",
+    "category": "food",
+    "clue": "The two M's in M&M's come from candy makers Forrest Mars and Bruce ___.",
+    "answer": "Murrie",
+    "source": "https://en.wikipedia.org/wiki/M%26M%27s"
+  },
+  {
+    "id": "food-014",
+    "category": "food",
+    "clue": "Rhubarb stalks are edible, but the leaves are poisonous because they contain ___.",
+    "answer": "oxalic acid",
+    "source": "https://en.wikipedia.org/wiki/Rhubarb"
+  },
+  {
+    "id": "food-015",
+    "category": "food",
+    "clue": "Botanically a strawberry is not a true berry, but surprisingly a ___ is.",
+    "answer": "banana",
+    "source": "https://en.wikipedia.org/wiki/Berry"
+  }
+]

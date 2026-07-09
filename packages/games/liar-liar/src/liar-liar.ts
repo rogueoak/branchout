@@ -30,7 +30,7 @@ import type {
   StartRoundResult,
   VoteInput,
 } from '@branchout/game-sdk';
-import { loadClueBank, type LiarLiarClue } from './clues';
+import { loadClueBank, validateClueBank, type LiarLiarClue } from './clues';
 import { DEFAULT_ROUNDS, validateConfig, type ResolvedLiarLiarConfig } from './config';
 import { normalizeAnswer, sameAnswer } from './matching';
 
@@ -361,9 +361,11 @@ export const liarLiarPlugin: GamePlugin<ResolvedLiarLiarConfig> = {
     configSchema: validateConfig,
     capabilities: { minPlayers: 2 },
   },
-  create: async (services) =>
-    createLiarLiarGame(
-      await loadClueBank(services.assets.forModule(import.meta.url)),
-      services.rng,
-    ),
+  create: async (services) => {
+    const bank = await loadClueBank(services.assets.forModule(import.meta.url));
+    // Fail fast on malformed shipped data: abort boot with a clear error rather than crashing
+    // mid-game. (Coverage is a test-time gate via validateSeedBank, not required at boot.)
+    validateClueBank(bank);
+    return createLiarLiarGame(bank, services.rng);
+  },
 };

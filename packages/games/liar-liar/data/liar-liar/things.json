@@ -1,0 +1,99 @@
+[
+  {
+    "id": "things-001",
+    "category": "things",
+    "clue": "The modeling toy Play-Doh was originally manufactured and sold as a ___.",
+    "answer": "wallpaper cleaner",
+    "source": "https://en.wikipedia.org/wiki/Play-Doh"
+  },
+  {
+    "id": "things-002",
+    "category": "things",
+    "clue": "Bubble Wrap was originally invented in 1957 as a form of textured ___.",
+    "answer": "wallpaper",
+    "source": "https://en.wikipedia.org/wiki/Bubble_Wrap_(brand)"
+  },
+  {
+    "id": "things-003",
+    "category": "things",
+    "clue": "The Slinky was invented by Richard James, who was actually trying to make springs to steady sensitive equipment aboard ___.",
+    "answer": "ships",
+    "aliases": ["a ship", "naval ships", "battleships"],
+    "source": "https://en.wikipedia.org/wiki/Richard_T._James"
+  },
+  {
+    "id": "things-004",
+    "category": "things",
+    "clue": "Long before it was sold as a mouthwash, Listerine was marketed as a surgical antiseptic and even a ___.",
+    "answer": "floor cleaner",
+    "source": "https://en.wikipedia.org/wiki/Listerine"
+  },
+  {
+    "id": "things-005",
+    "category": "things",
+    "clue": "When Kleenex tissues launched in 1924, they were first marketed as a way to remove ___.",
+    "answer": "cold cream",
+    "aliases": ["makeup", "cold cream and makeup"],
+    "source": "https://en.wikipedia.org/wiki/Kleenex"
+  },
+  {
+    "id": "things-006",
+    "category": "things",
+    "clue": "Percy Spencer got the idea for the microwave oven after a magnetron melted a ___ in his pocket.",
+    "answer": "candy bar",
+    "aliases": ["chocolate bar", "chocolate"],
+    "source": "https://en.wikipedia.org/wiki/Percy_Spencer"
+  },
+  {
+    "id": "things-007",
+    "category": "things",
+    "clue": "The Frisbee got its name from the tossable pie tins made by the ___ Pie Company.",
+    "answer": "Frisbie",
+    "source": "https://en.wikipedia.org/wiki/Frisbie_Pie_Company"
+  },
+  {
+    "id": "things-008",
+    "category": "things",
+    "clue": "The chainsaw was originally invented in the late 1700s not for cutting wood but as a surgical tool used in a childbirth procedure called ___.",
+    "answer": "symphysiotomy",
+    "source": "https://science.howstuffworks.com/science-vs-myth/everyday-myths/why-were-chainsaws-invented.htm"
+  },
+  {
+    "id": "things-009",
+    "category": "things",
+    "clue": "Most bubble gum is pink because when Walter Diemer invented it at Fleer, ___ was the only food coloring left in the factory.",
+    "answer": "pink",
+    "source": "https://en.wikipedia.org/wiki/Walter_Diemer"
+  },
+  {
+    "id": "things-010",
+    "category": "things",
+    "clue": "The teddy bear got its name after a 1902 hunting trip on which President ___ famously refused to shoot a captured bear.",
+    "answer": "Theodore Roosevelt",
+    "aliases": ["Teddy Roosevelt", "Roosevelt"],
+    "source": "https://www.theodorerooseveltcenter.org/encyclopedia/culture-and-society/teddy-bear/"
+  },
+  {
+    "id": "things-011",
+    "category": "things",
+    "clue": "In Dutch, the @ symbol is not called 'at' but ___, meaning 'monkey's tail'.",
+    "answer": "apenstaart",
+    "aliases": ["apenstaartje"],
+    "source": "https://en.wikipedia.org/wiki/At_sign"
+  },
+  {
+    "id": "things-012",
+    "category": "things",
+    "clue": "The name WD-40 stands for 'Water Displacement, 40th formula' because it took the chemists ___ tries to get the formula right.",
+    "answer": "40",
+    "aliases": ["forty", "40th"],
+    "source": "https://en.wikipedia.org/wiki/WD-40"
+  },
+  {
+    "id": "things-013",
+    "category": "things",
+    "clue": "On hot summer days the iron Eiffel Tower grows about 15 cm taller than in winter because of a process called thermal ___.",
+    "answer": "expansion",
+    "source": "https://theconversation.com/the-eiffel-tower-gets-bigger-every-summer-heres-why-261904"
+  }
+]

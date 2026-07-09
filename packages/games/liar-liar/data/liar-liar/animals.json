@@ -1,0 +1,122 @@
+[
+  {
+    "id": "animals-001",
+    "category": "animals",
+    "clue": "A 2011 University of Northampton study found that dairy cows have preferred partners and show a raised heart rate and higher stress when they are ___ from those best friends.",
+    "answer": "separated",
+    "source": "https://thehumaneleague.org/article/do-cows-have-best-friends"
+  },
+  {
+    "id": "animals-002",
+    "category": "animals",
+    "clue": "To survive dry or harsh weather, some snails can enter a dormant state and stay asleep for up to ___ years.",
+    "answer": "three",
+    "aliases": ["3"],
+    "source": "https://enviroliteracy.org/animals/can-a-snail-hibernate-for-as-long-as-3-years/"
+  },
+  {
+    "id": "animals-003",
+    "category": "animals",
+    "clue": "By slowing their heart rate, three-toed sloths can hold their breath underwater for up to ___ minutes, far longer than a dolphin.",
+    "answer": "40",
+    "aliases": ["forty"],
+    "source": "https://www.iflscience.com/dolphin-or-sloth-who-can-hold-their-breath-for-longer-77872"
+  },
+  {
+    "id": "animals-004",
+    "category": "animals",
+    "clue": "The heart of a blue whale is so enormous that it weighs roughly ___ pounds.",
+    "answer": "400",
+    "aliases": ["four hundred"],
+    "source": "https://www.whalefacts.org/blue-whale-heart/"
+  },
+  {
+    "id": "animals-005",
+    "category": "animals",
+    "clue": "The silk of Darwin's bark spider is the toughest biological material ever measured, more than ten times tougher than ___.",
+    "answer": "Kevlar",
+    "source": "https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0011234"
+  },
+  {
+    "id": "animals-006",
+    "category": "animals",
+    "clue": "Axolotls can regrow lost limbs, spinal cord, and even parts of their heart and ___ without scarring.",
+    "answer": "brain",
+    "source": "https://biologyinsights.com/how-can-axolotls-regenerate-limbs-brains-and-more/"
+  },
+  {
+    "id": "animals-007",
+    "category": "animals",
+    "clue": "Arctic reindeer are the only known mammal whose eyes change color with the seasons, shifting from gold in summer to ___ in winter.",
+    "answer": "blue",
+    "source": "https://www.nationalgeographic.com/animals/article/reindeer-eyes-color-change-season-uv"
+  },
+  {
+    "id": "animals-008",
+    "category": "animals",
+    "clue": "When a pistol shrimp snaps its claw shut, it creates a collapsing bubble that briefly reaches a temperature roughly as hot as the surface of the ___.",
+    "answer": "sun",
+    "source": "https://en.wikipedia.org/wiki/Sonoluminescence"
+  },
+  {
+    "id": "animals-009",
+    "category": "animals",
+    "clue": "Studies of prairie dog alarm calls found the animals can encode details about a predator, including its size and its ___.",
+    "answer": "color",
+    "aliases": ["colour"],
+    "source": "https://www.wellbeingintlstudiesrepository.org/comski/9/"
+  },
+  {
+    "id": "animals-010",
+    "category": "animals",
+    "clue": "In a famous mirror self-recognition test, an Asian ___ named Happy touched a mark on her own head, joining the short list of species that recognize themselves.",
+    "answer": "elephant",
+    "source": "https://www.pnas.org/doi/10.1073/pnas.0608062103"
+  },
+  {
+    "id": "animals-011",
+    "category": "animals",
+    "clue": "Because of the shape of their tail and feet, ___ cannot walk backwards, one reason they appear on Australia's coat of arms.",
+    "answer": "kangaroos",
+    "aliases": ["kangaroo"],
+    "source": "https://en.wikipedia.org/wiki/Coat_of_arms_of_Australia"
+  },
+  {
+    "id": "animals-012",
+    "category": "animals",
+    "clue": "The traditional collective noun for a group of crows is a ___.",
+    "answer": "murder",
+    "source": "https://www.merriam-webster.com/wordplay/a-drudge-of-lexicographers-presents-collective-nouns/a-murder-of-crows"
+  },
+  {
+    "id": "animals-013",
+    "category": "animals",
+    "clue": "A baby Atlantic puffin has its own charming name: it is called a ___.",
+    "answer": "puffling",
+    "aliases": ["pufflings"],
+    "source": "https://www.audubon.org/news/what-baby-puffins-diet-tells-us-about-its-future"
+  },
+  {
+    "id": "animals-014",
+    "category": "animals",
+    "clue": "A narwhal's famous spiral tusk is not a horn at all but actually a protruding left ___ tooth.",
+    "answer": "canine",
+    "source": "https://en.wikipedia.org/wiki/Narwhal"
+  },
+  {
+    "id": "animals-015",
+    "category": "animals",
+    "clue": "While humans have only three color receptors in their eyes, the mantis shrimp has as many as ___.",
+    "answer": "16",
+    "aliases": ["sixteen"],
+    "source": "https://umbc.edu/stories/mantis-shrimp-eyes-get-even-wilder-umbc-team-finds-twice-the-expected-number-of-light-detecting-proteins/"
+  },
+  {
+    "id": "animals-016",
+    "category": "animals",
+    "clue": "In a zero-oxygen atmosphere, a naked mole-rat can survive about ___ minutes apparently without harm.",
+    "answer": "18",
+    "aliases": ["eighteen"],
+    "source": "https://en.wikipedia.org/wiki/Naked_mole-rat"
+  }
+]

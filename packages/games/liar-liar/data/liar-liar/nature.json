@@ -1,0 +1,112 @@
+[
+  {
+    "id": "nature-001",
+    "category": "nature",
+    "clue": "The wettest inhabited place on Earth is ___, a town in India that averages about 467 inches of rain a year.",
+    "answer": "Mawsynram",
+    "source": "https://en.wikipedia.org/wiki/Mawsynram"
+  },
+  {
+    "id": "nature-002",
+    "category": "nature",
+    "clue": "The tallest known living tree on Earth is a coast redwood named ___, standing over 380 feet tall.",
+    "answer": "Hyperion",
+    "source": "https://en.wikipedia.org/wiki/Hyperion_(tree)"
+  },
+  {
+    "id": "nature-003",
+    "category": "nature",
+    "clue": "The oldest known individual living tree on Earth is a nearly 4,850-year-old bristlecone pine nicknamed ___.",
+    "answer": "Methuselah",
+    "source": "https://en.wikipedia.org/wiki/Methuselah_(pine_tree)"
+  },
+  {
+    "id": "nature-004",
+    "category": "nature",
+    "clue": "The largest single living organism on Earth by weight is a Utah aspen grove named ___, all sharing one root system.",
+    "answer": "Pando",
+    "source": "https://en.wikipedia.org/wiki/Pando_(tree)"
+  },
+  {
+    "id": "nature-005",
+    "category": "nature",
+    "clue": "Despite its tree-like trunk, the banana plant has no wood and is actually the world's largest ___.",
+    "answer": "herb",
+    "aliases": ["herbaceous plant"],
+    "source": "https://en.wikipedia.org/wiki/Banana"
+  },
+  {
+    "id": "nature-006",
+    "category": "nature",
+    "clue": "The Titan arum is nicknamed the corpse flower because when it blooms it reeks of ___.",
+    "answer": "rotting flesh",
+    "aliases": ["rotting meat", "carrion"],
+    "source": "https://en.wikipedia.org/wiki/Amorphophallus_titanum"
+  },
+  {
+    "id": "nature-007",
+    "category": "nature",
+    "clue": "The loudest sound in recorded history was the 1883 eruption of the volcano ___, heard nearly 3,000 miles away.",
+    "answer": "Krakatoa",
+    "aliases": ["Krakatau"],
+    "source": "https://en.wikipedia.org/wiki/1883_eruption_of_Krakatoa"
+  },
+  {
+    "id": "nature-008",
+    "category": "nature",
+    "clue": "Because Earth bulges at the equator, the point on the surface farthest from Earth's center is not Everest but Mount ___ in Ecuador.",
+    "answer": "Chimborazo",
+    "source": "https://en.wikipedia.org/wiki/Chimborazo"
+  },
+  {
+    "id": "nature-009",
+    "category": "nature",
+    "clue": "The largest desert on Earth is not the Sahara but ___, which qualifies because it gets so little precipitation.",
+    "answer": "Antarctica",
+    "aliases": ["Antarctic Desert"],
+    "source": "https://en.wikipedia.org/wiki/List_of_deserts_by_area"
+  },
+  {
+    "id": "nature-010",
+    "category": "nature",
+    "clue": "Falling raindrops are not teardrop-shaped at all; larger ones are flattened on the bottom like a ___.",
+    "answer": "hamburger bun",
+    "aliases": ["hamburger", "bun"],
+    "source": "https://en.wikipedia.org/wiki/Rain"
+  },
+  {
+    "id": "nature-011",
+    "category": "nature",
+    "clue": "The highest wind gust ever recorded on Earth, 253 mph, was measured during a 1996 cyclone on ___, Australia.",
+    "answer": "Barrow Island",
+    "source": "https://en.wikipedia.org/wiki/Wind_speed"
+  },
+  {
+    "id": "nature-012",
+    "category": "nature",
+    "clue": "The pleasant earthy smell when rain hits dry ground has a scientific name coined in 1964: ___.",
+    "answer": "petrichor",
+    "source": "https://en.wikipedia.org/wiki/Petrichor"
+  },
+  {
+    "id": "nature-013",
+    "category": "nature",
+    "clue": "In Death Valley's Racetrack Playa, heavy rocks mysteriously slide across the flat ground, pushed by thin sheets of ___.",
+    "answer": "ice",
+    "source": "https://en.wikipedia.org/wiki/Sailing_stones"
+  },
+  {
+    "id": "nature-014",
+    "category": "nature",
+    "clue": "A gas crater in Turkmenistan nicknamed the Door to Hell has been continuously on fire since the year ___.",
+    "answer": "1971",
+    "source": "https://en.wikipedia.org/wiki/Darvaza_gas_crater"
+  },
+  {
+    "id": "nature-015",
+    "category": "nature",
+    "clue": "High-altitude snow sometimes turns pink or red, a phenomenon called watermelon snow that is caused by ___.",
+    "answer": "algae",
+    "source": "https://en.wikipedia.org/wiki/Watermelon_snow"
+  }
+]
