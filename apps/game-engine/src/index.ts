@@ -10,6 +10,7 @@ import { attachGameSocket } from './socket';
 import { createGameServices } from './services';
 import { registerPlugins } from './plugins';
 import { triviaPlugin } from '@branchout/game-trivia';
+import { liarLiarPlugin } from '@branchout/game-liar-liar';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -38,7 +39,10 @@ async function main(): Promise<void> {
   // data (e.g. the Trivia bank); a failure aborts boot via main().catch rather than serving a
   // broken game.
   const services = createGameServices();
-  const { registry, configSchemas } = await registerPlugins([triviaPlugin], services);
+  const { registry, configSchemas } = await registerPlugins(
+    [triviaPlugin, liarLiarPlugin],
+    services,
+  );
   console.log(`[game-engine] registered games: ${registry.ids().join(', ')}`);
 
   const reporter: ControlPlaneReporter = config.controlPlaneUrl

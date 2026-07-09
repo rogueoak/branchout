@@ -15,5 +15,5 @@ export default defineConfig({
   dts: false,
   clean: true,
   sourcemap: false,
-  external: ['@branchout/game-sdk', '@branchout/game-trivia'],
+  external: ['@branchout/game-sdk', '@branchout/game-trivia', '@branchout/game-liar-liar'],
 });

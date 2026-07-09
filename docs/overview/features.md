@@ -90,8 +90,13 @@ What the product does for users, grouped by area. Each capability maps to one or
       (spec `0020`). The viewer shows an improbable-but-true clue; players invent a fake within 90s
       (a duplicate or the real answer is rejected privately), the reveal lists every fake plus the
       truth, players guess within 30s, and scoring awards 100 for the truth and 50 per player a fake
-      fools. Engine-side game logic ships as `@branchout/game-liar-liar` (spec `0021`); the clue
-      content and boot wiring are spec `0022` and the web client is spec `0023`.
+      fools. Engine-side game logic ships as `@branchout/game-liar-liar` (spec `0021`); the web client
+      is spec `0023`.
+- [x] Liar Liar clue bank - a research-sourced seed of ~119 absurd-but-true clues across the eight
+      categories (people, places, events, sports, food, nature, animals, things), each carrying a
+      `source` URL, gated by `validateSeedBank` (coverage, id convention, prompt uniqueness). Liar Liar
+      is now registered in the engine boot alongside Trivia, so a host can start and play it (spec
+      `0022`).
 
 ## Web
 
