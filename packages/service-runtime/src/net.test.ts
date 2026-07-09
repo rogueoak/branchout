@@ -48,4 +48,24 @@ describe('selectLanIp', () => {
       }),
     ).toBe('172.16.5.5');
   });
+
+  it('returns undefined for an IPv6-only host (no reachable IPv4 to hand a phone)', () => {
+    expect(
+      selectLanIp({
+        lo0: [{ address: '::1', family: 'IPv6', internal: true }],
+        en0: [{ address: 'fe80::abcd', family: 'IPv6', internal: false }],
+      }),
+    ).toBeUndefined();
+  });
+
+  it('prefers the real LAN over a Docker bridge in the 172.16-31 block', () => {
+    expect(
+      selectLanIp({
+        // Docker's default bridge (172.17.x) enumerates first on a Linux host but is unreachable
+        // from a phone; the Wi-Fi/Ethernet 192.168 address must win.
+        docker0: [{ address: '172.17.0.1', family: 4, internal: false }],
+        wlan0: [{ address: '192.168.1.50', family: 4, internal: false }],
+      }),
+    ).toBe('192.168.1.50');
+  });
 });
