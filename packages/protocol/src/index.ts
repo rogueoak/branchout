@@ -14,6 +14,7 @@ export {
   parseMessage,
   serializeMessage,
   type AnswerMessage,
+  type AnswerRejectedMessage,
   type ClientMessage,
   type EchoMessage,
   type ErrorMessage,

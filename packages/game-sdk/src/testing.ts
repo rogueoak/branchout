@@ -8,6 +8,7 @@ import type { GameServices } from './plugin';
 
 export { createMemoryAssetLoaderFactory } from './assets';
 export { stubGame, stubPlugin, STUB_GAME_ID, type StubConfig } from './stub-game';
+export { deciderGame, deciderPlugin, DECIDER_GAME_ID, type DeciderConfig } from './decider-game';
 
 /** The structural shape the engine's scheduler seam expects; kept local so the SDK owns no engine dep. */
 interface ManualSchedulerLike {

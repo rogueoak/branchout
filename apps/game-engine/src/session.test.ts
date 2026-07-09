@@ -19,6 +19,7 @@ function makeState(overrides: Partial<SessionState> = {}): SessionState {
     round: 1,
     rounds: 3,
     disputeWindowMs: 0,
+    decisionWindowMs: 0,
     answerWindowMs: 0,
     players: [{ player: 'p1', nickname: 'Ada', connected: true }],
     scores: { p1: 0 },

@@ -15,7 +15,13 @@ function stateFrame(frames: ServerMessage[]): StateMessage {
   if (!frame) throw new Error('join returned no state frame');
   return frame;
 }
-import { ManualScheduler, stubGame, STUB_GAME_ID } from '@branchout/game-sdk/testing';
+import {
+  ManualScheduler,
+  stubGame,
+  STUB_GAME_ID,
+  deciderGame,
+  DECIDER_GAME_ID,
+} from '@branchout/game-sdk/testing';
 import { InMemoryPubSub } from './pubsub';
 import { GameRegistry } from './registry';
 import type { ControlPlaneReporter } from './reporter';
@@ -758,5 +764,107 @@ describe('config-schema boundary', () => {
     const engine = engineWith((raw) => raw);
     const res = await engine.start(handoff());
     expect(res.status).toBe('started');
+  });
+});
+
+describe('decision/guess phase (spec 0020)', () => {
+  const roster = [
+    { player: 'p1', nickname: 'Ada' },
+    { player: 'p2', nickname: 'Bo' },
+    { player: 'p3', nickname: 'Cy' },
+  ];
+
+  function deciderHarness() {
+    const store = new InMemorySessionStore();
+    const pubsub = new InMemoryPubSub();
+    const reporter = new CapturingReporter();
+    const scheduler = new ManualScheduler();
+    const clock = new ManualClock();
+    const engine = new GameEngine({
+      registry: new GameRegistry([deciderGame]),
+      store,
+      pubsub,
+      reporter,
+      scheduler,
+      clock: clock.now,
+      logger: { error: () => {} },
+    });
+    return { engine, store, pubsub, reporter, scheduler };
+  }
+
+  function deciderHandoff(overrides: Partial<StartHandoffRequest> = {}): StartHandoffRequest {
+    return {
+      v: PROTOCOL_VERSION,
+      room: 'r1',
+      game: DECIDER_GAME_ID,
+      players: roster,
+      config: { truths: ['blue'], windowMs: 30000 },
+      ...overrides,
+    };
+  }
+
+  async function startJoinSubmit(engine: GameEngine): Promise<void> {
+    await engine.start(deciderHandoff());
+    for (const p of roster) await engine.join('r1', DECIDER_GAME_ID, p.player, p.nickname);
+    await engine.submitAnswer('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
+    await engine.submitAnswer('r1', DECIDER_GAME_ID, 'p2', 1, 'green');
+    await engine.submitAnswer('r1', DECIDER_GAME_ID, 'p3', 1, 'yellow');
+  }
+
+  it('enters guessing after reveal and scores on resolve (all-decided early close)', async () => {
+    const h = deciderHarness();
+    await startJoinSubmit(h.engine);
+    await h.engine.control('r1', DECIDER_GAME_ID, 'advance'); // collecting -> guessing
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('guessing');
+
+    await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p1', 1, 'blue', true); // correct guess
+    await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p2', 1, 'red', true); // fools p1
+    await h.engine.submitVote('r1', DECIDER_GAME_ID, 'p3', 1, 'green', true); // fools p2
+    h.scheduler.flush(); // all-decided grace timer -> advance guessing -> finalize
+
+    const state = await h.engine.getState('r1', DECIDER_GAME_ID);
+    expect(state?.phase).toBe('leaderboard');
+    expect(state?.scores).toEqual({ p1: 150, p2: 50, p3: 0 });
+  });
+
+  it('closes the guess round when the window timer fires', async () => {
+    const h = deciderHarness();
+    await startJoinSubmit(h.engine);
+    await h.engine.control('r1', DECIDER_GAME_ID, 'advance');
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('guessing');
+    // No one guesses; the guess-window timer force-closes the round.
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('leaderboard');
+  });
+
+  it('re-arms the guess window after a pause and resume', async () => {
+    const h = deciderHarness();
+    await startJoinSubmit(h.engine);
+    await h.engine.control('r1', DECIDER_GAME_ID, 'advance'); // -> guessing
+    await h.engine.control('r1', DECIDER_GAME_ID, 'pause'); // paused
+    h.scheduler.flush(); // window timer no-ops while paused
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('guessing');
+    await h.engine.control('r1', DECIDER_GAME_ID, 'pause'); // resume + re-arm
+    h.scheduler.flush(); // re-armed window fires
+    expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('leaderboard');
+  });
+
+  it('rejects a duplicate submission privately and writes no scratch', async () => {
+    const h = deciderHarness();
+    await h.engine.start(deciderHandoff());
+    await h.engine.join('r1', DECIDER_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', DECIDER_GAME_ID, 'p2', 'Bo');
+
+    const ok = await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
+    expect(ok.reject).toBeUndefined();
+    const before = JSON.stringify((await h.engine.getState('r1', DECIDER_GAME_ID))?.scratch);
+
+    const dup = await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p2', 1, 'RED'); // duplicate
+    expect(dup.reject?.type).toBe('answer_rejected');
+    expect(dup.reject?.reason).toBe('taken');
+    expect(dup.reject?.round).toBe(1);
+    // No scratch was written: p2's fake never landed, the round is exactly as it was.
+    const after = JSON.stringify((await h.engine.getState('r1', DECIDER_GAME_ID))?.scratch);
+    expect(after).toBe(before);
   });
 });

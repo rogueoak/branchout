@@ -18,6 +18,12 @@ export interface SessionState {
   round: number;
   rounds: number;
   disputeWindowMs: number;
+  /**
+   * Guess-window duration in ms for the round in play (0 = no timer / host-advances). Set when the
+   * engine enters the `guessing` phase from a module's `reveal` decision (spec 0020); re-armed like
+   * the dispute window, not frozen like the answer window.
+   */
+  decisionWindowMs: number;
   /** Answer-window duration in ms (0 = no timer). The per-round deadline derives from it. */
   answerWindowMs: number;
   /**

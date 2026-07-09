@@ -86,13 +86,16 @@ export function attachGameSocket(
       return;
     }
     if (message.type === 'answer') {
-      await engine.submitAnswer(
+      // The engine may refuse this one submission (a duplicate or the correct answer in a bluffing
+      // game); if so it hands back a targeted frame we send to this device alone - never a broadcast.
+      const result = await engine.submitAnswer(
         bound.room,
         bound.game,
         bound.player,
         message.round,
         message.answer,
       );
+      if (result.reject) connection.send(result.reject);
     } else {
       await engine.submitVote(
         bound.room,

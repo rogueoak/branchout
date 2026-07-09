@@ -6,6 +6,7 @@
 import {
   PROTOCOL_VERSION,
   rankStandings,
+  type AnswerRejectedMessage,
   type GameCompleteReport,
   type LeaderboardMessage,
   type PromptMessage,
@@ -142,6 +143,7 @@ export class GameEngine {
         round: 1,
         rounds: cfg.rounds,
         disputeWindowMs: cfg.disputeWindowMs ?? 0,
+        decisionWindowMs: 0,
         answerWindowMs: cfg.answerWindowMs ?? 0,
         players,
         scores: Object.fromEntries(players.map((p) => [p.player, 0])),
@@ -192,7 +194,7 @@ export class GameEngine {
         state.paused = false;
         state.hostPaused = false;
         const module = this.registry.resolve(state.game);
-        if (state.phase === 'disputing' || state.phase === 'voting') {
+        if (state.phase === 'disputing' || state.phase === 'voting' || state.phase === 'guessing') {
           this.armWindow(state, module, state.phase);
         } else {
           // Continue the answer countdown from where the host's drop froze it (spec 0017).
@@ -249,21 +251,32 @@ export class GameEngine {
     });
   }
 
+  /**
+   * Record a player's answer. Returns a targeted `answer_rejected` frame when the module refuses the
+   * submission (e.g. a duplicate or the correct answer in a bluffing game) so the socket can reply to
+   * that one device; a rejected submission writes no scratch and is never broadcast. Returns an empty
+   * object otherwise (including a stale/out-of-phase submission, which is silently ignored).
+   */
   async submitAnswer(
     room: string,
     game: string,
     player: string,
     round: number,
     answer: string,
-  ): Promise<void> {
+  ): Promise<{ reject?: AnswerRejectedMessage }> {
     const key = sessionKey(room, game);
-    await this.run(key, async () => {
+    return this.run(key, async () => {
       const state = await this.store.load(room, game);
       if (!state || state.paused || state.phase !== 'collecting' || state.round !== round) {
-        return; // stale or out-of-phase submission: ignore
+        return {}; // stale or out-of-phase submission: ignore
       }
       const module = this.registry.resolve(state.game);
       const result = module.collectAnswer(this.context(state), player, answer);
+      // A rejected submission is refused wholesale: no scratch write, no timer re-arm, no broadcast -
+      // just a private reply to the sender. The round state is exactly as it was before the attempt.
+      if (result.rejected) {
+        return { reject: this.answerRejectedMessage(state, result.rejected.reason) };
+      }
       state.scratch = result.scratch;
       await this.store.save(state);
       // Self-heal the answer-window timer: it lives in memory, so an engine restart mid-round leaves
@@ -273,6 +286,7 @@ export class GameEngine {
         this.armAnswerWindow(state, module, state.answerDeadline - this.clock());
       }
       if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
+      return {};
     });
   }
 
@@ -287,7 +301,8 @@ export class GameEngine {
     const key = sessionKey(room, game);
     await this.run(key, async () => {
       const state = await this.store.load(room, game);
-      const votingPhase = state?.phase === 'disputing' || state?.phase === 'voting';
+      const votingPhase =
+        state?.phase === 'disputing' || state?.phase === 'voting' || state?.phase === 'guessing';
       if (!state || state.paused || !votingPhase || state.round !== round) {
         return;
       }
@@ -295,6 +310,11 @@ export class GameEngine {
       const result = module.collectVote(this.context(state), { player, target, agree });
       state.scratch = result.scratch;
       await this.store.save(state);
+      // A guess round auto-closes once every connected player has guessed, mirroring the all-answered
+      // early close of the collecting phase (spec 0020).
+      if (state.phase === 'guessing' && module.allDecided?.(this.context(state))) {
+        this.armAutoAdvance(state, module, 'guessing');
+      }
     });
   }
 
@@ -313,9 +333,12 @@ export class GameEngine {
           else this.resumeAnswerWindow(state, module);
           await this.store.save(state);
           await this.publish(state, this.stateMessage(state));
-          // Resuming inside a timed dispute/vote window re-arms it, so a paused window does not
+          // Resuming inside a timed dispute/vote/guess window re-arms it, so a paused window does not
           // strand the round waiting for a manual advance.
-          if (!state.paused && (state.phase === 'disputing' || state.phase === 'voting')) {
+          if (
+            !state.paused &&
+            (state.phase === 'disputing' || state.phase === 'voting' || state.phase === 'guessing')
+          ) {
             this.armWindow(state, module, state.phase);
           }
           return;
@@ -409,15 +432,25 @@ export class GameEngine {
         const result = module.reveal(this.context(state));
         state.scratch = result.scratch;
         this.applyScores(state, result.scores);
-        state.phase = 'disputing';
         state.reveal = result.reveal;
         // The answer window is over; drop the deadline so the reveal-phase state frame carries no
         // stale countdown.
         state.answerDeadline = undefined;
         state.answerRemainingMs = undefined;
-        await this.publish(state, this.revealMessage(state, result.reveal));
-        await this.publish(state, this.stateMessage(state));
-        this.armWindow(state, module, 'disputing');
+        if (result.decision) {
+          // A guess game (spec 0020): stream the options and open a guess window instead of the
+          // dispute path. Trivia and every dispute game omit `decision` and fall through below.
+          state.phase = 'guessing';
+          state.decisionWindowMs = result.decision.windowMs ?? 0;
+          await this.publish(state, this.revealMessage(state, result.reveal));
+          await this.publish(state, this.stateMessage(state));
+          this.armWindow(state, module, 'guessing');
+        } else {
+          state.phase = 'disputing';
+          await this.publish(state, this.revealMessage(state, result.reveal));
+          await this.publish(state, this.stateMessage(state));
+          this.armWindow(state, module, 'disputing');
+        }
         break;
       }
       case 'disputing': {
@@ -435,6 +468,19 @@ export class GameEngine {
       }
       case 'voting': {
         const result = module.disputeVote(this.context(state));
+        state.scratch = result.scratch;
+        this.applyScores(state, result.scores);
+        if (result.reveal !== undefined) {
+          state.reveal = result.reveal;
+          await this.publish(state, this.revealMessage(state, result.reveal));
+        }
+        await this.finalizeRound(state, module);
+        break;
+      }
+      case 'guessing': {
+        // The guess window closed (all-decided or the timer): score the guesses and finalize. A game
+        // that reaches this phase declared a `decision` at reveal, so it implements resolveDecision.
+        const result = module.resolveDecision!(this.context(state));
         state.scratch = result.scratch;
         this.applyScores(state, result.scores);
         if (result.reveal !== undefined) {
@@ -534,6 +580,7 @@ export class GameEngine {
     state.round = 1;
     state.rounds = cfg.rounds;
     state.disputeWindowMs = cfg.disputeWindowMs ?? 0;
+    state.decisionWindowMs = 0;
     state.answerWindowMs = cfg.answerWindowMs ?? 0;
     state.paused = false;
     state.hostPaused = false;
@@ -563,19 +610,24 @@ export class GameEngine {
    * advances first, a pause, or a new round all cancel it harmlessly; re-arming on each late submit
    * is safe because a stale timer finds a changed phase/round and no-ops. Skipped while paused.
    */
-  private armAutoAdvance(state: SessionState, module: GameModule): void {
+  private armAutoAdvance(
+    state: SessionState,
+    module: GameModule,
+    phase: SessionState['phase'] = 'collecting',
+  ): void {
     if (state.paused) return;
     const { room, game, round, runId } = state;
     this.scheduler.schedule(AUTO_ADVANCE_MS, () => {
       void this.run(sessionKey(room, game), async () => {
         const current = await this.store.load(room, game);
-        // Fire only if the same run's same round is still collecting and unpaused. The `runId` guard
-        // matters because a restart resets `round` to 1 and re-enters `collecting`, so a stale
-        // round-1 timer from the prior run must not advance the fresh one.
+        // Fire only if the same run's same round is still in the phase we armed for and unpaused. The
+        // `runId` guard matters because a restart resets `round` to 1 and re-enters `collecting`, so a
+        // stale round-1 timer from the prior run must not advance the fresh one. `phase` lets the
+        // guess phase reuse this all-acted early close (spec 0020).
         if (
           !current ||
           current.paused ||
-          current.phase !== 'collecting' ||
+          current.phase !== phase ||
           current.round !== round ||
           current.runId !== runId
         ) {
@@ -642,12 +694,18 @@ export class GameEngine {
     if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
   }
 
-  /** Arm the dispute-window timer; a no-op when the window is manual (0) or paused. */
+  /** The timed-window duration for a phase: the guess window for `guessing`, else the dispute window. */
+  private windowMsFor(state: SessionState, phase: SessionState['phase']): number {
+    return phase === 'guessing' ? state.decisionWindowMs : state.disputeWindowMs;
+  }
+
+  /** Arm the dispute/guess-window timer; a no-op when the window is manual (0) or paused. */
   private armWindow(state: SessionState, module: GameModule, phase: SessionState['phase']): void {
-    if (state.disputeWindowMs <= 0 || state.paused) return;
+    const ms = this.windowMsFor(state, phase);
+    if (ms <= 0 || state.paused) return;
     const room = state.room;
     const game = state.game;
-    this.scheduler.schedule(state.disputeWindowMs, () => {
+    this.scheduler.schedule(ms, () => {
       void this.run(sessionKey(room, game), async () => {
         const current = await this.store.load(room, game);
         // Only fire if the window is still open on the same phase and not paused.
@@ -732,6 +790,18 @@ export class GameEngine {
       room: state.room,
       game: state.game,
       standings,
+    };
+  }
+
+  /** A targeted refusal of one submission, sent by the socket to the submitting device only. */
+  private answerRejectedMessage(state: SessionState, reason: string): AnswerRejectedMessage {
+    return {
+      v: PROTOCOL_VERSION,
+      type: 'answer_rejected',
+      room: state.room,
+      game: state.game,
+      round: state.round,
+      reason,
     };
   }
 }
