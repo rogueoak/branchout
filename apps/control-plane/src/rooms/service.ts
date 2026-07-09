@@ -61,6 +61,18 @@ export interface RoomView {
 }
 
 /**
+ * The public, unauthenticated preview of a room. Deliberately minimal: only what a link unfurl
+ * (Open Graph) needs to pick the right share card. Unlike {@link RoomView} it carries no `id`,
+ * `shareLink`, or `hostAccountId` and never any member/session data - a link crawler is not a
+ * member and must not learn anything private from a room code.
+ */
+export interface RoomPreview {
+  code: string;
+  status: Room['status'];
+  selectedGame: string | null;
+}
+
+/**
  * What `join` returns: the room, plus the caller's own public `playerId`. The browser needs its
  * `playerId` to `join` the engine (the roster is keyed by it), and a non-host cannot read it from
  * `/members` (it cannot tell which row is its own without a `sessionId`), so `join` echoes it back.
@@ -331,6 +343,17 @@ export class RoomService {
       throw new RoomError('forbidden', 'Join the room to see it.');
     }
     return toView(room);
+  }
+
+  /**
+   * A public, unauthenticated room preview by code, for link unfurls (Open Graph). A crawler has
+   * no session and is not a member, so `view` (member-gated) cannot serve it. This leaks only the
+   * status and the selected game so the web app can pick the matching share card; it exposes no
+   * room id, host, or member/session data. Throws `not_found` for an unknown code.
+   */
+  async preview(code: string): Promise<RoomPreview> {
+    const room = await this.requireRoom(code);
+    return { code: room.code, status: room.status, selectedGame: room.selectedGame };
   }
 
   async members(

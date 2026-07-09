@@ -76,6 +76,19 @@ canopy component re-themes with no component changes, in light and dark, AA-veri
 ships upstream as `@rogueoak/roots/brand` (canopy PR #37 - a `buildBrand()` function + a
 `roots-brand` CLI); `packages/theme` consumes it once released. See spec `0002`.
 
+## Open Graph share cards (spec 0020)
+
+Link unfurls are driven by pre-rendered static images, not a runtime renderer. `packages/brand`
+rasterizes the SVG source (`sharp`) into the home wordmark card and one "Join my game" card per
+game (plus a generic fallback) at build time, copying them into `apps/web/public`; the web build
+depends on the brand build, so the cards exist before it runs. The only runtime decision is
+*which* card a share link points at: the join page's `generateMetadata` resolves the room's game
+and maps it to a card (`lib/share-card.ts`). Because a link crawler has no session and is not a
+room member, it cannot use the member-gated `getRoom`; instead the control-plane exposes a public
+`GET /rooms/:code/preview` returning only `{ code, status, selectedGame }` (no member/session
+data). Any preview failure falls back to the generic card, so a share link never fails to unfurl.
+Absolute `og:image` URLs come from `metadataBase` (seeded by `NEXT_PUBLIC_SITE_URL`).
+
 ## Deployment
 
 Docker Compose, both locally and on a server. Kubernetes is a someday, not a now.

@@ -20,6 +20,9 @@ describe('favicon/OG raster generation', () => {
     ['favicon-32.png', 32, 32],
     ['favicon-180.png', 180, 180],
     ['og-1200x630.png', 1200, 630],
+    ['share-trivia.png', 1200, 630],
+    ['share-liarliar.png', 1200, 630],
+    ['share-join.png', 1200, 630],
   ] as const)('%s exists with correct dimensions', async (filename, width, height) => {
     const filepath = join(distDir, filename);
     expect(existsSync(filepath), `${filename} not found - run build first`).toBe(true);

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { iconSvg } from '../icon.js';
 import { faviconSvg } from '../favicon.js';
 import { logoSvg } from '../logo.js';
+import { triviaSvg } from '../trivia.js';
+import { liarLiarSvg } from '../liarliar.js';
 import { palette, goldRootRule, safeArea, sparkGradient } from '../brand-notes.js';
 
 describe('SVG exports', () => {
@@ -19,6 +21,19 @@ describe('SVG exports', () => {
     expect(logoSvg).toMatch(/^<svg /);
     expect(logoSvg).toContain('viewBox="0 0 520 150"');
   });
+
+  it.each([
+    ['triviaSvg', triviaSvg],
+    ['liarLiarSvg', liarLiarSvg],
+  ])(
+    '%s is a 512 game mark that keeps the gold root (the gold-root rule holds for games)',
+    (_name, svg) => {
+      expect(svg).toMatch(/^<svg /);
+      expect(svg).toContain('viewBox="0 0 512 512"');
+      // Every mark in the family carries the single gold root node.
+      expect(svg).toContain('#d2a463');
+    },
+  );
 });
 
 describe('brand constants', () => {

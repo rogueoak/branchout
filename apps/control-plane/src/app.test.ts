@@ -372,6 +372,42 @@ describe('POST /rooms (create + share link)', () => {
   });
 });
 
+describe('GET /rooms/:code/preview (public, for link unfurls)', () => {
+  it('serves status and selected game with no session (a crawler is not a member)', async () => {
+    const { app } = makeApp();
+    const hostCookie = await withHost(app);
+    const create = await app.inject({
+      method: 'POST',
+      url: '/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { code } = create.json().room;
+    await app.inject({
+      method: 'POST',
+      url: `/rooms/${code}/select`,
+      headers: { cookie: hostCookie },
+      payload: { game: 'trivia', config: {} },
+    });
+
+    // No cookie header at all - the public unfurl path.
+    const res = await app.inject({ method: 'GET', url: `/rooms/${code}/preview` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().preview).toEqual({ code, status: 'lobby', selectedGame: 'trivia' });
+    // No private fields leak through the route.
+    const body = JSON.stringify(res.json());
+    expect(body).not.toContain('hostAccountId');
+    expect(body).not.toContain('sessionId');
+    await app.close();
+  });
+
+  it('404s an unknown code', async () => {
+    const { app } = makeApp();
+    const res = await app.inject({ method: 'GET', url: '/rooms/ZZZZZ/preview' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
 describe('POST /rooms/:code/join and kick over HTTP', () => {
   it('a joiner picks a per-game nickname and appears in the members list', async () => {
     const { app } = makeApp();

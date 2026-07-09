@@ -477,6 +477,36 @@ describe('room view (poll for status)', () => {
   });
 });
 
+describe('public preview (for link unfurls)', () => {
+  it('returns status and selected game to anyone, with no session and no private fields', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await h.service.createRoom(host);
+    await h.service.selectGame(room.code, host, 'trivia', {});
+
+    // No session argument: a crawler is not a member, yet it can still read the preview.
+    const preview = await h.service.preview(room.code);
+    expect(preview).toEqual({ code: room.code, status: 'lobby', selectedGame: 'trivia' });
+    // It must not leak anything private that a member view carries.
+    expect(preview).not.toHaveProperty('id');
+    expect(preview).not.toHaveProperty('hostAccountId');
+    expect(preview).not.toHaveProperty('shareLink');
+    expect(preview).not.toHaveProperty('members');
+    expect(preview).not.toHaveProperty('sessionId');
+  });
+
+  it('reports a null game before the host picks one', async () => {
+    const h = harness({ host_acct: 'party' });
+    const { room } = await h.service.createRoom(account('Host', 'host_acct'));
+    expect(await h.service.preview(room.code)).toMatchObject({ selectedGame: null });
+  });
+
+  it('throws not_found for an unknown code', async () => {
+    const h = harness();
+    await expect(h.service.preview('ZZZZZ')).rejects.toMatchObject({ code: 'not_found' });
+  });
+});
+
 describe('host controls', () => {
   async function runningRoom() {
     const h = harness({ host_acct: 'party' });

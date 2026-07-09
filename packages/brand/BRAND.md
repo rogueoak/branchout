@@ -31,6 +31,25 @@ for the glow and a narrow full-opacity pass on top.
 Maintain at least 10% of the shorter dimension as clear space on all sides.
 Do not place text, other logos, or decorative elements inside the safe area.
 
+## Game marks
+
+Each game has its own 512x512 mark in `assets/game-<id>.svg` (`game-trivia.svg`,
+`game-liarliar.svg`). A game mark is a sibling of the house icon, not a reskin: it keeps the
+family skeleton so the games read as one set.
+
+- Same canvas as the icon: radial-glow dark tile (`#221836 -> #0d0a15`), the two-pass spark
+  strokes, party-color leaf nodes with halos and white highlights.
+- **The gold-root rule still applies** - every game mark carries the single gold node
+  (`#d2a463`) at the root of its branch structure (the dot of Trivia's question mark, the base
+  of Liar Liar's mask stick).
+- The game's idea is expressed by _bending the branch graph_, not by adding foreign shapes:
+  Trivia bends it into a question mark; Liar Liar shapes it into a masquerade mask on a stick.
+- Keep leaf-node colors from the party set already in use; do not invent new hues.
+
+To add a game mark, copy an existing `game-*.svg` as the skeleton, reshape the branch, keep the
+gold root, then export it from `packages/brand` (`src/<id>.ts` + `brand.ts`) and add it to the
+raster script if it needs a share card.
+
 ## Do not restyle the mark ad hoc
 
 The SVGs in `assets/` are the source of truth. Do not:
@@ -48,7 +67,13 @@ To evolve the brand, update the SVG source and re-run `pnpm --filter @branchout/
 - `packages/brand/dist/favicon-32.png`
 - `packages/brand/dist/favicon-180.png`
 - `packages/brand/dist/og-1200x630.png`
+- `packages/brand/dist/share-trivia.png`
+- `packages/brand/dist/share-liarliar.png`
+- `packages/brand/dist/share-join.png`
 - `apps/web/public/favicon-16.png`
 - `apps/web/public/favicon-32.png`
 - `apps/web/public/apple-touch-icon.png`
 - `apps/web/public/og.png`
+- `apps/web/public/share-trivia.png`
+- `apps/web/public/share-liarliar.png`
+- `apps/web/public/share-join.png`
