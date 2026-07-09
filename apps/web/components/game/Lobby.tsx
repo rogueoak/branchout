@@ -83,11 +83,13 @@ export function Lobby({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
-      <header className="flex flex-col gap-2">
-        <p className="text-body-sm text-text-muted">Room code</p>
-        <p className="text-display tabular-nums tracking-widest text-text">{room.code}</p>
+      <header aria-label="How to join" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <p className="text-body-sm text-text-muted">Room code</p>
+          <p className="text-display tabular-nums tracking-widest text-text">{room.code}</p>
+        </div>
         <div className="flex flex-col gap-1 text-body-sm text-text-muted">
-          <span>Share this link:</span>
+          <span>On the same WiFi? Others join on their phones here:</span>
           <ShareLink href={room.shareLink} />
         </div>
       </header>

@@ -11,9 +11,12 @@ services:
     # ports. Reuse the same ${...PORT} vars that publish those ports (base compose) so a dev who
     # bumps a port in infra/.env stays consistent. `next dev` reads these from the process env,
     # so no rebuild is needed.
+    #
+    # `${LAN_HOST:-localhost}` defaults to localhost; `pnpm dev:lan` sets LAN_HOST to the machine's
+    # LAN IP so a phone on the same WiFi reaches the published ports (spec 0024).
     environment:
-      NEXT_PUBLIC_CONTROL_PLANE_URL: http://localhost:${CONTROL_PLANE_PORT:-4000}
-      NEXT_PUBLIC_ENGINE_WS_URL: ws://localhost:${GAME_ENGINE_PORT:-4001}
+      NEXT_PUBLIC_CONTROL_PLANE_URL: http://${LAN_HOST:-localhost}:${CONTROL_PLANE_PORT:-4000}
+      NEXT_PUBLIC_ENGINE_WS_URL: ws://${LAN_HOST:-localhost}:${GAME_ENGINE_PORT:-4001}
       # Server-side (SSR) calls - getSignedIn (lib/session.ts) and the join-page OG preview
       # (lib/room-preview.ts) - run inside this container, so they reach the control-plane by its
       # compose service name, not the browser's localhost (which would resolve to web itself).
@@ -26,6 +29,13 @@ services:
 
   control-plane:
     command: pnpm --filter @branchout/control-plane dev
+    # Allow the browser origin(s) and relax the session cookie for plain-http dev. WEB_ORIGIN is
+    # comma-separated: localhost plus, when `pnpm dev:lan` sets LAN_HOST, the LAN URL a phone uses.
+    # COOKIE_SECURE=false lets the session cookie set over http (SameSite=lax still flows, since a
+    # host and its ports are the same site). Dev-only overlay; production stays secure same-origin.
+    environment:
+      WEB_ORIGIN: http://localhost:${WEB_PORT:-3000},http://${LAN_HOST:-localhost}:${WEB_PORT:-3000}
+      COOKIE_SECURE: 'false'
     volumes:
       - ..:/repo
       - /repo/node_modules

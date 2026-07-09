@@ -68,6 +68,22 @@ pnpm --filter @branchout/control-plane dev
 pnpm --filter @branchout/game-engine dev
 ```
 
+### Play on your phone (same WiFi)
+
+Liar Liar is a phone-party game: everyone plays on their own phone against a shared viewer screen.
+To play (or test) that locally, run the stack so other devices on the same network can reach it:
+
+```sh
+pnpm build      # once, so the packages the recipe uses are built
+pnpm dev:lan    # detects your LAN IP, wires it in, and brings up the dev stack
+```
+
+It prints the URL to open on phones (e.g. `http://192.168.1.42:3000`). It points the browser's
+control-plane and engine URLs at your machine's LAN IP, allows that origin through CORS, and relaxes
+the session cookie for plain-http dev - all dev-only (production stays same-origin behind the proxy).
+The lobby shows the same connect URL and the room code so others can join. (Everyone must be on the
+same WiFi; a guest network that isolates clients will not work.)
+
 ## What's new
 
 `0.0.0` - the monorepo scaffold (spec `0001`): the three apps, shared `config` and `protocol`
