@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@branchout/game-sdk": "workspace:*",
+    "@branchout/game-trivia": "workspace:*",
     "@branchout/protocol": "workspace:*",
     "@branchout/service-runtime": "workspace:*",
     "fastify": "^5.2.0",

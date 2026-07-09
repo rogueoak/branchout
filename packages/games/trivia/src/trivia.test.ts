@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { RoundContext, SessionPlayer } from '../../lifecycle';
+import type { RoundContext, SessionPlayer } from '@branchout/game-sdk';
 import { CATEGORIES, type TriviaQuestion } from './question-bank';
 import {
   ANSWER_WINDOW_MS,

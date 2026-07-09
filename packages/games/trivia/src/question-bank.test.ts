@@ -2,12 +2,17 @@
 // A failing test here means the data files or the validator are broken.
 
 import { describe, it, expect } from 'vitest';
+import { createFsAssetLoaderFactory } from '@branchout/game-sdk';
 import {
   loadQuestionBank,
   validateQuestionBank,
   CATEGORIES,
   type TriviaQuestion,
 } from './question-bank.js';
+
+// A real filesystem loader rooted at this package - proves the injected loader resolves the
+// package's own data/trivia from the package root under vitest (guards the path resolution).
+const assets = createFsAssetLoaderFactory().forModule(import.meta.url);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -37,7 +42,7 @@ function makeValidBank(): TriviaQuestion[] {
 
 describe('question-bank - real data', () => {
   it('loads 1600 questions across all 8 categories', async () => {
-    const questions = await loadQuestionBank();
+    const questions = await loadQuestionBank(assets);
     expect(questions).toHaveLength(1600);
 
     const sample = questions[0]!;
@@ -58,7 +63,7 @@ describe('question-bank - real data', () => {
   });
 
   it('passes full validator without throwing', async () => {
-    const questions = await loadQuestionBank();
+    const questions = await loadQuestionBank(assets);
     expect(() => validateQuestionBank(questions)).not.toThrow();
   });
 });
