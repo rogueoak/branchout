@@ -44,16 +44,19 @@ describe('home page - anonymous visitor', () => {
     expect(screen.queryByText(/USD|CAD|per month/i)).toBeNull();
   });
 
-  it('renders the games teaser with Trivia featured', () => {
+  it('renders the games teaser with both Trivia and Liar Liar', () => {
     render(<LandingContent signedIn={false} />);
     screen.getByRole('heading', { name: /what you can play/i });
     screen.getByRole('heading', { name: 'Trivia' });
+    screen.getByRole('heading', { name: 'Liar Liar' });
   });
 
-  it('makes the Trivia card a link into the play path (signup when anonymous)', () => {
+  it('makes each game card a link into the play path (signup when anonymous)', () => {
     render(<LandingContent signedIn={false} />);
-    const card = screen.getByRole('link', { name: /play trivia/i });
-    expect(card).toHaveProperty('href', expect.stringContaining('/signup'));
+    const trivia = screen.getByRole('link', { name: /play trivia/i });
+    expect(trivia).toHaveProperty('href', expect.stringContaining('/signup'));
+    const liarLiar = screen.getByRole('link', { name: /play liar liar/i });
+    expect(liarLiar).toHaveProperty('href', expect.stringContaining('/signup'));
   });
 
   it('renders a footer landmark', () => {
@@ -78,10 +81,16 @@ describe('home page - signed-in visitor', () => {
     expect(screen.getByRole('link', { name: 'Play now' })).toBeDefined();
   });
 
-  it('points the Trivia card at the rooms home once signed in', () => {
+  it('points the game cards at the rooms home once signed in', () => {
     render(<LandingContent signedIn={true} />);
-    const card = screen.getByRole('link', { name: /play trivia/i });
-    expect(card).toHaveProperty('href', expect.stringContaining('/rooms'));
+    expect(screen.getByRole('link', { name: /play trivia/i })).toHaveProperty(
+      'href',
+      expect.stringContaining('/rooms'),
+    );
+    expect(screen.getByRole('link', { name: /play liar liar/i })).toHaveProperty(
+      'href',
+      expect.stringContaining('/rooms'),
+    );
   });
 
   it('hides the header "Log in" link (a signed-in visitor is already authenticated)', () => {
