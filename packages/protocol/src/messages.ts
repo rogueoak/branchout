@@ -95,6 +95,22 @@ export interface RevealMessage {
   reveal: unknown;
 }
 
+/**
+ * The engine's reply refusing one player's submission (e.g. a duplicate or the correct answer in a
+ * bluffing game). Unlike every other server frame this is a *targeted* reply sent only to the
+ * submitting device, never broadcast over pub/sub, so no other player learns a fake was rejected.
+ * The `reason` is deliberately vague ("someone already submitted that"). Additive, server->client
+ * only (never parsed off the wire), under the same `PROTOCOL_VERSION`.
+ */
+export interface AnswerRejectedMessage {
+  v: number;
+  type: 'answer_rejected';
+  room: string;
+  game: string;
+  round: number;
+  reason: string;
+}
+
 /** The current standings, streamed between rounds and on demand. */
 export interface LeaderboardMessage {
   v: number;
@@ -139,7 +155,8 @@ export interface StateMessage {
   answerMsRemaining?: number;
 }
 
-export type ServerMessage = PromptMessage | RevealMessage | LeaderboardMessage | StateMessage;
+export type ServerMessage =
+  PromptMessage | RevealMessage | LeaderboardMessage | StateMessage | AnswerRejectedMessage;
 
 export type ProtocolMessage = EchoMessage | ErrorMessage | ClientMessage | ServerMessage;
 

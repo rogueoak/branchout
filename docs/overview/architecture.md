@@ -154,7 +154,13 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   `/sessions` validates the handoff config against that schema before configuring; the engine still
   sequences phases, timers, streaming, persistence, and reporting while the module owns what each
   phase means. Adding a game is adding its plugin to the boot list; a stub game (an SDK test
-  fixture) drives the lifecycle in tests (Trivia is spec `0008`).
+  fixture) drives the lifecycle in tests (Trivia is spec `0008`). After `reveal` a game takes one of
+  two opt-in post-reveal shapes (spec `0020`): the `disputing -> voting` dispute path (Trivia), or a
+  generic **guess** phase - `reveal` returns a `decision`, the engine opens a `guessing` window,
+  collects choices via the `vote` frame, then calls `resolveDecision` to score (the shape Liar Liar
+  uses). A module may also **reject a single submission** (`collectAnswer` returns `rejected`): the
+  engine replies to that one device with a targeted `answer_rejected` frame and writes no state -
+  never a broadcast (used for "someone already submitted that" in a bluffing game).
 - **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for
   the life of a game, recovered on reconnect. It also persists the current phase's streamed frames
   (prompt/reveal/standings) so `join` can replay them as ordered catch-up - pub/sub only reaches

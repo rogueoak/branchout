@@ -17,13 +17,14 @@ export const PROTOCOL_VERSION = 1 as const;
  * published on the collecting -> disputing transition), then `complete` is terminal.
  */
 export type Phase =
-  'configuring' | 'collecting' | 'disputing' | 'voting' | 'leaderboard' | 'complete';
+  'configuring' | 'collecting' | 'disputing' | 'voting' | 'guessing' | 'leaderboard' | 'complete';
 
 const PHASES: readonly Phase[] = [
   'configuring',
   'collecting',
   'disputing',
   'voting',
+  'guessing',
   'leaderboard',
   'complete',
 ];

@@ -64,6 +64,14 @@ export interface RevealResult {
   reveal: unknown;
   /** Points awarded this reveal. The engine applies and reports them. */
   scores: ScoreEvent[];
+  /**
+   * When present, the engine runs a generic post-reveal *guess* phase instead of the dispute path:
+   * it streams this reveal as the guessable options, collects choices via the `vote` frame, closes
+   * on all-decided or after `windowMs`, then calls {@link GameModule.resolveDecision} to score. A
+   * game that omits this (e.g. Trivia) takes the unchanged `disputing -> voting` path. Additive and
+   * opt-in - the two post-reveal shapes never mix in one game.
+   */
+  decision?: { windowMs?: number };
 }
 
 export interface DisputeWindowResult {
@@ -85,9 +93,23 @@ export interface AdvanceResult {
   done: boolean;
 }
 
-/** A callback that only mutates the module's scratch (collecting answers and votes). */
+/** The result of resolving a guess phase: scores to apply and an optional final reveal. */
+export interface DecisionResult {
+  scratch: Record<string, unknown>;
+  /** Points awarded when the guess phase resolves (e.g. a correct guess, a fooled author). */
+  scores: ScoreEvent[];
+  /** Optional updated reveal payload after the guesses resolve (who guessed what, the truth). */
+  reveal?: unknown;
+}
+
+/**
+ * A callback that only mutates the module's scratch (collecting answers and votes). `rejected`, when
+ * set by {@link GameModule.collectAnswer}, tells the engine to refuse this one submission: it writes
+ * no scratch and replies to the submitting device alone with the reason (never a broadcast).
+ */
 export interface ScratchResult {
   scratch: Record<string, unknown>;
+  rejected?: { reason: string };
 }
 
 export interface GameModule {
@@ -114,8 +136,22 @@ export interface GameModule {
   /** Score the round and produce the reveal payload. */
   reveal(ctx: RoundContext): RevealResult;
 
-  /** Record one vote (a dispute-raise while `disputing`, a ballot while `voting`). */
+  /** Record one vote (a dispute-raise while `disputing`, a ballot while `voting`, a guess while `guessing`). */
   collectVote(ctx: RoundContext, vote: VoteInput): ScratchResult;
+
+  /**
+   * True when the guess phase is complete - every connected player has guessed - so the engine can
+   * auto-close it, mirroring {@link allAnswered}. Only consulted while `guessing`; optional, so a
+   * game without a guess phase never implements it.
+   */
+  allDecided?(ctx: RoundContext): boolean;
+
+  /**
+   * Resolve the guess phase: tally the guesses, award points, and optionally produce the final
+   * reveal. Called by the engine when the `guessing` phase closes (all-decided or the timer). Only
+   * required by a game whose `reveal` returned a `decision`.
+   */
+  resolveDecision?(ctx: RoundContext): DecisionResult;
 
   /** Close the dispute window: which results, if any, go to a vote. */
   disputeWindow(ctx: RoundContext): DisputeWindowResult;
