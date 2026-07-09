@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Liar Liar">
+  <defs>
+    <linearGradient id="ll-spark" gradientUnits="userSpaceOnUse" x1="150" y1="404" x2="360" y2="150">
+      <stop offset="0"    stop-color="#FBBF24"/>
+      <stop offset="0.5"  stop-color="#EC4899"/>
+      <stop offset="1"    stop-color="#7C3AED"/>
+    </linearGradient>
+    <radialGradient id="ll-bg" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0" stop-color="#221836"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="ll-glow" cx="0.5" cy="0.4" r="0.5">
+      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ll-face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#37244f"/>
+      <stop offset="1" stop-color="#1a1230"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#ll-bg)"/>
+  <circle cx="256" cy="205" r="210" fill="url(#ll-glow)"/>
+  <!-- The stick the mask is held on: a branch stem down to the gold root (two-pass spark stroke). -->
+  <g stroke-linecap="round" fill="none" stroke="url(#ll-spark)">
+    <path d="M256 236 L256 404" stroke-width="16" opacity="0.16"/>
+    <path d="M256 236 L256 404" stroke-width="7"/>
+  </g>
+  <!-- Masquerade mask body with two eye cutouts (evenodd = true holes); the spark rim outlines it. -->
+  <path fill-rule="evenodd" fill="url(#ll-face)" stroke="url(#ll-spark)" stroke-width="6" stroke-linejoin="round"
+        d="M256 176 C236 150 196 140 158 148 C118 156 100 190 108 220 C116 250 150 266 196 262 C226 260 244 250 256 236 C268 250 286 260 316 262 C362 266 396 250 404 220 C412 190 394 156 354 148 C316 140 276 150 256 176 Z
+           M150 205 Q185 182 222 205 Q185 228 150 205 Z
+           M290 209 Q324 223 358 209 Q324 217 290 209 Z"/>
+  <!-- left pupil (open eye); the right eye is the thin winking slit above - the tell -->
+  <circle cx="186" cy="205" r="7" fill="#F9A8D4"/>
+  <!-- decorative jewels along the mask's top edge -->
+  <g opacity="0.20">
+    <circle cx="118" cy="196" r="20" fill="#A78BFA"/>
+    <circle cx="184" cy="150" r="20" fill="#FDE047"/>
+    <circle cx="336" cy="150" r="20" fill="#4ADE80"/>
+    <circle cx="404" cy="200" r="20" fill="#22D3EE"/>
+    <circle cx="256" cy="404" r="20" fill="#d2a463"/>
+  </g>
+  <circle cx="118" cy="196" r="12" fill="#A78BFA"/>
+  <circle cx="184" cy="150" r="12" fill="#FDE047"/>
+  <!-- the right jewel is dimmed: the node that is lying -->
+  <circle cx="336" cy="150" r="12" fill="#4ADE80" opacity="0.45"/>
+  <circle cx="404" cy="200" r="12" fill="#22D3EE"/>
+  <circle cx="256" cy="176" r="6" fill="#c9d2da"/>
+  <g fill="#ffffff" opacity="0.55">
+    <circle cx="114" cy="192" r="5"/> <circle cx="180" cy="146" r="5"/>
+    <circle cx="400" cy="196" r="5"/>
+  </g>
+  <!-- gold root node: the base of the mask's stick -->
+  <circle cx="256" cy="404" r="11" fill="#d2a463"/>
+</svg>

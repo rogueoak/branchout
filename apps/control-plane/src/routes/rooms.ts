@@ -162,6 +162,22 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
     }),
   );
 
+  // Public room preview: no session required. Serves link unfurls (Open Graph) so a crawler - which
+  // has no cookie and is not a member - can still show the right share card. Returns only status +
+  // selected game; never member/session data. 404s an unknown code.
+  app.get('/rooms/:code/preview', async (request, reply) => {
+    const { code } = request.params as { code: string };
+    try {
+      const preview = await rooms.preview(code);
+      return reply.code(200).send({ preview });
+    } catch (error) {
+      if (error instanceof RoomError && error.code === 'not_found') {
+        return reply.code(404).send({ error: error.message, code: error.code });
+      }
+      throw error;
+    }
+  });
+
   // Room view: caller must be a member. Polled so a non-host device learns when the host starts
   // the game (status -> running) or exits back to the lobby, since it never runs the host handler.
   app.get('/rooms/:code', async (request, reply) =>

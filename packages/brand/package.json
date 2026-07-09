@@ -22,6 +22,14 @@
       "types": "./dist/logo.d.ts",
       "import": "./dist/logo.js"
     },
+    "./trivia": {
+      "types": "./dist/trivia.d.ts",
+      "import": "./dist/trivia.js"
+    },
+    "./liarliar": {
+      "types": "./dist/liarliar.d.ts",
+      "import": "./dist/liarliar.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"

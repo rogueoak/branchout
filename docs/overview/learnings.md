@@ -21,6 +21,14 @@ Capture durable lessons as they emerge.
   Turborepo's `outputs: ["dist/**"]` tracks brand rasters through the cache; a single
   `generate-rasters.mjs` that both generates and copies keeps the pipeline simple and
   ensures web always has fresh files after `pnpm build`. (Spec `0003`.)
+- **Keep card text in the SVG's system-font stack; the `sharp` pipeline embeds no fonts.**
+  Composing OG cards with `sharp` renders any `<text>` via librsvg's fallback font - there are no
+  font files in the pipeline. Set the same `-apple-system, ... , sans-serif` stack the wordmark
+  SVG uses (rather than a bespoke web font) so text rasterizes consistently. (Spec `0020`.)
+- **A game mark is a sibling of the house icon, not a reskin.** Reuse the icon skeleton (radial
+  tile, two-pass spark strokes, party leaf nodes, and the single gold root) and express the game
+  by *bending the branch graph* - Trivia into a question mark, Liar Liar into a masquerade mask.
+  The gold-root rule holds for every mark; assert `#d2a463` is present in a test. (Spec `0020`.)
 
 ## Toolchain
 
@@ -112,6 +120,13 @@ Capture durable lessons as they emerge.
   constant-time, and a debit gated behind a "recorded" flag loses the charge when the two
   non-transactional awaits split on a crash - debit unconditionally under an idempotency key so a
   retry both bills once and heals a prior failure. (Feedback `0004`.)
+
+- **A link crawler has no session and is not a member - server-render metadata needs a public
+  read, not the member-gated one.** Open Graph unfurls are fetched by bots with no cookie, so a
+  join page's `generateMetadata` cannot reuse a member-only `getRoom`; it needs a purpose-built
+  public endpoint that returns only what the unfurl needs (here `{ code, status, selectedGame }`)
+  and nothing private. Keep that projection minimal and assert in a test that member/session
+  fields never appear, so a later change cannot widen it into a leak. (Spec `0020`.)
 
 ## Module boundaries
 

@@ -10,6 +10,10 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Branch out Confetti theme on canopy, light + dark, AA-verified (spec `0002`).
 - [x] Brand assets - icon, favicon, wordmark lockup, OG image; `packages/brand` re-exports
       SVGs and generates rasters at build time (spec `0003`).
+- [x] Per-game marks and social share cards - on-theme game logos (`Trivia` = a branch-graph
+      question mark, `Liar Liar` = a masquerade mask on a stick, both keeping the gold-root rule),
+      a home Open Graph card built around the wordmark + tagline, and per-game "Join my game" share
+      cards (game art + the mark, generic fallback) unfurled by share links (spec `0020`).
 - [~] Hosting and deploy - `branchout.games` on a DigitalOcean droplet behind a Caddy edge proxy
       (auto-TLS, HSTS, same-origin `/api` + `/ws` routing), the three apps as private GHCR images
       plus Postgres + Redis, rolled forward hands-off by `release.yml` on every push to `main`
@@ -117,6 +121,12 @@ What the product does for users, grouped by area. Each capability maps to one or
       stars. A protocol-typed WebSocket client (`lib/game-client.ts`) folds prompt/reveal/
       leaderboard/state into a pure state machine and reconnects. Built on canopy + the Confetti
       theme, light/dark, responsive, a11y (spec `0010`).
+- [x] Link unfurls (Open Graph) - the home page unfurls with the wordmark + tagline card, and a
+      `/join?code=ABC12` share link unfurls as "Join my game" over the room's game art with the
+      Branch out mark in the corner. The join page's `generateMetadata` resolves the room's game
+      server-side via a public `GET /rooms/:code/preview` (a crawler is not a member, so `getRoom`
+      cannot serve it); any failure falls back to a generic invite card so every link unfurls.
+      `twitter:card` is `summary_large_image` for large cards on X/iMessage (spec `0020`).
 - [x] Trivia end-to-end integration - closes the three integration gaps from `0010` so a full
       game is playable by the host and non-host players (spec `0012`). Each room member gets a
       public `playerId` (minted on create/join, stored beside the private `sessionId` in Redis)
