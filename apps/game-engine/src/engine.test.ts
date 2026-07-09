@@ -15,12 +15,11 @@ function stateFrame(frames: ServerMessage[]): StateMessage {
   if (!frame) throw new Error('join returned no state frame');
   return frame;
 }
+import { ManualScheduler, stubGame, STUB_GAME_ID } from '@branchout/game-sdk/testing';
 import { InMemoryPubSub } from './pubsub';
 import { GameRegistry } from './registry';
 import type { ControlPlaneReporter } from './reporter';
-import { ManualScheduler } from './scheduler';
 import { InMemorySessionStore } from './session';
-import { stubGame, STUB_GAME_ID } from './stub-game';
 
 class CapturingReporter implements ControlPlaneReporter {
   rounds: RoundReport[] = [];
@@ -726,5 +725,38 @@ describe('host-disconnect auto-pause (spec 0014)', () => {
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'); // host returns: resume + re-arm
     h.scheduler.flush();
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+  });
+});
+
+describe('config-schema boundary', () => {
+  function engineWith(schema: (raw: unknown) => unknown): GameEngine {
+    return new GameEngine({
+      registry: new GameRegistry([stubGame]),
+      // The manifest schema map the plugin runtime hands the engine (see registerPlugins).
+      configSchemas: new Map([[STUB_GAME_ID, schema]]),
+      store: new InMemorySessionStore(),
+      pubsub: new InMemoryPubSub(),
+      reporter: new CapturingReporter(),
+      scheduler: new ManualScheduler(),
+      logger: { error: () => {} },
+    });
+  }
+
+  it('rejects a handoff whose config fails the manifest schema, before the game configures', async () => {
+    const engine = engineWith((raw) => {
+      if ((raw as { bad?: boolean }).bad) throw new Error('schema: bad config');
+      return raw;
+    });
+    await expect(engine.start(handoff({ config: { bad: true } }))).rejects.toThrow(
+      'schema: bad config',
+    );
+    // The boundary threw before any state was written, so nothing was persisted.
+    expect(await engine.getState('r1', STUB_GAME_ID)).toBeNull();
+  });
+
+  it('starts normally when the config passes the manifest schema', async () => {
+    const engine = engineWith((raw) => raw);
+    const res = await engine.start(handoff());
+    expect(res.status).toBe('started');
   });
 });

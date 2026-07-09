@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GameRegistry, UnknownGameError } from './registry';
-import { stubGame, STUB_GAME_ID } from './stub-game';
+import { stubGame, STUB_GAME_ID } from '@branchout/game-sdk/testing';
 
 describe('GameRegistry', () => {
   it('resolves a registered game by id', () => {

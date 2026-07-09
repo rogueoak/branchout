@@ -13,6 +13,7 @@ apps/
 packages/
   theme          Branch out brand theme built on @rogueoak/roots (the brandable API)
   brand          logo, icon, and favicon assets (from assets/)
+  game-sdk         the harness<->game plugin contract + dependency injection + test helpers
   protocol         shared TypeScript types + contracts (control-plane <-> engine <-> web)
   service-runtime  shared Fastify-service helpers (env parsing, Redis client)
   config           shared tsconfig, eslint, prettier
@@ -142,11 +143,17 @@ the *public* identity a UI needs, never the secret that authenticates the caller
 
 `apps/game-engine` (Fastify + `ws`) owns:
 
-- **A modular game registry** - a game is a `GameModule` implementing the generic round
+- **A game SDK and plugin runtime** (`@branchout/game-sdk`, spec `0018`) - a game ships as a
+  `GamePlugin`: a manifest (id, name, version, a config schema, capabilities) plus a
+  `create(services)` factory the harness calls with injected dependencies (an rng, a logger, a
+  per-package asset loader), returning the pure `GameModule` that implements the generic round
   lifecycle (`configure -> startRound -> collectAnswers -> reveal -> disputeWindow -> disputeVote
-  -> leaderboard -> advance`, plus `endGame`). The engine sequences phases, timers, streaming,
-  persistence, and reporting; the module owns what each phase means. Adding a game is registering
-  a module; a stub game drives the lifecycle in tests (Trivia is spec `0008`).
+  -> leaderboard -> advance`, plus `endGame`). The engine's composition root builds the services,
+  `registerPlugins` instantiates each plugin into the registry and collects its config schema, and
+  `/sessions` validates the handoff config against that schema before configuring; the engine still
+  sequences phases, timers, streaming, persistence, and reporting while the module owns what each
+  phase means. Adding a game is adding its plugin to the boot list; a stub game (an SDK test
+  fixture) drives the lifecycle in tests (Trivia is spec `0008`).
 - **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for
   the life of a game, recovered on reconnect. It also persists the current phase's streamed frames
   (prompt/reveal/standings) so `join` can replay them as ordered catch-up - pub/sub only reaches

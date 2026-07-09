@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundContext, SessionPlayer } from './lifecycle';
-import { stubGame } from './stub-game';
+import { stubGame, stubPlugin } from './stub-game';
+import { createTestServices } from './testing';
 
 const players: SessionPlayer[] = [
   { player: 'p1', nickname: 'Ada', connected: true },
@@ -47,5 +48,14 @@ describe('stubGame end ranking', () => {
   it('ranks final standings by score with shared ranks on ties', () => {
     const standings = stubGame.endGame(ctx({ scores: { p1: 100, p2: 100 } }));
     expect(standings.every((s) => s.rank === 1)).toBe(true);
+  });
+});
+
+describe('stubPlugin', () => {
+  it('exposes a manifest whose id matches the module and builds the module via create', async () => {
+    expect(stubPlugin.manifest.id).toBe('stub');
+    const module = await stubPlugin.create(createTestServices());
+    expect(module.id).toBe(stubPlugin.manifest.id);
+    expect(module).toBe(stubGame);
   });
 });

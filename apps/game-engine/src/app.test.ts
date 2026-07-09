@@ -6,7 +6,7 @@ import { GameRegistry } from './registry';
 import { NoopReporter } from './reporter';
 import { InMemoryPubSub } from './pubsub';
 import { InMemorySessionStore } from './session';
-import { stubGame, STUB_GAME_ID } from './stub-game';
+import { stubGame, STUB_GAME_ID } from '@branchout/game-sdk/testing';
 
 function buildEngine() {
   return new GameEngine({

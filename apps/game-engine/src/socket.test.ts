@@ -9,7 +9,7 @@ import { GameRegistry } from './registry';
 import { NoopReporter } from './reporter';
 import { InMemorySessionStore } from './session';
 import { attachGameSocket } from './socket';
-import { stubGame, STUB_GAME_ID } from './stub-game';
+import { stubGame, STUB_GAME_ID } from '@branchout/game-sdk/testing';
 
 describe('game-engine websocket', () => {
   let server: Server;

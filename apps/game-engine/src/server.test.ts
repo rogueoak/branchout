@@ -8,7 +8,7 @@ import { GameRegistry } from './registry';
 import { NoopReporter } from './reporter';
 import { InMemorySessionStore } from './session';
 import { attachGameSocket } from './socket';
-import { stubGame } from './stub-game';
+import { stubGame } from '@branchout/game-sdk/testing';
 
 // Proves the real wiring: the WS adapter mounted on Fastify's underlying HTTP server serves
 // realtime traffic on the same server that answers /health, exactly as src/index.ts wires it.

@@ -5,7 +5,8 @@
 // state is the pre-indexed question bank and an rng, both fixed when the module is built.
 
 import { rankStandings, type ScoreEvent, type Standing } from '@branchout/protocol';
-import { CATEGORIES, type TriviaQuestion } from './question-bank';
+import type { GamePlugin } from '@branchout/game-sdk';
+import { CATEGORIES, loadQuestionBank, type TriviaQuestion } from './question-bank';
 import type {
   AdvanceResult,
   ConfigureResult,
@@ -379,3 +380,19 @@ export function createTriviaGame(
     },
   };
 }
+
+/**
+ * Trivia as a plugin the engine registers. `create` loads the question bank once (via the injected
+ * services' rng) and builds the module; `validateConfig` is the manifest's config schema, run at the
+ * start-handoff boundary. The bank still self-locates its data for now; a later spec moves Trivia
+ * into its own package and reads through the injected asset loader.
+ */
+export const triviaPlugin: GamePlugin<ResolvedTriviaConfig> = {
+  manifest: {
+    id: TRIVIA_GAME_ID,
+    name: 'Trivia',
+    version: '1.0.0',
+    configSchema: validateConfig,
+  },
+  create: async (services) => createTriviaGame(await loadQuestionBank(), services.rng),
+};
