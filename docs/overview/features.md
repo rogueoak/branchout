@@ -130,6 +130,12 @@ What the product does for users, grouped by area. Each capability maps to one or
       player has submitted (the host can still advance sooner); revealed answers are title-cased for
       display while storage and matching stay lowercase; and the Dispute button is hidden in a solo
       game, where no other player exists to vote.
+- [x] Answer round: 60s timer + reveal every answer (spec `0017`) - each question shows a 60-second
+      countdown (engine-driven deadline, sent as skew-proof remaining ms on the `state` frame); at
+      zero the player's typed answer auto-submits and the engine force-closes the round (the 2s
+      all-answered early close still applies, so 60s is the ceiling). Pausing freezes the clock and
+      resuming continues from the time left. At reveal, the viewer shows every player's submitted
+      answer with a correct/wrong marker.
 - [ ] Profile pages and friend search/invite.
 
 ## Future

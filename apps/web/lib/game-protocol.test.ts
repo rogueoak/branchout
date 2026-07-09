@@ -36,15 +36,39 @@ describe('asTriviaPrompt', () => {
 });
 
 describe('asTriviaRoundReveal', () => {
-  it('decodes an answer-round reveal', () => {
+  it('decodes an answer-round reveal, including per-player submissions', () => {
     const reveal = asTriviaRoundReveal({
       round: 1,
       question: 'What is H2O?',
       answers: ['Water'],
       correct: ['p1'],
       wrong: ['p2'],
+      submissions: [
+        { player: 'p1', answer: 'water', correct: true },
+        { player: 'p2', answer: 'juice', correct: false },
+      ],
     });
-    expect(reveal).toMatchObject({ round: 1, answers: ['Water'], correct: ['p1'], wrong: ['p2'] });
+    expect(reveal).toMatchObject({
+      round: 1,
+      answers: ['Water'],
+      correct: ['p1'],
+      wrong: ['p2'],
+      submissions: [
+        { player: 'p1', answer: 'water', correct: true },
+        { player: 'p2', answer: 'juice', correct: false },
+      ],
+    });
+  });
+
+  it('defaults submissions to [] when a pre-0017 payload omits them', () => {
+    const reveal = asTriviaRoundReveal({
+      round: 1,
+      question: 'x',
+      answers: ['a'],
+      correct: [],
+      wrong: [],
+    });
+    expect(reveal?.submissions).toEqual([]);
   });
 
   it('returns null for the dispute-reveal shape (no answers array)', () => {

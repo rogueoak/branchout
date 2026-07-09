@@ -103,6 +103,10 @@ describe('reduceGameState', () => {
         answers: ['Water', 'H2O'],
         correct: ['p1'],
         wrong: ['p2'],
+        submissions: [
+          { player: 'p1', answer: 'water', correct: true },
+          { player: 'p2', answer: 'juice', correct: false },
+        ],
       },
     };
     const next = reduceGameState(initialGameState(), reveal);
@@ -112,6 +116,10 @@ describe('reduceGameState', () => {
       answers: ['Water', 'H2O'],
       correct: ['p1'],
       wrong: ['p2'],
+      submissions: [
+        { player: 'p1', answer: 'water', correct: true },
+        { player: 'p2', answer: 'juice', correct: false },
+      ],
     });
     expect(next.disputeResult).toBeNull();
   });

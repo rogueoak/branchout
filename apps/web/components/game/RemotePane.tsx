@@ -13,6 +13,7 @@ import { Badge, Button, Input } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
 import type { GameState } from '../../lib/game-state';
 import { difficultyBand } from '../../lib/trivia-config';
+import { useAnswerCountdown } from '../../lib/use-answer-countdown';
 import { FinalResults } from './FinalResults';
 import { Leaderboard } from './Leaderboard';
 
@@ -50,6 +51,7 @@ export function RemotePane({
   const [answer, setAnswer] = useState('');
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
   const [disputedRound, setDisputedRound] = useState<number | null>(null);
+  const secondsLeft = useAnswerCountdown(state.answerMsRemaining, state.round, state.paused);
 
   // A new round clears the draft and the per-round submission flags.
   useEffect(() => {
@@ -60,6 +62,17 @@ export function RemotePane({
 
   const wasMarkedWrong = reveal?.wrong.includes(me) ?? false;
   const submitted = submittedRound === round;
+
+  // When the countdown hits zero, auto-submit whatever the player has typed (spec 0017). The engine
+  // force-closes the round at the same moment; sending here is what makes a typed-but-unsent answer
+  // count. Blank drafts send nothing (a non-submitter is marked wrong, same as before).
+  useEffect(() => {
+    if (phase !== 'collecting' || secondsLeft !== 0 || submittedRound === round) return;
+    const trimmed = answer.trim();
+    if (!trimmed) return;
+    onAnswer(round, trimmed);
+    setSubmittedRound(round);
+  }, [secondsLeft, phase, round, submittedRound, answer, onAnswer]);
   // A dispute goes to a vote of the *other* connected players; with none there is nobody to vote
   // and the engine can never uphold it, so the button would be a dead end in a solo game. Only
   // offer it when at least one other connected player exists (feedback 0015).
@@ -88,6 +101,17 @@ export function RemotePane({
               </div>
               <h2 className="text-h3 text-text">{state.prompt.question}</h2>
             </div>
+          ) : null}
+          {secondsLeft !== null ? (
+            <p
+              role="timer"
+              aria-label={`${secondsLeft} seconds left to answer`}
+              className={`text-body-sm font-medium ${
+                secondsLeft <= 10 ? 'text-warning' : 'text-text-muted'
+              }`}
+            >
+              {state.paused ? 'Paused' : `${secondsLeft}s left to answer`}
+            </p>
           ) : null}
           <label htmlFor="answer-input" className="text-body-sm font-medium text-text">
             Your answer

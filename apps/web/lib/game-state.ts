@@ -29,6 +29,12 @@ export interface GameState {
   scores: Record<string, number>;
   /** The playerIds under dispute this round - the exact set the vote UI offers a ballot on. */
   disputes: string[];
+  /**
+   * Milliseconds left in the answer window as of the last `state` frame, or null when there is no
+   * timer (spec 0017). A countdown hook anchors this to the local clock; while paused it is the
+   * frozen remaining.
+   */
+  answerMsRemaining: number | null;
   /** The current round's prompt, or null before the first prompt / between rounds. */
   prompt: TriviaPrompt | null;
   /** The answer-round reveal, set on reveal and cleared when the next prompt lands. */
@@ -51,6 +57,7 @@ export function initialGameState(): GameState {
     players: [],
     scores: {},
     disputes: [],
+    answerMsRemaining: null,
     prompt: null,
     reveal: null,
     disputeResult: null,
@@ -80,6 +87,8 @@ export function reduceGameState(state: GameState, frame: ServerMessage | ErrorFr
         // Default at the boundary: a `state` frame from a peer predating the `disputes` field
         // (same PROTOCOL_VERSION, additive change) omits it, and "absent" means "no disputers".
         disputes: frame.disputes ?? [],
+        // Absent when there is no answer timer (or a pre-0017 peer); null means "no countdown".
+        answerMsRemaining: frame.answerMsRemaining ?? null,
         error: null,
       };
 

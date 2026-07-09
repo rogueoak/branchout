@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundContext, SessionPlayer } from '../../lifecycle';
 import { CATEGORIES, type TriviaQuestion } from './question-bank';
-import { createTriviaGame, DISPUTE_WINDOW_MS, MAX_ROUNDS, validateConfig } from './trivia';
+import {
+  ANSWER_WINDOW_MS,
+  createTriviaGame,
+  DISPUTE_WINDOW_MS,
+  MAX_ROUNDS,
+  validateConfig,
+} from './trivia';
 
 /** Deterministic PRNG so an entire game replays identically. */
 function mulberry32(seed: number): () => number {
@@ -123,13 +129,15 @@ describe('validateConfig', () => {
 });
 
 describe('configure', () => {
-  it('sets the 10-second dispute window and passes the round count through', () => {
+  it('sets the dispute and 60s answer windows and passes the round count through', () => {
     const game = createTriviaGame(makeBank(4));
     const result = game.configure({ category: 'Food', rounds: 7 }, players);
     expect(result.rounds).toBe(7);
-    // Pin the literal so a change to the window duration is caught (Acceptance 3: 10s).
+    // Pin the literals so a change to a window duration is caught (Acceptance: 10s dispute, 60s answer).
     expect(DISPUTE_WINDOW_MS).toBe(10_000);
     expect(result.disputeWindowMs).toBe(10_000);
+    expect(ANSWER_WINDOW_MS).toBe(60_000);
+    expect(result.answerWindowMs).toBe(60_000);
   });
 
   it('throws on invalid config so the engine rejects the start', () => {
@@ -177,8 +185,17 @@ describe('reveal scoring', () => {
     expect(revealed.scores.every((s) => s.points === 100 && s.reason === 'correct answer')).toBe(
       true,
     );
-    const reveal = revealed.reveal as { wrong: string[] };
+    const reveal = revealed.reveal as {
+      wrong: string[];
+      submissions: { player: string; answer: string; correct: boolean }[];
+    };
     expect(reveal.wrong).toEqual(['p3']);
+    // The reveal carries every player's submitted answer + verdict, so the table sees them all.
+    expect(reveal.submissions).toEqual([
+      { player: 'p1', answer, correct: true },
+      { player: 'p2', answer: answer.slice(0, -1), correct: true },
+      { player: 'p3', answer: 'totally wrong', correct: false },
+    ]);
   });
 
   it('marks a blank submission wrong and excludes a non-submitter entirely', () => {

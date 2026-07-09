@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../lib/game-state';
 import { RemotePane } from './RemotePane';
 
@@ -62,5 +62,56 @@ describe('RemotePane dispute button', () => {
     ]);
     renderRemote(state);
     expect(screen.queryByRole('button', { name: 'Dispute' })).toBeNull();
+  });
+});
+
+describe('RemotePane answer countdown', () => {
+  afterEach(() => vi.useRealTimers());
+
+  const collecting = (answerMsRemaining: number | null): GameState =>
+    build({
+      phase: 'collecting',
+      players: [{ player: 'p1', nickname: 'Ada', connected: true }],
+      answerMsRemaining,
+      prompt: { round: 1, category: 'People', difficulty: 5, question: 'Q?' },
+    });
+
+  it('shows the seconds left to answer', () => {
+    renderRemote(collecting(30_000));
+    expect(screen.getByRole('timer')).toBeDefined();
+    expect(screen.getByText(/30s left to answer/)).toBeDefined();
+  });
+
+  it('auto-submits the typed draft when the countdown reaches zero', () => {
+    vi.useFakeTimers();
+    const onAnswer = vi.fn();
+    render(
+      <RemotePane
+        state={collecting(1_000)}
+        me="p1"
+        onAnswer={onAnswer}
+        onDispute={noop}
+        onBallot={noop}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'water' } });
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(onAnswer).toHaveBeenCalledWith(1, 'water');
+  });
+
+  it('does not auto-submit a blank draft at zero', () => {
+    vi.useFakeTimers();
+    const onAnswer = vi.fn();
+    render(
+      <RemotePane
+        state={collecting(1_000)}
+        me="p1"
+        onAnswer={onAnswer}
+        onDispute={noop}
+        onBallot={noop}
+      />,
+    );
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(onAnswer).not.toHaveBeenCalled();
   });
 });

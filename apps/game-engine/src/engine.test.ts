@@ -54,12 +54,22 @@ function handoff(overrides: Partial<StartHandoffRequest> = {}): StartHandoffRequ
   };
 }
 
+/** A hand-cranked clock so answer-window deadline math is deterministic (no wall time). */
+class ManualClock {
+  private t = 1_000_000;
+  now = (): number => this.t;
+  advance(ms: number): void {
+    this.t += ms;
+  }
+}
+
 interface Harness {
   engine: GameEngine;
   store: InMemorySessionStore;
   pubsub: InMemoryPubSub;
   reporter: CapturingReporter;
   scheduler: ManualScheduler;
+  clock: ManualClock;
 }
 
 function harness(): Harness {
@@ -67,15 +77,17 @@ function harness(): Harness {
   const pubsub = new InMemoryPubSub();
   const reporter = new CapturingReporter();
   const scheduler = new ManualScheduler();
+  const clock = new ManualClock();
   const engine = new GameEngine({
     registry: new GameRegistry([stubGame]),
     store,
     pubsub,
     reporter,
     scheduler,
+    clock: clock.now,
     logger: { error: () => {} },
   });
-  return { engine, store, pubsub, reporter, scheduler };
+  return { engine, store, pubsub, reporter, scheduler, clock };
 }
 
 // Drive a no-dispute round from `collecting` to `leaderboard`.
@@ -372,6 +384,55 @@ describe('GameEngine lifecycle', () => {
     const state = await h.engine.getState('r1', STUB_GAME_ID);
     expect(state?.paused).toBe(true);
     expect(state?.phase).toBe('collecting');
+  });
+
+  it('force-closes the answer round when the 60s window expires, even with no answers', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+    );
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+
+    // Nobody answers; let the deadline pass, then the armed timer closes the round.
+    h.clock.advance(60_000);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+  });
+
+  it('projects the answer time left on the state frame, ticking down with the clock', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+    );
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBe(60_000);
+    h.clock.advance(15_000);
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBe(45_000);
+  });
+
+  it('holds the answer countdown while paused and continues from the time left on resume', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+    );
+    h.clock.advance(20_000); // 40s left
+
+    await h.engine.control('r1', STUB_GAME_ID, 'pause');
+    const snap = await h.engine.getSnapshot('r1', STUB_GAME_ID);
+    expect(snap?.paused).toBe(true);
+    expect(snap?.answerMsRemaining).toBe(40_000); // frozen
+
+    // Time passes while paused: the countdown does not move and the round does not close.
+    h.clock.advance(100_000);
+    h.scheduler.flush(); // the pre-pause timer fires but no-ops while paused
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBe(40_000);
+
+    // Resume: the deadline continues from the 40s that were left, not a fresh 60s.
+    await h.engine.control('r1', STUB_GAME_ID, 'pause');
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBe(40_000);
+    h.clock.advance(39_999);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting'); // 1ms left
+    h.clock.advance(1);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
   });
 
   it('closes the dispute window on a timer when one is configured', async () => {
