@@ -1,6 +1,6 @@
-# Plan 0021 - End-to-end tests with Playwright
+# Plan 0024 - End-to-end tests with Playwright
 
-Source: `docs/specs/0021-e2e-playwright.md`.
+Source: `docs/specs/0024-e2e-playwright.md`.
 
 Core move: a root `e2e/` Playwright workspace that boots the real docker-compose stack (dev
 overlay, so the browser reaches services on published `localhost` ports) via `globalSetup`, drives

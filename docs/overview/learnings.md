@@ -90,11 +90,11 @@ Capture durable lessons as they emerge.
   local non-Docker dev and silently fell back everywhere else. Server-side fetches need the
   server-side URL (`CONTROL_PLANE_URL`), the split `lib/session.ts` already used; the e2e is what
   proves the tags a crawler actually receives. Drive the real stack for anything whose behavior
-  only emerges when the services are wired together. (Spec `0021`.)
+  only emerges when the services are wired together. (Spec `0024`.)
 - **Keep e2e out of the fast test loop.** The Playwright package exposes an `e2e` script, not
   `test`, so `turbo run test` never needs Docker; e2e runs as its own CI job. A dedicated compose
   project (`branchout-e2e`) on shifted ports lets a run coexist with a developer's dev stack.
-  (Spec `0021`.)
+  (Spec `0024`.)
 
 ## Services and state
 

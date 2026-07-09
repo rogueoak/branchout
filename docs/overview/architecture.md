@@ -134,7 +134,7 @@ the two services build with `tsup` (bundled ESM); services run with `tsx` in dev
 behind a transport-agnostic interface, so the realtime transport can change without touching
 game logic.
 
-## Testing (spec 0021)
+## Testing (spec 0024)
 
 Three layers, cheapest first. **Unit** (vitest) covers pure logic and components. **Integration**
 (Fastify `inject` with in-memory stores) covers each service's routes without infrastructure. Both
