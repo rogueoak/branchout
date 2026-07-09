@@ -17,13 +17,7 @@ function noop() {}
 
 function renderRemote(state: GameState) {
   return render(
-    <RemotePane
-      state={state}
-      me="p1"
-      onAnswer={noop}
-      onDispute={noop}
-      onBallot={noop}
-    />,
+    <RemotePane state={state} me="p1" onAnswer={noop} onDispute={noop} onBallot={noop} />,
   );
 }
 

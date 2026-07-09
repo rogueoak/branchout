@@ -23,7 +23,12 @@ describe('ViewerPane answer display', () => {
   it('title-cases the revealed answers (stored lowercase, shown with caps)', () => {
     const state = build({
       phase: 'disputing',
-      prompt: { round: 1, category: 'People', difficulty: 'medium', question: 'Who developed relativity?' },
+      prompt: {
+        round: 1,
+        category: 'People',
+        difficulty: 'medium',
+        question: 'Who developed relativity?',
+      },
       reveal: {
         round: 1,
         question: 'Who developed relativity?',
