@@ -51,6 +51,19 @@ describe('home page - anonymous visitor', () => {
     screen.getByRole('heading', { name: 'Liar Liar' });
   });
 
+  it('renders each game card with its inline SVG game mark', () => {
+    const { container } = render(<LandingContent signedIn={false} />);
+    // Each card links out with aria-label "Play <game> - start a game"; the game mark is an
+    // inline SVG (from the brand package) inside that link, aria-hidden so it does not double up
+    // the accessible name.
+    for (const name of ['Play trivia', 'Play liar liar']) {
+      const card = screen.getByRole('link', { name: new RegExp(name, 'i') });
+      expect(card.querySelector('svg')).not.toBeNull();
+    }
+    // Both marks plus the two arrow affordances render as SVGs.
+    expect(container.querySelectorAll('svg').length).toBeGreaterThanOrEqual(4);
+  });
+
   it('makes each game card a link into the play path (signup when anonymous)', () => {
     render(<LandingContent signedIn={false} />);
     const trivia = screen.getByRole('link', { name: /play trivia/i });
