@@ -7,6 +7,10 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 - [x] Monorepo scaffold - pnpm + Turborepo workspace, shared config, CI, local docker-compose
       (Postgres + Redis) so the whole system runs with one command (spec `0001`).
+- [x] End-to-end tests - a Playwright harness (`e2e/`) drives a real browser against the full
+      docker-compose stack (web + control-plane + game-engine + Postgres + Redis): the Open Graph
+      share unfurls, a full two-player Trivia round, and a mobile-first render guard at a phone
+      viewport. Its own CI job (`pnpm e2e`); the fast unit run stays Docker-free (spec `0021`).
 - [x] Branch out Confetti theme on canopy, light + dark, AA-verified (spec `0002`).
 - [x] Brand assets - icon, favicon, wordmark lockup, OG image; `packages/brand` re-exports
       SVGs and generates rasters at build time (spec `0003`).

@@ -2,6 +2,7 @@ packages:
   - 'packages/*'
   - 'packages/games/*'
   - 'apps/*'
+  - 'e2e'
 
 allowBuilds:
   '@bundled-es-modules/glob': false

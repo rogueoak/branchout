@@ -1,0 +1,20 @@
+# E2E overlay - layered on top of the base + dev overlay by the Playwright harness
+# (e2e/lib/stack.ts) under a dedicated `branchout-e2e` compose project. It lets an e2e run coexist
+# with a developer's running dev stack: Postgres and Redis are reached over the compose network by
+# service name (DATABASE_URL/REDIS_URL use the service hostnames), so they need no published host
+# ports here - dropping them avoids a clash on 5432/6379. The app services keep their published
+# ports, shifted to 3100/4100/4101 via env from the harness.
+services:
+  # The e2e web app is published on a shifted port (WEB_PORT, default 3100) to avoid clashing with
+  # a dev stack. The control-plane's CORS allow-list must match that browser origin, or credentialed
+  # calls (signup, create, join) are blocked. (The dev stack works on the default 3000 by luck.)
+  control-plane:
+    environment:
+      WEB_ORIGIN: http://localhost:${WEB_PORT}
+
+  postgres:
+    # !reset clears the list inherited from the base compose (Compose spec merge override).
+    ports: !reset []
+
+  redis:
+    ports: !reset []

@@ -134,6 +134,18 @@ the two services build with `tsup` (bundled ESM); services run with `tsx` in dev
 behind a transport-agnostic interface, so the realtime transport can change without touching
 game logic.
 
+## Testing (spec 0021)
+
+Three layers, cheapest first. **Unit** (vitest) covers pure logic and components. **Integration**
+(Fastify `inject` with in-memory stores) covers each service's routes without infrastructure. Both
+run under `turbo run test` (`pnpm test`) - fast, no Docker. **End-to-end** (Playwright, the `e2e/`
+workspace) drives a real browser against the full `docker compose` stack (web + control-plane +
+game-engine + Postgres + Redis) using the dev overlay, so the browser reaches services on published
+`localhost` ports. `globalSetup` builds the workspace, brings the stack up under a dedicated
+`branchout-e2e` project on shifted ports (`--wait` gates on healthchecks), and tears it down after.
+E2e is intentionally **not** part of `pnpm test` (it exposes an `e2e` script, not `test`) - it runs
+as its own CI job so the normal test loop never needs Docker.
+
 ## Game engine and protocol (spec 0007)
 
 `packages/protocol` is the source of truth for two channels, each a versioned envelope (`v`)
