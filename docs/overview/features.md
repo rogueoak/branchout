@@ -86,6 +86,12 @@ What the product does for users, grouped by area. Each capability maps to one or
       100 points for a correct answer; a 10s dispute window with a majority vote of the other
       players awarding 50; between-round leaderboard, host-advance, and final standings for stars
       (spec `0008`). Registered in the engine registry alongside the lifecycle stub.
+- [~] Second game - Liar Liar: a Fibbage-style bluffing game on the generic guess/decision lifecycle
+      (spec `0020`). The viewer shows an improbable-but-true clue; players invent a fake within 90s
+      (a duplicate or the real answer is rejected privately), the reveal lists every fake plus the
+      truth, players guess within 30s, and scoring awards 100 for the truth and 50 per player a fake
+      fools. Engine-side game logic ships as `@branchout/game-liar-liar` (spec `0021`); the clue
+      content and boot wiring are spec `0022` and the web client is spec `0023`.
 
 ## Web
 
