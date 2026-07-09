@@ -26,7 +26,7 @@ describe('ViewerPane answer display', () => {
       prompt: {
         round: 1,
         category: 'People',
-        difficulty: 'medium',
+        difficulty: 5,
         question: 'Who developed relativity?',
       },
       reveal: {
@@ -38,6 +38,8 @@ describe('ViewerPane answer display', () => {
       },
     });
     render(<ViewerPane state={state} me="p1" />);
+    // The difficulty badge shows the plain-language band, not a raw number (rating 5 -> Medium).
+    expect(screen.getByText('Medium')).toBeDefined();
     // The canonical answer is displayed title-cased, not verbatim-lowercase.
     expect(screen.getByText('Albert Einstein')).toBeDefined();
     expect(screen.queryByText('albert einstein')).toBeNull();

@@ -4,1399 +4,1399 @@
     "category": "Animals",
     "prompt": "What is the largest land animal on Earth?",
     "answers": ["african elephant", "elephant"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "animals-002",
     "category": "Animals",
     "prompt": "What is the fastest land animal?",
     "answers": ["cheetah"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-003",
     "category": "Animals",
     "prompt": "What is the tallest living animal?",
     "answers": ["giraffe"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "animals-004",
     "category": "Animals",
     "prompt": "What is the largest animal on Earth?",
     "answers": ["blue whale"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-005",
     "category": "Animals",
     "prompt": "What is the largest flightless bird?",
     "answers": ["ostrich"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-006",
     "category": "Animals",
     "prompt": "What insect is famous for producing honey?",
     "answers": ["bee", "honeybee", "honey bee"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "animals-007",
     "category": "Animals",
     "prompt": "What marsupial carries its young in a pouch?",
     "answers": ["kangaroo"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-008",
     "category": "Animals",
     "prompt": "What tall pink bird is famous for standing on one leg?",
     "answers": ["flamingo"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-009",
     "category": "Animals",
     "prompt": "What is the only order of mammals capable of true sustained flight?",
     "answers": ["bats", "bat", "chiroptera"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-010",
     "category": "Animals",
     "prompt": "What African animal resembles a horse but has distinctive black and white stripes?",
     "answers": ["zebra"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "animals-011",
     "category": "Animals",
     "prompt": "What is the largest species in the cat family?",
     "answers": ["tiger"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-012",
     "category": "Animals",
     "prompt": "What domestic animal is commonly known as man's best friend?",
     "answers": ["dog"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "animals-013",
     "category": "Animals",
     "prompt": "What reptile is famous for changing color to match its surroundings?",
     "answers": ["chameleon"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-014",
     "category": "Animals",
     "prompt": "What is the national bird of the United States?",
     "answers": ["bald eagle"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-015",
     "category": "Animals",
     "prompt": "What is the largest reptile on Earth?",
     "answers": ["saltwater crocodile"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-016",
     "category": "Animals",
     "prompt": "What do you call a baby kangaroo?",
     "answers": ["joey"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-017",
     "category": "Animals",
     "prompt": "What is the largest fish in the world?",
     "answers": ["whale shark"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-018",
     "category": "Animals",
     "prompt": "What large black-and-white bear from China feeds almost entirely on bamboo?",
     "answers": ["giant panda", "panda"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "animals-019",
     "category": "Animals",
     "prompt": "What is a group of lions called?",
     "answers": ["pride"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-020",
     "category": "Animals",
     "prompt": "How many legs does an adult insect have?",
     "answers": ["six", "6"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-021",
     "category": "Animals",
     "prompt": "How many legs does a spider have?",
     "answers": ["eight", "8"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-022",
     "category": "Animals",
     "prompt": "What is a group of wolves called?",
     "answers": ["pack"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-023",
     "category": "Animals",
     "prompt": "What desert animal is known as the ship of the desert?",
     "answers": ["camel"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-024",
     "category": "Animals",
     "prompt": "What do you call a female fox?",
     "answers": ["vixen"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-025",
     "category": "Animals",
     "prompt": "What is a young deer called?",
     "answers": ["fawn"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-026",
     "category": "Animals",
     "prompt": "What is the largest primate on Earth?",
     "answers": ["gorilla"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-027",
     "category": "Animals",
     "prompt": "What is the largest land carnivore?",
     "answers": ["polar bear"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-028",
     "category": "Animals",
     "prompt": "How many hearts does an octopus have?",
     "answers": ["three", "3"],
-    "difficulty": "easy"
+    "difficulty": 5
   },
   {
     "id": "animals-029",
     "category": "Animals",
     "prompt": "What body part do butterflies use to taste their food?",
     "answers": ["feet", "their feet", "legs"],
-    "difficulty": "easy"
+    "difficulty": 6
   },
   {
     "id": "animals-030",
     "category": "Animals",
     "prompt": "What is the world's smallest bird?",
     "answers": ["bee hummingbird"],
-    "difficulty": "easy"
+    "difficulty": 5
   },
   {
     "id": "animals-031",
     "category": "Animals",
     "prompt": "What bird holds the record for the fastest dive speed?",
     "answers": ["peregrine falcon"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-032",
     "category": "Animals",
     "prompt": "What is the world's slowest mammal?",
     "answers": ["three-toed sloth", "sloth"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-033",
     "category": "Animals",
     "prompt": "What animal defends itself by spraying a foul-smelling liquid?",
     "answers": ["skunk"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-034",
     "category": "Animals",
     "prompt": "What is the only bird known to fly backwards?",
     "answers": ["hummingbird"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-035",
     "category": "Animals",
     "prompt": "What is a large group of fish swimming together called?",
     "answers": ["school", "shoal"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-036",
     "category": "Animals",
     "prompt": "What do you call a baby bear?",
     "answers": ["cub"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-037",
     "category": "Animals",
     "prompt": "What color is the skin of a polar bear beneath its fur?",
     "answers": ["black"],
-    "difficulty": "easy"
+    "difficulty": 5
   },
   {
     "id": "animals-038",
     "category": "Animals",
     "prompt": "What is the largest member of the dolphin family?",
     "answers": ["killer whale", "orca"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-039",
     "category": "Animals",
     "prompt": "What do you call a female horse?",
     "answers": ["mare"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-040",
     "category": "Animals",
     "prompt": "What is the process called by which a caterpillar transforms into a butterfly?",
     "answers": ["metamorphosis"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-041",
     "category": "Animals",
     "prompt": "What insect larva produces the silk used to make silk fabric?",
     "answers": ["silkworm", "silk moth larva"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-042",
     "category": "Animals",
     "prompt": "What is a group of crows called?",
     "answers": ["murder"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-043",
     "category": "Animals",
     "prompt": "What is the national animal of Australia?",
     "answers": ["kangaroo", "red kangaroo"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-044",
     "category": "Animals",
     "prompt": "What plant makes up the primary diet of koalas?",
     "answers": ["eucalyptus", "eucalyptus leaves"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-045",
     "category": "Animals",
     "prompt": "What is a baby whale called?",
     "answers": ["calf"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-046",
     "category": "Animals",
     "prompt": "What do you call a male duck?",
     "answers": ["drake"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-047",
     "category": "Animals",
     "prompt": "What is the world's largest rodent?",
     "answers": ["capybara"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-048",
     "category": "Animals",
     "prompt": "What is a large group of bees in flight called?",
     "answers": ["swarm"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-049",
     "category": "Animals",
     "prompt": "What type of animal is a Komodo dragon?",
     "answers": ["lizard", "monitor lizard"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-050",
     "category": "Animals",
     "prompt": "What is a baby goat called?",
     "answers": ["kid"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-051",
     "category": "Animals",
     "prompt": "What semi-aquatic rodent is famous for building dams in rivers?",
     "answers": ["beaver"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-052",
     "category": "Animals",
     "prompt": "What is a group of elephants called?",
     "answers": ["herd"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-053",
     "category": "Animals",
     "prompt": "What is a young pig called?",
     "answers": ["piglet"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-054",
     "category": "Animals",
     "prompt": "What is the term for an animal that eats only plants?",
     "answers": ["herbivore"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-055",
     "category": "Animals",
     "prompt": "What is the term for an animal that eats only other animals?",
     "answers": ["carnivore"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-056",
     "category": "Animals",
     "prompt": "What is the term for an animal that eats both plants and animals?",
     "answers": ["omnivore"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-057",
     "category": "Animals",
     "prompt": "What is a group of dolphins called?",
     "answers": ["pod"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-058",
     "category": "Animals",
     "prompt": "What is the heaviest snake in the world?",
     "answers": ["green anaconda", "anaconda"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-059",
     "category": "Animals",
     "prompt": "What distinctive color is a giraffe's tongue?",
     "answers": ["purple", "dark blue", "bluish purple", "black"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-060",
     "category": "Animals",
     "prompt": "What is a group of geese on the ground called?",
     "answers": ["gaggle"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-061",
     "category": "Animals",
     "prompt": "What is a baby cat called?",
     "answers": ["kitten"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "animals-062",
     "category": "Animals",
     "prompt": "What is the only continent with no native land mammals?",
     "answers": ["antarctica"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-063",
     "category": "Animals",
     "prompt": "What is the main food source for blue whales?",
     "answers": ["krill"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-064",
     "category": "Animals",
     "prompt": "What is the name for the scientific study of birds?",
     "answers": ["ornithology"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-065",
     "category": "Animals",
     "prompt": "What is a young horse called?",
     "answers": ["foal"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "animals-066",
     "category": "Animals",
     "prompt": "What group of mammals uses echolocation to navigate in the dark?",
     "answers": ["bats", "bat"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "animals-067",
     "category": "Animals",
     "prompt": "What is the common name for Canis lupus?",
     "answers": ["gray wolf", "grey wolf", "wolf"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "animals-068",
     "category": "Animals",
     "prompt": "Approximately how long is the gestation period of an African elephant?",
     "answers": ["22 months", "twenty-two months"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-069",
     "category": "Animals",
     "prompt": "What is the scientific name for the study of insects?",
     "answers": ["entomology"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-070",
     "category": "Animals",
     "prompt": "What snake is considered the world's most venomous by venom potency?",
     "answers": ["inland taipan", "fierce snake"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-071",
     "category": "Animals",
     "prompt": "What is the world's deepest-diving mammal?",
     "answers": ["sperm whale"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-072",
     "category": "Animals",
     "prompt": "What is the world's largest species of penguin?",
     "answers": ["emperor penguin"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "animals-073",
     "category": "Animals",
     "prompt": "What is the scientific term for the process by which snakes periodically shed their skin?",
     "answers": ["ecdysis", "molting", "moulting"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-074",
     "category": "Animals",
     "prompt": "What is the national animal of Canada?",
     "answers": ["beaver"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "animals-075",
     "category": "Animals",
     "prompt": "What is the world's largest jellyfish species?",
     "answers": ["lion's mane jellyfish", "lions mane jellyfish"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-076",
     "category": "Animals",
     "prompt": "What color is the blood of an octopus?",
     "answers": ["blue"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-077",
     "category": "Animals",
     "prompt": "Through what body part does a platypus deliver its venom?",
     "answers": ["spurs", "hind leg spurs", "hind spurs", "ankle spurs"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-078",
     "category": "Animals",
     "prompt": "How many eyes does a bee have in total?",
     "answers": ["five", "5"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-079",
     "category": "Animals",
     "prompt": "What is the world's largest amphibian?",
     "answers": ["chinese giant salamander"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-080",
     "category": "Animals",
     "prompt": "What special organs allow sharks to detect the electrical fields of prey?",
     "answers": ["ampullae of lorenzini"],
-    "difficulty": "medium"
+    "difficulty": 8
   },
   {
     "id": "animals-081",
     "category": "Animals",
     "prompt": "What is a group of rhinoceroses called?",
     "answers": ["crash"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-082",
     "category": "Animals",
     "prompt": "What is a group of owls called?",
     "answers": ["parliament"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-083",
     "category": "Animals",
     "prompt": "What is the only mammal with scales covering its body?",
     "answers": ["pangolin"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-084",
     "category": "Animals",
     "prompt": "What bird is considered the world's most dangerous, known to have killed humans?",
     "answers": ["cassowary"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-085",
     "category": "Animals",
     "prompt": "What is the gestation period of a domestic dog in days?",
     "answers": ["63 days", "63", "sixty-three days"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-086",
     "category": "Animals",
     "prompt": "What is the fastest fish in the ocean?",
     "answers": ["sailfish"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-087",
     "category": "Animals",
     "prompt": "What is a group of kangaroos called?",
     "answers": ["mob", "troop", "herd"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-088",
     "category": "Animals",
     "prompt": "Which animal has the highest blood pressure of any creature on Earth?",
     "answers": ["giraffe"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-089",
     "category": "Animals",
     "prompt": "What is a group of flamingos called?",
     "answers": ["flamboyance", "colony", "stand"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-090",
     "category": "Animals",
     "prompt": "What is the world's largest moth species by wing surface area?",
     "answers": ["atlas moth"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-091",
     "category": "Animals",
     "prompt": "What is the world's smallest primate?",
     "answers": ["madame berthe's mouse lemur", "mouse lemur"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-092",
     "category": "Animals",
     "prompt": "What class of pigments gives flamingos their distinctive pink coloration?",
     "answers": ["carotenoids", "carotene"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-093",
     "category": "Animals",
     "prompt": "What is the only place on Earth where lemurs are found in the wild?",
     "answers": ["madagascar"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "animals-094",
     "category": "Animals",
     "prompt": "What is the world's largest bat by wingspan?",
     "answers": ["giant golden-crowned flying fox", "large flying fox"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-095",
     "category": "Animals",
     "prompt": "What is the fastest swimming marine mammal?",
     "answers": ["orca", "killer whale"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-096",
     "category": "Animals",
     "prompt": "Approximately how many species of penguins exist?",
     "answers": ["18", "eighteen"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-097",
     "category": "Animals",
     "prompt": "What is the world's largest spider by body mass?",
     "answers": ["goliath birdeater"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-098",
     "category": "Animals",
     "prompt": "What substance do bees produce from special abdominal glands to construct their honeycomb?",
     "answers": ["beeswax", "wax"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "animals-099",
     "category": "Animals",
     "prompt": "What term describes an animal that is active primarily at dawn and dusk?",
     "answers": ["crepuscular"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-100",
     "category": "Animals",
     "prompt": "What is the world's largest species of deer?",
     "answers": ["moose", "elk"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "animals-101",
     "category": "Animals",
     "prompt": "What is the world's most venomous fish?",
     "answers": ["stonefish"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-102",
     "category": "Animals",
     "prompt": "What is a group of ferrets called?",
     "answers": ["business"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-103",
     "category": "Animals",
     "prompt": "What is the world's smallest fish species?",
     "answers": ["paedocypris progenetica"],
-    "difficulty": "medium"
+    "difficulty": 9
   },
   {
     "id": "animals-104",
     "category": "Animals",
     "prompt": "What is the name of the reflective layer behind a cat's retina that helps it see in low light?",
     "answers": ["tapetum lucidum"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-105",
     "category": "Animals",
     "prompt": "What is the world's largest butterfly by wingspan?",
     "answers": ["queen alexandra's birdwing", "queen alexandras birdwing"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-106",
     "category": "Animals",
     "prompt": "What is the only bird in the family Apterygidae, found exclusively in New Zealand?",
     "answers": ["kiwi"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-107",
     "category": "Animals",
     "prompt": "What living bird has the largest wingspan?",
     "answers": ["wandering albatross"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-108",
     "category": "Animals",
     "prompt": "What is the fastest running bird?",
     "answers": ["ostrich"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "animals-109",
     "category": "Animals",
     "prompt": "What is the deepest-diving bird?",
     "answers": ["emperor penguin"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-110",
     "category": "Animals",
     "prompt": "What body part is a narwhal's distinctive long tusk actually made of?",
     "answers": ["tooth", "modified tooth", "canine tooth"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-111",
     "category": "Animals",
     "prompt": "What is the world's largest living lizard?",
     "answers": ["komodo dragon"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "animals-112",
     "category": "Animals",
     "prompt": "What organ in bony fish controls their buoyancy in the water?",
     "answers": ["swim bladder", "air bladder", "gas bladder"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "animals-113",
     "category": "Animals",
     "prompt": "What is the largest land animal in North America?",
     "answers": ["american bison", "bison"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "animals-114",
     "category": "Animals",
     "prompt": "What whale species is best known for its complex underwater songs?",
     "answers": ["humpback whale"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "animals-115",
     "category": "Animals",
     "prompt": "What is the scientific name for the order containing all whales, dolphins, and porpoises?",
     "answers": ["cetacea"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-116",
     "category": "Animals",
     "prompt": "What is a group of bears called?",
     "answers": ["sleuth", "sloth"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-117",
     "category": "Animals",
     "prompt": "What is the average incubation period for a chicken egg in days?",
     "answers": ["21", "21 days", "twenty-one days"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-118",
     "category": "Animals",
     "prompt": "What is the world's most venomous jellyfish?",
     "answers": ["box jellyfish"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-119",
     "category": "Animals",
     "prompt": "What is a group of vultures circling in the air called?",
     "answers": ["kettle"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-120",
     "category": "Animals",
     "prompt": "What is the world's heaviest flying bird?",
     "answers": ["kori bustard", "great bustard"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-121",
     "category": "Animals",
     "prompt": "What is the only marsupial native to North America?",
     "answers": ["opossum", "virginia opossum"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-122",
     "category": "Animals",
     "prompt": "What is the world's largest owl species?",
     "answers": ["blakiston's fish owl", "blakistons fish owl"],
-    "difficulty": "medium"
+    "difficulty": 8
   },
   {
     "id": "animals-123",
     "category": "Animals",
     "prompt": "What is the actual color of polar bear fur, which only appears white?",
     "answers": ["transparent", "colorless", "clear"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-124",
     "category": "Animals",
     "prompt": "What is the name for a group of crocodiles on land?",
     "answers": ["bask"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-125",
     "category": "Animals",
     "prompt": "What is the scientific term for a symbiotic relationship where both organisms benefit?",
     "answers": ["mutualism"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "animals-126",
     "category": "Animals",
     "prompt": "What bird lays the largest egg relative to its own body size?",
     "answers": ["kiwi"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-127",
     "category": "Animals",
     "prompt": "What do hummingbirds primarily feed on?",
     "answers": ["nectar", "flower nectar"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "animals-128",
     "category": "Animals",
     "prompt": "What is the thick insulating layer of fat beneath a whale's skin called?",
     "answers": ["blubber"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "animals-129",
     "category": "Animals",
     "prompt": "What migratory bird holds the record for the longest nonstop flight, traveling from Alaska to New Zealand?",
     "answers": ["bar-tailed godwit"],
-    "difficulty": "medium"
+    "difficulty": 8
   },
   {
     "id": "animals-130",
     "category": "Animals",
     "prompt": "What is the approximate lifespan of a worker honeybee during summer?",
     "answers": ["six weeks", "6 weeks", "forty days", "40 days"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-131",
     "category": "Animals",
     "prompt": "What is the term for the symbiotic relationship where one organism benefits while the host is unaffected?",
     "answers": ["commensalism"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "animals-132",
     "category": "Animals",
     "prompt": "What is the name for a female kangaroo?",
     "answers": ["doe", "jill", "flyer"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-133",
     "category": "Animals",
     "prompt": "What is the world's largest species of freshwater fish?",
     "answers": ["mekong giant catfish", "beluga sturgeon"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-134",
     "category": "Animals",
     "prompt": "What is the fastest bird in level flight?",
     "answers": ["common swift"],
-    "difficulty": "medium"
+    "difficulty": 7
   },
   {
     "id": "animals-135",
     "category": "Animals",
     "prompt": "What is the world's smallest mammal by body mass?",
     "answers": ["etruscan shrew", "savi's pygmy shrew"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-136",
     "category": "Animals",
     "prompt": "What is the scientific name for the blue whale?",
     "answers": ["balaenoptera musculus"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-137",
     "category": "Animals",
     "prompt": "How many cervical vertebrae does a giraffe have in its neck?",
     "answers": ["seven", "7"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-138",
     "category": "Animals",
     "prompt": "What is the scientific name for the great white shark?",
     "answers": ["carcharodon carcharias"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-139",
     "category": "Animals",
     "prompt": "What is the only snake species that builds a nest and guards its eggs?",
     "answers": ["king cobra"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-140",
     "category": "Animals",
     "prompt": "What is the world's oldest known living vertebrate species?",
     "answers": ["greenland shark"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-141",
     "category": "Animals",
     "prompt": "What is the only bear species native to South America?",
     "answers": ["spectacled bear", "andean bear"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-142",
     "category": "Animals",
     "prompt": "What is the scientific name for the platypus?",
     "answers": ["ornithorhynchus anatinus"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-143",
     "category": "Animals",
     "prompt": "What is the name for the translucent third eyelid found in many animals such as birds and sharks?",
     "answers": ["nictitating membrane", "third eyelid"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-144",
     "category": "Animals",
     "prompt": "What bioluminescent protein found in jellyfish became a major tool in molecular biology research?",
     "answers": ["green fluorescent protein", "gfp"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-145",
     "category": "Animals",
     "prompt": "What is the scientific name for the class of cartilaginous fish that includes sharks, rays, and chimaeras?",
     "answers": ["chondrichthyes"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-146",
     "category": "Animals",
     "prompt": "What is the world's rarest wild cat, with fewer than 100 individuals surviving?",
     "answers": ["amur leopard"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-147",
     "category": "Animals",
     "prompt": "How many eyes does a horseshoe crab have?",
     "answers": ["ten", "10"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-148",
     "category": "Animals",
     "prompt": "What is the state of suspended animation that allows tardigrades to survive extreme conditions?",
     "answers": ["cryptobiosis", "tun state"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-149",
     "category": "Animals",
     "prompt": "What is the scientific study of amphibians and reptiles called?",
     "answers": ["herpetology"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-150",
     "category": "Animals",
     "prompt": "What species of clam, nicknamed Ming, is the oldest confirmed individual animal ever recorded at over 500 years old?",
     "answers": ["ocean quahog", "arctica islandica"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-151",
     "category": "Animals",
     "prompt": "What is the scientific name for the common chimpanzee?",
     "answers": ["pan troglodytes"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-152",
     "category": "Animals",
     "prompt": "What protein gives lobster blood its distinctive blue color?",
     "answers": ["hemocyanin"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-153",
     "category": "Animals",
     "prompt": "What is the primary peptide in bee venom responsible for the pain of a bee sting?",
     "answers": ["melittin"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-154",
     "category": "Animals",
     "prompt": "What is the term for warning coloration in animals that signals they are toxic or dangerous to predators?",
     "answers": ["aposematism", "aposematic coloration"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-155",
     "category": "Animals",
     "prompt": "What form of mimicry describes a harmless species that evolves to resemble a harmful one?",
     "answers": ["batesian mimicry"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-156",
     "category": "Animals",
     "prompt": "What is the scientific name for the domestic dog?",
     "answers": ["canis lupus familiaris"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-157",
     "category": "Animals",
     "prompt": "What polysaccharide substance makes up the exoskeleton of insects and the shells of crustaceans?",
     "answers": ["chitin"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-158",
     "category": "Animals",
     "prompt": "What is the binomial name for the snow leopard?",
     "answers": ["panthera uncia"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-159",
     "category": "Animals",
     "prompt": "What is the scientific term for an organism that feeds on dead and decaying organic matter?",
     "answers": ["detritivore"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-160",
     "category": "Animals",
     "prompt": "What is the common name for the deepest-dwelling fish ever recorded, found in the Mariana Trench?",
     "answers": ["mariana snailfish", "snailfish"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-161",
     "category": "Animals",
     "prompt": "What is the scientific name for the Bengal tiger?",
     "answers": ["panthera tigris tigris"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-162",
     "category": "Animals",
     "prompt": "What is the term for the dormancy state of reptiles and amphibians during winter, analogous to mammalian hibernation?",
     "answers": ["brumation"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-163",
     "category": "Animals",
     "prompt": "What is the term for the phase of excessive eating that bears undergo before entering hibernation?",
     "answers": ["hyperphagia"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-164",
     "category": "Animals",
     "prompt": "What type of organ in electric eels generates electric current?",
     "answers": ["electric organ", "electrocytes", "electroplaques"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-165",
     "category": "Animals",
     "prompt": "What type of toxin in snake venom primarily destroys red blood cells and disrupts blood clotting?",
     "answers": ["hemotoxin", "haemotoxin"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-166",
     "category": "Animals",
     "prompt": "What is the scientific name for the African elephant?",
     "answers": ["loxodonta africana"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-167",
     "category": "Animals",
     "prompt": "What is the scientific name for the woolly mammoth?",
     "answers": ["mammuthus primigenius"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-168",
     "category": "Animals",
     "prompt": "What are the specialized pollen-carrying structures on a honeybee's hind legs called?",
     "answers": ["corbiculae", "pollen baskets"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-169",
     "category": "Animals",
     "prompt": "What is the sulfur-containing amino acid unique to cat urine that gives it its strong odor?",
     "answers": ["felinine"],
-    "difficulty": "hard"
+    "difficulty": 10
   },
   {
     "id": "animals-170",
     "category": "Animals",
     "prompt": "What is the scientific term for the form of parthenogenesis in bees where unfertilized eggs develop into male drones?",
     "answers": ["arrhenotoky"],
-    "difficulty": "hard"
+    "difficulty": 10
   },
   {
     "id": "animals-171",
     "category": "Animals",
     "prompt": "What is the gestation period of a Syrian hamster in days?",
     "answers": ["16", "16 days", "sixteen days"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-172",
     "category": "Animals",
     "prompt": "What scientific term describes the ability of an animal to blend into its environment through camouflage coloration?",
     "answers": ["crypsis", "cryptic coloration"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-173",
     "category": "Animals",
     "prompt": "What is the world's smallest known reptile, a chameleon species discovered in Madagascar in 2021?",
     "answers": ["brookesia nana", "nano-chameleon", "nano chameleon"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-174",
     "category": "Animals",
     "prompt": "What is the only venomous primate?",
     "answers": ["slow loris"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-175",
     "category": "Animals",
     "prompt": "What is the biological term for fish such as clownfish that can change sex during their lifetime?",
     "answers": ["sequential hermaphroditism", "sequential hermaphrodite"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-176",
     "category": "Animals",
     "prompt": "What is the scientific name for the woolly mammoth's closest living relative?",
     "answers": ["asian elephant", "elephas maximus"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-177",
     "category": "Animals",
     "prompt": "What is the term for the navigational ability of salmon to return to the exact stream where they were born?",
     "answers": ["natal homing", "philopatry"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-178",
     "category": "Animals",
     "prompt": "What is the scientific name for the order of mammals that includes lions, bears, and wolves?",
     "answers": ["carnivora"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-179",
     "category": "Animals",
     "prompt": "What is the name of the lateral sensory organ in fish that detects water movement and pressure changes?",
     "answers": ["lateral line"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-180",
     "category": "Animals",
     "prompt": "What is the scientific name for the emperor penguin?",
     "answers": ["aptenodytes forsteri"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-181",
     "category": "Animals",
     "prompt": "What is the term for the simultaneous replacement of all flight feathers in certain birds, temporarily making them flightless?",
     "answers": ["catastrophic molt", "simultaneous molt", "catastrophic moult"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-182",
     "category": "Animals",
     "prompt": "What is the phenomenon called when an animal feigns death to deter a predator?",
     "answers": ["thanatosis", "death feigning", "tonic immobility"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-183",
     "category": "Animals",
     "prompt": "What is the scientific term for the study of animal behavior?",
     "answers": ["ethology"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-184",
     "category": "Animals",
     "prompt": "What is the scientific name for the house mouse?",
     "answers": ["mus musculus"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-185",
     "category": "Animals",
     "prompt": "What vestigial claw-like remnants found in some boas and pythons indicate they evolved from limbed ancestors?",
     "answers": ["pelvic spurs", "cloacal spurs", "hip spurs"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-186",
     "category": "Animals",
     "prompt": "What evolutionary phenomenon occurs when unrelated species independently evolve similar traits to solve the same problem?",
     "answers": ["convergent evolution"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-187",
     "category": "Animals",
     "prompt": "What is the scientific name for the giant panda?",
     "answers": ["ailuropoda melanoleuca"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-188",
     "category": "Animals",
     "prompt": "What is the scientific term for the dietary habit of feeding exclusively on ants and termites?",
     "answers": ["myrmecophagy"],
-    "difficulty": "hard"
+    "difficulty": 9
   },
   {
     "id": "animals-189",
     "category": "Animals",
     "prompt": "What is the smallest species in the bear family?",
     "answers": ["sun bear"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-190",
     "category": "Animals",
     "prompt": "What is the scientific name for the domestic pig?",
     "answers": ["sus scrofa domesticus"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-191",
     "category": "Animals",
     "prompt": "What are the heat-sensing pit organs in pit vipers located between the eye and nostril called?",
     "answers": ["loreal pits", "pit organs", "facial pits"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-192",
     "category": "Animals",
     "prompt": "What chemical compound is responsible for the bioluminescent glow of fireflies?",
     "answers": ["luciferin"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-193",
     "category": "Animals",
     "prompt": "What is the term for the elaborate plumage displayed by male birds during the breeding season to attract mates?",
     "answers": ["nuptial plumage", "breeding plumage"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "animals-194",
     "category": "Animals",
     "prompt": "What are the bony calcium carbonate structures in fish ears that are used to determine a fish's age called?",
     "answers": ["otoliths", "ear stones"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "animals-195",
     "category": "Animals",
     "prompt": "What is the scientific name for the gray wolf?",
     "answers": ["canis lupus"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-196",
     "category": "Animals",
     "prompt": "What is the technical anatomical name for the wishbone in birds?",
     "answers": ["furcula"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-197",
     "category": "Animals",
     "prompt": "What approximate percentage of a giant panda's diet consists of bamboo?",
     "answers": ["99", "99 percent", "99%"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-198",
     "category": "Animals",
     "prompt": "What is the collective name for the annual wildebeest river crossing between Tanzania's Serengeti and Kenya's Masai Mara?",
     "answers": ["great migration", "the great migration"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "animals-199",
     "category": "Animals",
     "prompt": "Approximately how many insect species have been formally described by scientists?",
     "answers": ["one million", "1 million", "1000000"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "animals-200",
     "category": "Animals",
     "prompt": "What is the scientific name for the common cheetah?",
     "answers": ["acinonyx jubatus"],
-    "difficulty": "hard"
+    "difficulty": 8
   }
 ]

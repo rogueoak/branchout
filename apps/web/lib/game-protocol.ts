@@ -9,12 +9,12 @@ export interface TriviaPrompt {
   round: number;
   category: string;
   /**
-   * The drawn question's difficulty *tier* - `'easy' | 'medium' | 'hard'`, a string, not the host's
-   * numeric 1-10 setting. The engine puts `question.difficulty` (the tier) on the prompt, so the
-   * client must accept a string here; requiring a number silently rejected every real prompt and
-   * left the viewer stuck on "Get ready".
+   * The drawn question's difficulty rating - an integer 1-10 (spec 0016). The engine puts
+   * `question.difficulty` (now a number) on the prompt, so the client accepts a number here. (This
+   * reverses the earlier tier-string decoder: the bank moved from easy/medium/hard tiers to a 1-10
+   * rating, and the wire follows.)
    */
-  difficulty: string;
+  difficulty: number;
   question: string;
 }
 
@@ -53,7 +53,7 @@ export function asTriviaPrompt(value: unknown): TriviaPrompt | null {
   if (
     typeof round === 'number' &&
     typeof category === 'string' &&
-    typeof difficulty === 'string' &&
+    typeof difficulty === 'number' &&
     typeof question === 'string'
   ) {
     return { round, category, difficulty, question };

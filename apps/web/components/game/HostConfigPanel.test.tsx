@@ -48,7 +48,10 @@ describe('HostConfigPanel', () => {
       'Random',
     ]);
     expect((screen.getByLabelText('Rounds') as HTMLInputElement).value).toBe('10');
-    expect((screen.getByLabelText('Difficulty') as HTMLInputElement).value).toBe('5');
+    // The difficulty range defaults to 4-6 across the two slider thumbs.
+    expect((screen.getByLabelText('Easiest (minimum)') as HTMLInputElement).value).toBe('4');
+    expect((screen.getByLabelText('Hardest (maximum)') as HTMLInputElement).value).toBe('6');
+    expect(screen.getByText('4 to 6 (Medium)')).toBeDefined();
   });
 
   it('blocks start with a stated reason until a viewer is present', () => {
@@ -75,10 +78,22 @@ describe('HostConfigPanel', () => {
     );
   });
 
-  it('shows a field error when difficulty is out of range', () => {
+  it('clamps the range thumbs so the minimum never passes the maximum', () => {
     render(<Harness />);
-    fireEvent.change(screen.getByLabelText('Difficulty'), { target: { value: '11' } });
-    expect(screen.getByText(/Difficulty must be a whole number from 1 to 10/)).toBeDefined();
+    const min = screen.getByLabelText('Easiest (minimum)') as HTMLInputElement;
+    // Drag the floor up past the ceiling (6); it should stop at the ceiling, not invert the range.
+    fireEvent.change(min, { target: { value: '9' } });
+    expect(min.value).toBe('6');
+    expect(screen.getByText('Just 6 (Medium)')).toBeDefined();
+  });
+
+  it('surfaces the difficulty error for an inverted initial range (defensive)', () => {
+    // The sliders clamp, so a user cannot reach this, but a bad incoming config must still block.
+    render(<Harness initial={{ ...defaultTriviaConfig(), difficultyMin: 8, difficultyMax: 4 }} />);
+    expect(screen.getByText(/Difficulty minimum cannot be above the maximum/)).toBeDefined();
+    expect((screen.getByRole('button', { name: 'Start game' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 
   it('enables start and fires onStart when a viewer is present and config is valid', () => {

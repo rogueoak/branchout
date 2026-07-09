@@ -14,20 +14,19 @@ export {
 } from './trivia';
 export { normalizeAnswer, isCorrectAnswer, levenshtein, FUZZY_MIN_LENGTH } from './matching';
 export {
-  blendWeights,
-  sampleTier,
-  isValidDifficulty,
-  tiersByProximity,
-  TIERS,
+  isValidDifficultyBound,
+  isValidDifficultyRange,
   MIN_DIFFICULTY,
   MAX_DIFFICULTY,
-  DEFAULT_DIFFICULTY,
+  DEFAULT_DIFFICULTY_MIN,
+  DEFAULT_DIFFICULTY_MAX,
 } from './difficulty';
 export { indexQuestions, pickQuestion, RANDOM_CATEGORY, type QuestionIndex } from './selection';
 export {
   loadQuestionBank,
   validateQuestionBank,
   CATEGORIES,
+  DIFFICULTY_MIN,
+  DIFFICULTY_MAX,
   type TriviaQuestion,
-  type Difficulty,
 } from './question-bank';
