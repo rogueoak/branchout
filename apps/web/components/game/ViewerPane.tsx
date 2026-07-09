@@ -8,6 +8,7 @@
 import type { PlayerView } from '@branchout/protocol';
 import { Badge } from '@rogueoak/canopy';
 import type { GameState } from '../../lib/game-state';
+import { difficultyBand } from '../../lib/trivia-config';
 import { toDisplayAnswer } from '../../lib/title-case';
 import { FinalResults } from './FinalResults';
 import { Leaderboard } from './Leaderboard';
@@ -43,7 +44,7 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="info">Round {prompt.round}</Badge>
             <Badge variant="neutral">{prompt.category}</Badge>
-            <Badge variant="neutral">Difficulty {prompt.difficulty}</Badge>
+            <Badge variant="neutral">{difficultyBand(prompt.difficulty)}</Badge>
           </div>
           <h2 className="text-h2 text-text">{prompt.question}</h2>
 

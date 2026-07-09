@@ -21,6 +21,7 @@ import {
   type ConfigError,
   type TriviaHostConfig,
 } from '../../lib/trivia-config';
+import { DifficultyRange } from './DifficultyRange';
 
 interface HostConfigPanelProps {
   value: TriviaHostConfig;
@@ -108,17 +109,14 @@ export function HostConfigPanel({
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="trivia-difficulty">Difficulty</Label>
-        <Input
-          id="trivia-difficulty"
-          type="number"
-          inputMode="numeric"
-          min={MIN_DIFFICULTY}
-          max={MAX_DIFFICULTY}
-          value={Number.isNaN(value.difficulty) ? '' : value.difficulty}
-          onChange={(event) => onChange({ ...value, difficulty: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'difficulty') !== null}
-          aria-describedby={errorFor(errors, 'difficulty') ? 'trivia-difficulty-error' : undefined}
+        <DifficultyRange
+          min={value.difficultyMin}
+          max={value.difficultyMax}
+          floor={MIN_DIFFICULTY}
+          ceiling={MAX_DIFFICULTY}
+          onChange={(difficultyMin, difficultyMax) =>
+            onChange({ ...value, difficultyMin, difficultyMax })
+          }
         />
         {errorFor(errors, 'difficulty') ? (
           <p id="trivia-difficulty-error" role="alert" className="text-body-sm text-danger">

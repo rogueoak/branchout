@@ -4,1399 +4,1399 @@
     "category": "People",
     "prompt": "Who painted the Mona Lisa?",
     "answers": ["leonardo da vinci", "da vinci", "leonardo"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-002",
     "category": "People",
     "prompt": "Who developed the theory of relativity?",
     "answers": ["albert einstein", "einstein"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-003",
     "category": "People",
     "prompt": "Who formulated the law of universal gravitation?",
     "answers": ["isaac newton", "newton"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-004",
     "category": "People",
     "prompt": "Who wrote the play Hamlet?",
     "answers": ["william shakespeare", "shakespeare"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-005",
     "category": "People",
     "prompt": "Which French emperor was defeated at the Battle of Waterloo in 1815?",
     "answers": ["napoleon bonaparte", "napoleon", "bonaparte"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-006",
     "category": "People",
     "prompt": "Who was the 16th President of the United States?",
     "answers": ["abraham lincoln", "lincoln"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-007",
     "category": "People",
     "prompt": "Which European explorer is credited with reaching the Americas in 1492?",
     "answers": ["christopher columbus", "columbus"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-008",
     "category": "People",
     "prompt": "Who was the first person to walk on the Moon?",
     "answers": ["neil armstrong", "armstrong"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-009",
     "category": "People",
     "prompt": "Who was the first woman to win a Nobel Prize?",
     "answers": ["marie curie", "curie", "maria curie"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-010",
     "category": "People",
     "prompt": "Who led India's independence movement through nonviolent resistance?",
     "answers": ["mahatma gandhi", "gandhi", "mohandas gandhi"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-011",
     "category": "People",
     "prompt": "Who delivered the \"I Have a Dream\" speech in Washington D.C. in 1963?",
     "answers": ["martin luther king jr", "martin luther king", "mlk"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-012",
     "category": "People",
     "prompt": "Who served as British Prime Minister during most of World War II?",
     "answers": ["winston churchill", "churchill"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-013",
     "category": "People",
     "prompt": "Which ancient Egyptian queen had relationships with Julius Caesar and Mark Antony?",
     "answers": ["cleopatra", "cleopatra vii"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-014",
     "category": "People",
     "prompt": "Which Roman general crossed the Rubicon River and later became dictator of Rome?",
     "answers": ["julius caesar", "caesar"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-015",
     "category": "People",
     "prompt": "Who was the first President of the United States?",
     "answers": ["george washington", "washington"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-016",
     "category": "People",
     "prompt": "Who composed The Magic Flute and Don Giovanni?",
     "answers": ["wolfgang amadeus mozart", "mozart"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-017",
     "category": "People",
     "prompt": "Who composed the Ninth Symphony, which includes \"Ode to Joy\", while completely deaf?",
     "answers": ["ludwig van beethoven", "beethoven"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-018",
     "category": "People",
     "prompt": "Who proposed the theory of evolution by natural selection?",
     "answers": ["charles darwin", "darwin"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-019",
     "category": "People",
     "prompt": "Who first observed the moons of Jupiter through a telescope?",
     "answers": ["galileo galilei", "galileo"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-020",
     "category": "People",
     "prompt": "Who is credited with developing the first practical incandescent light bulb?",
     "answers": ["thomas edison", "edison"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-021",
     "category": "People",
     "prompt": "Who is credited with inventing the telephone in 1876?",
     "answers": ["alexander graham bell", "graham bell", "bell"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-022",
     "category": "People",
     "prompt": "Which American brothers made the first successful powered airplane flight at Kitty Hawk in 1903?",
     "answers": ["wright brothers", "orville wright", "wilbur wright", "the wright brothers"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-023",
     "category": "People",
     "prompt": "Who pioneered the moving assembly line and produced the Model T automobile?",
     "answers": ["henry ford", "ford"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-024",
     "category": "People",
     "prompt": "Who created Mickey Mouse and founded the studio that bears his name?",
     "answers": ["walt disney", "disney"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-025",
     "category": "People",
     "prompt": "Who is regarded as the founder of Cubism in painting?",
     "answers": ["pablo picasso", "picasso"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-026",
     "category": "People",
     "prompt": "Who was known as the \"King of Pop\"?",
     "answers": ["michael jackson", "jackson"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-027",
     "category": "People",
     "prompt": "Which American heavyweight boxer was nicknamed \"The Greatest\"?",
     "answers": ["muhammad ali", "ali", "cassius clay"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-028",
     "category": "People",
     "prompt": "Which Brazilian soccer player known as O Rei won three FIFA World Cups?",
     "answers": ["pele", "edson arantes do nascimento"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-029",
     "category": "People",
     "prompt": "Who won six NBA championships with the Chicago Bulls during the 1990s?",
     "answers": ["michael jordan", "jordan"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-030",
     "category": "People",
     "prompt": "Which New York Yankees slugger hit 60 home runs in the 1927 season?",
     "answers": ["babe ruth", "ruth", "george herman ruth"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-031",
     "category": "People",
     "prompt": "Which golfer nicknamed Tiger dominated the sport in the late 1990s and early 2000s?",
     "answers": ["tiger woods", "woods"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-032",
     "category": "People",
     "prompt": "Which American tennis player won 23 Grand Slam singles titles, the most in the Open Era?",
     "answers": ["serena williams", "williams"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-033",
     "category": "People",
     "prompt": "Which Swiss tennis player won 20 Grand Slam singles titles before his retirement?",
     "answers": ["roger federer", "federer"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-034",
     "category": "People",
     "prompt": "Which Jamaican sprinter holds world records in both the 100m and 200m?",
     "answers": ["usain bolt", "bolt"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-035",
     "category": "People",
     "prompt": "Who was known as the \"King of Rock and Roll\"?",
     "answers": ["elvis presley", "elvis", "presley"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-036",
     "category": "People",
     "prompt": "Which British band featuring John Lennon and Paul McCartney became the best-selling music group of all time?",
     "answers": ["the beatles", "beatles"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-037",
     "category": "People",
     "prompt": "Who reigned as Queen of the United Kingdom for over 70 years, from 1952 to 2022?",
     "answers": ["queen elizabeth ii", "elizabeth ii", "queen elizabeth"],
-    "difficulty": "easy"
+    "difficulty": 1
   },
   {
     "id": "people-038",
     "category": "People",
     "prompt": "Who was the first Black President of South Africa, elected in 1994?",
     "answers": ["nelson mandela", "mandela"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-039",
     "category": "People",
     "prompt": "Who founded the Missionaries of Charity and was awarded the Nobel Peace Prize in 1979?",
     "answers": ["mother teresa", "teresa", "agnes gonxha bojaxhiu"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-040",
     "category": "People",
     "prompt": "Who is considered the founder of modern nursing?",
     "answers": ["florence nightingale", "nightingale"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-041",
     "category": "People",
     "prompt": "Who guided enslaved people to freedom through the Underground Railroad?",
     "answers": ["harriet tubman", "tubman"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-042",
     "category": "People",
     "prompt": "Whose refusal to give up her bus seat in Montgomery sparked a famous civil rights boycott in 1955?",
     "answers": ["rosa parks", "parks"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-043",
     "category": "People",
     "prompt": "Who wrote a famous diary while hiding from Nazis in Amsterdam during World War II?",
     "answers": ["anne frank", "frank"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-044",
     "category": "People",
     "prompt": "Which Venetian merchant traveled to China in the 13th century and wrote about his journeys?",
     "answers": ["marco polo", "polo"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-045",
     "category": "People",
     "prompt": "Who led the first expedition to circumnavigate the globe, though he died before completing the voyage?",
     "answers": ["ferdinand magellan", "magellan"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-046",
     "category": "People",
     "prompt": "Who was the first European to sail around Africa and reach India by sea?",
     "answers": ["vasco da gama", "da gama"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "people-047",
     "category": "People",
     "prompt": "Who invented the steam engine that powered the Industrial Revolution?",
     "answers": ["james watt", "watt"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "people-048",
     "category": "People",
     "prompt": "Who discovered penicillin in 1928?",
     "answers": ["alexander fleming", "fleming"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-049",
     "category": "People",
     "prompt": "Who developed germ theory and invented the process of pasteurization?",
     "answers": ["louis pasteur", "pasteur"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-050",
     "category": "People",
     "prompt": "Who founded psychoanalysis?",
     "answers": ["sigmund freud", "freud"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-051",
     "category": "People",
     "prompt": "Who co-authored The Communist Manifesto with Friedrich Engels?",
     "answers": ["karl marx", "marx"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-052",
     "category": "People",
     "prompt": "Who painted the ceiling of the Sistine Chapel in Rome?",
     "answers": ["michelangelo", "michelangelo buonarroti"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-053",
     "category": "People",
     "prompt": "Who painted \"The Starry Night\" in 1889?",
     "answers": ["vincent van gogh", "van gogh"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-054",
     "category": "People",
     "prompt": "Which French Impressionist painter is famous for his series of Water Lilies paintings?",
     "answers": ["claude monet", "monet"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-055",
     "category": "People",
     "prompt": "Who composed the Brandenburg Concertos?",
     "answers": ["johann sebastian bach", "bach", "j s bach"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "people-056",
     "category": "People",
     "prompt": "Who invented the World Wide Web in 1989?",
     "answers": ["tim berners-lee", "berners-lee", "tim berners lee"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "people-057",
     "category": "People",
     "prompt": "Who was the first person to fly solo nonstop across the Atlantic Ocean?",
     "answers": ["charles lindbergh", "lindbergh"],
-    "difficulty": "easy"
+    "difficulty": 4
   },
   {
     "id": "people-058",
     "category": "People",
     "prompt": "Who wrote the philosophical work The Republic?",
     "answers": ["plato"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-059",
     "category": "People",
     "prompt": "Which ancient Greek philosopher was sentenced to death by Athens for corrupting the youth?",
     "answers": ["socrates"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-060",
     "category": "People",
     "prompt": "Which ancient Greek philosopher, a student of Plato, tutored Alexander the Great?",
     "answers": ["aristotle"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-061",
     "category": "People",
     "prompt": "Who is traditionally credited with composing the Iliad and the Odyssey?",
     "answers": ["homer"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-062",
     "category": "People",
     "prompt": "Who was the first woman to travel to space, in 1963?",
     "answers": ["valentina tereshkova", "tereshkova"],
-    "difficulty": "easy"
+    "difficulty": 5
   },
   {
     "id": "people-063",
     "category": "People",
     "prompt": "Who was the first woman to fly solo across the Atlantic Ocean?",
     "answers": ["amelia earhart", "earhart"],
-    "difficulty": "easy"
+    "difficulty": 3
   },
   {
     "id": "people-064",
     "category": "People",
     "prompt": "Who wrote Pride and Prejudice?",
     "answers": ["jane austen", "austen"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-065",
     "category": "People",
     "prompt": "Who wrote A Christmas Carol and Oliver Twist?",
     "answers": ["charles dickens", "dickens"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-066",
     "category": "People",
     "prompt": "Who wrote Adventures of Huckleberry Finn and The Adventures of Tom Sawyer?",
     "answers": ["mark twain", "samuel clemens", "twain", "samuel langhorne clemens"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-067",
     "category": "People",
     "prompt": "Who wrote the dystopian novels 1984 and Animal Farm?",
     "answers": ["george orwell", "orwell", "eric arthur blair"],
-    "difficulty": "easy"
+    "difficulty": 2
   },
   {
     "id": "people-068",
     "category": "People",
     "prompt": "Who invented the printing press with movable type in Europe around 1440?",
     "answers": ["johannes gutenberg", "gutenberg"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-069",
     "category": "People",
     "prompt": "Who proposed the heliocentric model of the solar system in his 1543 work?",
     "answers": ["nicolaus copernicus", "copernicus"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-070",
     "category": "People",
     "prompt": "Which French philosopher is famous for the statement \"I think, therefore I am\"?",
     "answers": ["rene descartes", "descartes"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-071",
     "category": "People",
     "prompt": "Who wrote Don Quixote, considered one of the first modern novels?",
     "answers": ["miguel de cervantes", "cervantes"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-072",
     "category": "People",
     "prompt": "Who wrote the Divine Comedy, describing a journey through Hell, Purgatory, and Heaven?",
     "answers": ["dante alighieri", "dante"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-073",
     "category": "People",
     "prompt": "Who wrote The Canterbury Tales in Middle English?",
     "answers": ["geoffrey chaucer", "chaucer"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-074",
     "category": "People",
     "prompt": "Which German writer wrote the epic drama Faust?",
     "answers": ["johann wolfgang von goethe", "goethe"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-075",
     "category": "People",
     "prompt": "Who wrote Les Miserables?",
     "answers": ["victor hugo", "hugo"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-076",
     "category": "People",
     "prompt": "Who wrote The Three Musketeers?",
     "answers": ["alexandre dumas", "dumas"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-077",
     "category": "People",
     "prompt": "Who wrote War and Peace?",
     "answers": ["leo tolstoy", "tolstoy", "lev tolstoy"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-078",
     "category": "People",
     "prompt": "Who wrote Crime and Punishment?",
     "answers": ["fyodor dostoevsky", "dostoevsky", "dostoyevsky"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-079",
     "category": "People",
     "prompt": "Who wrote The Metamorphosis, in which the protagonist wakes up transformed into an insect?",
     "answers": ["franz kafka", "kafka"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-080",
     "category": "People",
     "prompt": "Who wrote The Old Man and the Sea?",
     "answers": ["ernest hemingway", "hemingway"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-081",
     "category": "People",
     "prompt": "Who wrote the modernist novel Ulysses, set over a single day in Dublin?",
     "answers": ["james joyce", "joyce"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-082",
     "category": "People",
     "prompt": "Who wrote the narrative poem \"The Raven\"?",
     "answers": ["edgar allan poe", "poe"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-083",
     "category": "People",
     "prompt": "Who painted \"The Scream\"?",
     "answers": ["edvard munch", "munch"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-084",
     "category": "People",
     "prompt": "Which Spanish surrealist painter is known for works featuring melting clocks?",
     "answers": ["salvador dali", "dali"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-085",
     "category": "People",
     "prompt": "Which Mexican artist is known for self-portraits and works such as The Two Fridas?",
     "answers": ["frida kahlo", "kahlo"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-086",
     "category": "People",
     "prompt": "Who composed the ballets Swan Lake and The Nutcracker?",
     "answers": ["pyotr ilyich tchaikovsky", "tchaikovsky", "peter tchaikovsky"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-087",
     "category": "People",
     "prompt": "Who composed the ballet The Rite of Spring, whose 1913 Paris premiere caused a riot?",
     "answers": ["igor stravinsky", "stravinsky"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-088",
     "category": "People",
     "prompt": "Which Serbian-American inventor developed the alternating current electrical system?",
     "answers": ["nikola tesla", "tesla"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-089",
     "category": "People",
     "prompt": "Who broke the Enigma code during World War II and is considered the father of computer science?",
     "answers": ["alan turing", "turing"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-090",
     "category": "People",
     "prompt": "Who developed the first successful smallpox vaccine using cowpox in 1796?",
     "answers": ["edward jenner", "jenner"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-091",
     "category": "People",
     "prompt": "Who established three mathematical laws describing planetary motion?",
     "answers": ["johannes kepler", "kepler"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-092",
     "category": "People",
     "prompt": "Which English physician demonstrated that blood circulates continuously through the body?",
     "answers": ["william harvey", "harvey"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-093",
     "category": "People",
     "prompt": "Who unified the German states and became the first Chancellor of the German Empire in 1871?",
     "answers": ["otto von bismarck", "bismarck"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-094",
     "category": "People",
     "prompt": "Who founded the Mongol Empire, the largest contiguous land empire in history?",
     "answers": ["genghis khan", "chinggis khan", "temujin"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-095",
     "category": "People",
     "prompt": "Which ancient Macedonian king created an empire stretching from Greece to northwestern India?",
     "answers": ["alexander the great", "alexander"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-096",
     "category": "People",
     "prompt": "Who was the first Roman Emperor, ruling under the title Augustus?",
     "answers": ["augustus", "octavian", "caesar augustus", "gaius octavius"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-097",
     "category": "People",
     "prompt": "Who was crowned the first Holy Roman Emperor by the Pope on Christmas Day 800 AD?",
     "answers": ["charlemagne", "charles the great"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-098",
     "category": "People",
     "prompt": "Which Muslim military commander recaptured Jerusalem from the Crusaders in 1187?",
     "answers": ["saladin", "salah ad-din"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-099",
     "category": "People",
     "prompt": "Which French heroine led armies against the English at Orleans and was later burned at the stake?",
     "answers": ["joan of arc", "jeanne darc"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-100",
     "category": "People",
     "prompt": "Which English king is famous for having six wives and breaking from the Catholic Church?",
     "answers": ["henry viii", "henry the eighth"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-101",
     "category": "People",
     "prompt": "Who ruled the Russian Empire as Empress from 1762 to 1796, greatly expanding its territory?",
     "answers": ["catherine the great", "catherine ii"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-102",
     "category": "People",
     "prompt": "Who commanded the Confederate Army of Northern Virginia during the American Civil War?",
     "answers": ["robert e lee", "robert edward lee", "lee"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-103",
     "category": "People",
     "prompt": "Who led the Cuban Revolution and served as the country's leader for nearly five decades?",
     "answers": ["fidel castro", "castro"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-104",
     "category": "People",
     "prompt": "Who led the Bolshevik Revolution in Russia in 1917?",
     "answers": ["vladimir lenin", "lenin"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-105",
     "category": "People",
     "prompt": "Who painted The School of Athens in the Vatican?",
     "answers": ["raphael", "raffaello sanzio"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-106",
     "category": "People",
     "prompt": "Which Dutch Golden Age painter created Girl with a Pearl Earring?",
     "answers": ["johannes vermeer", "jan vermeer", "vermeer"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-107",
     "category": "People",
     "prompt": "Who developed the first successful vaccine against polio, announced in 1955?",
     "answers": ["jonas salk", "salk"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-108",
     "category": "People",
     "prompt": "Who composed The Four Seasons?",
     "answers": ["antonio vivaldi", "vivaldi"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-109",
     "category": "People",
     "prompt": "Who composed the piano piece Clair de Lune?",
     "answers": ["claude debussy", "debussy"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-110",
     "category": "People",
     "prompt": "Who is credited with inventing radio and received the Nobel Prize in Physics in 1909?",
     "answers": ["guglielmo marconi", "marconi"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-111",
     "category": "People",
     "prompt": "Who was the first person to reach the South Pole, in December 1911?",
     "answers": ["roald amundsen", "amundsen"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-112",
     "category": "People",
     "prompt": "Which Spanish explorer was the first European to see the Pacific Ocean from the Americas?",
     "answers": ["vasco nunez de balboa", "balboa", "nunez de balboa"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-113",
     "category": "People",
     "prompt": "Who led the Spanish conquest of the Aztec Empire?",
     "answers": ["hernan cortes", "cortes"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-114",
     "category": "People",
     "prompt": "Who led the Spanish conquest of the Inca Empire?",
     "answers": ["francisco pizarro", "pizarro"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-115",
     "category": "People",
     "prompt": "Which Chinese admiral led massive naval expeditions across Asia and East Africa in the early 15th century?",
     "answers": ["zheng he", "cheng ho"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-116",
     "category": "People",
     "prompt": "Which 14th-century Moroccan scholar traveled across Africa, the Middle East, and Asia and recorded his journeys?",
     "answers": ["ibn battuta", "battuta"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-117",
     "category": "People",
     "prompt": "Which Portuguese explorer was the first European to sail around the Cape of Good Hope?",
     "answers": ["bartolomeu dias", "dias"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-118",
     "category": "People",
     "prompt": "Who led three Pacific voyages for Britain and mapped the east coast of Australia and New Zealand?",
     "answers": ["james cook", "captain cook", "cook"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-119",
     "category": "People",
     "prompt": "Which Norse explorer is believed to have been the first European to reach North America, around 1000 AD?",
     "answers": ["leif erikson", "leif ericson", "leif eriksson"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-120",
     "category": "People",
     "prompt": "Who, along with Francis Crick, published the double-helix structure of DNA in 1953?",
     "answers": ["james watson", "watson"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-121",
     "category": "People",
     "prompt": "Who discovered the electron in 1897 through experiments with cathode rays?",
     "answers": ["j j thomson", "joseph john thomson", "thomson"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-122",
     "category": "People",
     "prompt": "Who proposed that energy is radiated in discrete packets called quanta?",
     "answers": ["max planck", "planck"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-123",
     "category": "People",
     "prompt": "Who formulated the uncertainty principle in quantum mechanics?",
     "answers": ["werner heisenberg", "heisenberg"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-124",
     "category": "People",
     "prompt": "Who proposed the planetary model of the atom with electrons orbiting a nucleus?",
     "answers": ["niels bohr", "bohr"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-125",
     "category": "People",
     "prompt": "Which ancient Greek mathematician formulated the principle that a body immersed in fluid experiences a buoyant upward force?",
     "answers": ["archimedes"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-126",
     "category": "People",
     "prompt": "Which ancient Greek mathematician is credited with the theorem that the square of a right triangle's hypotenuse equals the sum of the squares of the other two sides?",
     "answers": ["pythagoras"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-127",
     "category": "People",
     "prompt": "Who composed the Unfinished Symphony and the song Ave Maria?",
     "answers": ["franz schubert", "schubert"],
-    "difficulty": "medium"
+    "difficulty": 6
   },
   {
     "id": "people-128",
     "category": "People",
     "prompt": "Which Polish-born composer and pianist is famous for his nocturnes and etudes?",
     "answers": ["frederic chopin", "chopin"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-129",
     "category": "People",
     "prompt": "Which Chinese philosopher's teachings on ethics, governance, and social harmony became the basis of a major school of thought?",
     "answers": ["confucius", "kong qiu", "kongzi"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-130",
     "category": "People",
     "prompt": "Who led the Soviet Union after Lenin and oversaw rapid industrialization through brutal purges?",
     "answers": ["joseph stalin", "stalin"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-131",
     "category": "People",
     "prompt": "Who founded the People's Republic of China in 1949?",
     "answers": ["mao zedong", "mao tse-tung", "mao"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-132",
     "category": "People",
     "prompt": "Which English navigator explored the river and bay in North America that bear his name?",
     "answers": ["henry hudson", "hudson"],
-    "difficulty": "medium"
+    "difficulty": 5
   },
   {
     "id": "people-133",
     "category": "People",
     "prompt": "Who created pop art works including Campbell's Soup Cans and portrait prints of Marilyn Monroe?",
     "answers": ["andy warhol", "warhol"],
-    "difficulty": "medium"
+    "difficulty": 3
   },
   {
     "id": "people-134",
     "category": "People",
     "prompt": "Which Dutch master painter created The Night Watch?",
     "answers": ["rembrandt", "rembrandt van rijn"],
-    "difficulty": "medium"
+    "difficulty": 4
   },
   {
     "id": "people-135",
     "category": "People",
     "prompt": "Which Austrian-Swedish physicist co-discovered nuclear fission but was excluded from the Nobel Prize awarded for it?",
     "answers": ["lise meitner", "meitner"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-136",
     "category": "People",
     "prompt": "Who formulated the wave equation for quantum mechanics and devised the thought experiment about a cat in a box?",
     "answers": ["erwin schrodinger", "schrodinger"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-137",
     "category": "People",
     "prompt": "Which British physicist predicted the existence of antimatter in 1928?",
     "answers": ["paul dirac", "dirac"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-138",
     "category": "People",
     "prompt": "Which Italian-American physicist built the world's first nuclear reactor in Chicago in 1942?",
     "answers": ["enrico fermi", "fermi"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-139",
     "category": "People",
     "prompt": "Who directed the Manhattan Project and is known as the \"father of the atomic bomb\"?",
     "answers": ["j robert oppenheimer", "oppenheimer", "julius robert oppenheimer"],
-    "difficulty": "hard"
+    "difficulty": 4
   },
   {
     "id": "people-140",
     "category": "People",
     "prompt": "Who formulated the classical theory of electromagnetism, unifying electricity, magnetism, and light?",
     "answers": ["james clerk maxwell", "maxwell"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-141",
     "category": "People",
     "prompt": "Who discovered X-rays in 1895 and received the first Nobel Prize in Physics?",
     "answers": ["wilhelm rontgen", "rontgen"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-142",
     "category": "People",
     "prompt": "Who is considered the father of modern chemistry and identified oxygen as an element?",
     "answers": ["antoine lavoisier", "lavoisier"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-143",
     "category": "People",
     "prompt": "Which English chemist proposed the atomic theory of matter in the early 19th century?",
     "answers": ["john dalton", "dalton"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-144",
     "category": "People",
     "prompt": "Who created the periodic table of chemical elements?",
     "answers": ["dmitri mendeleev", "mendeleev"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-145",
     "category": "People",
     "prompt": "Who invented dynamite and established the international prize that bears his name?",
     "answers": ["alfred nobel", "nobel"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-146",
     "category": "People",
     "prompt": "Who discovered electromagnetic induction and laid the foundations for electric motors and generators?",
     "answers": ["michael faraday", "faraday"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-147",
     "category": "People",
     "prompt": "Who invented the electric battery, known as the voltaic pile?",
     "answers": ["alessandro volta", "volta"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-148",
     "category": "People",
     "prompt": "Which German physicist formulated the law relating voltage, current, and resistance?",
     "answers": ["georg simon ohm", "ohm"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-149",
     "category": "People",
     "prompt": "Which self-taught Indian mathematical genius sent notebooks to the Cambridge mathematician G.H. Hardy?",
     "answers": ["srinivasa ramanujan", "ramanujan"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-150",
     "category": "People",
     "prompt": "Which German mathematician made groundbreaking contributions to abstract algebra and was described by Einstein as the most significant creative mathematical genius produced?",
     "answers": ["emmy noether", "noether", "amalie noether"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-151",
     "category": "People",
     "prompt": "Which German mathematician is called the Prince of Mathematics and made major discoveries in number theory, statistics, and differential geometry?",
     "answers": ["carl friedrich gauss", "gauss"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-152",
     "category": "People",
     "prompt": "Which prolific Swiss mathematician introduced much of modern mathematical notation, including the symbols e, i, and the summation sign?",
     "answers": ["leonhard euler", "euler"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-153",
     "category": "People",
     "prompt": "Which 19th-century German mathematician developed the curved-space geometry later used by Einstein in general relativity?",
     "answers": ["bernhard riemann", "riemann"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-154",
     "category": "People",
     "prompt": "Which German mathematician developed set theory and the concept of different sizes of infinity?",
     "answers": ["georg cantor", "cantor"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-155",
     "category": "People",
     "prompt": "Who invented one of the first mechanical calculators and formulated a famous philosophical wager about belief in God?",
     "answers": ["blaise pascal", "pascal"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-156",
     "category": "People",
     "prompt": "Who independently invented calculus alongside Isaac Newton and also invented the binary number system?",
     "answers": ["gottfried leibniz", "gottfried wilhelm leibniz", "leibniz"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-157",
     "category": "People",
     "prompt": "Which Scottish mathematician invented logarithms?",
     "answers": ["john napier", "napier"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-158",
     "category": "People",
     "prompt": "Which Italian explorer, in whose honor the Americas were named, demonstrated that they were a separate landmass?",
     "answers": ["amerigo vespucci", "vespucci"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-159",
     "category": "People",
     "prompt": "Which English privateer completed the second circumnavigation of the globe in 1580?",
     "answers": ["francis drake", "sir francis drake", "drake"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-160",
     "category": "People",
     "prompt": "Whose 1914-1916 Antarctic expedition survived after their ship was crushed by ice, requiring an open-boat voyage to South Georgia?",
     "answers": ["ernest shackleton", "shackleton"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-161",
     "category": "People",
     "prompt": "Who, alongside Tenzing Norgay, was the first person confirmed to have reached the summit of Mount Everest?",
     "answers": ["edmund hillary", "hillary", "sir edmund hillary"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-162",
     "category": "People",
     "prompt": "Who, alongside Edmund Hillary, was the first person confirmed to have reached the summit of Mount Everest?",
     "answers": ["tenzing norgay", "norgay", "tenzing"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-163",
     "category": "People",
     "prompt": "Which Dutch navigator was the first European to reach Tasmania and New Zealand?",
     "answers": ["abel tasman", "tasman"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-164",
     "category": "People",
     "prompt": "Which Portuguese prince sponsored systematic exploration of the African coast without ever going to sea himself?",
     "answers": ["henry the navigator", "prince henry", "infante henrique"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-165",
     "category": "People",
     "prompt": "Which Scottish missionary explorer was the first European to see Victoria Falls?",
     "answers": ["david livingstone", "livingstone"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-166",
     "category": "People",
     "prompt": "Which philosopher wrote Critique of Pure Reason and proposed the categorical imperative as a moral principle?",
     "answers": ["immanuel kant", "kant"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-167",
     "category": "People",
     "prompt": "Who wrote The World as Will and Representation, a work that heavily influenced Nietzsche and Wagner?",
     "answers": ["arthur schopenhauer", "schopenhauer"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-168",
     "category": "People",
     "prompt": "Which Dutch philosopher was excommunicated for his rationalist views and wrote the Ethics?",
     "answers": ["baruch spinoza", "benedict spinoza", "spinoza"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-169",
     "category": "People",
     "prompt": "Who wrote On Liberty and is a key figure in the development of utilitarian philosophy?",
     "answers": ["john stuart mill", "mill"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-170",
     "category": "People",
     "prompt": "Who wrote A Treatise of Human Nature and argued that causation cannot be directly observed or proven?",
     "answers": ["david hume", "hume"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-171",
     "category": "People",
     "prompt": "Which English philosopher wrote Novum Organum and is credited with formalizing the inductive scientific method?",
     "answers": ["francis bacon", "bacon"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-172",
     "category": "People",
     "prompt": "Who wrote Candide and was a leading champion of rationalism and religious tolerance during the Enlightenment?",
     "answers": ["voltaire", "francois-marie arouet"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-173",
     "category": "People",
     "prompt": "Who wrote The Social Contract, arguing that legitimate political authority derives from a compact among the people?",
     "answers": ["jean-jacques rousseau", "rousseau"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-174",
     "category": "People",
     "prompt": "Which medieval theologian wrote Summa Theologica, synthesizing Christian theology with Aristotelian philosophy?",
     "answers": ["thomas aquinas", "aquinas", "saint thomas aquinas"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-175",
     "category": "People",
     "prompt": "Which Persian polymath of the 11th century wrote The Canon of Medicine, a medical encyclopedia used in universities for centuries?",
     "answers": ["avicenna", "ibn sina"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-176",
     "category": "People",
     "prompt": "Which 9th-century Persian mathematician wrote works whose titles gave us the words algebra and algorithm?",
     "answers": ["al-khwarizmi", "al khwarizmi", "muhammad ibn musa al-khwarizmi"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-177",
     "category": "People",
     "prompt": "Which 5th-century Alexandrian Neoplatonist philosopher and mathematician was murdered by a mob in 415 AD?",
     "answers": ["hypatia"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-178",
     "category": "People",
     "prompt": "Which 12th-century Spanish-Jewish philosopher wrote Guide for the Perplexed, reconciling Aristotelian philosophy with scripture?",
     "answers": ["maimonides", "moses ben maimon", "rambam"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-179",
     "category": "People",
     "prompt": "Who discovered the mechanical equivalent of heat and the law of conservation of energy, with the SI unit of energy named after him?",
     "answers": ["james prescott joule", "joule"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-180",
     "category": "People",
     "prompt": "Who defined the absolute temperature scale starting at absolute zero, with the SI unit of temperature named after him?",
     "answers": ["lord kelvin", "william thomson", "kelvin"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-181",
     "category": "People",
     "prompt": "Which German physicist experimentally demonstrated the existence of electromagnetic waves, confirming Maxwell's theory?",
     "answers": ["heinrich hertz", "hertz"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-182",
     "category": "People",
     "prompt": "Which French mathematician proved that many polynomial equations cannot be solved by radicals and died in a duel at age 20?",
     "answers": ["evariste galois", "galois"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-183",
     "category": "People",
     "prompt": "Who wrote The Second Sex, a foundational text of modern feminism?",
     "answers": ["simone de beauvoir", "beauvoir", "de beauvoir"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-184",
     "category": "People",
     "prompt": "Who wrote The Origins of Totalitarianism and reported on the Eichmann trial, coining the phrase \"banality of evil\"?",
     "answers": ["hannah arendt", "arendt"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-185",
     "category": "People",
     "prompt": "Which English natural philosopher discovered the law of elasticity stating that the extension of a spring is proportional to the force applied?",
     "answers": ["robert hooke", "hooke"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-186",
     "category": "People",
     "prompt": "Which English astronomer predicted the return of the comet that now bears his name?",
     "answers": ["edmond halley", "halley", "edmund halley"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-187",
     "category": "People",
     "prompt": "Which Danish astronomer made the precise naked-eye observations of planetary positions that Kepler used to derive his laws?",
     "answers": ["tycho brahe", "brahe"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-188",
     "category": "People",
     "prompt": "Which English chemist isolated chlorine and sodium, and invented the miner's safety lamp?",
     "answers": ["humphry davy", "davy"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-189",
     "category": "People",
     "prompt": "Which French physicist founded the science of electrodynamics, with the SI unit of electric current named after him?",
     "answers": ["andre-marie ampere", "ampere"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-190",
     "category": "People",
     "prompt": "Which 19th-century English mathematician wrote the first algorithm intended for a mechanical computer and is considered the first computer programmer?",
     "answers": ["ada lovelace", "ada byron", "lovelace"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-191",
     "category": "People",
     "prompt": "Who designed the Difference Engine and Analytical Engine, early mechanical precursors to the modern computer?",
     "answers": ["charles babbage", "babbage"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-192",
     "category": "People",
     "prompt": "Which 14th-century Mali emperor made a pilgrimage to Mecca so lavish that his distribution of gold caused inflation across Egypt and the Mediterranean?",
     "answers": ["mansa musa", "musa keita"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-193",
     "category": "People",
     "prompt": "Which Prussian military theorist wrote On War, a work still studied in military academies worldwide?",
     "answers": ["carl von clausewitz", "clausewitz"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-194",
     "category": "People",
     "prompt": "Which medieval Persian poet wrote the Rubaiyat, later made famous in the West by Edward FitzGerald's translation?",
     "answers": ["omar khayyam", "khayyam"],
-    "difficulty": "hard"
+    "difficulty": 7
   },
   {
     "id": "people-195",
     "category": "People",
     "prompt": "Which Italian physicist invented the mercury barometer and was the first to sustain a vacuum in a laboratory?",
     "answers": ["evangelista torricelli", "torricelli"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-196",
     "category": "People",
     "prompt": "Which 12th-century German abbess composed a large body of sacred music and wrote influential works on theology and natural history?",
     "answers": ["hildegard of bingen", "hildegard", "saint hildegard"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-197",
     "category": "People",
     "prompt": "Which ancient Greek historian is known as the Father of History?",
     "answers": ["herodotus"],
-    "difficulty": "hard"
+    "difficulty": 6
   },
   {
     "id": "people-198",
     "category": "People",
     "prompt": "Which ancient Greek physician is known as the Father of Medicine?",
     "answers": ["hippocrates"],
-    "difficulty": "hard"
+    "difficulty": 5
   },
   {
     "id": "people-199",
     "category": "People",
     "prompt": "Which medieval North African historian wrote the Muqaddimah, an early work of social science and the philosophy of history?",
     "answers": ["ibn khaldun", "khaldun"],
-    "difficulty": "hard"
+    "difficulty": 8
   },
   {
     "id": "people-200",
     "category": "People",
     "prompt": "Which English biophysicist's X-ray crystallography photographs were crucial evidence for the double-helix structure of DNA?",
     "answers": ["rosalind franklin", "franklin"],
-    "difficulty": "hard"
+    "difficulty": 5
   }
 ]

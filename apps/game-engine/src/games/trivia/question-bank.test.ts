@@ -13,7 +13,8 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Build a minimal valid bank of `n` questions for a single category. */
+/** Build a minimal valid bank of `n` questions for a single category. Ratings cycle 1-10 so every
+ *  category spans the full scale (satisfies the spread rule). */
 function makeQuestions(category: string, n: number): TriviaQuestion[] {
   const prefix = category.toLowerCase();
   return Array.from({ length: n }, (_, i) => ({
@@ -21,11 +22,7 @@ function makeQuestions(category: string, n: number): TriviaQuestion[] {
     category,
     prompt: `Question ${i + 1} for ${category}?`,
     answers: ['answer'],
-    difficulty: (i % 3 === 0
-      ? 'easy'
-      : i % 3 === 1
-        ? 'medium'
-        : 'hard') as TriviaQuestion['difficulty'],
+    difficulty: (i % 10) + 1,
   }));
 }
 
@@ -47,7 +44,9 @@ describe('question-bank - real data', () => {
     expect(typeof sample.id).toBe('string');
     expect(typeof sample.prompt).toBe('string');
     expect(Array.isArray(sample.answers)).toBe(true);
-    expect(['easy', 'medium', 'hard']).toContain(sample.difficulty);
+    expect(Number.isInteger(sample.difficulty)).toBe(true);
+    expect(sample.difficulty).toBeGreaterThanOrEqual(1);
+    expect(sample.difficulty).toBeLessThanOrEqual(10);
 
     const byCategory = new Map<string, number>();
     for (const q of questions) {
@@ -84,7 +83,7 @@ describe('validateQuestionBank - rule violations', () => {
       category: 'History',
       prompt: 'Extra?',
       answers: ['x'],
-      difficulty: 'easy',
+      difficulty: 5,
     });
     expect(() => validateQuestionBank(without)).toThrow('Nature');
   });
@@ -101,19 +100,23 @@ describe('validateQuestionBank - rule violations', () => {
     expect(() => validateQuestionBank(bank)).toThrow('lowercase');
   });
 
-  it('throws on invalid difficulty value', () => {
+  it('throws on an out-of-range difficulty value', () => {
     const bank = makeValidBank();
-    bank[0] = { ...bank[0]!, difficulty: 'extreme' as TriviaQuestion['difficulty'] };
+    bank[0] = { ...bank[0]!, difficulty: 11 };
     expect(() => validateQuestionBank(bank)).toThrow('difficulty');
   });
 
-  it('throws when a category has too few questions in a difficulty tier', () => {
+  it('throws on a non-integer difficulty value', () => {
     const bank = makeValidBank();
-    // Replace all Nature hard questions with easy, leaving 0 hard in Nature
+    bank[0] = { ...bank[0]!, difficulty: 4.5 };
+    expect(() => validateQuestionBank(bank)).toThrow('difficulty');
+  });
+
+  it('throws when a category clumps its difficulty (too little spread)', () => {
+    const bank = makeValidBank();
+    // Flatten every Nature question to a single rating: 1 distinct value, span 0.
     for (const q of bank) {
-      if (q.category === 'Nature' && q.difficulty === 'hard') {
-        (q as { difficulty: string }).difficulty = 'easy';
-      }
+      if (q.category === 'Nature') (q as { difficulty: number }).difficulty = 5;
     }
     expect(() => validateQuestionBank(bank)).toThrow('Nature');
   });

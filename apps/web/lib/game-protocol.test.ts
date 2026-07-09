@@ -2,19 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { asTriviaPrompt, asTriviaRoundReveal } from './game-protocol';
 
 describe('asTriviaPrompt', () => {
-  it('accepts a prompt whose difficulty is the tier string the engine actually sends', () => {
-    // The engine puts question.difficulty (a tier: 'easy'|'medium'|'hard') on the prompt. Requiring
-    // a number here silently rejected every real prompt and left the viewer stuck on "Get ready".
+  it('accepts a prompt whose difficulty is the numeric rating the engine sends (spec 0016)', () => {
+    // The engine puts question.difficulty (an integer 1-10) on the prompt after the tier -> rating
+    // migration. The decoder accepts a number here.
     const prompt = asTriviaPrompt({
       round: 1,
       category: 'Things',
-      difficulty: 'easy',
+      difficulty: 7,
       question: 'What tool applies paint?',
     });
     expect(prompt).toEqual({
       round: 1,
       category: 'Things',
-      difficulty: 'easy',
+      difficulty: 7,
       question: 'What tool applies paint?',
     });
   });
@@ -23,15 +23,14 @@ describe('asTriviaPrompt', () => {
     expect(asTriviaPrompt(null)).toBeNull();
     expect(asTriviaPrompt({ round: 1, category: 'Things', question: 'x' })).toBeNull();
     expect(
-      asTriviaPrompt({ round: '1', category: 'Things', difficulty: 'easy', question: 'x' }),
+      asTriviaPrompt({ round: '1', category: 'Things', difficulty: 7, question: 'x' }),
     ).toBeNull();
   });
 
-  it('rejects a numeric difficulty (guards against re-tightening to the old wrong type)', () => {
-    // The original bug: the decoder demanded a number, so every real (tier-string) prompt was
-    // dropped. Pin the boundary so a future change back to `number` fails here.
+  it('rejects a tier-string difficulty (the pre-0016 shape is no longer sent)', () => {
+    // Guards the wire against a peer that still emits the old easy/medium/hard tier string.
     expect(
-      asTriviaPrompt({ round: 1, category: 'Things', difficulty: 5, question: 'x' }),
+      asTriviaPrompt({ round: 1, category: 'Things', difficulty: 'easy', question: 'x' }),
     ).toBeNull();
   });
 });

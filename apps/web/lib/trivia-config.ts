@@ -27,18 +27,37 @@ export const DEFAULT_ROUNDS = 10;
 
 export const MIN_DIFFICULTY = 1;
 export const MAX_DIFFICULTY = 10;
-export const DEFAULT_DIFFICULTY = 5;
+export const DEFAULT_DIFFICULTY_MIN = 4;
+export const DEFAULT_DIFFICULTY_MAX = 6;
+
+/**
+ * A human word for a 1-10 rating, so a non-technical host and player can picture what a number means
+ * (the default 4-6 reads as "Medium"). Display only; the engine works in numbers.
+ */
+export function difficultyBand(rating: number): 'Easy' | 'Medium' | 'Hard' {
+  if (rating <= 3) return 'Easy';
+  if (rating <= 7) return 'Medium';
+  return 'Hard';
+}
 
 /** A host's Trivia choices, before validation. */
 export interface TriviaHostConfig {
   category: string;
   rounds: number;
-  difficulty: number;
+  /** Difficulty range floor, 1-10. Questions rated in [difficultyMin, difficultyMax] are drawn. */
+  difficultyMin: number;
+  /** Difficulty range ceiling, 1-10. Must be >= difficultyMin. */
+  difficultyMax: number;
 }
 
 /** The defaulted config a fresh lobby starts from. */
 export function defaultTriviaConfig(): TriviaHostConfig {
-  return { category: RANDOM_CATEGORY, rounds: DEFAULT_ROUNDS, difficulty: DEFAULT_DIFFICULTY };
+  return {
+    category: RANDOM_CATEGORY,
+    rounds: DEFAULT_ROUNDS,
+    difficultyMin: DEFAULT_DIFFICULTY_MIN,
+    difficultyMax: DEFAULT_DIFFICULTY_MAX,
+  };
 }
 
 /** One validation failure, keyed by the field so the form can anchor the message. */
@@ -70,14 +89,19 @@ export function validateTriviaConfig(config: TriviaHostConfig): ConfigError[] {
     });
   }
 
-  if (
-    !Number.isInteger(config.difficulty) ||
-    config.difficulty < MIN_DIFFICULTY ||
-    config.difficulty > MAX_DIFFICULTY
-  ) {
+  // Mirror the engine authority exactly: both bounds must sit fully inside [MIN, MAX]. Checking only
+  // min-from-below and max-from-above would let the mirror accept a payload the engine rejects.
+  const inRange = (v: number) => Number.isInteger(v) && v >= MIN_DIFFICULTY && v <= MAX_DIFFICULTY;
+  const boundsOk = inRange(config.difficultyMin) && inRange(config.difficultyMax);
+  if (!boundsOk) {
     errors.push({
       field: 'difficulty',
-      message: `Difficulty must be a whole number from ${MIN_DIFFICULTY} to ${MAX_DIFFICULTY}.`,
+      message: `Difficulty must be whole numbers from ${MIN_DIFFICULTY} to ${MAX_DIFFICULTY}.`,
+    });
+  } else if (config.difficultyMin > config.difficultyMax) {
+    errors.push({
+      field: 'difficulty',
+      message: 'Difficulty minimum cannot be above the maximum.',
     });
   }
 

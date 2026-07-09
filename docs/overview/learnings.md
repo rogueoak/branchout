@@ -212,6 +212,13 @@ Capture durable lessons as they emerge.
   that can flip it (answer *and* disconnect), and make the fire-time guard include `runId` so a
   restart's reused round number cannot let a stale timer fire on the fresh run. (Engineer review of
   PR #25, feedback `0015`.)
+- **When a control needs to express a *range*, model the data for a range - don't overload one
+  scalar over a coarse enum.** Trivia difficulty was one 1-10 knob mapped to a blend of three tiers,
+  so it could never say "consistent middle": the fix was to re-rate the questions on a real 1-10
+  scale and let the host pick a min-max range, not to add more blend rows. Re-rating 1600 rows was a
+  merge-by-id textual swap so only the `difficulty` field changed (the diff stayed reviewable), and
+  the wire/UI followed the data (numeric prompt rating, dual-thumb slider). The knob's expressiveness
+  is bounded by the granularity of the data underneath it - grow the data first. (Spec `0016`.)
 - **Store the canonical form; compute the display form at the view - never make storage carry
   presentation.** Trivia answers are stored lowercase because matching is case-insensitive; the
   fix for shouty display was a title-case transform in the viewer, not a data change or a second

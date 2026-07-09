@@ -5,7 +5,7 @@
 // state is the pre-indexed question bank and an rng, both fixed when the module is built.
 
 import { rankStandings, type ScoreEvent, type Standing } from '@branchout/protocol';
-import { CATEGORIES, type Difficulty, type TriviaQuestion } from './question-bank';
+import { CATEGORIES, type TriviaQuestion } from './question-bank';
 import type {
   AdvanceResult,
   ConfigureResult,
@@ -19,11 +19,11 @@ import type {
   VoteInput,
 } from '../../lifecycle';
 import {
-  DEFAULT_DIFFICULTY,
+  DEFAULT_DIFFICULTY_MAX,
+  DEFAULT_DIFFICULTY_MIN,
   MAX_DIFFICULTY,
   MIN_DIFFICULTY,
-  isValidDifficulty,
-  sampleTier,
+  isValidDifficultyRange,
 } from './difficulty';
 import { isCorrectAnswer } from './matching';
 import { RANDOM_CATEGORY, indexQuestions, pickQuestion, type QuestionIndex } from './selection';
@@ -49,15 +49,18 @@ export interface TriviaConfig {
   category: string;
   /** 1-100, default 10. */
   rounds?: number;
-  /** 1-10, default 5. */
-  difficulty?: number;
+  /** Difficulty range floor, integer 1-10, default 4. Must be <= `difficultyMax`. */
+  difficultyMin?: number;
+  /** Difficulty range ceiling, integer 1-10, default 6. Must be >= `difficultyMin`. */
+  difficultyMax?: number;
 }
 
 /** A validated, defaulted configuration. */
 export interface ResolvedTriviaConfig {
   category: string;
   rounds: number;
-  difficulty: number;
+  difficultyMin: number;
+  difficultyMax: number;
 }
 
 /** A question snapshot persisted per round so reveal can score without re-drawing. */
@@ -66,12 +69,13 @@ interface StoredQuestion {
   category: string;
   prompt: string;
   answers: string[];
-  difficulty: Difficulty;
+  difficulty: number;
 }
 
 interface TriviaScratch {
   category: string;
-  difficulty: number;
+  difficultyMin: number;
+  difficultyMax: number;
   rounds: number;
   /** Ids drawn so far this game - the no-repeat guarantee. */
   usedIds: string[];
@@ -88,7 +92,8 @@ interface TriviaScratch {
 function emptyScratch(cfg: ResolvedTriviaConfig): TriviaScratch {
   return {
     category: cfg.category,
-    difficulty: cfg.difficulty,
+    difficultyMin: cfg.difficultyMin,
+    difficultyMax: cfg.difficultyMax,
     rounds: cfg.rounds,
     usedIds: [],
     questions: {},
@@ -101,9 +106,14 @@ function emptyScratch(cfg: ResolvedTriviaConfig): TriviaScratch {
 
 function asScratch(scratch: Readonly<Record<string, unknown>>): TriviaScratch {
   const s = scratch as Partial<TriviaScratch>;
+  // Degrade a pre-0016 scratch (a single numeric `difficulty`) to a single-rating band rather than
+  // silently resetting a game-in-progress to the default range across an engine deploy (spec 0016).
+  const legacy = (scratch as { difficulty?: unknown }).difficulty;
+  const legacyBand = typeof legacy === 'number' ? legacy : undefined;
   return {
     category: s.category ?? RANDOM_CATEGORY,
-    difficulty: s.difficulty ?? DEFAULT_DIFFICULTY,
+    difficultyMin: s.difficultyMin ?? legacyBand ?? DEFAULT_DIFFICULTY_MIN,
+    difficultyMax: s.difficultyMax ?? legacyBand ?? DEFAULT_DIFFICULTY_MAX,
     rounds: s.rounds ?? DEFAULT_ROUNDS,
     usedIds: s.usedIds ?? [],
     questions: s.questions ?? {},
@@ -123,13 +133,9 @@ function toRecord(scratch: TriviaScratch): Record<string, unknown> {
   return scratch as unknown as Record<string, unknown>;
 }
 
-/** Total questions available for a category across all tiers (the `Random` pool spans them all). */
+/** Total questions available for a category (the `Random` pool spans all categories). */
 function poolSize(index: QuestionIndex, category: string): number {
-  const tiers = index.byCategoryTier.get(category);
-  if (!tiers) return 0;
-  let total = 0;
-  for (const pool of tiers.values()) total += pool.length;
-  return total;
+  return index.byCategory.get(category)?.length ?? 0;
 }
 
 /**
@@ -151,20 +157,22 @@ export function validateConfig(config: unknown): ResolvedTriviaConfig {
     throw new Error(`trivia rounds must be an integer ${MIN_ROUNDS}-${MAX_ROUNDS}, got ${rounds}`);
   }
 
-  const difficulty = cfg.difficulty ?? DEFAULT_DIFFICULTY;
-  if (!isValidDifficulty(difficulty)) {
+  const difficultyMin = cfg.difficultyMin ?? DEFAULT_DIFFICULTY_MIN;
+  const difficultyMax = cfg.difficultyMax ?? DEFAULT_DIFFICULTY_MAX;
+  if (!isValidDifficultyRange(difficultyMin, difficultyMax)) {
     throw new Error(
-      `trivia difficulty must be an integer ${MIN_DIFFICULTY}-${MAX_DIFFICULTY}, got ${difficulty}`,
+      `trivia difficulty range must be integers ${MIN_DIFFICULTY}-${MAX_DIFFICULTY} with min <= max, ` +
+        `got ${JSON.stringify(difficultyMin)}-${JSON.stringify(difficultyMax)}`,
     );
   }
 
-  return { category: cfg.category, rounds, difficulty };
+  return { category: cfg.category, rounds, difficultyMin, difficultyMax };
 }
 
 /**
  * Build a Trivia module bound to a question bank. `rng` (defaulting to `Math.random`) drives the
- * difficulty draw and in-tier pick; inject a seeded rng to make a whole game deterministic in
- * tests. The bank is indexed once here, not per round.
+ * in-range question pick; inject a seeded rng to make a whole game deterministic in tests. The bank
+ * is indexed once here, not per round.
  */
 export function createTriviaGame(
   bank: readonly TriviaQuestion[],
@@ -198,9 +206,15 @@ export function createTriviaGame(
     startRound(ctx: RoundContext): StartRoundResult {
       const scratch = clone(asScratch(ctx.scratch));
       const key = String(ctx.round);
-      const tier = sampleTier(scratch.difficulty, rng);
       const used = new Set(scratch.usedIds);
-      const question = pickQuestion(index, scratch.category, tier, used, rng);
+      const question = pickQuestion(
+        index,
+        scratch.category,
+        scratch.difficultyMin,
+        scratch.difficultyMax,
+        used,
+        rng,
+      );
       if (!question) {
         throw new Error(`trivia ran out of questions for category "${scratch.category}"`);
       }

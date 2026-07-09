@@ -23,8 +23,8 @@ function build(overrides: Partial<GameState>): GameState {
 
 const collecting = build({
   phase: 'collecting',
-  // difficulty is the question's tier string ('easy'|'medium'|'hard'), not the numeric 1-10 setting.
-  prompt: { round: 1, category: 'Science', difficulty: 'easy', question: 'What is H2O?' },
+  // difficulty is the question's numeric 1-10 rating (spec 0016).
+  prompt: { round: 1, category: 'Science', difficulty: 3, question: 'What is H2O?' },
 });
 
 function noop() {}

@@ -12,8 +12,6 @@ import path from 'node:path';
 // Types
 // ---------------------------------------------------------------------------
 
-export type Difficulty = 'easy' | 'medium' | 'hard';
-
 export interface TriviaQuestion {
   /** Unique identifier, format `<category>-NNN` (zero-padded 3 digits). */
   id: string;
@@ -23,8 +21,11 @@ export interface TriviaQuestion {
   prompt: string;
   /** One or more accepted answers (all lowercase). */
   answers: string[];
-  /** Difficulty tier. */
-  difficulty: Difficulty;
+  /**
+   * Difficulty rating: an integer 1 (near-universal knowledge) to 10 (obscure/expert). The host
+   * picks a min-max range (spec 0016) and the draw selects questions whose rating falls in it.
+   */
+  difficulty: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,13 +50,17 @@ const TOTAL_EXPECTED = 1600;
 /** Expected questions per category. */
 const PER_CATEGORY = 200;
 
-/** Minimum questions per difficulty tier per category. */
-const TIER_MIN = 60;
+/** Difficulty rating bounds - every question rates an integer in this inclusive range. */
+export const DIFFICULTY_MIN = 1;
+export const DIFFICULTY_MAX = 10;
 
-/** Maximum questions per difficulty tier per category. */
-const TIER_MAX = 74;
-
-const VALID_DIFFICULTIES: ReadonlySet<string> = new Set(['easy', 'medium', 'hard']);
+/**
+ * A category must spread across the scale, not clump at one rating: at least this many distinct
+ * ratings and at least this wide a span. This guards a degenerate re-rate (e.g. everything a 5)
+ * that would make the host's min-max range meaningless, without demanding a precise distribution.
+ */
+const MIN_DISTINCT_RATINGS = 6;
+const MIN_RATING_SPAN = 6;
 
 // ---------------------------------------------------------------------------
 // Loader
@@ -120,8 +125,8 @@ export async function loadQuestionBank(): Promise<TriviaQuestion[]> {
  * 3. Each `id` is unique across the entire bank.
  * 4. Each `id` matches the pattern `<lowercase-category>-NNN` (3-digit zero-padded suffix).
  * 5. `answers` is non-empty and every answer is a non-empty all-lowercase string.
- * 6. `difficulty` is one of `easy | medium | hard`.
- * 7. Each difficulty tier contains 60–74 questions per category.
+ * 6. `difficulty` is an integer 1-10.
+ * 7. Each category spreads across the scale (>= 6 distinct ratings, span >= 6).
  * 8. No duplicate `prompt` values within a single category.
  */
 export function validateQuestionBank(questions: TriviaQuestion[]): void {
@@ -169,10 +174,15 @@ export function validateQuestionBank(questions: TriviaQuestion[]): void {
       }
     }
 
-    // 6. Difficulty enum
-    if (!VALID_DIFFICULTIES.has(q.difficulty)) {
+    // 6. Difficulty is an integer 1-10
+    if (
+      !Number.isInteger(q.difficulty) ||
+      q.difficulty < DIFFICULTY_MIN ||
+      q.difficulty > DIFFICULTY_MAX
+    ) {
       throw new Error(
-        `question-bank validation failed: ${pos} has invalid difficulty "${q.difficulty}"`,
+        `question-bank validation failed: ${pos} has invalid difficulty ${JSON.stringify(q.difficulty)}` +
+          ` (expected an integer ${DIFFICULTY_MIN}-${DIFFICULTY_MAX})`,
       );
     }
 
@@ -193,23 +203,16 @@ export function validateQuestionBank(questions: TriviaQuestion[]): void {
       );
     }
 
-    // 7. Difficulty tier counts
-    const tierCounts: Map<string, number> = new Map([
-      ['easy', 0],
-      ['medium', 0],
-      ['hard', 0],
-    ]);
-    for (const q of bucket) {
-      tierCounts.set(q.difficulty, (tierCounts.get(q.difficulty) ?? 0) + 1);
-    }
-    for (const tier of ['easy', 'medium', 'hard'] as const) {
-      const count = tierCounts.get(tier) ?? 0;
-      if (count < TIER_MIN || count > TIER_MAX) {
-        throw new Error(
-          `question-bank validation failed: category "${category}" has ${count} "${tier}" questions` +
-            ` (expected ${TIER_MIN}-${TIER_MAX})`,
-        );
-      }
+    // 7. Difficulty spread: the category must span the scale, not clump at one rating.
+    const ratings = bucket.map((q) => q.difficulty);
+    const distinct = new Set(ratings).size;
+    const span = Math.max(...ratings) - Math.min(...ratings);
+    if (distinct < MIN_DISTINCT_RATINGS || span < MIN_RATING_SPAN) {
+      throw new Error(
+        `question-bank validation failed: category "${category}" difficulty is too clumped` +
+          ` (${distinct} distinct ratings, span ${span}; need >= ${MIN_DISTINCT_RATINGS} distinct` +
+          ` and span >= ${MIN_RATING_SPAN})`,
+      );
     }
 
     // 8. No duplicate prompts within a category

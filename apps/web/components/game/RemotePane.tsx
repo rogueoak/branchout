@@ -12,6 +12,7 @@ import type { PlayerView } from '@branchout/protocol';
 import { Badge, Button, Input } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
 import type { GameState } from '../../lib/game-state';
+import { difficultyBand } from '../../lib/trivia-config';
 import { FinalResults } from './FinalResults';
 import { Leaderboard } from './Leaderboard';
 
@@ -83,7 +84,7 @@ export function RemotePane({
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="info">Round {state.prompt.round}</Badge>
                 <Badge variant="neutral">{state.prompt.category}</Badge>
-                <Badge variant="neutral">Difficulty {state.prompt.difficulty}</Badge>
+                <Badge variant="neutral">{difficultyBand(state.prompt.difficulty)}</Badge>
               </div>
               <h2 className="text-h3 text-text">{state.prompt.question}</h2>
             </div>

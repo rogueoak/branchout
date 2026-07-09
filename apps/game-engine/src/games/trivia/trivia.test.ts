@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundContext, SessionPlayer } from '../../lifecycle';
-import { CATEGORIES, type Difficulty, type TriviaQuestion } from './question-bank';
+import { CATEGORIES, type TriviaQuestion } from './question-bank';
 import { createTriviaGame, DISPUTE_WINDOW_MS, MAX_ROUNDS, validateConfig } from './trivia';
 
 /** Deterministic PRNG so an entire game replays identically. */
@@ -15,16 +15,19 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-const TIERS: Difficulty[] = ['easy', 'medium', 'hard'];
+// Three representative ratings standing in for easy/medium/hard on the 1-10 scale. `5` sits inside
+// the default 4-6 range; `2` and `9` are the nearest widening targets on either side.
+const RATINGS = [2, 5, 9] as const;
 
-/** A synthetic bank: `perTier` questions per tier per category, ids `<cat>-<tier>-<n>`. */
-function makeBank(perTier: number): TriviaQuestion[] {
+/** A synthetic bank: `perRating` questions at each of the 3 ratings per category (so 3*perRating
+ *  per category), ids `<cat>-<rating>-<n>`. */
+function makeBank(perRating: number): TriviaQuestion[] {
   const out: TriviaQuestion[] = [];
   for (const category of CATEGORIES) {
-    for (const tier of TIERS) {
-      for (let n = 0; n < perTier; n += 1) {
-        const id = `${category.toLowerCase()}-${tier}-${n}`;
-        out.push({ id, category, prompt: `${id}?`, answers: [`${id}-answer`], difficulty: tier });
+    for (const rating of RATINGS) {
+      for (let n = 0; n < perRating; n += 1) {
+        const id = `${category.toLowerCase()}-${rating}-${n}`;
+        out.push({ id, category, prompt: `${id}?`, answers: [`${id}-answer`], difficulty: rating });
       }
     }
   }
@@ -57,7 +60,7 @@ function ctx(
 interface StoredQuestionView {
   id: string;
   category: string;
-  difficulty: Difficulty;
+  difficulty: number;
 }
 
 /** Read the question the module drew for a round out of persisted scratch. */
@@ -69,11 +72,12 @@ function questionAt(scratch: Record<string, unknown>, round: number): StoredQues
 }
 
 describe('validateConfig', () => {
-  it('defaults rounds to 10 and difficulty to 5', () => {
+  it('defaults rounds to 10 and the difficulty range to 4-6', () => {
     expect(validateConfig({ category: 'Science' })).toEqual({
       category: 'Science',
       rounds: 10,
-      difficulty: 5,
+      difficultyMin: 4,
+      difficultyMax: 6,
     });
   });
 
@@ -97,9 +101,24 @@ describe('validateConfig', () => {
     expect(validateConfig({ category: 'Food', rounds: MAX_ROUNDS }).rounds).toBe(MAX_ROUNDS);
   });
 
-  it('rejects difficulty outside 1-10', () => {
-    expect(() => validateConfig({ category: 'Food', difficulty: 0 })).toThrow();
-    expect(() => validateConfig({ category: 'Food', difficulty: 11 })).toThrow();
+  it('rejects a difficulty range outside 1-10 or with min > max', () => {
+    expect(() =>
+      validateConfig({ category: 'Food', difficultyMin: 0, difficultyMax: 6 }),
+    ).toThrow();
+    expect(() =>
+      validateConfig({ category: 'Food', difficultyMin: 4, difficultyMax: 11 }),
+    ).toThrow();
+    expect(() =>
+      validateConfig({ category: 'Food', difficultyMin: 7, difficultyMax: 4 }),
+    ).toThrow();
+    expect(() =>
+      validateConfig({ category: 'Food', difficultyMin: 4.5, difficultyMax: 6 }),
+    ).toThrow();
+    // A valid custom range passes through.
+    expect(validateConfig({ category: 'Food', difficultyMin: 3, difficultyMax: 8 })).toMatchObject({
+      difficultyMin: 3,
+      difficultyMax: 8,
+    });
   });
 });
 
@@ -143,7 +162,7 @@ describe('reveal scoring', () => {
   const game = createTriviaGame(makeBank(4), mulberry32(1));
 
   it('awards 100 for a correct (incl. fuzzy) answer and nothing for a wrong one', () => {
-    let scratch = game.configure({ category: 'Nature', difficulty: 5 }, players).scratch;
+    let scratch = game.configure({ category: 'Nature' }, players).scratch;
     const started = game.startRound(ctx(scratch));
     scratch = started.scratch;
     const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
@@ -163,7 +182,7 @@ describe('reveal scoring', () => {
   });
 
   it('marks a blank submission wrong and excludes a non-submitter entirely', () => {
-    let scratch = game.configure({ category: 'Nature', difficulty: 5 }, players).scratch;
+    let scratch = game.configure({ category: 'Nature' }, players).scratch;
     const started = game.startRound(ctx(scratch));
     scratch = started.scratch;
     const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
@@ -434,22 +453,57 @@ describe('no-repeat selection over a full game', () => {
     expect(categories.size).toBeGreaterThan(1); // genuinely spanned categories
   });
 
-  it('threads the configured difficulty into the per-round draw', () => {
-    // The exact weight distribution is proven in difficulty.test.ts (20k draws); here we only
-    // confirm the config setting reaches the draw - at difficulty 8 (15/37/48) the tiers a full
-    // game selects lean hard > medium > easy, which a difficulty-5 game would not.
+  it('draws only questions whose rating falls in the configured range', () => {
+    // makeBank(50) gives 50 questions at each rating {2, 5, 9} per category. With the range set to
+    // 8-10 and 40 rounds (<= the 50 rated 9), every draw stays in range - no widening.
     const game = createTriviaGame(makeBank(50), mulberry32(99));
     let scratch = game.configure(
-      { category: 'People', rounds: MAX_ROUNDS, difficulty: 8 },
+      { category: 'People', rounds: 40, difficultyMin: 8, difficultyMax: 10 },
       players,
     ).scratch;
-    const counts: Record<Difficulty, number> = { easy: 0, medium: 0, hard: 0 };
-    for (let round = 1; round <= MAX_ROUNDS; round += 1) {
+    for (let round = 1; round <= 40; round += 1) {
       scratch = game.startRound(ctx(scratch, { round })).scratch;
-      counts[questionAt(scratch, round).difficulty] += 1;
+      const rating = questionAt(scratch, round).difficulty;
+      expect(rating).toBeGreaterThanOrEqual(8);
+      expect(rating).toBeLessThanOrEqual(10);
     }
-    expect(counts.easy + counts.medium + counts.hard).toBe(MAX_ROUNDS);
-    expect(counts.hard).toBeGreaterThan(counts.medium);
-    expect(counts.medium).toBeGreaterThan(counts.easy);
+  });
+
+  it('widens to the nearest rating when the range is exhausted', () => {
+    // Only 5 questions rate 8-10 (the `9` group) per category, but 8 rounds are requested; once the
+    // in-range five are drawn the rest widen to the nearest rating (5, distance 3), never to the
+    // farther 2, and never repeating.
+    const game = createTriviaGame(makeBank(5), mulberry32(3));
+    let scratch = game.configure(
+      { category: 'People', rounds: 8, difficultyMin: 8, difficultyMax: 10 },
+      players,
+    ).scratch;
+    const ratings: number[] = [];
+    for (let round = 1; round <= 8; round += 1) {
+      scratch = game.startRound(ctx(scratch, { round })).scratch;
+      ratings.push(questionAt(scratch, round).difficulty);
+    }
+    expect(ratings.filter((r) => r === 9)).toHaveLength(5); // all in-range questions used first
+    expect(ratings.filter((r) => r === 5)).toHaveLength(3); // remainder widened to the nearest
+    expect(ratings.every((r) => r !== 2)).toBe(true); // never jumped past the nearer rating
+  });
+
+  it('degrades a pre-0016 scratch (a single numeric difficulty) to that single-rating band', () => {
+    const game = createTriviaGame(makeBank(5), mulberry32(5));
+    // A session persisted by the old engine: one `difficulty` key, no min/max. It must draw at that
+    // rating, not silently reset to the default 4-6 band across the deploy.
+    const legacyScratch = {
+      category: 'People',
+      difficulty: 9,
+      rounds: 3,
+      usedIds: [],
+      questions: {},
+      submitted: {},
+      wrong: {},
+      disputers: {},
+      ballots: {},
+    } as unknown as Record<string, unknown>;
+    const started = game.startRound(ctx(legacyScratch, { round: 1 }));
+    expect((started.prompt as { difficulty: number }).difficulty).toBe(9);
   });
 });
