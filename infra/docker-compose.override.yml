@@ -14,6 +14,10 @@ services:
     environment:
       NEXT_PUBLIC_CONTROL_PLANE_URL: http://localhost:${CONTROL_PLANE_PORT:-4000}
       NEXT_PUBLIC_ENGINE_WS_URL: ws://localhost:${GAME_ENGINE_PORT:-4001}
+      # Server-side (SSR) calls - getSignedIn (lib/session.ts) and the join-page OG preview
+      # (lib/room-preview.ts) - run inside this container, so they reach the control-plane by its
+      # compose service name, not the browser's localhost (which would resolve to web itself).
+      CONTROL_PLANE_URL: http://control-plane:4000
     volumes:
       - ..:/repo
       - /repo/node_modules

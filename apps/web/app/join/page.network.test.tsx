@@ -1,11 +1,12 @@
 import { createServer, type Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-// End-to-end for the web half of the share-card flow: the REAL getRoomPreview fetch + request()
-// error mapping + generateMetadata card selection, run against a real HTTP server that returns the
-// control-plane's exact `/rooms/:code/preview` response shape (nothing mocked). Paired with the
+// Integration for the web half of the share-card flow: the REAL server-side getRoomPreview fetch
+// (lib/room-preview) + generateMetadata card selection, run against a real HTTP server that returns
+// the control-plane's exact `/rooms/:code/preview` response shape (nothing mocked). Paired with the
 // control-plane's own route test - which proves the live endpoint emits this shape - the two cover
-// the full path from a share link to the unfurled OG tags without needing a browser harness.
+// the full path from a share link to the unfurled OG tags. The browser-level check lives in the
+// Playwright suite (spec 0021).
 
 let server: Server;
 let generateMetadata: typeof import('./page').generateMetadata;
@@ -30,8 +31,9 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : 0;
-  // room-api reads CONTROL_PLANE_URL at module load, so set it before importing the page.
-  process.env.NEXT_PUBLIC_CONTROL_PLANE_URL = `http://127.0.0.1:${port}`;
+  // room-preview reads the server-side CONTROL_PLANE_URL at module load (not the browser
+  // NEXT_PUBLIC_ one), so set it before importing the page.
+  process.env.CONTROL_PLANE_URL = `http://127.0.0.1:${port}`;
   ({ generateMetadata } = await import('./page'));
 });
 

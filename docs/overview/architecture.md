@@ -86,7 +86,11 @@ depends on the brand build, so the cards exist before it runs. The only runtime 
 and maps it to a card (`lib/share-card.ts`). Because a link crawler has no session and is not a
 room member, it cannot use the member-gated `getRoom`; instead the control-plane exposes a public
 `GET /rooms/:code/preview` returning only `{ code, status, selectedGame }` (no member/session
-data). Any preview failure falls back to the generic card, so a share link never fails to unfurl.
+data). Because `generateMetadata` runs server-side, it fetches that endpoint through the
+server-only `CONTROL_PLANE_URL` (service name / origin), not the browser's
+`NEXT_PUBLIC_CONTROL_PLANE_URL` (a relative `/api` or a published `localhost` port that would not
+resolve from inside the web container) - the same client/server URL split `lib/session.ts` uses.
+Any preview failure falls back to the generic card, so a share link never fails to unfurl.
 Absolute `og:image` URLs come from `metadataBase` (seeded by `NEXT_PUBLIC_SITE_URL`).
 
 ## Deployment

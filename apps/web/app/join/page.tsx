@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getRoomPreview } from '../../lib/room-api';
+import { getRoomPreview } from '../../lib/room-preview';
 import { shareCardFor } from '../../lib/share-card';
 import { JoinForm } from './JoinForm';
 

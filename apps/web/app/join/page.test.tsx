@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Isolate generateMetadata's game-to-card resolution: mock the public preview fetch.
 const hoisted = vi.hoisted(() => ({ getRoomPreview: vi.fn() }));
 
-vi.mock('../../lib/room-api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../lib/room-api')>();
+vi.mock('../../lib/room-preview', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/room-preview')>();
   return { ...actual, getRoomPreview: (code: string) => hoisted.getRoomPreview(code) };
 });
 

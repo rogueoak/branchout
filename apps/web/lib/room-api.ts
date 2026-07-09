@@ -23,15 +23,6 @@ export interface RoomView {
   hostAccountId: string;
 }
 
-/** The public, unauthenticated preview of a room (control-plane `GET /rooms/:code/preview`).
- * Deliberately minimal - only what a link unfurl needs to pick a share card. No member/session
- * data, so it is safe to fetch server-side for a crawler that is not a room member. */
-export interface RoomPreview {
-  code: string;
-  status: string;
-  selectedGame: string | null;
-}
-
 /** One member of a room. `sessionId` is present only when the caller is the host. */
 export interface RoomMember {
   sessionId?: string;
@@ -208,20 +199,6 @@ export async function getRoom(code: string): Promise<RoomView> {
     method: 'GET',
   });
   return room;
-}
-
-/**
- * Fetch a room's public preview by code (no session needed). Used by the join page's
- * `generateMetadata` to pick the right Open Graph share card - a link crawler is not a member, so
- * it cannot use {@link getRoom}. Callers treat a throw as "no game" and fall back to the generic
- * card, so a bad/expired code still unfurls as a valid invite.
- */
-export async function getRoomPreview(code: string): Promise<RoomPreview> {
-  const { preview } = await request<{ preview: RoomPreview }>(
-    `/rooms/${encodeURIComponent(code)}/preview`,
-    { method: 'GET' },
-  );
-  return preview;
 }
 
 /** List a room's members (caller must be a member; only the host sees session ids). */
