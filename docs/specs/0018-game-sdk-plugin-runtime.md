@@ -1,4 +1,4 @@
-# 0017 - Game SDK and plugin runtime
+# 0018 - Game SDK and plugin runtime
 
 ## Problem
 
@@ -10,7 +10,7 @@ games that plug in," the harness<->game boundary needs to be its own package wit
 dependency-injection contract, so a game is a self-contained plugin the engine instantiates through
 a well-defined interface.
 
-This is the first spec of the pluggable-games group; `0018` (extract Trivia into a package) and
+This is the first spec of the pluggable-games group; `0019` (extract Trivia into a package) and
 later game specs build on it. No player-visible behavior changes.
 
 ## Outcome
@@ -47,7 +47,7 @@ In:
 
 Out:
 - Moving Trivia's source/data into a package and switching it to the injected loader - that is
-  `0018`. Any lifecycle change (timed collecting, submission rejection, the decision loop) - `0019`.
+  `0019`. Any lifecycle change (timed collecting, submission rejection, the decision loop) - `0020`.
   Any new game or content - later specs.
 
 ## Approach

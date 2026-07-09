@@ -143,7 +143,7 @@ the *public* identity a UI needs, never the secret that authenticates the caller
 
 `apps/game-engine` (Fastify + `ws`) owns:
 
-- **A game SDK and plugin runtime** (`@branchout/game-sdk`, spec `0017`) - a game ships as a
+- **A game SDK and plugin runtime** (`@branchout/game-sdk`, spec `0018`) - a game ships as a
   `GamePlugin`: a manifest (id, name, version, a config schema, capabilities) plus a
   `create(services)` factory the harness calls with injected dependencies (an rng, a logger, a
   per-package asset loader), returning the pure `GameModule` that implements the generic round
