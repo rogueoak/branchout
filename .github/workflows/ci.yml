@@ -45,3 +45,40 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  e2e:
+    # Real-browser end-to-end tests against the full docker-compose stack. Its own job (parallel to
+    # `build`) because it boots Docker and takes minutes; the fast unit run stays in `build`.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm --filter @branchout/e2e exec playwright install --with-deps chromium
+
+      - name: Run e2e
+        # `pnpm e2e` builds the workspace, brings the stack up with `docker compose ... --wait`
+        # (Docker is preinstalled on ubuntu-latest), runs the specs, and tears the stack down.
+        run: pnpm e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7

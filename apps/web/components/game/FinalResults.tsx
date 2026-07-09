@@ -42,7 +42,7 @@ function Stars({ count }: { count: number }) {
 export function FinalResults({ standings, me }: FinalResultsProps) {
   const winner = standings.find((standing) => standing.rank === 1);
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5" data-testid="final-results">
       <div className="flex flex-col gap-1">
         <Badge variant="primary" className="w-fit">
           Final results

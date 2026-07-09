@@ -83,6 +83,18 @@ Capture durable lessons as they emerge.
   "ballots cast" vs "all players" when N=2, so a 3-player dispute test proves nothing. Pick a
   size (odd, >= 3 others) where each candidate denominator yields a different verdict - the
   Trivia dispute rule was only honestly pinned once tested on 4-5 players. (Feedback `0004`.)
+- **A real-stack e2e catches wiring bugs no unit or in-memory-integration test can.** Building
+  the Playwright harness surfaced that the join page's OG `generateMetadata` (SSR) fetched the
+  control-plane through the browser's `NEXT_PUBLIC_CONTROL_PLANE_URL` - a relative `/api` in prod
+  and a container-local `localhost` in Docker - so the per-game share card only ever worked in
+  local non-Docker dev and silently fell back everywhere else. Server-side fetches need the
+  server-side URL (`CONTROL_PLANE_URL`), the split `lib/session.ts` already used; the e2e is what
+  proves the tags a crawler actually receives. Drive the real stack for anything whose behavior
+  only emerges when the services are wired together. (Spec `0024`.)
+- **Keep e2e out of the fast test loop.** The Playwright package exposes an `e2e` script, not
+  `test`, so `turbo run test` never needs Docker; e2e runs as its own CI job. A dedicated compose
+  project (`branchout-e2e`) on shifted ports lets a run coexist with a developer's dev stack.
+  (Spec `0024`.)
 
 ## Services and state
 

@@ -5,6 +5,10 @@ dist/
 pnpm-lock.yaml
 *.tsbuildinfo
 
+# Playwright run artifacts (generated)
+e2e/playwright-report/
+e2e/test-results/
+
 # Spectra protocol/specs/plans/feedback/overview - authored deliberately, not
 # subject to Prettier's code formatting.
 docs/
