@@ -17,7 +17,7 @@ import {
   validateTriviaConfig,
   type ConfigError,
   type TriviaHostConfig,
-} from '../../trivia-config';
+} from './config';
 import type { GameConfigPanelProps } from '../registry';
 
 function errorFor(errors: ConfigError[], field: ConfigError['field']): string | null {

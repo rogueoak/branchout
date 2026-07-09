@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { initialGameState, type GameState } from '../../lib/game-state';
-import { ViewerPane } from './ViewerPane';
+import { initialGameState, type GameState } from '../../game-state';
+import { ViewerPane } from './Viewer';
 
 const players = [
   { player: 'p1', nickname: 'Ada', connected: true },

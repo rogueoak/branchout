@@ -10,7 +10,7 @@
 // prefer-native-over-Radix rule. The two thumbs cannot cross: moving one past the other pushes the
 // pair to the same value.
 
-import { difficultyBand } from '../../lib/trivia-config';
+import { difficultyBand } from '../../lib/games/trivia/config';
 
 interface DifficultyRangeProps {
   min: number;

@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { initialGameState, type GameState } from '../../lib/game-state';
-import { RemotePane } from './RemotePane';
+import { initialGameState, type GameState } from '../../game-state';
+import { RemotePane } from './Remote';
 
 function build(overrides: Partial<GameState>): GameState {
   return {

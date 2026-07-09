@@ -2,13 +2,9 @@
 // viewer, and remote into the generic game shell. The behavior is unchanged from the pre-registry
 // client - the viewer/remote are the same components, now resolved by game id instead of hardwired.
 
-import { ViewerPane } from '../../../components/game/ViewerPane';
-import { RemotePane } from '../../../components/game/RemotePane';
-import {
-  defaultTriviaConfig,
-  validateTriviaConfig,
-  type TriviaHostConfig,
-} from '../../trivia-config';
+import { ViewerPane } from './Viewer';
+import { RemotePane } from './Remote';
+import { defaultTriviaConfig, validateTriviaConfig, type TriviaHostConfig } from './config';
 import type { GameUiModule } from '../registry';
 import { TriviaConfigPanel } from './ConfigPanel';
 

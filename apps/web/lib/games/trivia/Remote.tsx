@@ -11,12 +11,12 @@
 import type { PlayerView } from '@branchout/protocol';
 import { Badge, Button, Input } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
-import type { GameState } from '../../lib/game-state';
-import { asTriviaPrompt, pickTriviaRoundReveal } from '../../lib/games/trivia/protocol';
-import { difficultyBand } from '../../lib/trivia-config';
-import { useAnswerCountdown } from '../../lib/use-answer-countdown';
-import { FinalResults } from './FinalResults';
-import { Leaderboard } from './Leaderboard';
+import type { GameState } from '../../game-state';
+import { asTriviaPrompt, pickTriviaRoundReveal } from './protocol';
+import { difficultyBand } from './config';
+import { useAnswerCountdown } from '../../use-answer-countdown';
+import { FinalResults } from '../../../components/game/FinalResults';
+import { Leaderboard } from '../../../components/game/Leaderboard';
 
 interface RemotePaneProps {
   state: GameState;

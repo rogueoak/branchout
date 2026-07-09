@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { defaultTriviaConfig } from '../../lib/trivia-config';
+import { defaultTriviaConfig } from '../../lib/games/trivia/config';
 import { defaultLiarLiarConfig } from '../../lib/games/liar-liar/config';
 import type { RoomMember, RoomView } from '../../lib/room-api';
 import { Lobby } from './Lobby';
