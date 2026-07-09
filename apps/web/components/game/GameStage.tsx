@@ -11,8 +11,7 @@ import { useEffect } from 'react';
 import type { Role, Mode } from '../../lib/room-api';
 import type { ConnectionStatus, GameState } from '../../lib/game-state';
 import { isComplete } from '../../lib/game-state';
-import { RemotePane } from './RemotePane';
-import { ViewerPane } from './ViewerPane';
+import { getGameUi } from '../../lib/games/registry';
 
 /** Every host control the browser can issue, including `advance` (proxied by the control-plane). */
 export type HostControl = 'advance' | 'pause' | 'restart' | 'exit';
@@ -20,13 +19,15 @@ export type HostControl = 'advance' | 'pause' | 'restart' | 'exit';
 interface GameStageProps {
   state: GameState;
   me: string;
+  /** The selected game id (matches the engine plugin id); resolves the UI module to render. */
+  game: string;
   role: Role;
   /** The player's chosen mode (the host is a player, so it has one too); absent for observers. */
   mode?: Mode;
   isHost: boolean;
   onAnswer: (round: number, answer: string) => void;
-  onDispute: (round: number) => void;
-  onBallot: (round: number, target: string, agree: boolean) => void;
+  /** The generic vote action (Trivia dispute/ballot, Liar Liar guess); the game module maps it. */
+  onVote: (round: number, target: string, agree: boolean) => void;
   onControl: (action: HostControl) => void;
 }
 
@@ -85,14 +86,15 @@ function HostControls({
 export function GameStage({
   state,
   me,
+  game,
   role,
   mode,
   isHost,
   onAnswer,
-  onDispute,
-  onBallot,
+  onVote,
   onControl,
 }: GameStageProps) {
+  const ui = getGameUi(game);
   const isInteractivePlayer = role === 'player' && mode === 'interactive';
   const remoteVisible = role === 'player' && (mode === 'remote' || mode === 'interactive');
   const viewerVisible = role !== 'player' || isInteractivePlayer;
@@ -142,14 +144,14 @@ export function GameStage({
             : 'grid grid-cols-1 gap-6'
         }
       >
-        {viewerVisible ? (
+        {viewerVisible && ui ? (
           <div className="order-1">
-            <ViewerPane state={state} me={me} />
+            <ui.Viewer state={state} me={me} />
           </div>
         ) : null}
-        {remoteVisible ? (
+        {remoteVisible && ui ? (
           <div className="order-2">
-            <RemotePane
+            <ui.Remote
               state={state}
               me={me}
               // A remote-only player has no viewer pane, so the controller must also show the
@@ -157,8 +159,7 @@ export function GameStage({
               showResults={!viewerVisible}
               isHost={isHost}
               onAnswer={onAnswer}
-              onDispute={onDispute}
-              onBallot={onBallot}
+              onVote={onVote}
             />
           </div>
         ) : null}

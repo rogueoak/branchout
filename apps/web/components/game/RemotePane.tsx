@@ -12,6 +12,7 @@ import type { PlayerView } from '@branchout/protocol';
 import { Badge, Button, Input } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
 import type { GameState } from '../../lib/game-state';
+import { asTriviaPrompt, pickTriviaRoundReveal } from '../../lib/games/trivia/protocol';
 import { difficultyBand } from '../../lib/trivia-config';
 import { useAnswerCountdown } from '../../lib/use-answer-countdown';
 import { FinalResults } from './FinalResults';
@@ -30,8 +31,8 @@ interface RemotePaneProps {
    * make between-round copy self-aware ("Tap Next when you're ready") instead of "waiting". */
   isHost?: boolean;
   onAnswer: (round: number, answer: string) => void;
-  onDispute: (round: number) => void;
-  onBallot: (round: number, target: string, agree: boolean) => void;
+  /** The generic vote action: a Trivia dispute is a self-target, a ballot targets the disputer. */
+  onVote: (round: number, target: string, agree: boolean) => void;
 }
 
 function nicknameOf(players: PlayerView[], id: string): string {
@@ -44,10 +45,12 @@ export function RemotePane({
   showResults = false,
   isHost = false,
   onAnswer,
-  onDispute,
-  onBallot,
+  onVote,
 }: RemotePaneProps) {
-  const { phase, reveal, round, disputes } = state;
+  const { phase, round, disputes } = state;
+  // Decode the opaque prompt/reveal into Trivia shapes at the render boundary (spec 0023).
+  const prompt = asTriviaPrompt(state.prompt);
+  const reveal = pickTriviaRoundReveal(state.reveals);
   const [answer, setAnswer] = useState('');
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
   const [disputedRound, setDisputedRound] = useState<number | null>(null);
@@ -99,14 +102,14 @@ export function RemotePane({
         <div className="flex flex-col gap-3">
           {/* A remote-only player has no viewer pane beside them, so the question has to live here
               too or they answer blind. An interactive player reads it from the viewer instead. */}
-          {showResults && state.prompt ? (
+          {showResults && prompt ? (
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="info">Round {state.prompt.round}</Badge>
-                <Badge variant="neutral">{state.prompt.category}</Badge>
-                <Badge variant="neutral">{difficultyBand(state.prompt.difficulty)}</Badge>
+                <Badge variant="info">Round {prompt.round}</Badge>
+                <Badge variant="neutral">{prompt.category}</Badge>
+                <Badge variant="neutral">{difficultyBand(prompt.difficulty)}</Badge>
               </div>
-              <h2 className="text-h3 text-text">{state.prompt.question}</h2>
+              <h2 className="text-h3 text-text">{prompt.question}</h2>
             </div>
           ) : null}
           {secondsLeft !== null ? (
@@ -168,7 +171,7 @@ export function RemotePane({
                 type="button"
                 variant="secondary"
                 onClick={() => {
-                  onDispute(round);
+                  onVote(round, me, true);
                   setDisputedRound(round);
                 }}
                 disabled={disputedRound === round}
@@ -205,7 +208,7 @@ export function RemotePane({
                       variant="outline"
                       size="sm"
                       aria-label={`${name}'s answer should count`}
-                      onClick={() => onBallot(round, id, true)}
+                      onClick={() => onVote(round, id, true)}
                     >
                       Should count
                     </Button>
@@ -214,7 +217,7 @@ export function RemotePane({
                       variant="outline"
                       size="sm"
                       aria-label={`${name}'s answer should not count`}
-                      onClick={() => onBallot(round, id, false)}
+                      onClick={() => onVote(round, id, false)}
                     >
                       Should not
                     </Button>

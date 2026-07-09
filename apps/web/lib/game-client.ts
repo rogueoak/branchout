@@ -74,7 +74,13 @@ function nativeSocketFactory(url: string): GameSocket {
 function asServerFrame(value: unknown): ServerMessage | { type: 'error'; message: string } | null {
   if (typeof value !== 'object' || value === null) return null;
   const type = (value as { type?: unknown }).type;
-  if (type === 'prompt' || type === 'reveal' || type === 'leaderboard' || type === 'state') {
+  if (
+    type === 'prompt' ||
+    type === 'reveal' ||
+    type === 'leaderboard' ||
+    type === 'state' ||
+    type === 'answer_rejected'
+  ) {
     return value as ServerMessage;
   }
   if (type === 'error') {
@@ -172,15 +178,11 @@ export class GameClient {
   }
 
   /**
-   * Raise a dispute during the disputing window. A dispute is a vote targeting the player
-   * themselves (spec 0007: the same frame raises and votes; the module reads it by phase).
+   * Cast a generic vote frame (`target`, `agree`) - the game-agnostic action every UI module uses.
+   * The engine reads it by phase: a Trivia dispute (target = self) / ballot (target = disputer), or
+   * a Liar Liar guess (target = chosen option id, agree = true). The game module owns what it means.
    */
-  raiseDispute(round: number): void {
-    this.vote(round, this.options.player, true);
-  }
-
-  /** Cast a ballot on another player's dispute during the voting phase. */
-  castBallot(round: number, target: string, agree: boolean): void {
+  submitVote(round: number, target: string, agree: boolean): void {
     this.vote(round, target, agree);
   }
 

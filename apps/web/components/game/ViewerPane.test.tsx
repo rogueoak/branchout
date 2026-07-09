@@ -29,17 +29,19 @@ describe('ViewerPane answer display', () => {
         difficulty: 5,
         question: 'Who developed relativity?',
       },
-      reveal: {
-        round: 1,
-        question: 'Who developed relativity?',
-        answers: ['albert einstein', 'einstein'],
-        correct: ['p1'],
-        wrong: ['p2'],
-        submissions: [
-          { player: 'p1', answer: 'albert einstein', correct: true },
-          { player: 'p2', answer: 'isaac newton', correct: false },
-        ],
-      },
+      reveals: [
+        {
+          round: 1,
+          question: 'Who developed relativity?',
+          answers: ['albert einstein', 'einstein'],
+          correct: ['p1'],
+          wrong: ['p2'],
+          submissions: [
+            { player: 'p1', answer: 'albert einstein', correct: true },
+            { player: 'p2', answer: 'isaac newton', correct: false },
+          ],
+        },
+      ],
     });
     render(<ViewerPane state={state} me="p1" />);
     // The difficulty badge shows the plain-language band, not a raw number (rating 5 -> Medium).
@@ -60,17 +62,19 @@ describe('ViewerPane answer display', () => {
         difficulty: 5,
         question: 'Who developed relativity?',
       },
-      reveal: {
-        round: 1,
-        question: 'Who developed relativity?',
-        answers: ['albert einstein'],
-        correct: ['p1'],
-        wrong: ['p2'],
-        submissions: [
-          { player: 'p1', answer: 'albert einstein', correct: true },
-          { player: 'p2', answer: 'isaac newton', correct: false },
-        ],
-      },
+      reveals: [
+        {
+          round: 1,
+          question: 'Who developed relativity?',
+          answers: ['albert einstein'],
+          correct: ['p1'],
+          wrong: ['p2'],
+          submissions: [
+            { player: 'p1', answer: 'albert einstein', correct: true },
+            { player: 'p2', answer: 'isaac newton', correct: false },
+          ],
+        },
+      ],
     });
     render(<ViewerPane state={state} me="p1" />);
     const list = screen.getByRole('list', { name: "Everyone's answers" });

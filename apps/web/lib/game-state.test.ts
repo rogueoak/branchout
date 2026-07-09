@@ -6,6 +6,7 @@ import type {
 } from '@branchout/protocol';
 import { describe, expect, it } from 'vitest';
 import {
+  clearRejected,
   initialGameState,
   isComplete,
   reduceGameState,
@@ -43,7 +44,6 @@ function prompt(): PromptMessage {
     game: GAME,
     round: 2,
     phase: 'collecting',
-    // difficulty is the question's numeric 1-10 rating (spec 0016).
     prompt: { round: 2, category: 'Science', difficulty: 5, question: 'What is H2O?' },
   };
 }
@@ -59,39 +59,43 @@ describe('reduceGameState', () => {
     expect(next.round).toBe(3);
     expect(next.players).toHaveLength(2);
     expect(next.scores).toEqual({ p1: 100, p2: 0 });
-    // The disputers ride the state frame so the vote UI can name exactly them (spec 0012).
     expect(next.disputes).toEqual(['p2']);
   });
 
+  it('folds the new guessing phase (spec 0020) like any other phase', () => {
+    const next = reduceGameState(initialGameState(), state({ phase: 'guessing' }));
+    expect(next.phase).toBe('guessing');
+  });
+
   it('defaults disputers to empty when a peer omits the field (backward compatible)', () => {
-    // A `state` frame from an engine predating the additive `disputes` field (same protocol
-    // version) omits it; the reducer must read that as "no disputers", never leave it undefined.
     const legacy = state();
     delete (legacy as { disputes?: string[] }).disputes;
     const next = reduceGameState(initialGameState(), legacy);
     expect(next.disputes).toEqual([]);
   });
 
-  it('decodes a Trivia prompt and clears the prior round results', () => {
-    const withReveal = {
+  it('stores the opaque prompt raw and clears the prior round results and rejection', () => {
+    const withRound = {
       ...initialGameState(),
-      reveal: { round: 1, question: 'a', answers: ['a'], correct: ['p1'], wrong: [] },
+      reveals: [{ round: 1, question: 'a', answers: ['a'], correct: ['p1'], wrong: [] }],
       standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
+      rejected: 'someone already submitted that',
     };
-    const next = reduceGameState(withReveal, prompt());
+    const next = reduceGameState(withRound, prompt());
+    // The reducer stores the payload opaque; the game module decodes it at render time.
     expect(next.prompt).toEqual({
       round: 2,
       category: 'Science',
       difficulty: 5,
       question: 'What is H2O?',
     });
-    expect(next.reveal).toBeNull();
-    expect(next.disputeResult).toBeNull();
+    expect(next.reveals).toEqual([]);
     expect(next.standings).toEqual([]);
+    expect(next.rejected).toBeNull();
   });
 
-  it('routes an answer-round reveal to `reveal`', () => {
-    const reveal: RevealMessage = {
+  it('appends each reveal payload to the reveals list (a round can stream several)', () => {
+    const roundReveal: RevealMessage = {
       v: 1,
       type: 'reveal',
       room: ROOM,
@@ -103,29 +107,9 @@ describe('reduceGameState', () => {
         answers: ['Water', 'H2O'],
         correct: ['p1'],
         wrong: ['p2'],
-        submissions: [
-          { player: 'p1', answer: 'water', correct: true },
-          { player: 'p2', answer: 'juice', correct: false },
-        ],
       },
     };
-    const next = reduceGameState(initialGameState(), reveal);
-    expect(next.reveal).toEqual({
-      round: 1,
-      question: 'Water',
-      answers: ['Water', 'H2O'],
-      correct: ['p1'],
-      wrong: ['p2'],
-      submissions: [
-        { player: 'p1', answer: 'water', correct: true },
-        { player: 'p2', answer: 'juice', correct: false },
-      ],
-    });
-    expect(next.disputeResult).toBeNull();
-  });
-
-  it('routes a post-dispute reveal to `disputeResult`', () => {
-    const reveal: RevealMessage = {
+    const disputeReveal: RevealMessage = {
       v: 1,
       type: 'reveal',
       room: ROOM,
@@ -133,9 +117,29 @@ describe('reduceGameState', () => {
       round: 1,
       reveal: { round: 1, upheld: ['p2'] },
     };
-    const next = reduceGameState(initialGameState(), reveal);
-    expect(next.disputeResult).toEqual({ round: 1, upheld: ['p2'] });
-    expect(next.reveal).toBeNull();
+    let next = reduceGameState(initialGameState(), roundReveal);
+    next = reduceGameState(next, disputeReveal);
+    expect(next.reveals).toEqual([roundReveal.reveal, disputeReveal.reveal]);
+  });
+
+  it('records a targeted answer_rejected reason, and a new prompt clears it', () => {
+    let next = reduceGameState(initialGameState(), {
+      type: 'answer_rejected',
+      round: 1,
+      reason: 'someone already submitted that',
+    });
+    expect(next.rejected).toBe('someone already submitted that');
+    next = reduceGameState(next, prompt());
+    expect(next.rejected).toBeNull();
+  });
+
+  it('clearRejected drops a stale rejection locally', () => {
+    const seeded = reduceGameState(initialGameState(), {
+      type: 'answer_rejected',
+      round: 1,
+      reason: 'nope',
+    });
+    expect(clearRejected(seeded).rejected).toBeNull();
   });
 
   it('folds the leaderboard standings', () => {
@@ -172,7 +176,7 @@ describe('reduceGameState', () => {
     let s = initialGameState();
     s = reduceGameState(s, prompt());
     expect(s.phase).toBe('collecting');
-    expect(s.prompt?.question).toBe('What is H2O?');
+    expect((s.prompt as { question?: string }).question).toBe('What is H2O?');
 
     s = reduceGameState(s, {
       v: 1,
@@ -184,7 +188,7 @@ describe('reduceGameState', () => {
     });
     s = reduceGameState(s, state({ phase: 'disputing', round: 2 }));
     expect(s.phase).toBe('disputing');
-    expect(s.reveal?.wrong).toEqual(['p2']);
+    expect(s.reveals).toHaveLength(1);
 
     s = reduceGameState(s, state({ phase: 'complete', round: 2 }));
     expect(isComplete(s)).toBe(true);

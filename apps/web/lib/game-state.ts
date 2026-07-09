@@ -1,18 +1,15 @@
 // The in-game state machine, as a pure reducer over the server frames (spec 0007's
-// prompt/reveal/leaderboard/state). The client is a view over engine state: it never runs the
-// dispute timer or tallies a vote - it folds each frame the engine reports into one snapshot the
-// UI renders by phase. Keeping this pure (no sockets, no React) makes the whole phase machine
-// unit-testable against a list of frames.
+// prompt/reveal/leaderboard/state, plus 0020's answer_rejected). The client is a view over engine
+// state: it never runs a timer or tallies a vote - it folds each frame the engine reports into one
+// snapshot the UI renders by phase. Keeping this pure (no sockets, no React) makes the whole phase
+// machine unit-testable against a list of frames.
+//
+// The reducer is game-AGNOSTIC (spec 0023): `prompt` and the per-round `reveals` are stored as the
+// opaque payloads the engine sends; each game's UI module decodes them at render time (a shape the
+// module does not understand is a null, a skipped render, never a thrown one). This is the same
+// "opaque payload, the game owns the shape" contract the engine already uses.
 
 import type { Phase, PlayerView, ServerMessage, Standing } from '@branchout/protocol';
-import {
-  asTriviaDisputeReveal,
-  asTriviaPrompt,
-  asTriviaRoundReveal,
-  type TriviaDisputeReveal,
-  type TriviaPrompt,
-  type TriviaRoundReveal,
-} from './game-protocol';
 
 /** How the socket layer is doing, surfaced so the UI can show a reconnect banner. */
 export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting' | 'closed';
@@ -35,14 +32,23 @@ export interface GameState {
    * frozen remaining.
    */
   answerMsRemaining: number | null;
-  /** The current round's prompt, or null before the first prompt / between rounds. */
-  prompt: TriviaPrompt | null;
-  /** The answer-round reveal, set on reveal and cleared when the next prompt lands. */
-  reveal: TriviaRoundReveal | null;
-  /** The post-dispute outcome, set after voting resolves. */
-  disputeResult: TriviaDisputeReveal | null;
+  /** The current round's opaque prompt payload, or null before the first prompt / between rounds. */
+  prompt: unknown;
+  /**
+   * Every opaque reveal payload the engine streamed for the CURRENT round, in arrival order, cleared
+   * when the next prompt lands. A round can stream more than one reveal (Trivia's answer reveal then
+   * its dispute outcome; Liar Liar's options then its final result), so the module decodes the list
+   * and picks the shapes it needs rather than reading a single last-write-wins slot.
+   */
+  reveals: unknown[];
   /** The latest standings - the between-round leaderboard and the final results. */
   standings: Standing[];
+  /**
+   * The reason the engine rejected this device's last submission (spec 0020's `answer_rejected`), or
+   * null. Set on the targeted reject frame, cleared on the next prompt. The remote clears it too on a
+   * fresh submit; a game that never rejects leaves it null.
+   */
+  rejected: string | null;
   /** The last protocol error frame, if any. */
   error: string | null;
 }
@@ -59,21 +65,29 @@ export function initialGameState(): GameState {
     disputes: [],
     answerMsRemaining: null,
     prompt: null,
-    reveal: null,
-    disputeResult: null,
+    reveals: [],
     standings: [],
+    rejected: null,
     error: null,
   };
 }
 
-/** An error frame is the one server frame the reducer folds outside the game lifecycle. */
+/** The frames the reducer folds outside the game lifecycle: an error, and a targeted reject. */
 interface ErrorFrame {
   type: 'error';
   message: string;
 }
+interface AnswerRejectedFrame {
+  type: 'answer_rejected';
+  round: number;
+  reason: string;
+}
 
 /** Fold one server frame into the state. Returns a new object; never mutates the input. */
-export function reduceGameState(state: GameState, frame: ServerMessage | ErrorFrame): GameState {
+export function reduceGameState(
+  state: GameState,
+  frame: ServerMessage | ErrorFrame | AnswerRejectedFrame,
+): GameState {
   switch (frame.type) {
     case 'state':
       return {
@@ -92,37 +106,29 @@ export function reduceGameState(state: GameState, frame: ServerMessage | ErrorFr
         error: null,
       };
 
-    case 'prompt': {
-      const prompt = asTriviaPrompt(frame.prompt);
-      // A new prompt opens a fresh round: clear the prior reveal, dispute outcome, and standings so
-      // stale results never bleed into the new question.
+    case 'prompt':
+      // A new prompt opens a fresh round: store the opaque prompt and clear the prior round's
+      // reveals, standings, and any stale rejection so nothing bleeds into the new question.
       return {
         ...state,
         round: frame.round,
         phase: frame.phase,
-        prompt: prompt ?? state.prompt,
-        reveal: null,
-        disputeResult: null,
+        prompt: frame.prompt,
+        reveals: [],
         standings: [],
+        rejected: null,
       };
-    }
 
-    case 'reveal': {
-      // Trivia sends two reveal shapes on the same frame: the answer-round reveal (correct/wrong)
-      // and the post-dispute reveal (upheld). Decode which one this is.
-      const round = asTriviaRoundReveal(frame.reveal);
-      if (round) {
-        return { ...state, reveal: round };
-      }
-      const dispute = asTriviaDisputeReveal(frame.reveal);
-      if (dispute) {
-        return { ...state, disputeResult: dispute };
-      }
-      return state;
-    }
+    case 'reveal':
+      // Accumulate the opaque reveal payload; the module decodes the list. (One round can stream
+      // several reveals - the module reads whichever shapes it recognizes.)
+      return { ...state, reveals: [...state.reveals, frame.reveal] };
 
     case 'leaderboard':
       return { ...state, standings: frame.standings };
+
+    case 'answer_rejected':
+      return { ...state, rejected: frame.reason };
 
     case 'error':
       return { ...state, error: frame.message };
@@ -135,6 +141,11 @@ export function reduceGameState(state: GameState, frame: ServerMessage | ErrorFr
 /** Set just the connection status (the socket layer drives this, not a server frame). */
 export function withConnection(state: GameState, connection: ConnectionStatus): GameState {
   return { ...state, connection };
+}
+
+/** Clear a stale rejection locally (the remote calls this when the player submits again). */
+export function clearRejected(state: GameState): GameState {
+  return state.rejected === null ? state : { ...state, rejected: null };
 }
 
 /** True when the game has finished and the final standings are ready to show. */

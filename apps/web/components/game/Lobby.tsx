@@ -1,13 +1,14 @@
 'use client';
 
 // The pre-game lobby: the room code and share link, who is here, each player's mode toggle, and -
-// for the host - the Trivia config panel and Start. An observer sees the roster and their watching
-// state only. Presentational and controlled; the parent owns the data and the actions.
+// for the host - the game picker, the selected game's config panel, and Start. An observer sees the
+// roster and their watching state only. Presentational and controlled; the parent owns the data and
+// the actions. The config is opaque (the chosen game's blob), so the lobby is game-agnostic: it
+// resolves the game's UI module by id (spec 0023) and renders that module's config panel.
 
 import { Badge, Button } from '@rogueoak/canopy';
+import { DEFAULT_GAME_UI, GAME_UI_LIST, getGameUi } from '../../lib/games/registry';
 import type { RoomMember, RoomView, Mode, Role } from '../../lib/room-api';
-import type { TriviaHostConfig } from '../../lib/trivia-config';
-import { HostConfigPanel } from './HostConfigPanel';
 import { ShareLink } from './ShareLink';
 
 interface LobbyProps {
@@ -17,8 +18,12 @@ interface LobbyProps {
   mode?: Mode;
   isHost: boolean;
   me?: string;
-  config: TriviaHostConfig;
-  onConfigChange: (next: TriviaHostConfig) => void;
+  /** The game id the host has selected (drives the config panel). */
+  game: string;
+  onGameChange: (game: string) => void;
+  /** The opaque config for the selected game. */
+  config: unknown;
+  onConfigChange: (next: unknown) => void;
   onStart: () => void;
   starting: boolean;
   startError: string | null;
@@ -35,8 +40,6 @@ function hasViewer(members: RoomMember[]): boolean {
 }
 
 function memberLabel(member: RoomMember): string {
-  // The host is always a player with a mode; surface it beside the Host badge so the roster shows
-  // whether the host is holding the shared viewer (interactive) or is a controller only (remote).
   if (member.isHost) return `Host - ${member.mode === 'remote' ? 'Remote' : 'Interactive'}`;
   if (member.role === 'observer') return 'Observer';
   return member.mode === 'remote' ? 'Remote' : 'Interactive';
@@ -49,6 +52,8 @@ export function Lobby({
   mode,
   isHost,
   me,
+  game,
+  onGameChange,
   config,
   onConfigChange,
   onStart,
@@ -57,6 +62,25 @@ export function Lobby({
   onModeChange,
   onKick,
 }: LobbyProps) {
+  // Resolve the selected game's UI module. `game` is always a registered id (the picker only sets
+  // ids from GAME_UI_LIST); fall back to the first registered game for an unexpected value.
+  const activeModule = getGameUi(game) ?? DEFAULT_GAME_UI;
+  const ConfigPanel = activeModule.ConfigPanel;
+  const validation = activeModule.validateConfig(config);
+  const viewerPresent = hasViewer(members);
+
+  // One plain reason a start is blocked, in priority order. When no viewer is present, the copy is
+  // host-aware: a remote host that is the only viewer-capable device can fix it itself.
+  const noViewerReason =
+    mode === 'remote'
+      ? "You're the only viewer-capable device here. Switch yourself to Interactive above to start."
+      : 'Waiting for a viewer to join - an observer or an interactive player.';
+  const blockedReason = !viewerPresent
+    ? noViewerReason
+    : !validation.ok
+      ? (validation.error ?? 'Fix the game settings to start.')
+      : startError;
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -105,8 +129,8 @@ export function Lobby({
         <section aria-label="Your mode" className="flex flex-col gap-2">
           <h2 className="text-h4 text-text">Your setup</h2>
           <p className="text-body-sm text-text-muted">
-            Interactive shows the question and your controller on one screen. Remote is the
-            controller only.
+            Interactive shows the game and your controller on one screen. Remote is the controller
+            only.
           </p>
           <div className="flex gap-2" role="group" aria-label="Choose your mode">
             <Button
@@ -135,19 +159,39 @@ export function Lobby({
 
       {isHost ? (
         <section aria-label="Game setup" className="flex flex-col gap-4">
-          <h2 className="text-h3 text-text">Set up Trivia</h2>
-          <HostConfigPanel
-            value={config}
-            onChange={onConfigChange}
-            onStart={onStart}
-            hasViewer={hasViewer(members)}
-            // When the only would-be viewer is the host itself (a remote host with no other
-            // viewer), the host can fix the blocked start on its own by switching to interactive -
-            // so point the copy at the host's own mode toggle instead of "wait for a viewer".
-            hostCanSelfFix={mode === 'remote'}
-            starting={starting}
-            serverReason={startError}
-          />
+          <h2 className="text-h3 text-text">Set up your game</h2>
+          <div role="group" aria-label="Choose a game" className="flex flex-wrap gap-2">
+            {GAME_UI_LIST.map((option) => (
+              <Button
+                key={option.id}
+                type="button"
+                variant={option.id === game ? 'primary' : 'outline'}
+                aria-pressed={option.id === game}
+                onClick={() => onGameChange(option.id)}
+              >
+                {option.name}
+              </Button>
+            ))}
+          </div>
+          <p className="text-body-sm text-text-muted">{activeModule.tagline}</p>
+
+          <ConfigPanel value={config} onChange={onConfigChange} disabled={starting} />
+
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onStart}
+              disabled={!viewerPresent || !validation.ok || starting}
+            >
+              {starting ? 'Starting...' : 'Start game'}
+            </Button>
+            {blockedReason ? (
+              <p role="status" className="text-body-sm text-text-muted">
+                {blockedReason}
+              </p>
+            ) : null}
+          </div>
         </section>
       ) : (
         <p className="text-body-sm text-text-muted" role="status">
@@ -155,8 +199,6 @@ export function Lobby({
         </p>
       )}
 
-      {/* me is surfaced so an interactive player row can self-highlight later; unused rows keep the
-          prop stable across lobby and game. */}
       {me ? <span className="sr-only">Joined as {me}</span> : null}
     </div>
   );
