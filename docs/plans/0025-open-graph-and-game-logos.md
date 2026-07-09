@@ -1,6 +1,6 @@
-# Plan 0020 - Open Graph share cards and per-game logos
+# Plan 0025 - Open Graph share cards and per-game logos
 
-Source: `docs/specs/0020-open-graph-and-game-logos.md`.
+Source: `docs/specs/0025-open-graph-and-game-logos.md`.
 
 Core move: add two on-theme game marks and drive three surfaces of OG cards (home wordmark,
 per-game "Join my game" share, generic fallback) off pre-rendered rasters. The only runtime

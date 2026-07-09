@@ -1,4 +1,4 @@
-# 0024 - End-to-end tests with Playwright
+# 0026 - End-to-end tests with Playwright
 
 ## Problem
 
@@ -20,7 +20,7 @@ Turborepo (no Nx); the harness must fit that and run the same stack developers a
 - `pnpm e2e` brings the stack up (real services), runs the specs, and tears it down; a developer
   with Colima running gets a green (or a trace to open) with one command.
 - Two shipping specs that establish the pattern:
-  - **Share unfurl (closes spec 0020's e2e checkbox):** a `/join?code=` link serves the correct
+  - **Share unfurl (closes spec 0025's e2e checkbox):** a `/join?code=` link serves the correct
     Open Graph card - the game's card for a room that picked a game, the generic card for a bad
     code - with `og:title` "Join my game".
   - **Trivia round happy path:** a host signs up, creates a room, a second player joins by code,

@@ -6,7 +6,7 @@ the harness the repo's first non-negotiable (mobile-first, e2e for large feature
 
 ## What runs
 
-- `tests/share-unfurl.spec.ts` - Open Graph share cards (spec 0020): the home card, a Trivia
+- `tests/share-unfurl.spec.ts` - Open Graph share cards (spec 0025): the home card, a Trivia
   room's "Join my game" card, and the generic fallback for a bad code. Desktop Chromium.
 - `tests/trivia-round.spec.ts` - the flagship happy path: a host and a second player play a full
   one-round Trivia game across two browser contexts. Desktop Chromium.
