@@ -16,6 +16,8 @@ next-env.d.ts
 
 # Local env
 .env
+# Local server-only env (control-plane URL, secrets); never track it.
+.env.server
 # Production secrets file the deploy job writes on the host; never track it.
 .env.prod
 deploy/docker/.env.prod
