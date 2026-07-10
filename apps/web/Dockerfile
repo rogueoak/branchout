@@ -1,8 +1,14 @@
 # Build context is the repo root (see infra/docker-compose.yml). The whole workspace is copied
 # in so pnpm can resolve shared packages; a single image per app keeps the setup simple.
 FROM node:22-slim
-# curl is used by the compose.site.yml HEALTHCHECK.
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# curl is used by the compose.site.yml HEALTHCHECK. The fonts are needed at BUILD time: the
+# @branchout/brand build rasterizes the OG/share cards, whose SVGs draw text in an
+# Arial/Helvetica/sans-serif stack. On this slim image with no fonts installed, librsvg renders
+# every glyph as tofu (the wordmark and "Join my game" came out as boxes). fonts-liberation maps
+# Arial/Helvetica -> Liberation Sans (with bold); fonts-dejavu-core guarantees a sans-serif fallback.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl fonts-liberation fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 WORKDIR /repo
 
