@@ -12,8 +12,13 @@ RUN pnpm install --frozen-lockfile
 # reaches the backend same-origin through Caddy: /api -> control-plane, /ws -> game-engine.
 ARG NEXT_PUBLIC_CONTROL_PLANE_URL=/api
 ARG NEXT_PUBLIC_ENGINE_WS_URL=wss://branchout.games/ws
+# Seeds metadataBase so og:image URLs are absolute and crawler-reachable. Must be baked at build
+# time (NEXT_PUBLIC_* are inlined into the bundle); a runtime env is ignored. Without this it
+# falls back to http://localhost:3000 and every share/home unfurl points at an unreachable host.
+ARG NEXT_PUBLIC_SITE_URL=https://branchout.games
 ENV NEXT_PUBLIC_CONTROL_PLANE_URL=$NEXT_PUBLIC_CONTROL_PLANE_URL
 ENV NEXT_PUBLIC_ENGINE_WS_URL=$NEXT_PUBLIC_ENGINE_WS_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 RUN pnpm --filter @branchout/web... build
 
 EXPOSE 3000

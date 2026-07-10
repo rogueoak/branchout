@@ -71,6 +71,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_CONTROL_PLANE_URL=/api
             NEXT_PUBLIC_ENGINE_WS_URL=wss://branchout.games/ws
+            NEXT_PUBLIC_SITE_URL=https://branchout.games
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
