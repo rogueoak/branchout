@@ -23,7 +23,7 @@ test('account edits reflect on the public profile, gated by visibility', async (
 
   // A distinct nickname so we can prove it is HIDDEN when the profile is private (it defaults to the
   // always-public gamer tag, which would otherwise be indistinguishable).
-  await page.getByLabel('Nickname').fill('NebulaFox');
+  await page.getByRole('textbox', { name: 'Nickname' }).fill('NebulaFox');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Nickname saved.')).toBeVisible();
 

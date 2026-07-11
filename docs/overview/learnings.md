@@ -173,6 +173,13 @@ Capture durable lessons as they emerge.
   for `buttonVariants()` on actual buttons (short, single-line labels), not on wrappers around
   flowing content. The phone-viewport e2e caught this where every unit test (jsdom has no layout)
   passed - a real-browser overflow guard earns its keep. (Spec `0029`.)
+- **A flex row holding a user-controlled string needs `min-w-0` on the text column and a word-break,
+  or a long space-less value overflows the phone.** An avatar-plus-name header (`flex items-center`)
+  overflowed at 360px because the nickname defaults to the gamer tag - a long, space-less identifier -
+  rendered at `text-h2` in a flex child that, by default, refuses to shrink below its content width and
+  a no-space word won't wrap. Add `min-w-0` to the flex text column (so it can shrink) and `break-words`
+  to the heading (so the unbreakable token wraps). Any header that shows a name/tag/email a user can set
+  needs this. The profile e2e caught it; the unit tests (no layout) did not. (Spec `0027`.)
 - **Prevent iOS input-zoom by sizing the field >= 16px, never by disabling zoom.** iOS Safari
   auto-zooms a focused form control whose font-size is under 16px, and canopy inputs render
   `text-sm` (14px). The one-line temptation - `maximum-scale=1` / `user-scalable=no` on the viewport

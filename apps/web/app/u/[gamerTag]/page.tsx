@@ -78,11 +78,13 @@ function ProfileBody({ profile }: { profile: PublicProfile }) {
   const name = profile.nickname ?? profile.gamerTag;
   return (
     <>
-      <header className="flex items-center gap-4">
+      <header className="flex max-w-full items-center gap-4">
         <Avatar avatar={profile.avatar} name={name} className="h-20 w-20" />
-        <div className="flex flex-col gap-1">
-          <h1 className="text-h2 text-text">{name}</h1>
-          <p className="text-body-sm text-text-muted">@{profile.gamerTag}</p>
+        {/* min-w-0 + break-words so a long, space-less name (a nickname defaults to the gamer tag)
+            wraps instead of overflowing the phone viewport (the profile e2e caught this). */}
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="text-h2 text-text break-words">{name}</h1>
+          <p className="text-body-sm text-text-muted break-words">@{profile.gamerTag}</p>
         </div>
       </header>
 

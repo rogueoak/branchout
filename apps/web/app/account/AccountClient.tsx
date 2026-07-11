@@ -141,11 +141,13 @@ export function AccountClient() {
       <div className="mx-auto flex max-w-2xl flex-col gap-10 px-4 py-12 sm:px-6">
         <header className="flex flex-col items-center gap-4 text-center">
           <Wordmark />
-          <div className="flex items-center gap-4">
+          <div className="flex max-w-full items-center gap-4">
             <Avatar avatar={account.avatar} name={account.nickname} className="h-16 w-16" />
-            <div className="flex flex-col text-left">
-              <h1 className="text-h2 text-text">{account.nickname}</h1>
-              <p className="text-body-sm text-text-muted">@{account.gamerTag}</p>
+            {/* min-w-0 + break-words so a long, space-less nickname (it defaults to the gamer tag)
+                wraps instead of overflowing the phone viewport (the profile e2e caught this). */}
+            <div className="flex min-w-0 flex-col text-left">
+              <h1 className="text-h2 text-text break-words">{account.nickname}</h1>
+              <p className="text-body-sm text-text-muted break-words">@{account.gamerTag}</p>
             </div>
           </div>
           <a
