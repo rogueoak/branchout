@@ -55,7 +55,7 @@ export function ShareLink({ code, href }: { code: string; href: string }) {
   }
 
   return (
-    <span className="flex items-center gap-2">
+    <span className="flex flex-wrap items-center gap-2">
       <a
         className="text-primary tabular-nums tracking-widest underline-offset-4 hover:underline"
         href={shareUrl}

@@ -3,7 +3,6 @@
 // Client boundary: renders canopy Twigs (Card), which call React.createContext at module scope (see
 // docs/overview/learnings.md, Theming) - the consumer owns the 'use client' boundary.
 
-import { buttonVariants } from '@rogueoak/canopy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
 import type { GameUiModule } from '../../lib/games/registry';
 
@@ -59,7 +58,11 @@ export function GameCard({ game, onSelect, selected, disabled }: GameCardProps) 
       disabled={disabled}
       aria-pressed={selected}
       aria-label={`Pick ${game.name}`}
-      className={`${buttonVariants({ variant: 'ghost' })} block h-auto w-full whitespace-normal rounded-xl p-0 disabled:opacity-60`}
+      // A minimal clickable reset - NOT buttonVariants(): the button recipe sets
+      // `white-space: nowrap` (inherited), which forced the card's summary onto one line and
+      // overflowed the phone viewport (the mobile-smoke e2e caught it). The card owns its own
+      // hover/selected styling, so all this wrapper needs is full width, left text, and a focus ring.
+      className="block w-full rounded-xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60"
     >
       {body}
     </button>
