@@ -4,7 +4,8 @@ Branch out runs as three containers (`web`, `control-plane`, `game-engine`) plus
 Redis on a DigitalOcean droplet at `branchout.games`, behind a Caddy edge proxy that terminates
 TLS. Deploys are automatic: every push to `main` runs `.github/workflows/release.yml`
 (verify -> build -> deploy), which SSHes into the droplet and rolls the site forward to the
-private GHCR images built for that commit (`ghcr.io/rogueoak/branchout/<app>:sha-<commit>`).
+private GHCR images built for that commit (`ghcr.io/rogueoak/branchout/<app>:sha-<commit>`),
+**one app service at a time with zero downtime** (see below).
 
 ## Stacks (`deploy/docker/`)
 
@@ -24,6 +25,50 @@ Server secrets (Postgres password, session secret) live in `deploy/docker/.env.p
 on the host (next to `compose.site.yml`, where `env_file: .env.prod` resolves). The
 deploy job writes this file fresh from GitHub secrets on every run (mode 0600, readable
 only by the deploy user). It is gitignored and never committed.
+
+## Zero-downtime rollout (spec 0034)
+
+Deploys use the [docker-rollout](https://github.com/Wowu/docker-rollout) plugin so a push
+never drops a request. For each **app** service the plugin scales it to a second
+Compose-indexed instance (`branchout-web-1` / `-2`), waits for the new one's `HEALTHCHECK`,
+holds a short grace, then removes the old - so a live backend always exists. Caddy uses
+**dynamic A-record upstreams** (re-resolving the service alias against Docker DNS `127.0.0.11`
+every second), so it follows the swap instead of pinning the old container's IP.
+
+The droplet is small, so we **cannot run the whole stack twice**. The rollout therefore goes
+**one service at a time, backend first**: `control-plane` -> `game-engine` -> `web`. Peak
+memory is baseline + a single extra app instance, never 2x everything. `mem_limit` on each app
+service caps that transient instance so a leak during the overlap cannot OOM the box.
+
+- **Data tier is never rolled.** Postgres and Redis are stateful singletons on one volume; the
+  deploy brings them up with `up -d --no-recreate` (a no-op when unchanged) and rolls only the
+  three app services.
+- **Fail-safe.** An image that pulls but never goes healthy makes docker-rollout tear the _new_
+  instance down and leave the old serving, failing the deploy non-zero. The deploy also gates on
+  an end-to-end `curl` through Caddy (over loopback) so a routing regression fails the deploy.
+- **Partial-rollout compatibility.** Because services roll one at a time, a new instance of one
+  briefly talks to an old instance of another; this relies on the versioned protocol envelope +
+  additive-field discipline. A genuinely breaking cross-service change needs an expand/contract
+  (two-phase) deploy - out of scope here, but do not ship a breaking protocol change in one push.
+
+The plugin is installed on the host by the deploy job, **SHA-pinned and checksum-verified**
+before use (it is a shell script run during a privileged deploy).
+
+**Manual rollout** (on the host, e.g. to redeploy a specific tag):
+
+```
+cd ~/branchout
+IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml pull
+IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml up -d --no-recreate postgres redis
+for s in control-plane game-engine web; do
+  IMAGE_TAG=sha-<commit> docker rollout -t 90 --wait-after-healthy 5 -f deploy/docker/compose.site.yml "$s"
+done
+```
+
+**Rehearsal.** `deploy/rollout-rehearsal.sh` drives a rollout against a _local_ copy of the
+deploy stack while hammering the site through Caddy, and fails if any request drops or the
+rolled instance did not change - the automatable proof that the swap is invisible. Bring up the
+proxy + site stacks on the `edge` network first (see the script header), then run it.
 
 ## Host prerequisites (one-time setup)
 
@@ -109,12 +154,15 @@ Rollback is a redeploy of an older image. Options:
 1. **Re-run the release workflow** for an older commit (GitHub UI: Actions -> release ->
    find the older run -> Re-run all jobs).
 
-2. **Manual rollback on the droplet** (faster):
+2. **Manual rollback on the droplet** (faster) - roll back to the old tag with the same
+   zero-downtime rollout used to deploy (see "Zero-downtime rollout" above):
    ```sh
-   IMAGE_TAG=sha-<old-commit-sha> \
-     docker compose -f ~/branchout/deploy/docker/compose.site.yml pull
-   IMAGE_TAG=sha-<old-commit-sha> \
-     docker compose -f ~/branchout/deploy/docker/compose.site.yml up -d --wait
+   cd ~/branchout
+   export IMAGE_TAG=sha-<old-commit-sha>
+   docker compose -f deploy/docker/compose.site.yml pull
+   for s in control-plane game-engine web; do
+     docker rollout -t 90 --wait-after-healthy 5 -f deploy/docker/compose.site.yml "$s"
+   done
    ```
 
 `cleanup-images.yml` retains the 30 most recent tagged images per package, giving ~30

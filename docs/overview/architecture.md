@@ -138,10 +138,26 @@ on a shared external Docker network, `edge`, defined under `deploy/docker/`:
 Deploys are hands-off: every push to `main` runs `.github/workflows/release.yml`
 (verify -> build the three images -> deploy). The deploy job SSHes into the droplet as `deploy`,
 force-syncs the repo, pulls the run's private images (GHCR login with the run-scoped
-`GITHUB_TOKEN`, `packages: read`), writes `deploy/docker/.env.prod` from GitHub secrets, and rolls
-the stack forward health-gated with `up -d --wait`. Server secrets live only in that host env file
-and in GitHub Actions secrets - never in the repo. Rollback is a redeploy of an older `sha`;
-`cleanup-images.yml` bounds image disk use. See `deploy/README.md` for host setup and secrets.
+`GITHUB_TOKEN`, `packages: read`), and writes `deploy/docker/.env.prod` from GitHub secrets.
+Server secrets live only in that host env file and in GitHub Actions secrets - never in the repo.
+Rollback is a redeploy of an older `sha`; `cleanup-images.yml` bounds image disk use. See
+`deploy/README.md` for host setup and secrets.
+
+**Zero-downtime rollout (spec 0034).** The deploy no longer recreates containers in place
+(`up -d --wait`, which 502s for the seconds a container is down). It uses the **docker-rollout**
+plugin (SHA-pinned + checksum-verified on the host) to roll each app service - scale to a second
+Compose-indexed instance, wait for its healthcheck, drop the old - while Caddy follows the swap via
+**dynamic A-record upstreams** (re-resolving the service alias against Docker DNS every second).
+Because the droplet cannot run the whole stack twice, services roll **one at a time, backend first**:
+`control-plane` -> `game-engine` -> `web`, so peak memory is baseline + one extra app instance, which
+`mem_limit`s cap. Postgres and Redis are never rolled (stateful, single volume; `up -d --no-recreate`).
+An unhealthy image fails safe (the old instance keeps serving) and the deploy gates on an end-to-end
+`curl` through Caddy. **Capacity rule:** the host must fit baseline + one extra app instance +
+Postgres/Redis + headroom + swap. **Partial-rollout compatibility:** since services roll separately, a
+new instance of one briefly talks to an old instance of another, so cross-service compatibility rests
+on the versioned protocol envelope + additive fields; a breaking change needs an expand/contract
+deploy, not a single push. `deploy/rollout-rehearsal.sh` is the automatable proof (loops requests
+through Caddy during a local rollout and asserts zero drops + a changed instance).
 
 ## Build tooling
 

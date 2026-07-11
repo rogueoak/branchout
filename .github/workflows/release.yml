@@ -150,6 +150,27 @@ jobs:
           # would silently not take effect. Recreating re-binds the current file.
           docker compose -f deploy/docker/compose.proxy.yml up -d --wait --force-recreate
 
+          # Install the docker-rollout plugin (spec 0034), SHA-pinned + checksum-verified.
+          # It is a shell script run on the host during a privileged deploy, so it is treated
+          # as supply chain: verify-then-exec, never runnable before the checksum passes. Done
+          # BEFORE the GHCR login below so its temp-cleanup EXIT trap does not clobber the
+          # later `docker logout` EXIT trap.
+          # docker-rollout v0.13: github.com/Wowu/docker-rollout/releases/tag/v0.13
+          ROLLOUT_SHA=39b8066d56cc1edc76d1ae898db46623cc93bc24
+          ROLLOUT_SHA256=fa0df004de84747142cb627c55210aaa914bbae76666e7b95a2ac46805d81a84
+          plugin="$HOME/.docker/cli-plugins/docker-rollout"
+          if ! printf '%s  %s\n' "$ROLLOUT_SHA256" "$plugin" | sha256sum -c - >/dev/null 2>&1; then
+            mkdir -p "$HOME/.docker/cli-plugins"
+            tmp=$(mktemp)
+            trap 'rm -f "$tmp"' EXIT
+            curl -fsSL --proto '=https' --tlsv1.2 --max-time 30 \
+              "https://raw.githubusercontent.com/Wowu/docker-rollout/$ROLLOUT_SHA/docker-rollout" -o "$tmp"
+            printf '%s  %s\n' "$ROLLOUT_SHA256" "$tmp" | sha256sum -c -
+            chmod +x "$tmp"
+            mv "$tmp" "$plugin"
+            trap - EXIT
+          fi
+
           # Log in to GHCR with the run-scoped token (packages:read, ephemeral).
           # Pipe via stdin so the token never appears in process arguments or logs.
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_ACTOR" --password-stdin
@@ -179,11 +200,39 @@ jobs:
             printf 'ALLOW_UNAUTHENTICATED_ENGINE=1\n'
           } > "$ENV_FILE"
 
-          # Pull new images, then roll forward. --wait blocks until every service
-          # passes its HEALTHCHECK; a broken image returns non-zero here and aborts
-          # the deploy before any traffic is affected.
+          # Pre-pull every image so a rollout's new container starts instantly (no pull
+          # mid-swap) and a non-pullable tag fails HERE, before anything swaps.
           docker compose -f deploy/docker/compose.site.yml pull
-          docker compose -f deploy/docker/compose.site.yml up -d --wait
+
+          # Stateful data tier: bring it up WITHOUT ever doubling it. --no-recreate leaves a
+          # running, unchanged Postgres/Redis untouched (never rolled - single volume), and
+          # --wait gates on their health so the app rollouts below have a healthy DB/cache.
+          docker compose -f deploy/docker/compose.site.yml up -d --no-recreate --wait postgres redis
+
+          # Zero-downtime rollout (spec 0034), ONE app service at a time so the small droplet
+          # never runs the whole stack twice. docker-rollout scales the service to a second
+          # Compose-indexed instance, waits up to 90s for its HEALTHCHECK (image start-period
+          # 30s), holds a short grace so Caddy's 1s DNS refresh sees the new instance, then
+          # removes the old. Order is backend first (control-plane, then game-engine), web last,
+          # so the frontend rolls against an already-updated backend. Fail-safe: an image that
+          # pulls but never goes healthy makes rollout remove the NEW instance and leave the old
+          # serving, exiting non-zero - a bad build cannot black out the site.
+          for svc in control-plane game-engine web; do
+            docker rollout -t 90 --wait-after-healthy 5 -f deploy/docker/compose.site.yml "$svc"
+          done
+
+          # Gate on the FULL public path, not just the container HEALTHCHECK: a Caddy /
+          # dynamic-upstream misconfig can leave every container healthy while visitors get
+          # 502s, and nothing else re-verifies the routing on each deploy. Hit the site through
+          # Caddy over loopback (--resolve, so it does not depend on DNS/hairpin) and fail the
+          # deploy if it is not reachable end to end.
+          ok=""
+          for _ in $(seq 1 10); do
+            if curl -fsS --max-time 10 --resolve branchout.games:443:127.0.0.1 \
+                -o /dev/null https://branchout.games; then ok=1; break; fi
+            sleep 2
+          done
+          [ -n "$ok" ] || { echo "post-rollout health check failed: branchout.games is not reachable end-to-end"; exit 1; }
 
           # Prune old branchout images (label-scoped; running images are in-use
           # and kept; a cohosted stack's images are untouched).
