@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { buttonVariants } from '@rogueoak/canopy';
 import { TopNav } from './TopNav';
 
 // The account menu (signed-in) uses next/navigation's useRouter; stub it for jsdom.
@@ -39,5 +40,19 @@ describe('TopNav', () => {
     render(<TopNav viewer={{ signedIn: true }} />);
     expect(screen.getByRole('link', { name: 'Sign up' })).toBeDefined();
     expect(screen.queryByRole('button', { name: /account menu/i })).toBeNull();
+  });
+
+  it('Sign up is a primary CTA by default', () => {
+    render(<TopNav viewer={{ signedIn: false }} />);
+    expect(screen.getByRole('link', { name: 'Sign up' }).className).toBe(
+      buttonVariants({ variant: 'primary', size: 'sm' }),
+    );
+  });
+
+  it('signupVariant="outline" de-emphasizes the Sign up CTA (for a page whose hero owns the primary)', () => {
+    render(<TopNav viewer={{ signedIn: false }} signupVariant="outline" />);
+    expect(screen.getByRole('link', { name: 'Sign up' }).className).toBe(
+      buttonVariants({ variant: 'outline', size: 'sm' }),
+    );
   });
 });

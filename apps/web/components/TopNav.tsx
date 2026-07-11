@@ -3,9 +3,10 @@
 // The shared site top nav (spec 0028). Present on the marketing and room hosting/joining surfaces,
 // absent inside a running game (each surface opts in by rendering this, so there is no fragile
 // hide-on-route check). Left: the wordmark (home) + a Games link. Right: signed out shows Log in
-// (quiet) and Sign up (the SOLE primary CTA - one-primary-per-view); signed in shows the player's
-// avatar opening the account menu. The `viewer` is read server-side and injected as a prop, so the
-// correct nav renders on the first byte with no signed-in/out flash.
+// (quiet) and a Sign up CTA (primary by default, de-emphasized via `signupVariant` on a page whose
+// body already owns the signup primary - one-primary-per-view); signed in shows the player's avatar
+// opening the account menu. The `viewer` is read server-side and injected as a prop, so the correct
+// nav renders on the first byte with no signed-in/out flash.
 //
 // 'use client' because the account menu is interactive (dropdown, logout); it also composes canopy's
 // button styles, and canopy owns its own client boundary needs (see the Theming learning).
@@ -15,7 +16,16 @@ import type { Viewer } from '../lib/session';
 import { AccountMenu } from './AccountMenu';
 import { Wordmark } from './Wordmark';
 
-export function TopNav({ viewer }: { viewer: Viewer }) {
+// `signupVariant` lets a surface de-emphasize the nav's Sign up CTA. On a page whose body already
+// carries the primary signup action (the home hero's "Sign up free"), pass `outline` so there is one
+// primary per view; elsewhere (/rooms, /join, the lobby) the nav CTA is the page's primary.
+export function TopNav({
+  viewer,
+  signupVariant = 'primary',
+}: {
+  viewer: Viewer;
+  signupVariant?: 'primary' | 'outline';
+}) {
   return (
     <header className="border-b border-border bg-bg">
       <nav
@@ -52,7 +62,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
             >
               Log in
             </a>
-            <a href="/signup" className={buttonVariants({ variant: 'primary', size: 'sm' })}>
+            <a href="/signup" className={buttonVariants({ variant: signupVariant, size: 'sm' })}>
               Sign up
             </a>
           </div>

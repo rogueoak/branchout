@@ -273,30 +273,38 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
     [code],
   );
 
+  // These pre-lobby states are not the running game, so they carry the shared nav too - only the
+  // running game omits it. Keeps "every non-in-game surface has the nav" a rule, not a per-branch call.
   if (membership === undefined) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
-        <p className="text-body text-text-muted" role="status">
-          Loading room {code.toUpperCase()}...
-        </p>
-      </main>
+      <>
+        <TopNav viewer={viewer} />
+        <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
+          <p className="text-body text-text-muted" role="status">
+            Loading room {code.toUpperCase()}...
+          </p>
+        </main>
+      </>
     );
   }
 
   if (!membership || !room) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
-        <h1 className="text-h2">Join room {code.toUpperCase()}</h1>
-        <p className="text-body text-text-muted">
-          You are not in this room yet. Join with the code to play.
-        </p>
-        <a
-          href={`/join?code=${encodeURIComponent(code)}`}
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          Go to join
-        </a>
-      </main>
+      <>
+        <TopNav viewer={viewer} />
+        <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
+          <h1 className="text-h2">Join room {code.toUpperCase()}</h1>
+          <p className="text-body text-text-muted">
+            You are not in this room yet. Join with the code to play.
+          </p>
+          <a
+            href={`/join?code=${encodeURIComponent(code)}`}
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Go to join
+          </a>
+        </main>
+      </>
     );
   }
 

@@ -46,6 +46,25 @@ describe('AccountMenu', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
+  it('closes on an outside pointer press', () => {
+    open();
+    expect(screen.getByRole('menu')).toBeDefined();
+    // A pointerdown outside the menu root closes it (the document-level listener).
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('is a roving-tabindex menu: items are out of the page tab order and Tab closes it', () => {
+    open();
+    // Menu items carry tabIndex=-1 (focus is managed by arrow keys, not Tab).
+    for (const item of screen.getAllByRole('menuitem')) {
+      expect(item).toHaveProperty('tabIndex', -1);
+    }
+    // Tab within the menu closes it (a menu is not part of the page tab sequence).
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Tab' });
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
   it('Log out revokes the session and routes home', async () => {
     open();
     fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));

@@ -86,9 +86,10 @@ export function LandingContent({ viewer }: LandingContentProps) {
 
   return (
     <div className="bg-bg text-text">
-      {/* The shared top nav (spec 0028) replaces the old bespoke header: Games + wordmark on the left,
-          Sign up / Log in or the account avatar on the right. */}
-      <TopNav viewer={viewer} />
+      {/* The shared top nav (spec 0028) replaces the old bespoke header. The hero below already owns
+          the primary "Sign up free" CTA, so the nav's Sign up is de-emphasized (outline) here to keep
+          one primary per view. */}
+      <TopNav viewer={viewer} signupVariant="outline" />
 
       {/* Hero */}
       <section

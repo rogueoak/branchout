@@ -53,7 +53,9 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
     };
   }, [open, close]);
 
-  // Arrow keys move between items; Home/End jump to the ends.
+  // A menu is a roving-tabindex widget: the items carry `tabIndex={-1}` (not in the page tab order),
+  // arrow keys move between them, Home/End jump to the ends, and Tab closes the menu and returns focus
+  // to the trigger (Tab does not step through menu items).
   function onMenuKeyDown(event: React.KeyboardEvent) {
     const items = itemRefs.current.filter(Boolean) as HTMLElement[];
     const current = items.indexOf(document.activeElement as HTMLElement);
@@ -69,6 +71,9 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
     } else if (event.key === 'End') {
       event.preventDefault();
       items[items.length - 1]?.focus();
+    } else if (event.key === 'Tab') {
+      event.preventDefault();
+      close();
     }
   }
 
@@ -93,7 +98,9 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
         aria-expanded={open}
         aria-label={`Account menu for ${name}`}
         onClick={() => setOpen((v) => !v)}
-        className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        // p-1 pads the 36px avatar art to a >=44px hit area (comfortable one-handed tap) without
+        // enlarging the avatar itself.
+        className="inline-flex rounded-full p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         <Avatar avatar={avatar} name={name} className="h-9 w-9" />
       </button>
@@ -114,6 +121,7 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
               itemRefs.current[0] = el;
             }}
             role="menuitem"
+            tabIndex={-1}
             href="/account"
             onClick={() => close(false)}
             className="px-3 py-2 text-left text-body-sm text-text hover:bg-surface focus-visible:bg-surface focus-visible:outline-none"
@@ -125,6 +133,7 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
               itemRefs.current[1] = el;
             }}
             role="menuitem"
+            tabIndex={-1}
             type="button"
             disabled={loggingOut}
             onClick={onLogout}

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { buttonVariants } from '@rogueoak/canopy';
 import { LandingContent } from '../components/LandingContent';
 
 // The signed-in top nav renders the account menu, which uses next/navigation's useRouter; stub it so
@@ -90,6 +91,13 @@ describe('home page - anonymous visitor', () => {
       .getAllByRole('link')
       .filter((el) => el.textContent === 'Sign up free');
     expect(signupLinks).toHaveLength(1);
+  });
+
+  it('de-emphasizes the nav Sign up so the hero keeps the only primary (one-primary-per-view)', () => {
+    render(<LandingContent viewer={{ signedIn: false }} />);
+    // The nav CTA on home is the outline variant, not a second primary competing with the hero.
+    const navCta = screen.getByRole('link', { name: 'Sign up' });
+    expect(navCta.className).toBe(buttonVariants({ variant: 'outline', size: 'sm' }));
   });
 });
 
