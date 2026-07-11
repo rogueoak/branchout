@@ -27,8 +27,9 @@ branchout.games {
     # HSTS: tell browsers to always use HTTPS for this domain (2 years).
     header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 
-    # WebSocket upgrade - game-engine handles /ws traffic. The engine's ws server
-    # accepts any path, so no prefix strip is needed; match both bare /ws and /ws/*.
+    # WebSocket upgrade - game-engine handles /ws traffic. The browser connects to the versioned
+    # /ws/v1 (spec 0033), but the engine's ws server accepts any path (room/game/player come from the
+    # `join` frame), so no prefix strip is needed; match both bare /ws and /ws/* (which covers /ws/v1).
     # Caddy preserves the Upgrade header automatically on a WebSocket handshake.
     @ws path /ws /ws/*
     handle @ws {

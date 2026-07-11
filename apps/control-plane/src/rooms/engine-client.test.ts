@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PROTOCOL_VERSION, type StartHandoffRequest } from '@branchout/protocol';
+import { PROTOCOL_VERSION, V1_PREFIX, type StartHandoffRequest } from '@branchout/protocol';
 import { EngineError, HttpEngineClient } from './engine-client';
 
 const request: StartHandoffRequest = {
@@ -51,5 +51,22 @@ describe('HttpEngineClient error mapping', () => {
     expect(seen?.get('x-internal-token')).toBe('secret-token');
     // The handoff targets the engine's versioned route (spec 0033).
     expect(seenUrl).toBe('http://engine:4001/v1/sessions');
+  });
+
+  it('proxies a host control to the versioned /v1/sessions/:room/:game/control route', async () => {
+    // control() also moved under /v1 (spec 0033); without this, dropping the prefix would 404 every
+    // host control (pause/advance/restart/exit) while the suite stayed green.
+    let seen: Headers | undefined;
+    let seenUrl: string | undefined;
+    const fetchImpl = (async (url: string, init: RequestInit) => {
+      seenUrl = url;
+      seen = new Headers(init.headers);
+      return new Response(null, { status: 204 });
+    }) as unknown as typeof fetch;
+    const client = new HttpEngineClient('http://engine:4001', 'secret-token', fetchImpl);
+
+    await client.control('r1', 'trivia', 'advance');
+    expect(seen?.get('x-internal-token')).toBe('secret-token');
+    expect(seenUrl).toBe(`http://engine:4001${V1_PREFIX}/sessions/r1/trivia/control`);
   });
 });

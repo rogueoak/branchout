@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ENGINE_ROUNDS_SUBPATH, V1_PREFIX } from '@branchout/protocol';
 import type { PasswordHasher } from './accounts/hasher';
 import { InMemoryAccountRepository } from './accounts/repository.memory';
 import { AccountService } from './accounts/service';
@@ -610,7 +611,7 @@ describe('engine report intake (internal token)', () => {
     const { app } = makeAppWithToken('s3cret');
     const res = await app.inject({
       method: 'POST',
-      url: '/v1/engine/rounds',
+      url: `${V1_PREFIX}${ENGINE_ROUNDS_SUBPATH}`,
       payload: {
         v: 1,
         room: 'r',
@@ -629,7 +630,7 @@ describe('engine report intake (internal token)', () => {
     const { app } = makeAppWithToken('s3cret');
     const bad = await app.inject({
       method: 'POST',
-      url: '/v1/engine/rounds',
+      url: `${V1_PREFIX}${ENGINE_ROUNDS_SUBPATH}`,
       headers: { 'x-internal-token': 's3cret' },
       payload: { v: 1 },
     });
