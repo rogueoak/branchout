@@ -124,4 +124,16 @@ test.describe('legal pages (spec 0031) at 360px', () => {
     await page.getByRole('contentinfo').getByRole('link', { name: 'Privacy' }).click();
     await expect(page.getByRole('heading', { level: 1, name: /privacy policy/i })).toBeVisible();
   });
+
+  // The footer is also added to the rooms/join entry surfaces (spec 0031); prove it is present AND
+  // that those pages still fit at 360px with the footer (a footer link row + page body offender).
+  for (const path of ['/rooms', '/join?code=ABC12']) {
+    test(`${path} carries the footer and fits at 360px`, async ({ page }) => {
+      await page.goto(path);
+      const footer = page.getByRole('contentinfo');
+      await expect(footer.getByRole('link', { name: 'Privacy' })).toBeVisible();
+      await expect(footer.getByRole('link', { name: 'Terms' })).toBeVisible();
+      await expectFits(page);
+    });
+  }
 });

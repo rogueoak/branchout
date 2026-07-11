@@ -54,32 +54,35 @@ export function PrivacyContent() {
       <section className="mt-12">
         <h2 className="text-h2 font-semibold text-text">Analytics</h2>
         <p className="mt-3 text-body text-text-muted">
-          We use PostHog for product analytics - to understand how the site is used (which pages are
-          visited, where a flow breaks) so we can make it better - and to report errors and crashes
-          so we can fix them. This is being enabled as part of an upcoming release; this section
-          describes how it works.
+          We are adding PostHog for product analytics - to understand how the site is used (which
+          pages are visited, where a flow breaks) so we can make it better - and to report errors
+          and crashes so we can fix them. It is not live yet; this section describes how it will
+          work once we enable it, so you know what to expect. Until then, we are not collecting
+          analytics.
         </p>
         <ul className="mt-3 list-disc space-y-2 pl-6 text-body text-text-muted">
           <li>
-            It is <strong className="text-text">first-party</strong>: analytics requests are proxied
-            through our own domain, not a third-party tracker hostname, and we do not use
-            advertising or cross-site tracking cookies.
+            It will be <strong className="text-text">first-party</strong>: analytics requests will
+            be proxied through our own domain, not a third-party tracker hostname, and we will not
+            use advertising or cross-site tracking cookies.
           </li>
           <li>
-            Analytics run only on the live site. Nothing is collected when the app runs locally or
-            in development.
+            It will run only on the live site. Nothing is collected when the app runs locally or in
+            development.
           </li>
           <li>
-            We do not capture what you type - your email, password, and in-game answers are not sent
-            to analytics. We identify a signed-in player only by a stable, non-sensitive id (such as
-            your gamer tag) so we can understand repeat visits; anonymous players stay anonymous.
+            It will not capture what you type - your email, password, and in-game answers will not
+            be sent to analytics. We will identify a signed-in player only by a stable,
+            non-sensitive id (such as your gamer tag) so we can understand repeat visits; anonymous
+            players stay anonymous.
           </li>
-          <li>Session replay is off. We do not record playback of your screen.</li>
+          <li>Session replay will be off. We will not record playback of your screen.</li>
         </ul>
         <p className="mt-3 text-body text-text-muted">
-          PostHog processes this data on our behalf on servers in the United States. You can read
+          PostHog will process this data on our behalf on servers in the United States. You can read
           how PostHog handles data in their{' '}
-          <ExternalLink href="https://posthog.com/privacy">privacy policy</ExternalLink>.
+          <ExternalLink href="https://posthog.com/privacy">privacy policy</ExternalLink>. We will
+          update this page when analytics goes live.
         </p>
       </section>
 
@@ -119,11 +122,23 @@ export function PrivacyContent() {
       </section>
 
       <section className="mt-12">
+        <h2 className="text-h2 font-semibold text-text">Cookies</h2>
+        <p className="mt-3 text-body text-text-muted">
+          When you sign in (or join a game by code), we set a single strictly-necessary first-party
+          cookie so we can keep you signed in. It is <strong className="text-text">httpOnly</strong>{' '}
+          and secure, and it just points to a session we keep on our own server - it holds no
+          personal data itself and is not used to track you across other sites. We do not use
+          advertising or cross-site tracking cookies.
+        </p>
+      </section>
+
+      <section className="mt-12">
         <h2 className="text-h2 font-semibold text-text">IP addresses and server logs</h2>
         <p className="mt-3 text-body text-text-muted">
           Like any website, our servers briefly see your IP address when you connect. We use it to
-          keep the service running and secure and to limit abuse. PostHog may use your IP address to
-          estimate a general location (such as country or region) and does not store a precise
+          keep the service running and secure, and our edge proxy may use it to protect the site
+          (for example, against abuse). Once analytics is enabled, PostHog may use your IP address
+          to estimate a general location (such as country or region) and does not store a precise
           location. We do not use IP addresses to identify you personally.
         </p>
       </section>
@@ -131,9 +146,9 @@ export function PrivacyContent() {
       <section className="mt-12">
         <h2 className="text-h2 font-semibold text-text">Who processes data for us</h2>
         <p className="mt-3 text-body text-text-muted">
-          We use a small number of service providers who process data on our behalf. Today that is
-          PostHog (analytics and error reporting), on servers in the United States. We do not sell
-          your data or share it with advertisers.
+          We use a small number of service providers who process data on our behalf. Once analytics
+          is enabled, that will be PostHog (analytics and error reporting), on servers in the United
+          States. We do not sell your data or share it with advertisers.
         </p>
       </section>
 

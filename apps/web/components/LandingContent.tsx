@@ -86,7 +86,9 @@ export function LandingContent({ viewer }: LandingContentProps) {
     : { label: 'Sign up free', href: '/signup' };
 
   return (
-    <div className="bg-bg text-text">
+    // flex min-h-screen flex-col so the shared Footer's `mt-auto` pins to the bottom the same way it
+    // does on /rooms and /join - one consistent footer contract across surfaces (spec 0031 review).
+    <div className="flex min-h-screen flex-col bg-bg text-text">
       {/* The shared top nav (spec 0028) replaces the old bespoke header. The hero below already owns
           the primary "Sign up free" CTA, so the nav's Sign up is de-emphasized (outline) here to keep
           one primary per view. */}

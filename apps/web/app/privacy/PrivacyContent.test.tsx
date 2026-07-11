@@ -9,7 +9,7 @@ describe('PrivacyContent', () => {
   it('renders the policy heading and the last-updated date from the shared constant', () => {
     render(<PrivacyContent />);
     screen.getByRole('heading', { level: 1, name: /privacy policy/i });
-    expect(screen.getByText(new RegExp(LEGAL_LAST_UPDATED))).toBeDefined();
+    expect(screen.queryByText(new RegExp(LEGAL_LAST_UPDATED))).not.toBeNull();
   });
 
   it('describes first-party analytics (not third-party trackers)', () => {
