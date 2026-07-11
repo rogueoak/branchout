@@ -101,3 +101,39 @@ test('host create -> pick -> invite flow renders and fits on a phone (spec 0029)
   await expect(page.getByRole('button', { name: /^share$/i })).toBeVisible();
   await expectFits(page);
 });
+
+test.describe('legal pages (spec 0031) at 360px', () => {
+  test.use({ viewport: { width: 360, height: 780 } });
+
+  for (const { path, heading } of [
+    { path: '/privacy', heading: /privacy policy/i },
+    { path: '/terms', heading: /terms of service/i },
+  ]) {
+    test(`${path} renders, carries the footer links, and fits on a phone`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+      const footer = page.getByRole('contentinfo');
+      await expect(footer.getByRole('link', { name: 'Privacy' })).toBeVisible();
+      await expect(footer.getByRole('link', { name: 'Terms' })).toBeVisible();
+      await expectFits(page);
+    });
+  }
+
+  test('the home footer link opens the privacy policy', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('contentinfo').getByRole('link', { name: 'Privacy' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: /privacy policy/i })).toBeVisible();
+  });
+
+  // The footer is also added to the rooms/join entry surfaces (spec 0031); prove it is present AND
+  // that those pages still fit at 360px with the footer (a footer link row + page body offender).
+  for (const path of ['/rooms', '/join?code=ABC12']) {
+    test(`${path} carries the footer and fits at 360px`, async ({ page }) => {
+      await page.goto(path);
+      const footer = page.getByRole('contentinfo');
+      await expect(footer.getByRole('link', { name: 'Privacy' })).toBeVisible();
+      await expect(footer.getByRole('link', { name: 'Terms' })).toBeVisible();
+      await expectFits(page);
+    });
+  }
+});

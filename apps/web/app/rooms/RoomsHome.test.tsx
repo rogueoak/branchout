@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The rooms home drives the create flow: a plain create routes to the pick step; a `?game=` deep
@@ -60,5 +60,18 @@ describe('RoomsHome create flow', () => {
     fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
     await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=pick'));
     expect(roomApi.selectGame).not.toHaveBeenCalled();
+  });
+
+  it('renders the shared footer with privacy and terms links (spec 0031)', async () => {
+    render(<RoomsHome viewer={{ signedIn: false }} />);
+    const footer = await screen.findByRole('contentinfo');
+    expect(within(footer).getByRole('link', { name: 'Privacy' })).toHaveProperty(
+      'href',
+      expect.stringContaining('/privacy'),
+    );
+    expect(within(footer).getByRole('link', { name: 'Terms' })).toHaveProperty(
+      'href',
+      expect.stringContaining('/terms'),
+    );
   });
 });

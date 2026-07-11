@@ -92,4 +92,20 @@ Out:
 - [ ] Both pages read well at 360px.
 - [ ] Tests assert both routes render, expose the key clauses (no-warranty, terms-can-change,
       first-party analytics), and the footer links resolve.
+
+## Release blockers (developer / legal must set before go-live)
+
+These ship as clearly-marked placeholders in `lib/legal.ts` and on the pages; they are a one-way door
+once the routes are public, so treat them as launch blockers, not TODOs:
+
+- [ ] **Contact email** routes to a real, monitored inbox - it is the channel the policy directs users
+      to for data access / deletion / export requests; a dead inbox is a legal + trust failure.
+- [ ] **Governing law** is a real jurisdiction. The placeholder "the jurisdiction where Branch Out
+      Games is operated" is not an enforceable choice-of-law clause.
+- [ ] **Operating entity** is named in the ToS (who "we"/"us" are), which strengthens the IP and
+      liability clauses.
+- [ ] The **Analytics** section stays in step with spec `0032`: it is written as forthcoming ("when
+      enabled") because PostHog is not live yet; flip it to present tense only when `0032` ships, so
+      users are never told data flows to PostHog before it does.
+- [ ] A real **legal review** - this is a good-faith, plain-language draft, not lawyer-reviewed.
 </content>
