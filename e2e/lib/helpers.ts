@@ -6,16 +6,29 @@ export function uniqueAccount() {
   return { email: `${tag.toLowerCase()}@example.com`, password: 'supersecret1', gamerTag: tag };
 }
 
-/** Sign up a fresh host account through the real /signup UI, then land on the rooms home. */
-export async function signUpHost(page: Page): Promise<void> {
+/** A signed-up account, as returned by {@link signUp}. */
+export interface Account {
+  email: string;
+  password: string;
+  gamerTag: string;
+}
+
+/** Sign up a fresh account through the real /signup UI and return it (session cookie set). */
+export async function signUp(page: Page): Promise<Account> {
   const account = uniqueAccount();
   await page.goto('/signup');
   await page.getByLabel('Email').fill(account.email);
   await page.getByLabel('Password').fill(account.password);
   await page.getByLabel('Gamer tag').fill(account.gamerTag);
   await page.getByRole('button', { name: /create account/i }).click();
-  // The done state confirms the session cookie is set; then head to the rooms home.
+  // The done state confirms the session cookie is set.
   await expect(page.getByText(/you are in/i)).toBeVisible();
+  return account;
+}
+
+/** Sign up a fresh host account through the real /signup UI, then land on the rooms home. */
+export async function signUpHost(page: Page): Promise<void> {
+  await signUp(page);
   await page.goto('/rooms');
 }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Avatar } from '../../../components/Avatar';
 import { fetchProfile, type PublicProfile } from '../../../lib/profile-api';
+import { ProfileShare } from './ProfileShare';
 
 // Public player profile (spec 0027). A Server Component: the visibility gate is applied server-side
 // by the control-plane, so this just renders whatever the projection returns (full when public;
@@ -85,8 +86,9 @@ function ProfileBody({ profile }: { profile: PublicProfile }) {
         </div>
       </header>
 
-      <section aria-label="Stars" className="flex items-center gap-3">
+      <section aria-label="Stars" className="flex flex-wrap items-center gap-3">
         <StarBadge stars={profile.totalStars} />
+        <ProfileShare name={name} />
       </section>
 
       {profile.restricted ? (

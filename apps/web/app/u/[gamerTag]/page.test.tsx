@@ -49,6 +49,34 @@ describe('public profile page', () => {
     expect(screen.queryByRole('heading', { name: 'Recent games' })).toBeNull();
   });
 
+  it('shows the friends-only message for a friends-only restricted profile', async () => {
+    fetchProfile.mockResolvedValue({
+      gamerTag: 'AdaL',
+      totalStars: 2,
+      visibility: 'friends-only',
+      restricted: true,
+    });
+    await renderPage();
+    expect(screen.getByText('2 stars')).toBeDefined();
+    expect(screen.getByText(/This profile is friends-only/)).toBeDefined();
+    expect(screen.queryByRole('heading', { name: 'Recent games' })).toBeNull();
+  });
+
+  it('shows an empty state when a public profile has played no games', async () => {
+    fetchProfile.mockResolvedValue({
+      gamerTag: 'AdaL',
+      totalStars: 0,
+      visibility: 'public',
+      restricted: false,
+      nickname: 'Ada',
+      avatar: 'sprout',
+      recentPlays: [],
+    });
+    await renderPage();
+    expect(screen.getByRole('heading', { name: 'Recent games' })).toBeDefined();
+    expect(screen.getByText('No games played yet.')).toBeDefined();
+  });
+
   it('shows a not-found message for an unknown tag', async () => {
     fetchProfile.mockResolvedValue(null);
     await renderPage('ghost');

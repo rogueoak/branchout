@@ -37,6 +37,7 @@ export function AccountClient() {
   const [account, setAccount] = useState<MeAccount | null | undefined>(undefined);
   const [nickname, setNick] = useState('');
   const [savingNick, setSavingNick] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -80,10 +81,17 @@ export function AccountClient() {
   async function onPickAvatar(id: string) {
     setError(null);
     setNotice(null);
+    setSavingAvatar(id);
     try {
+      // Confirm-then-reflect: the selected ring reads from `account.avatar`, which is only updated
+      // once the write succeeds - so a failed save leaves the ring on the prior avatar (nothing to
+      // revert), while the notice/error tell the player what happened even on a slow connection.
       setAccount(await setAvatar(id));
+      setNotice('Avatar updated.');
     } catch (err) {
       setError(toMessage(err));
+    } finally {
+      setSavingAvatar(null);
     }
   }
 
@@ -92,6 +100,7 @@ export function AccountClient() {
     setNotice(null);
     try {
       setAccount(await setVisibility(value));
+      setNotice('Privacy updated.');
     } catch (err) {
       setError(toMessage(err));
     }
@@ -198,8 +207,10 @@ export function AccountClient() {
                 type="button"
                 aria-label={`Choose the ${id} avatar`}
                 aria-pressed={account.avatar === id}
+                aria-busy={savingAvatar === id}
+                disabled={savingAvatar !== null}
                 onClick={() => onPickAvatar(id)}
-                className={`rounded-full p-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                className={`rounded-full p-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60 ${
                   account.avatar === id ? 'ring-2 ring-primary' : ''
                 }`}
               >

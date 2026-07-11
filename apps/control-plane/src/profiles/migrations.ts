@@ -12,7 +12,7 @@ export const profileMigrations: Migration[] = [
     name: 'create_account_game_plays',
     sql: `
       CREATE TABLE IF NOT EXISTS account_game_plays (
-        account_id uuid        NOT NULL,
+        account_id uuid        NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
         game_id    text        NOT NULL,
         game       text        NOT NULL,
         rank       integer     NOT NULL,

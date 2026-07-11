@@ -71,6 +71,42 @@ describe('AccountClient', () => {
     await waitFor(() => expect(api.setVisibility).toHaveBeenCalledWith('private'));
   });
 
+  it('confirms after saving visibility (a privacy control needs feedback)', async () => {
+    api.fetchMe.mockResolvedValue({ kind: 'account', account });
+    api.setVisibility.mockResolvedValue({ ...account, visibility: 'private' });
+    render(<AccountClient />);
+    await screen.findByRole('heading', { name: 'Ada' });
+    fireEvent.change(screen.getByLabelText('Who can see your full profile'), {
+      target: { value: 'private' },
+    });
+    expect(await screen.findByText('Privacy updated.')).toBeDefined();
+  });
+
+  it('confirms after saving an avatar', async () => {
+    api.fetchMe.mockResolvedValue({ kind: 'account', account });
+    api.setAvatar.mockResolvedValue({ ...account, avatar: 'berry' });
+    render(<AccountClient />);
+    await screen.findByRole('heading', { name: 'Ada' });
+    fireEvent.click(screen.getByRole('button', { name: 'Choose the berry avatar' }));
+    expect(await screen.findByText('Avatar updated.')).toBeDefined();
+  });
+
+  it('shows an error and keeps the confirmed avatar when the save fails', async () => {
+    api.fetchMe.mockResolvedValue({ kind: 'account', account });
+    api.setAvatar.mockRejectedValue(new Error('network down'));
+    render(<AccountClient />);
+    await screen.findByRole('heading', { name: 'Ada' });
+    fireEvent.click(screen.getByRole('button', { name: 'Choose the berry avatar' }));
+    expect(await screen.findByRole('alert')).toBeDefined();
+    // Confirm-then-reflect: a failed write leaves the prior avatar selected (nothing to revert).
+    expect(
+      screen.getByRole('button', { name: 'Choose the sprout avatar' }).getAttribute('aria-pressed'),
+    ).toBe('true');
+    expect(
+      screen.getByRole('button', { name: 'Choose the berry avatar' }).getAttribute('aria-pressed'),
+    ).toBe('false');
+  });
+
   it('logs out and routes home', async () => {
     api.fetchMe.mockResolvedValue({ kind: 'account', account });
     api.logout.mockResolvedValue(undefined);

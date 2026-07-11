@@ -7,12 +7,12 @@ import type {
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import { CreditLedger } from '../credits/ledger';
 import { standingsToStars } from '../credits/stars';
-import type { NewAccountPlay, PlaysRepository } from '../profiles/plays';
 import type { Session } from '../sessions/session';
 import { canHost } from '../sessions/session';
 import { validateDisplayName } from '../validation/display-name';
 import { generateCode, shareLink } from './code';
 import type { ControlAction, EngineClient } from './engine-client';
+import type { PlaysRecorder, RoomGamePlay } from './plays-recorder';
 import {
   hasViewer,
   newPlayerId,
@@ -118,7 +118,7 @@ export class RoomService {
     private readonly membership: MembershipStore,
     private readonly ledger: CreditLedger,
     private readonly engine: EngineClient,
-    private readonly plays: PlaysRepository,
+    private readonly plays: PlaysRecorder,
   ) {}
 
   /**
@@ -434,7 +434,7 @@ export class RoomService {
       const accountByPlayer = new Map(
         members.filter((m) => m.accountId).map((m) => [m.playerId, m.accountId as string]),
       );
-      const plays: NewAccountPlay[] = awards.flatMap((award) => {
+      const plays: RoomGamePlay[] = awards.flatMap((award) => {
         const accountId = accountByPlayer.get(award.player);
         return accountId
           ? [
