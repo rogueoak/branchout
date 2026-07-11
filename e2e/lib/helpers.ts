@@ -19,12 +19,22 @@ export async function signUpHost(page: Page): Promise<void> {
   await page.goto('/rooms');
 }
 
-/** Host creates a room from the rooms home; returns the 5-char join code (read from the URL). */
+/**
+ * Host creates a room from the rooms home and walks the create flow (spec 0029): create -> pick a
+ * game (Trivia) -> invite -> into the lobby. Returns the 5-char join code (read from the URL). This
+ * exercises the stepped create flow in a real browser on every hosting test.
+ */
 export async function createRoom(page: Page): Promise<string> {
   await page.getByRole('button', { name: /create a room/i }).click();
-  await page.waitForURL(/\/rooms\/[A-Z2-9]{5}$/);
-  const code = page.url().match(/\/rooms\/([A-Z2-9]{5})$/)?.[1];
+  // The create flow lands on the pick step first.
+  await page.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=pick/);
+  const code = page.url().match(/\/rooms\/([A-Z2-9]{5})/)?.[1];
   if (!code) throw new Error(`could not read room code from ${page.url()}`);
+  // Pick a game (its detail card), then pass the invite step into the lobby.
+  await page.getByRole('button', { name: /pick trivia/i }).click();
+  await page.waitForURL(new RegExp(`/rooms/${code}\\?step=invite`));
+  await page.getByRole('button', { name: /continue to room/i }).click();
+  await page.waitForURL(new RegExp(`/rooms/${code}(?![?/])`));
   return code;
 }
 

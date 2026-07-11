@@ -164,6 +164,15 @@ Capture durable lessons as they emerge.
 
 ## UI and CTAs
 
+- **A content-bearing "card as a button" must not reuse the button recipe - it inherits
+  `white-space: nowrap` and won't wrap.** Wrapping a detail card in a `<button>` styled with
+  `buttonVariants()` pulled in the button base's `white-space: nowrap`, which (being inherited)
+  forced the card's multi-sentence summary onto one line and blew past the phone viewport (631px on a
+  ~413px screen). The card already owns its hover/selected styling, so the clickable wrapper needs only
+  a minimal reset (full width, left-aligned text, a focus ring) - not the whole button recipe. Reach
+  for `buttonVariants()` on actual buttons (short, single-line labels), not on wrappers around
+  flowing content. The phone-viewport e2e caught this where every unit test (jsdom has no layout)
+  passed - a real-browser overflow guard earns its keep. (Spec `0029`.)
 - **Prevent iOS input-zoom by sizing the field >= 16px, never by disabling zoom.** iOS Safari
   auto-zooms a focused form control whose font-size is under 16px, and canopy inputs render
   `text-sm` (14px). The one-line temptation - `maximum-scale=1` / `user-scalable=no` on the viewport

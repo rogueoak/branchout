@@ -1,14 +1,17 @@
 'use client';
 
-// The pre-game lobby: the room code and share link, who is here, each player's mode toggle, and -
-// for the host - the game picker, the selected game's config panel, and Start. An observer sees the
-// roster and their watching state only. Presentational and controlled; the parent owns the data and
-// the actions. The config is opaque (the chosen game's blob), so the lobby is game-agnostic: it
-// resolves the game's UI module by id (spec 0023) and renders that module's config panel.
+// The pre-game lobby: the invite affordance, who is here, each player's mode toggle, and - for the
+// host - the selected game's detail card, a Change game button, the config panel, and Start. Game
+// SELECTION happens in the create flow's pick step and the change-game flow (spec 0029), not here;
+// the lobby shows what is chosen and lets the host swap it. An observer sees the roster and their
+// watching state only. Presentational and controlled; the parent owns the data and the actions. The
+// config is opaque (the chosen game's blob), so the lobby is game-agnostic: it resolves the game's
+// UI module by id (spec 0023) and renders that module's config panel.
 
 import { Badge, Button } from '@rogueoak/canopy';
-import { DEFAULT_GAME_UI, GAME_UI_LIST, getGameUi } from '../../lib/games/registry';
+import { DEFAULT_GAME_UI, getGameUi } from '../../lib/games/registry';
 import type { RoomMember, RoomView, Mode, Role } from '../../lib/room-api';
+import { GameCard } from './GameCard';
 import { ShareLink } from './ShareLink';
 
 interface LobbyProps {
@@ -18,9 +21,10 @@ interface LobbyProps {
   mode?: Mode;
   isHost: boolean;
   me?: string;
-  /** The game id the host has selected (drives the config panel). */
+  /** The game id the host has selected (drives the detail card + config panel). */
   game: string;
-  onGameChange: (game: string) => void;
+  /** Open the change-game flow (the card picker); selection happens there, not in the lobby. */
+  onChangeGame: () => void;
   /** The opaque config for the selected game. */
   config: unknown;
   onConfigChange: (next: unknown) => void;
@@ -53,7 +57,7 @@ export function Lobby({
   isHost,
   me,
   game,
-  onGameChange,
+  onChangeGame,
   config,
   onConfigChange,
   onStart,
@@ -83,15 +87,12 @@ export function Lobby({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
-      <header aria-label="How to join" className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <p className="text-body-sm text-text-muted">Room code</p>
-          <p className="text-display tabular-nums tracking-widest text-text">{room.code}</p>
-        </div>
-        <div className="flex flex-col gap-1 text-body-sm text-text-muted">
-          <span>On the same WiFi? Others join on their phones here:</span>
-          <ShareLink href={room.shareLink} />
-        </div>
+      <header aria-label="Invite friends" className="flex flex-col gap-2">
+        <h2 className="text-h4 text-text">Invite friends</h2>
+        <p className="text-body-sm text-text-muted">
+          Share the room code or link - anyone can join, no account needed:
+        </p>
+        <ShareLink code={room.code} href={room.shareLink} />
       </header>
 
       <section aria-label="Players" className="flex flex-col gap-3">
@@ -161,21 +162,19 @@ export function Lobby({
 
       {isHost ? (
         <section aria-label="Game setup" className="flex flex-col gap-4">
-          <h2 className="text-h3 text-text">Set up your game</h2>
-          <div role="group" aria-label="Choose a game" className="flex flex-wrap gap-2">
-            {GAME_UI_LIST.map((option) => (
-              <Button
-                key={option.id}
-                type="button"
-                variant={option.id === game ? 'primary' : 'outline'}
-                aria-pressed={option.id === game}
-                onClick={() => onGameChange(option.id)}
-              >
-                {option.name}
-              </Button>
-            ))}
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-h3 text-text">Your game</h2>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onChangeGame}
+              disabled={starting}
+            >
+              Change game
+            </Button>
           </div>
-          <p className="text-body-sm text-text-muted">{activeModule.tagline}</p>
+          <GameCard game={activeModule} />
 
           <ConfigPanel value={config} onChange={onConfigChange} disabled={starting} />
 

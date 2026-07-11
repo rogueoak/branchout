@@ -5,10 +5,13 @@
 // and opens the engine WebSocket (spec 0007) when the game is running. It is a thin orchestrator -
 // the phase rendering lives in the game components, the engine folding in the game client.
 
-import { buttonVariants } from '@rogueoak/canopy';
+import { Button, buttonVariants } from '@rogueoak/canopy';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GameStage, type HostControl } from '../../../components/game/GameStage';
+import { GamePicker } from '../../../components/game/GamePicker';
 import { Lobby } from '../../../components/game/Lobby';
+import { ShareLink } from '../../../components/game/ShareLink';
 import { ENGINE_WS_URL } from '../../../lib/engine';
 import { recallMembership, rememberMembership, type Membership } from '../../../lib/membership';
 import {
@@ -30,11 +33,24 @@ import { useGameClient } from '../../../lib/use-game-client';
 const DEFAULT_GAME_ID = 'trivia';
 const MEMBER_POLL_MS = 3000;
 
-interface RoomClientProps {
-  code: string;
+// The host's create-flow setup steps (spec 0029), addressable via `?step=`: `pick` is the first
+// game choice (advances to `invite`), `invite` is the share screen; `null` is the lobby. The in-room
+// "Change game" swap is deliberately NOT a step here - it is transient local state (see `changing`),
+// so reloading or sharing a room URL never re-enters the picker. Non-hosts never enter a step.
+type SetupStep = 'pick' | 'invite' | null;
+
+function normalizeStep(raw: string | undefined): SetupStep {
+  return raw === 'pick' || raw === 'invite' ? raw : null;
 }
 
-export function RoomClient({ code }: RoomClientProps) {
+interface RoomClientProps {
+  code: string;
+  /** The `?step=` query the create flow set (server-passed from the page), seeding the setup step. */
+  initialStep?: string;
+}
+
+export function RoomClient({ code, initialStep }: RoomClientProps) {
+  const router = useRouter();
   // `undefined` means "still hydrating from session storage"; `null` means "hydrated, not a member
   // of this room". Distinguishing them avoids flashing the join prompt to a valid member on load.
   const [membership, setMembership] = useState<Membership | null | undefined>(undefined);
@@ -45,19 +61,50 @@ export function RoomClient({ code }: RoomClientProps) {
     () => getGameUi(DEFAULT_GAME_ID)?.defaultConfig() ?? {},
   );
   const [starting, setStarting] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [step, setStep] = useState<SetupStep>(() => normalizeStep(initialStep));
+  // The in-room "Change game" picker is transient local state, not a `?step=` (so a reload/share of
+  // the room URL never re-opens it). Distinct from the create-flow `step` above.
+  const [changing, setChanging] = useState(false);
 
   // Hydrate what the join step remembered about this player. Without it, this browser is not a
-  // known member of the room, so send them to the join screen.
+  // known member of the room, so send them to the join screen. If the room already has a selected
+  // game (a reload, or the create flow's deep link that selected it first), seed the local game +
+  // config from it so the config panel and the selected-game card show the right game.
   useEffect(() => {
     const recalled = recallMembership(code);
     setMembership(recalled ?? null);
     setRoom(recalled?.room ?? null);
+    const selected = recalled?.room?.selectedGame;
+    const module = selected ? getGameUi(selected) : undefined;
+    if (module) {
+      setGame(module.id);
+      setConfig(module.defaultConfig());
+    }
   }, [code]);
 
   const isHost = membership?.isHost ?? false;
   const running = room?.status === 'running';
+  // Only the host runs the setup wizard, and never while the game is running.
+  const activeStep: SetupStep = isHost && !running ? step : null;
+  // The picker shows for the create-flow `pick` step or the in-room change-game (local) flow.
+  const showPicker = isHost && !running && (activeStep === 'pick' || changing);
+
+  const goToStep = useCallback(
+    (next: SetupStep) => {
+      setStep(next);
+      router.replace(next ? `/rooms/${code}?step=${next}` : `/rooms/${code}`, { scroll: false });
+    },
+    [code, router],
+  );
+
+  // Clear a stale `?step=` left in a shared/reloaded URL when the viewer is not a host or the game is
+  // running - so the address bar matches the lobby/game they actually see (no ghost create-flow step).
+  useEffect(() => {
+    if (membership && step !== null && (!isHost || running)) goToStep(null);
+  }, [membership, isHost, running, step, goToStep]);
 
   // The host reads its own public playerId from the members list (its own host row); a non-host
   // relies on the playerId join returned and stored in membership. This is the identity the engine
@@ -145,11 +192,34 @@ export function RoomClient({ code }: RoomClientProps) {
     [code],
   );
 
-  const onGameChange = useCallback((next: string) => {
-    setGame(next);
-    const module = getGameUi(next);
-    if (module) setConfig(module.defaultConfig());
-  }, []);
+  // Pick a game in the setup wizard: set it locally, select it on the room (so the share-card
+  // preview and roster resolve it), then advance - a first pick moves to invite, a change returns
+  // to the lobby. Stays on the picker if the selection call fails.
+  const onPickGame = useCallback(
+    async (next: string) => {
+      const module = getGameUi(next);
+      const nextConfig = module?.defaultConfig() ?? {};
+      setGame(next);
+      setConfig(nextConfig);
+      setPicking(true);
+      setLoadError(null);
+      try {
+        const nextRoom = await selectGame(code, next, nextConfig);
+        persist(nextRoom);
+      } catch (error) {
+        if (error instanceof RoomApiError) setLoadError(error.message);
+        return;
+      } finally {
+        setPicking(false);
+      }
+      // A change-game swap returns to the lobby; a first pick advances to the invite step.
+      if (changing) setChanging(false);
+      else goToStep('invite');
+    },
+    [code, changing, persist, goToStep],
+  );
+
+  const onChangeGame = useCallback(() => setChanging(true), []);
 
   const onStart = useCallback(async () => {
     setStarting(true);
@@ -276,6 +346,44 @@ export function RoomClient({ code }: RoomClientProps) {
               </div>
             )}
           </div>
+        ) : showPicker ? (
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+            <header className="flex flex-col gap-2">
+              <h1 className="text-h2 text-text">{changing ? 'Change game' : 'Pick a game'}</h1>
+              <p className="text-body text-text-muted">
+                {changing
+                  ? 'Swap to a different game - your friends stay in the room.'
+                  : 'Choose what to play. You can change it later.'}
+              </p>
+            </header>
+            <GamePicker selected={game} onSelect={onPickGame} disabled={picking} />
+            {changing ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setChanging(false)}
+                disabled={picking}
+              >
+                Cancel
+              </Button>
+            ) : null}
+          </div>
+        ) : activeStep === 'invite' ? (
+          <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+            <header className="flex flex-col gap-2">
+              <h1 className="text-h2 text-text">Invite your friends</h1>
+              <p className="text-body text-text-muted">
+                Share the room code or link. Anyone can join - no account needed.
+              </p>
+            </header>
+            <div className="flex flex-col gap-2 rounded-xl bg-surface-raised p-4">
+              <p className="text-body-sm text-text-muted">Room code</p>
+              <ShareLink code={room.code} href={room.shareLink} />
+            </div>
+            <Button type="button" variant="primary" onClick={() => goToStep(null)}>
+              Continue to room
+            </Button>
+          </div>
         ) : (
           <Lobby
             room={room}
@@ -285,7 +393,7 @@ export function RoomClient({ code }: RoomClientProps) {
             isHost={isHost}
             me={me}
             game={game}
-            onGameChange={onGameChange}
+            onChangeGame={onChangeGame}
             config={config}
             onConfigChange={(next) => setConfig(next)}
             onStart={onStart}

@@ -2,6 +2,7 @@
 // viewer, and remote into the generic game shell. The behavior is unchanged from the pre-registry
 // client - the viewer/remote are the same components, now resolved by game id instead of hardwired.
 
+import { triviaSvg } from '@branchout/brand/trivia';
 import { ViewerPane } from './Viewer';
 import { RemotePane } from './Remote';
 import { defaultTriviaConfig, validateTriviaConfig, type TriviaHostConfig } from './config';
@@ -12,6 +13,9 @@ export const triviaGameUi: GameUiModule = {
   id: 'trivia',
   name: 'Trivia',
   tagline: 'Answer trivia questions; dispute a close call.',
+  icon: triviaSvg,
+  summary:
+    '1,600 questions across 8 categories. Rounds are fast, answers are free text, and a close call goes to a group vote.',
   defaultConfig: () => defaultTriviaConfig(),
   validateConfig: (config) => {
     const errors = validateTriviaConfig(config as TriviaHostConfig);
