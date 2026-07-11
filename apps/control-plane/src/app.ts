@@ -6,7 +6,9 @@ import type { AccountService } from './accounts/service';
 import type { SessionCookieConfig } from './config';
 import { registerAuthRoutes } from './routes/auth';
 import { registerEngineRoutes } from './routes/engine';
+import { registerProfileRoutes } from './routes/profiles';
 import { registerRoomRoutes } from './routes/rooms';
+import type { ProfileService } from './profiles/service';
 import type { RoomService } from './rooms/service';
 import type { SessionStore } from './sessions/store';
 
@@ -19,6 +21,7 @@ export interface HealthChecks {
 export interface AppDeps {
   checks: HealthChecks;
   accounts: AccountService;
+  profiles: ProfileService;
   sessions: SessionStore;
   rooms: RoomService;
   cookie: SessionCookieConfig;
@@ -76,6 +79,8 @@ export function createApp(deps: AppDeps): FastifyInstance {
         sessions: deps.sessions,
         cookie: deps.cookie,
       });
+
+      registerProfileRoutes(v1, { profiles: deps.profiles });
 
       registerEngineRoutes(v1, {
         rooms: deps.rooms,

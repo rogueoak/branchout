@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="bloom avatar">
+  <rect width="256" height="256" rx="56" fill="#A855F7"/>
+  <circle cx="128" cy="140" r="66" fill="#FFF7ED"/>
+  <path d="M128 96 q-8 -34 -34 -44 q10 30 34 44 z" fill="#d2a463"/>
+  <path d="M128 96 q8 -30 32 -40 q-8 28 -32 40 z" fill="#d2a463" opacity="0.85"/>
+  <path d="M90 122 q8 -12 16 0" fill="none" stroke="#1E1B2E" stroke-width="8" stroke-linecap="round"/><path d="M150 122 q8 -12 16 0" fill="none" stroke="#1E1B2E" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="94" cy="150" r="8" fill="#F9A8D4" opacity="0.7"/>
+  <circle cx="162" cy="150" r="8" fill="#F9A8D4" opacity="0.7"/>
+  <path d="M100 148 q28 34 56 0 q-28 8 -56 0 z" fill="#1E1B2E"/>
+</svg>

@@ -27,4 +27,17 @@ export const accountMigrations: Migration[] = [
         ON accounts (gamer_tag_normalized);
     `,
   },
+  {
+    // Spec 0027: a public profile needs an avatar and a visibility. Both are added with safe
+    // constant defaults so every existing row stays valid (the versioned-envelope learning); a
+    // fresh signup overrides `avatar` with a deterministic per-tag default in the service.
+    id: 4,
+    name: 'add_account_profile_fields',
+    sql: `
+      ALTER TABLE accounts
+        ADD COLUMN IF NOT EXISTS avatar text NOT NULL DEFAULT 'sprout';
+      ALTER TABLE accounts
+        ADD COLUMN IF NOT EXISTS profile_visibility text NOT NULL DEFAULT 'public';
+    `,
+  },
 ];

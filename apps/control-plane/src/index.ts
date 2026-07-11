@@ -10,6 +10,8 @@ import { FreeTierProvider } from './credits/tiers';
 import { createPostgresPool, pingPostgres } from './db';
 import { runMigrations } from './db/migrations';
 import { allMigrations } from './migrations';
+import { PostgresPlaysRepository } from './profiles/plays.postgres';
+import { ProfileService } from './profiles/service';
 import { HttpEngineClient } from './rooms/engine-client';
 import { RedisMembershipStore, type MembershipRedis } from './rooms/membership.redis';
 import { PostgresRoomRepository } from './rooms/repository';
@@ -77,7 +79,15 @@ async function main(): Promise<void> {
   const membership = new RedisMembershipStore(membershipRedis, config.membershipTtlSeconds);
   const ledger = new CreditLedger(new PostgresLedgerRepository(pool), new FreeTierProvider());
   const engine = new HttpEngineClient(config.engineUrl, config.internalToken);
-  const rooms = new RoomService(new PostgresRoomRepository(pool), membership, ledger, engine);
+  const plays = new PostgresPlaysRepository(pool);
+  const rooms = new RoomService(
+    new PostgresRoomRepository(pool),
+    membership,
+    ledger,
+    engine,
+    plays,
+  );
+  const profiles = new ProfileService(accounts, plays);
 
   const app = createApp({
     checks: {
@@ -85,6 +95,7 @@ async function main(): Promise<void> {
       checkRedis: () => pingRedis(redis),
     },
     accounts,
+    profiles,
     sessions,
     rooms,
     cookie: config.cookie,
