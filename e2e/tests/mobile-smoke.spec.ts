@@ -44,8 +44,9 @@ test.describe('the shared top nav (spec 0028) at 360px', () => {
     for (const path of ['/', '/rooms']) {
       await page.goto(path);
       await expect(nav).toBeVisible();
-      await expect(nav.getByRole('link', { name: 'Games' })).toBeVisible();
-      await expect(nav.getByRole('link', { name: 'Sign up' })).toBeVisible();
+      // `exact` so "Games" does not also match the wordmark link ("Branch Out Games home").
+      await expect(nav.getByRole('link', { name: 'Games', exact: true })).toBeVisible();
+      await expect(nav.getByRole('link', { name: 'Sign up', exact: true })).toBeVisible();
       await expectFits(page);
     }
   });
