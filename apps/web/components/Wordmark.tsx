@@ -28,7 +28,9 @@ export function Wordmark({ className }: WordmarkProps) {
         dangerouslySetInnerHTML={{ __html: iconSvg }}
       />
       <span className="flex items-end font-bold leading-none tracking-tight text-text">
-        <span className="text-xl sm:text-2xl">Branch Out</span>
+        {/* text-lg on the smallest phones so the nav (wordmark + Games + Log in + Sign up) fits at
+            360px without horizontal overflow; scales up from sm. */}
+        <span className="text-lg sm:text-2xl">Branch Out</span>
         <span className="ml-1 -translate-y-0.5 -rotate-6 text-xs font-semibold uppercase tracking-wide text-primary sm:text-sm">
           games
         </span>
