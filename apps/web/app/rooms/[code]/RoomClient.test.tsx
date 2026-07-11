@@ -14,6 +14,13 @@ const hoisted = vi.hoisted(() => ({
   selectGame: vi.fn(),
   replace: vi.fn(),
   recalled: null as Membership | null,
+  // The engine state the mocked useGameClient returns - mutable so a test can drive a phase change.
+  gameState: {
+    connection: 'connecting',
+    joined: false,
+    phase: 'configuring' as string,
+    paused: false,
+  },
 }));
 const { getRoom, listMembers } = hoisted;
 
@@ -42,13 +49,24 @@ vi.mock('../../../lib/membership', async (importOriginal) => {
   };
 });
 
-// The engine socket is out of scope for this transition test; stub the hook.
+// The engine socket is out of scope for this transition test; stub the hook. It returns the mutable
+// hoisted.gameState so a test can drive the phase (e.g. into `complete`) across re-renders.
 vi.mock('../../../lib/use-game-client', () => ({
   useGameClient: () => ({
-    state: { connection: 'connecting', joined: false, phase: 'configuring', paused: false },
+    state: hoisted.gameState,
     submitAnswer: vi.fn(),
     submitVote: vi.fn(),
   }),
+}));
+
+// Analytics seams (spec 0032): game_picked on pick, game_completed once on the host's complete
+// transition. Mock the module so we assert the seam without PostHog.
+vi.mock('../../../lib/analytics', () => ({
+  trackGamePicked: vi.fn(),
+  trackGameStarted: vi.fn(),
+  trackGameCompleted: vi.fn(),
+  identifyPlayer: vi.fn(),
+  resetAnalytics: vi.fn(),
 }));
 
 // The lobby is mocked to a marker, but it exposes the "Change game" trigger so a test can drive the
@@ -67,6 +85,7 @@ vi.mock('../../../components/game/GameStage', () => ({ GameStage: () => <div>GAM
 
 import { fireEvent } from '@testing-library/react';
 import { RoomApiError } from '../../../lib/room-api';
+import { trackGameCompleted, trackGamePicked } from '../../../lib/analytics';
 import { RoomClient } from './RoomClient';
 
 const roomAt = (status: string): RoomView => ({
@@ -106,6 +125,12 @@ beforeEach(() => {
   listMembers.mockResolvedValue([]);
   hoisted.selectGame.mockReset();
   hoisted.selectGame.mockResolvedValue(roomAt('lobby'));
+  hoisted.gameState = {
+    connection: 'connecting',
+    joined: false,
+    phase: 'configuring',
+    paused: false,
+  };
 });
 
 afterEach(() => {
@@ -240,6 +265,51 @@ describe('RoomClient in-room change game (local state, not ?step=)', () => {
     expect(screen.queryByRole('heading', { name: /invite your friends/i })).toBeNull();
     expect(hoisted.selectGame).toHaveBeenCalledWith('ABC12', 'liar-liar', expect.anything());
     expect(hoisted.replace).not.toHaveBeenCalled();
+    // Analytics seam: picking a game fires game_picked with the chosen game id.
+    expect(trackGamePicked).toHaveBeenCalledWith('liar-liar');
+  });
+});
+
+describe('RoomClient game_completed analytics (spec 0032)', () => {
+  it('fires once for the host on a real transition into complete', async () => {
+    hoisted.recalled = hostMembership('running');
+    getRoom.mockResolvedValue(roomAt('running'));
+    hoisted.gameState = { connection: 'open', joined: true, phase: 'answering', paused: false };
+
+    const { rerender } = render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+    await screen.findByText('GAME_VIEW');
+    expect(trackGameCompleted).not.toHaveBeenCalled();
+
+    // The game ends: phase transitions to complete.
+    hoisted.gameState = { ...hoisted.gameState, phase: 'complete' };
+    rerender(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+    await waitFor(() => expect(trackGameCompleted).toHaveBeenCalledTimes(1));
+    expect(trackGameCompleted).toHaveBeenCalledWith('trivia');
+  });
+
+  it('does NOT fire for a non-host (avoids one event per connected client)', async () => {
+    hoisted.recalled = nonHostMembership('running');
+    getRoom.mockResolvedValue(roomAt('running'));
+    hoisted.gameState = { connection: 'open', joined: true, phase: 'answering', paused: false };
+
+    const { rerender } = render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+    await screen.findByText('GAME_VIEW');
+    hoisted.gameState = { ...hoisted.gameState, phase: 'complete' };
+    rerender(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+    await waitFor(() => expect(screen.getByText('GAME_VIEW')).toBeDefined());
+    expect(trackGameCompleted).not.toHaveBeenCalled();
+  });
+
+  it('does NOT fire on a reload/late-join that lands directly on complete', async () => {
+    hoisted.recalled = hostMembership('running');
+    getRoom.mockResolvedValue(roomAt('running'));
+    // First observed phase is already complete (a reload into a finished game).
+    hoisted.gameState = { connection: 'open', joined: true, phase: 'complete', paused: false };
+
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+    await screen.findByText('GAME_VIEW');
+    await waitFor(() => expect(getRoom).toHaveBeenCalled());
+    expect(trackGameCompleted).not.toHaveBeenCalled();
   });
 });
 

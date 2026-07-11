@@ -16,7 +16,15 @@ vi.mock('../../lib/room-api', () => ({
 }));
 vi.mock('../../lib/membership', () => ({ rememberMembership: vi.fn() }));
 
+// Analytics seam (spec 0032): room_created fires on a successful create.
+vi.mock('../../lib/analytics', () => ({
+  trackRoomCreated: vi.fn(),
+  identifyPlayer: vi.fn(),
+  resetAnalytics: vi.fn(),
+}));
+
 import * as roomApi from '../../lib/room-api';
+import { trackRoomCreated } from '../../lib/analytics';
 import { RoomsHome } from './RoomsHome';
 
 const room = {
@@ -43,6 +51,7 @@ describe('RoomsHome create flow', () => {
     fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
     await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=pick'));
     expect(roomApi.selectGame).not.toHaveBeenCalled();
+    expect(trackRoomCreated).toHaveBeenCalledTimes(1);
   });
 
   it('pre-selects the game and skips to invite when ?game names a known game', async () => {

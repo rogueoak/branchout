@@ -7,7 +7,7 @@
 
 import { Button, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { trackGameCompleted, trackGamePicked, trackGameStarted } from '../../../lib/analytics';
 import { GameStage, type HostControl } from '../../../components/game/GameStage';
 import { GamePicker } from '../../../components/game/GamePicker';
@@ -168,12 +168,18 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
 
   const { state, submitAnswer, submitVote } = useGameClient(gameOptions);
 
-  // Analytics (spec 0032): the game reaching its terminal `complete` phase is "game completed". Keyed
-  // on the phase alone so it fires once on the transition (complete is terminal, so it never re-fires).
+  // Analytics (spec 0032): "game completed" should be ONE event per finished game. Fire only on a real
+  // transition INTO `complete` from a prior non-complete phase (a ref tracks the previous phase) - so a
+  // reload/late-join that lands directly on `complete` does not fire - AND only for the host, so we get
+  // one event per game rather than one per connected client (players + spectators).
+  const prevPhaseRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (state.phase === 'complete') trackGameCompleted(room?.selectedGame ?? game);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase]);
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = state.phase;
+    if (isHost && prev !== undefined && prev !== 'complete' && state.phase === 'complete') {
+      trackGameCompleted(room?.selectedGame ?? game);
+    }
+  }, [state.phase, isHost, room?.selectedGame, game]);
 
   const persist = useCallback(
     (nextRoom: RoomView, patch?: Partial<Membership>) => {

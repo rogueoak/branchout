@@ -25,6 +25,42 @@ export function analyticsEnabled(): boolean {
 
 let started = false;
 
+const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const MAX_STR = 1000;
+
+/** Recursively redact email-like text and cap string length in a value. */
+function scrubValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return value.replace(EMAIL_RE, '[redacted-email]').slice(0, MAX_STR);
+  }
+  if (Array.isArray(value)) return value.map(scrubValue);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      out[key] = scrubValue((value as Record<string, unknown>)[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
+/**
+ * Scrub exception events before they leave the browser. Error messages and stack traces can carry
+ * interpolated user input - the one capture channel not covered by "we send only explicit props" -
+ * so redact email-like text and cap string length on every `$exception*` property. Exported for tests.
+ */
+export function sanitizeBeforeSend<
+  T extends { event?: string; properties?: Record<string, unknown> },
+>(event: T | null): T | null {
+  if (!event || event.event !== '$exception' || !event.properties) return event;
+  for (const key of Object.keys(event.properties)) {
+    if (key.startsWith('$exception')) {
+      event.properties[key] = scrubValue(event.properties[key]);
+    }
+  }
+  return event;
+}
+
 /** Initialize PostHog once, in the browser, in production with a key. A no-op otherwise (never throws). */
 export function initAnalytics(): void {
   if (started || typeof window === 'undefined' || !analyticsEnabled()) return;
@@ -35,30 +71,42 @@ export function initAnalytics(): void {
     // We capture pageviews manually on route change (App Router does not auto-capture correctly).
     capture_pageview: false,
     capture_pageleave: true,
+    // Cookieless: store the anonymous/repeat-visit id in localStorage only - no analytics COOKIE is
+    // written, so the strictly-necessary session cookie stays the only cookie we set (privacy policy).
+    persistence: 'localStorage',
     // Only identified (signed-in) players get a person profile - anonymous visitors stay anonymous.
     person_profiles: 'identified_only',
     // Privacy: no session replay, and no autocapture (which could hoover up gameplay text/DOM). We
-    // send only the explicit events below. Client error/exception reporting stays on.
+    // send only the explicit events below. Client error/exception reporting stays on, scrubbed by
+    // before_send so an error message/stack cannot leak user input.
     disable_session_recording: true,
     autocapture: false,
     capture_exceptions: true,
+    before_send: sanitizeBeforeSend,
   });
 }
 
+/** Ensure the client is initialized before a capture, so ordering (e.g. a child pageview effect firing
+ * before the provider's init effect) never drops an event. Idempotent + gated, so still a no-op off. */
+function ensureStarted(): boolean {
+  initAnalytics();
+  return started;
+}
+
 function capture(event: string, properties?: Record<string, unknown>): void {
-  if (!started) return;
+  if (!ensureStarted()) return;
   posthog.capture(event, properties);
 }
 
 /** Manual pageview on an App Router route change. `url` is an absolute URL. */
 export function capturePageview(url: string): void {
-  if (!started) return;
+  if (!ensureStarted()) return;
   posthog.capture('$pageview', { $current_url: url });
 }
 
 /** Identify a signed-in player by their public gamer tag - never email/session/PII. */
 export function identifyPlayer(gamerTag: string): void {
-  if (!started || !gamerTag) return;
+  if (!gamerTag || !ensureStarted()) return;
   posthog.identify(gamerTag);
 }
 

@@ -65,6 +65,10 @@ export function PrivacyContent() {
             advertising or cross-site tracking cookies.
           </li>
           <li>
+            It is <strong className="text-text">cookieless</strong>: PostHog stores a small amount
+            of data in your browser&apos;s local storage (not a cookie) to recognize repeat visits.
+          </li>
+          <li>
             It runs only on the live site. Nothing is collected when the app runs locally or in
             development.
           </li>
@@ -161,8 +165,10 @@ export function PrivacyContent() {
         <h2 className="text-h2 font-semibold text-text">Your choices and rights</h2>
         <ul className="mt-3 list-disc space-y-2 pl-6 text-body text-text-muted">
           <li>
-            You can block analytics with your browser&apos;s privacy settings or a content blocker,
-            and the site will still work.
+            Because our analytics is first-party, a content blocker that targets third-party
+            trackers will not stop it - but you can opt out with your browser&apos;s privacy
+            settings (disable JavaScript, or clear this site&apos;s local storage), and the site
+            will still work. We do not do any cross-site tracking.
           </li>
           <li>
             You can change your nickname, avatar, and profile visibility, or log out, any time.

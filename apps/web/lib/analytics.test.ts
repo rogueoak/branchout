@@ -45,10 +45,12 @@ describe('analytics gating (production + key only)', () => {
     // Data goes to our own origin, not a PostHog hostname (first-party by construction).
     expect(opts.api_host).toBe('/ingest');
     expect(opts.api_host).not.toContain('posthog.com');
-    // Privacy defaults: replay off, autocapture off, manual pageviews.
+    // Privacy defaults: replay off, autocapture off, manual pageviews, cookieless, scrubbed errors.
     expect(opts.disable_session_recording).toBe(true);
     expect(opts.autocapture).toBe(false);
     expect(opts.capture_pageview).toBe(false);
+    expect(opts.persistence).toBe('localStorage');
+    expect(typeof opts.before_send).toBe('function');
     // Initializing twice is idempotent.
     a.initAnalytics();
     expect(mockPosthog.init).toHaveBeenCalledTimes(1);
@@ -85,6 +87,12 @@ describe('funnel events (enabled)', () => {
     for (const [, props] of mockPosthog.capture.mock.calls) {
       if (props) for (const key of Object.keys(props)) expect(['game', 'rounds']).toContain(key);
     }
+    // Direct negative guard: no email, session id, or password appears anywhere in what we send, so
+    // a future event that smuggled one in (widening the allow-list above) would still be caught here.
+    const dump = JSON.stringify(mockPosthog.capture.mock.calls).toLowerCase();
+    expect(dump).not.toMatch(/@[a-z0-9.-]+\.[a-z]{2,}/);
+    expect(dump).not.toContain('session');
+    expect(dump).not.toContain('password');
   });
 
   it('captures a manual pageview with the current url', () => {
@@ -102,16 +110,46 @@ describe('funnel events (enabled)', () => {
   });
 });
 
-describe('no-op until initialized', () => {
-  it('every helper does nothing when init was never called', async () => {
+describe('self-init on first use', () => {
+  it('a capture before an explicit init still initializes and fires (no dropped first pageview)', async () => {
+    // React runs a child pageview effect before the parent provider's init effect; the helper must
+    // self-init so the landing pageview is not lost.
     const a = await load({ NODE_ENV: 'production', NEXT_PUBLIC_POSTHOG_KEY: 'phc_x' });
-    a.trackRoomCreated();
-    a.trackGameStarted('trivia', 3);
-    a.identifyPlayer('CoolCat');
-    a.resetAnalytics();
     a.capturePageview('https://branchout.games');
+    expect(mockPosthog.init).toHaveBeenCalledTimes(1);
+    expect(mockPosthog.capture).toHaveBeenCalledWith('$pageview', {
+      $current_url: 'https://branchout.games',
+    });
+  });
+
+  it('stays a no-op when disabled, even if a helper is called before init', async () => {
+    const a = await load({ NODE_ENV: 'test', NEXT_PUBLIC_POSTHOG_KEY: 'phc_x' });
+    a.capturePageview('https://branchout.games');
+    a.trackRoomCreated();
+    expect(mockPosthog.init).not.toHaveBeenCalled();
     expect(mockPosthog.capture).not.toHaveBeenCalled();
-    expect(mockPosthog.identify).not.toHaveBeenCalled();
-    expect(mockPosthog.reset).not.toHaveBeenCalled();
+  });
+});
+
+describe('exception sanitization (before_send)', () => {
+  it('redacts email-like text in $exception properties, leaving non-exception props and events alone', async () => {
+    const a = await load({ NODE_ENV: 'production', NEXT_PUBLIC_POSTHOG_KEY: 'phc_x' });
+    const scrubbed = a.sanitizeBeforeSend({
+      event: '$exception',
+      properties: {
+        $exception_message: 'failed for user ada@example.com',
+        $exception_list: [{ value: 'boom ada@example.com' }],
+        other: 'kept',
+      },
+    });
+    expect(scrubbed?.properties?.$exception_message).toBe('failed for user [redacted-email]');
+    expect((scrubbed?.properties?.$exception_list as { value: string }[])[0].value).toBe(
+      'boom [redacted-email]',
+    );
+    expect(scrubbed?.properties?.other).toBe('kept');
+
+    // A normal (non-exception) event passes through untouched.
+    const normal = { event: 'game_started', properties: { game: 'trivia' } };
+    expect(a.sanitizeBeforeSend(normal)).toBe(normal);
   });
 });
