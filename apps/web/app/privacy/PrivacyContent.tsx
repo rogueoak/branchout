@@ -3,7 +3,7 @@
 // and footer). Plain-language and accurate to what Branch Out actually does today: accounts, rooms,
 // and the first-party PostHog analytics being enabled (spec 0032). ASCII-only, Trellis voice.
 
-import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED } from '../../lib/legal';
+import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED, OPERATING_ENTITY } from '../../lib/legal';
 
 function ExternalLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -36,9 +36,9 @@ export function PrivacyContent() {
       <p className="mt-2 text-caption text-text-muted">Last updated: {LEGAL_LAST_UPDATED}</p>
 
       <p className="mt-6 text-body text-text-muted">
-        Branch Out Games is a place to play games with friends. This page explains, in plain
-        language, what data we collect when you use it and why. We keep it short because we try to
-        collect little.
+        Branch Out Games, operated by {OPERATING_ENTITY} (&ldquo;we,&rdquo; &ldquo;us&rdquo;), is a
+        place to play games with friends. This page explains, in plain language, what data we
+        collect when you use it and why. We keep it short because we try to collect little.
       </p>
 
       <section className="mt-12">

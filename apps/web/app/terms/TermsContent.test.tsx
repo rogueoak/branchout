@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { LEGAL_LAST_UPDATED } from '../../lib/legal';
+import { LEGAL_LAST_UPDATED, OPERATING_ENTITY } from '../../lib/legal';
 import { TermsContent } from './TermsContent';
 
 // The page.tsx wraps this with the nav + footer; testing the body directly covers the terms'
@@ -12,9 +12,9 @@ describe('TermsContent', () => {
     expect(screen.queryByText(new RegExp(LEGAL_LAST_UPDATED))).not.toBeNull();
   });
 
-  it('carries a "not legal advice" note', () => {
+  it('names the operating entity', () => {
     render(<TermsContent />);
-    expect(screen.queryByText(/not legal advice/i)).not.toBeNull();
+    expect(screen.queryByText(new RegExp(`operated by ${OPERATING_ENTITY}`, 'i'))).not.toBeNull();
   });
 
   it('provides the service "as is" with no warranty', () => {

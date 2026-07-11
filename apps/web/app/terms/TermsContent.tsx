@@ -2,9 +2,14 @@
 // it renders in a Server Component and is unit-testable on its own. Modelled on the common SaaS ToS
 // sections (acceptance, eligibility, accounts, acceptable use, user content, IP, warranty disclaimer,
 // liability limit, changes, termination, governing law, contact), kept short and plain. This is a
-// good-faith draft, NOT legal advice - see the note below. ASCII-only, Trellis voice.
+// good-faith draft; a legal review is still recommended. ASCII-only, Trellis voice.
 
-import { GOVERNING_LAW, LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED } from '../../lib/legal';
+import {
+  GOVERNING_LAW,
+  LEGAL_CONTACT_EMAIL,
+  LEGAL_LAST_UPDATED,
+  OPERATING_ENTITY,
+} from '../../lib/legal';
 
 function ContactEmail() {
   return (
@@ -23,17 +28,12 @@ export function TermsContent() {
       <h1 className="text-h1 font-bold text-text">Terms of Service</h1>
       <p className="mt-2 text-caption text-text-muted">Last updated: {LEGAL_LAST_UPDATED}</p>
 
-      <p className="mt-6 rounded-md border border-border bg-surface-raised px-4 py-3 text-body-sm text-text-muted">
-        Plain-language note: this is a good-faith summary of the terms for using Branch Out Games.
-        It is not legal advice. We can update these terms at any time (see &ldquo;Changes to these
-        terms&rdquo; below).
-      </p>
-
       <section className="mt-12">
         <h2 className="text-h2 font-semibold text-text">1. Acceptance</h2>
         <p className="mt-3 text-body text-text-muted">
-          By using Branch Out Games, you agree to these terms. If you do not agree, please do not
-          use the service.
+          Branch Out Games is operated by {OPERATING_ENTITY} (&ldquo;we,&rdquo; &ldquo;us,&rdquo;
+          &ldquo;our&rdquo;). By using Branch Out Games, you agree to these terms. If you do not
+          agree, please do not use the service.
         </p>
       </section>
 
@@ -85,9 +85,10 @@ export function TermsContent() {
       <section className="mt-12">
         <h2 className="text-h2 font-semibold text-text">6. Our content</h2>
         <p className="mt-3 text-body text-text-muted">
-          Branch Out Games, including its name, logos, games, questions, and design, belongs to us
-          or our licensors. We give you a personal, non-transferable permission to use the service
-          to play. Do not copy, resell, or reuse our content except as the service allows.
+          Branch Out Games, including its name, logos, games, questions, and design, belongs to{' '}
+          {OPERATING_ENTITY} or its licensors. We give you a personal, non-transferable permission
+          to use the service to play. Do not copy, resell, or reuse our content except as the
+          service allows.
         </p>
       </section>
 
@@ -109,7 +110,7 @@ export function TermsContent() {
       <section className="mt-12">
         <h2 className="text-h2 font-semibold text-text">8. Limitation of liability</h2>
         <p className="mt-3 text-body text-text-muted">
-          To the fullest extent allowed by law, Branch Out Games and the people who make it are not
+          To the fullest extent allowed by law, Branch Out Games and {OPERATING_ENTITY} are not
           liable for any indirect, incidental, special, or consequential damages, or for any loss of
           data, profits, or goodwill, arising from your use of (or inability to use) the service.
           Some places do not allow these limits, so parts of this section may not apply to you.
