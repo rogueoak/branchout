@@ -35,6 +35,27 @@ test('landing page renders and fits on a phone', async ({ page }) => {
   await expectNoHorizontalOverflow(scrollWidth, clientWidth);
 });
 
+test.describe('game feature pages (spec 0030) at 360px', () => {
+  test.use({ viewport: { width: 360, height: 780 } });
+
+  test('the games index and a feature page render, fit, and the CTA deep-links into play', async ({
+    page,
+  }) => {
+    // Index lists the games and links to each feature page.
+    await page.goto('/games');
+    await expect(page.getByRole('heading', { name: 'Games', level: 1 })).toBeVisible();
+    await expect(page.getByRole('link', { name: /learn about trivia/i })).toBeVisible();
+    await expectFits(page);
+
+    // Feature page: overview + a "Start a game" CTA that deep-links with the game preselected (0029).
+    await page.goto('/games/trivia');
+    await expect(page.getByRole('heading', { name: 'Trivia', level: 1 })).toBeVisible();
+    const start = page.getByRole('link', { name: 'Start a game' }).first();
+    await expect(start).toHaveAttribute('href', '/rooms?game=trivia');
+    await expectFits(page);
+  });
+});
+
 test.describe('the shared top nav (spec 0028) at 360px', () => {
   // Pin the exact 360px floor from the mobile-first non-negotiable (overriding the device viewport).
   test.use({ viewport: { width: 360, height: 780 } });
