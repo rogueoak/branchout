@@ -36,8 +36,11 @@ export default async function GamesIndexPage() {
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2" role="list">
           {GAME_CATALOG.map((game) => (
             <li key={game.slug}>
+              {/* A descriptive accessible name per card - the visible "Learn more" text repeats across
+                  cards (an a11y anti-pattern), so the link is labelled by the game it opens. */}
               <a
                 href={featurePath(game.slug)}
+                aria-label={`Learn about ${game.name}`}
                 className="flex h-full flex-col gap-3 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <div className="flex min-w-0 items-center gap-3">
