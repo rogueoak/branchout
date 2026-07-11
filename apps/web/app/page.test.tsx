@@ -60,10 +60,10 @@ describe('home page - anonymous visitor', () => {
 
   it('renders each game card with its inline SVG game mark', () => {
     const { container } = render(<LandingContent viewer={{ signedIn: false }} />);
-    // Each card links out with aria-label "Play <game> - start a game"; the game mark is an
-    // inline SVG (from the brand package) inside that link, aria-hidden so it does not double up
-    // the accessible name.
-    for (const name of ['Play trivia', 'Play liar liar']) {
+    // Each card links to the game's feature page with aria-label "Learn about <game>"; the game mark
+    // is an inline SVG (from the brand package) inside that link, aria-hidden so it does not double
+    // up the accessible name.
+    for (const name of ['Learn about Trivia', 'Learn about Liar Liar']) {
       const card = screen.getByRole('link', { name: new RegExp(name, 'i') });
       expect(card.querySelector('svg')).not.toBeNull();
     }
@@ -71,12 +71,25 @@ describe('home page - anonymous visitor', () => {
     expect(container.querySelectorAll('svg').length).toBeGreaterThanOrEqual(4);
   });
 
-  it('makes each game card a link into the play path (signup when anonymous)', () => {
+  it('links each game card to its feature page (learn first, spec 0030)', () => {
     render(<LandingContent viewer={{ signedIn: false }} />);
-    const trivia = screen.getByRole('link', { name: /play trivia/i });
-    expect(trivia).toHaveProperty('href', expect.stringContaining('/signup'));
-    const liarLiar = screen.getByRole('link', { name: /play liar liar/i });
-    expect(liarLiar).toHaveProperty('href', expect.stringContaining('/signup'));
+    const trivia = screen.getByRole('link', { name: /learn about trivia/i });
+    expect(trivia).toHaveProperty('href', expect.stringContaining('/games/trivia'));
+    const liarLiar = screen.getByRole('link', { name: /learn about liar liar/i });
+    expect(liarLiar).toHaveProperty('href', expect.stringContaining('/games/liar-liar'));
+  });
+
+  it('adds a direct Play shortcut on each card for a signed-in player (skips the learn hop)', () => {
+    render(<LandingContent viewer={{ signedIn: true, gamerTag: 'CoolCat' }} />);
+    const playTrivia = screen.getByRole('link', { name: /play trivia now/i });
+    expect(playTrivia).toHaveProperty('href', expect.stringContaining('/rooms?game=trivia'));
+    // The learn-first card link is still present for everyone.
+    expect(screen.getByRole('link', { name: /learn about trivia/i })).toBeDefined();
+  });
+
+  it('shows no Play shortcut for an anonymous visitor (learn first only)', () => {
+    render(<LandingContent viewer={{ signedIn: false }} />);
+    expect(screen.queryByRole('link', { name: /play trivia now/i })).toBeNull();
   });
 
   it('renders a footer landmark', () => {
@@ -108,15 +121,17 @@ describe('home page - signed-in visitor', () => {
     expect(screen.getByRole('link', { name: 'Play now' })).toBeDefined();
   });
 
-  it('points the game cards at the rooms home once signed in', () => {
+  it('still links the game cards to the feature pages when signed in (learn first, spec 0030)', () => {
+    // The cards are learn-first (feature page) links regardless of auth; the play CTA lives on the
+    // feature page and on the hero ("Play now"). So the card target does not change with sign-in.
     render(<LandingContent viewer={{ signedIn: true, gamerTag: 'CoolCat' }} />);
-    expect(screen.getByRole('link', { name: /play trivia/i })).toHaveProperty(
+    expect(screen.getByRole('link', { name: /learn about trivia/i })).toHaveProperty(
       'href',
-      expect.stringContaining('/rooms'),
+      expect.stringContaining('/games/trivia'),
     );
-    expect(screen.getByRole('link', { name: /play liar liar/i })).toHaveProperty(
+    expect(screen.getByRole('link', { name: /learn about liar liar/i })).toHaveProperty(
       'href',
-      expect.stringContaining('/rooms'),
+      expect.stringContaining('/games/liar-liar'),
     );
   });
 
