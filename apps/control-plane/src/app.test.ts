@@ -68,10 +68,30 @@ describe('control-plane /health', () => {
   });
 });
 
+describe('API versioning (spec 0033)', () => {
+  it('serves functional APIs under /v1 and 404s the un-versioned path', async () => {
+    const { app } = makeApp();
+    // The versioned path exists (unauthenticated /me reports "unauthenticated", a 200).
+    const versioned = await app.inject({ method: 'GET', url: '/v1/auth/me' });
+    expect(versioned.statusCode).toBe(200);
+    // The bare path no longer resolves - the move is a real relocation, not an additive alias.
+    const bare = await app.inject({ method: 'GET', url: '/auth/me' });
+    expect(bare.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('keeps /health un-versioned (there is no /v1/health)', async () => {
+    const { app } = makeApp();
+    expect((await app.inject({ method: 'GET', url: '/health' })).statusCode).toBe(200);
+    expect((await app.inject({ method: 'GET', url: '/v1/health' })).statusCode).toBe(404);
+    await app.close();
+  });
+});
+
 describe('POST /auth/signup', () => {
   it('creates an account, sets an httpOnly secure sameSite cookie, and opens a session', async () => {
     const { app } = makeApp();
-    const res = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    const res = await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
     expect(res.statusCode).toBe(201);
     expect(res.json().account).toMatchObject({ gamerTag: 'CoolCat', nickname: 'CoolCat' });
 
@@ -84,7 +104,7 @@ describe('POST /auth/signup', () => {
     // The session works: /me reports the account.
     const me = await app.inject({
       method: 'GET',
-      url: '/auth/me',
+      url: '/v1/auth/me',
       headers: { cookie: sessionCookie(res) },
     });
     expect(me.json()).toMatchObject({ kind: 'account', account: { gamerTag: 'CoolCat' } });
@@ -93,10 +113,10 @@ describe('POST /auth/signup', () => {
 
   it('rejects a duplicate email with 409', async () => {
     const { app } = makeApp();
-    await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
     const res = await app.inject({
       method: 'POST',
-      url: '/auth/signup',
+      url: '/v1/auth/signup',
       payload: { ...validSignup, gamerTag: 'Other' },
     });
     expect(res.statusCode).toBe(409);
@@ -106,10 +126,10 @@ describe('POST /auth/signup', () => {
 
   it('rejects a duplicate gamer tag (case-insensitive) with 409', async () => {
     const { app } = makeApp();
-    await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
     const res = await app.inject({
       method: 'POST',
-      url: '/auth/signup',
+      url: '/v1/auth/signup',
       payload: { email: 'other@example.com', password: 'supersecret', gamerTag: 'coolcat' },
     });
     expect(res.statusCode).toBe(409);
@@ -121,7 +141,7 @@ describe('POST /auth/signup', () => {
     const { app } = makeApp();
     const res = await app.inject({
       method: 'POST',
-      url: '/auth/signup',
+      url: '/v1/auth/signup',
       payload: { email: 'bad', password: 'short', gamerTag: 'x' },
     });
     expect(res.statusCode).toBe(400);
@@ -132,10 +152,10 @@ describe('POST /auth/signup', () => {
 describe('POST /auth/login', () => {
   it('opens a session for correct credentials', async () => {
     const { app } = makeApp();
-    await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
     const res = await app.inject({
       method: 'POST',
-      url: '/auth/login',
+      url: '/v1/auth/login',
       payload: { email: 'player@example.com', password: 'supersecret' },
     });
     expect(res.statusCode).toBe(200);
@@ -145,10 +165,10 @@ describe('POST /auth/login', () => {
 
   it('returns 401 with a generic message for a wrong password', async () => {
     const { app } = makeApp();
-    await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
     const res = await app.inject({
       method: 'POST',
-      url: '/auth/login',
+      url: '/v1/auth/login',
       payload: { email: 'player@example.com', password: 'wrong' },
     });
     expect(res.statusCode).toBe(401);
@@ -161,7 +181,7 @@ describe('POST /auth/login', () => {
     const { app } = makeApp();
     const res = await app.inject({
       method: 'POST',
-      url: '/auth/login',
+      url: '/v1/auth/login',
       payload: { email: 'ghost@example.com', password: 'supersecret' },
     });
     expect(res.statusCode).toBe(401);
@@ -173,21 +193,25 @@ describe('POST /auth/login', () => {
 describe('POST /auth/logout', () => {
   it('revokes the session and clears the cookie', async () => {
     const { app } = makeApp();
-    const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    const signup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
     const cookie = sessionCookie(signup);
 
-    const out = await app.inject({ method: 'POST', url: '/auth/logout', headers: { cookie } });
+    const out = await app.inject({ method: 'POST', url: '/v1/auth/logout', headers: { cookie } });
     expect(out.statusCode).toBe(200);
     expect(String(out.headers['set-cookie'])).toContain('branchout_session=;');
 
-    const me = await app.inject({ method: 'GET', url: '/auth/me', headers: { cookie } });
+    const me = await app.inject({ method: 'GET', url: '/v1/auth/me', headers: { cookie } });
     expect(me.json()).toEqual({ kind: 'unauthenticated' });
     await app.close();
   });
 
   it('is idempotent with no session cookie', async () => {
     const { app } = makeApp();
-    const out = await app.inject({ method: 'POST', url: '/auth/logout' });
+    const out = await app.inject({ method: 'POST', url: '/v1/auth/logout' });
     expect(out.statusCode).toBe(200);
     expect(String(out.headers['set-cookie'])).toContain('branchout_session=;');
     await app.close();
@@ -197,7 +221,7 @@ describe('POST /auth/logout', () => {
 describe('GET /auth/me', () => {
   it('reports unauthenticated with no cookie', async () => {
     const { app } = makeApp();
-    const res = await app.inject({ method: 'GET', url: '/auth/me' });
+    const res = await app.inject({ method: 'GET', url: '/v1/auth/me' });
     expect(res.json()).toEqual({ kind: 'unauthenticated' });
     await app.close();
   });
@@ -206,12 +230,12 @@ describe('GET /auth/me', () => {
     const { app } = makeApp();
     const join = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code: 'ROOM42', displayName: 'Guest Gonzo' },
     });
     const me = await app.inject({
       method: 'GET',
-      url: '/auth/me',
+      url: '/v1/auth/me',
       headers: { cookie: sessionCookie(join) },
     });
     expect(me.json()).toEqual({ kind: 'anonymous', displayName: 'Guest Gonzo' });
@@ -220,12 +244,16 @@ describe('GET /auth/me', () => {
 
   it('treats a session whose account row is gone as logged out and self-revokes it', async () => {
     const { app, repo } = makeApp();
-    const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    const signup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
     const cookie = sessionCookie(signup);
     // Drop the underlying account, leaving a dangling account session.
     repo.deleteById(signup.json().account.id);
 
-    const me = await app.inject({ method: 'GET', url: '/auth/me', headers: { cookie } });
+    const me = await app.inject({ method: 'GET', url: '/v1/auth/me', headers: { cookie } });
     expect(me.json()).toEqual({ kind: 'unauthenticated' });
     expect(String(me.headers['set-cookie'])).toContain('branchout_session=;');
     await app.close();
@@ -237,7 +265,7 @@ describe('POST /auth/anonymous', () => {
     const { app, accounts } = makeApp();
     const res = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code: 'ROOM42', displayName: 'Guest Gonzo' },
     });
     expect(res.statusCode).toBe(201);
@@ -251,7 +279,7 @@ describe('POST /auth/anonymous', () => {
     const { app, sessions } = makeApp();
     const join = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code: 'ROOM42', displayName: 'Guest' },
     });
     const cookieValue = sessionCookie(join).split('=')[1]!;
@@ -265,13 +293,13 @@ describe('POST /auth/anonymous', () => {
     const { app } = makeApp();
     const noCode = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { displayName: 'Guest' },
     });
     expect(noCode.statusCode).toBe(400);
     const noName = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code: 'ROOM42', displayName: '' },
     });
     expect(noName.statusCode).toBe(400);
@@ -282,18 +310,22 @@ describe('POST /auth/anonymous', () => {
 describe('PATCH /auth/nickname', () => {
   it('changes the nickname for an account session', async () => {
     const { app } = makeApp();
-    const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    const signup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
     const cookie = sessionCookie(signup);
     const res = await app.inject({
       method: 'PATCH',
-      url: '/auth/nickname',
+      url: '/v1/auth/nickname',
       headers: { cookie },
       payload: { nickname: 'The Great Gonzo' },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().account.nickname).toBe('The Great Gonzo');
 
-    const me = await app.inject({ method: 'GET', url: '/auth/me', headers: { cookie } });
+    const me = await app.inject({ method: 'GET', url: '/v1/auth/me', headers: { cookie } });
     expect(me.json().account.nickname).toBe('The Great Gonzo');
     await app.close();
   });
@@ -302,7 +334,7 @@ describe('PATCH /auth/nickname', () => {
     const { app } = makeApp();
     const res = await app.inject({
       method: 'PATCH',
-      url: '/auth/nickname',
+      url: '/v1/auth/nickname',
       payload: { nickname: 'Nope' },
     });
     expect(res.statusCode).toBe(401);
@@ -313,12 +345,12 @@ describe('PATCH /auth/nickname', () => {
     const { app } = makeApp();
     const join = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code: 'ROOM42', displayName: 'Guest' },
     });
     const res = await app.inject({
       method: 'PATCH',
-      url: '/auth/nickname',
+      url: '/v1/auth/nickname',
       headers: { cookie: sessionCookie(join) },
       payload: { nickname: 'Nope' },
     });
@@ -329,7 +361,7 @@ describe('PATCH /auth/nickname', () => {
 
 /** Sign up and return the app plus the host's session cookie. */
 async function withHost(app: ReturnType<typeof makeApp>['app']) {
-  const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+  const signup = await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
   return sessionCookie(signup);
 }
 
@@ -337,7 +369,7 @@ describe('POST /rooms (create + share link)', () => {
   it('a signed-in host creates a room with a 5-char code and a /join share link', async () => {
     const { app } = makeApp();
     const cookie = await withHost(app);
-    const res = await app.inject({ method: 'POST', url: '/rooms', headers: { cookie } });
+    const res = await app.inject({ method: 'POST', url: '/v1/rooms', headers: { cookie } });
     expect(res.statusCode).toBe(201);
     const { room, playerId } = res.json();
     expect(room.code).toMatch(/^[A-Z2-9]{5}$/);
@@ -350,7 +382,7 @@ describe('POST /rooms (create + share link)', () => {
 
   it('an unauthenticated request cannot create a room', async () => {
     const { app } = makeApp();
-    const res = await app.inject({ method: 'POST', url: '/rooms' });
+    const res = await app.inject({ method: 'POST', url: '/v1/rooms' });
     expect(res.statusCode).toBe(401);
     await app.close();
   });
@@ -359,12 +391,12 @@ describe('POST /rooms (create + share link)', () => {
     const { app } = makeApp();
     const join = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code: 'ROOM42', displayName: 'Guest' },
     });
     const res = await app.inject({
       method: 'POST',
-      url: '/rooms',
+      url: '/v1/rooms',
       headers: { cookie: sessionCookie(join) },
     });
     expect(res.statusCode).toBe(403);
@@ -378,19 +410,19 @@ describe('GET /rooms/:code/preview (public, for link unfurls)', () => {
     const hostCookie = await withHost(app);
     const create = await app.inject({
       method: 'POST',
-      url: '/rooms',
+      url: '/v1/rooms',
       headers: { cookie: hostCookie },
     });
     const { code } = create.json().room;
     await app.inject({
       method: 'POST',
-      url: `/rooms/${code}/select`,
+      url: `/v1/rooms/${code}/select`,
       headers: { cookie: hostCookie },
       payload: { game: 'trivia', config: {} },
     });
 
     // No cookie header at all - the public unfurl path.
-    const res = await app.inject({ method: 'GET', url: `/rooms/${code}/preview` });
+    const res = await app.inject({ method: 'GET', url: `/v1/rooms/${code}/preview` });
     expect(res.statusCode).toBe(200);
     expect(res.json().preview).toEqual({ code, status: 'lobby', selectedGame: 'trivia' });
     // No private fields leak through the route.
@@ -402,7 +434,7 @@ describe('GET /rooms/:code/preview (public, for link unfurls)', () => {
 
   it('404s an unknown code', async () => {
     const { app } = makeApp();
-    const res = await app.inject({ method: 'GET', url: '/rooms/ZZZZZ/preview' });
+    const res = await app.inject({ method: 'GET', url: '/v1/rooms/ZZZZZ/preview' });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
@@ -414,20 +446,20 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
     const hostCookie = await withHost(app);
     const create = await app.inject({
       method: 'POST',
-      url: '/rooms',
+      url: '/v1/rooms',
       headers: { cookie: hostCookie },
     });
     const { code } = create.json().room;
 
     const guestJoin = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code, displayName: 'GuestName' },
     });
     const guestCookie = sessionCookie(guestJoin);
     const joined = await app.inject({
       method: 'POST',
-      url: `/rooms/${code}/join`,
+      url: `/v1/rooms/${code}/join`,
       headers: { cookie: guestCookie },
       payload: { role: 'player', nickname: 'ArcadeAce', mode: 'interactive' },
     });
@@ -440,7 +472,7 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
 
     const members = await app.inject({
       method: 'GET',
-      url: `/rooms/${code}/members`,
+      url: `/v1/rooms/${code}/members`,
       headers: { cookie: hostCookie },
     });
     const names = members.json().members.map((m: { nickname: string }) => m.nickname);
@@ -453,20 +485,20 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
     const hostCookie = await withHost(app);
     const create = await app.inject({
       method: 'POST',
-      url: '/rooms',
+      url: '/v1/rooms',
       headers: { cookie: hostCookie },
     });
     const { code } = create.json().room;
 
     const guestJoin = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code, displayName: 'Watcher' },
     });
     const guestCookie = sessionCookie(guestJoin);
     await app.inject({
       method: 'POST',
-      url: `/rooms/${code}/join`,
+      url: `/v1/rooms/${code}/join`,
       headers: { cookie: guestCookie },
       payload: { role: 'observer', nickname: 'Watcher' },
     });
@@ -474,7 +506,7 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
     // The non-host's own members view redacts every sessionId but keeps the public playerId.
     const members = await app.inject({
       method: 'GET',
-      url: `/rooms/${code}/members`,
+      url: `/v1/rooms/${code}/members`,
       headers: { cookie: guestCookie },
     });
     const rows = members.json().members as Array<{ sessionId?: string; playerId?: string }>;
@@ -488,20 +520,20 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
     const hostCookie = await withHost(app);
     const create = await app.inject({
       method: 'POST',
-      url: '/rooms',
+      url: '/v1/rooms',
       headers: { cookie: hostCookie },
     });
     const { code } = create.json().room;
 
     const guestJoin = await app.inject({
       method: 'POST',
-      url: '/auth/anonymous',
+      url: '/v1/auth/anonymous',
       payload: { code, displayName: 'Victim' },
     });
     const guestCookie = sessionCookie(guestJoin);
     await app.inject({
       method: 'POST',
-      url: `/rooms/${code}/join`,
+      url: `/v1/rooms/${code}/join`,
       headers: { cookie: guestCookie },
       payload: { role: 'player', nickname: 'Victim' },
     });
@@ -509,7 +541,7 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
 
     const kick = await app.inject({
       method: 'POST',
-      url: `/rooms/${code}/kick`,
+      url: `/v1/rooms/${code}/kick`,
       headers: { cookie: hostCookie },
       payload: { sessionId: guestSessionId },
     });
@@ -517,7 +549,7 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
 
     const rejoin = await app.inject({
       method: 'POST',
-      url: `/rooms/${code}/join`,
+      url: `/v1/rooms/${code}/join`,
       headers: { cookie: guestCookie },
       payload: { role: 'player', nickname: 'Victim' },
     });
@@ -533,13 +565,13 @@ describe('POST /rooms/:code/control allow-list', () => {
     const hostCookie = await withHost(ctx.app);
     const create = await ctx.app.inject({
       method: 'POST',
-      url: '/rooms',
+      url: '/v1/rooms',
       headers: { cookie: hostCookie },
     });
     const { code } = create.json().room;
     await ctx.app.inject({
       method: 'POST',
-      url: `/rooms/${code}/select`,
+      url: `/v1/rooms/${code}/select`,
       headers: { cookie: hostCookie },
       payload: { game: 'trivia', config: { questions: 3 } },
     });
@@ -550,7 +582,7 @@ describe('POST /rooms/:code/control allow-list', () => {
     const { app, engine, hostCookie, code } = await hostedRoomWithGame();
     const res = await app.inject({
       method: 'POST',
-      url: `/rooms/${code}/control`,
+      url: `/v1/rooms/${code}/control`,
       headers: { cookie: hostCookie },
       payload: { action: 'advance' },
     });
@@ -563,7 +595,7 @@ describe('POST /rooms/:code/control allow-list', () => {
     const { app, engine, hostCookie, code } = await hostedRoomWithGame();
     const res = await app.inject({
       method: 'POST',
-      url: `/rooms/${code}/control`,
+      url: `/v1/rooms/${code}/control`,
       headers: { cookie: hostCookie },
       payload: { action: 'nuke' },
     });
@@ -578,7 +610,7 @@ describe('engine report intake (internal token)', () => {
     const { app } = makeAppWithToken('s3cret');
     const res = await app.inject({
       method: 'POST',
-      url: '/engine/rounds',
+      url: '/v1/engine/rounds',
       payload: {
         v: 1,
         room: 'r',
@@ -597,7 +629,7 @@ describe('engine report intake (internal token)', () => {
     const { app } = makeAppWithToken('s3cret');
     const bad = await app.inject({
       method: 'POST',
-      url: '/engine/rounds',
+      url: '/v1/engine/rounds',
       headers: { 'x-internal-token': 's3cret' },
       payload: { v: 1 },
     });

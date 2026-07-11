@@ -33,7 +33,7 @@ describe('login page', () => {
 
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/login'),
+      expect.stringContaining('/v1/auth/login'),
       expect.objectContaining({ method: 'POST', credentials: 'include' }),
     );
   });

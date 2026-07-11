@@ -4,6 +4,8 @@
 // is the authority for every rule here (host-only actions, the start gates); this module is the
 // transport, not a second copy of the rules.
 
+import { V1_PREFIX } from '@branchout/protocol';
+
 const CONTROL_PLANE_URL = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? 'http://localhost:4000';
 
 /** A member's role in a room. The host is a player too - the `isHost` flag on {@link RoomMember}
@@ -59,7 +61,9 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   }
   let res: Response;
   try {
-    res = await fetch(`${CONTROL_PLANE_URL}${path}`, {
+    // Every functional API is served under `/v1` (spec 0033); the version is applied once here so
+    // the per-endpoint path strings below stay bare.
+    res = await fetch(`${CONTROL_PLANE_URL}${V1_PREFIX}${path}`, {
       credentials: 'include',
       ...init,
       headers,

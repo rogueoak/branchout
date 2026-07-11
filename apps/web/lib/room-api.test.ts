@@ -43,7 +43,8 @@ describe('room-api', () => {
     // the members list.
     expect(result.playerId).toBe('pid_host');
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toContain('/rooms');
+    // Functional APIs are versioned under /v1 (spec 0033).
+    expect(url).toContain('/v1/rooms');
     expect(init.method).toBe('POST');
     expect(init.credentials).toBe('include');
     // No body, and crucially NO `content-type: application/json` - Fastify rejects an
@@ -111,7 +112,7 @@ describe('room-api', () => {
     const fetchMock = mockFetch({ ok: true, body: { room } });
     await controlGame('ABC12', 'advance');
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toContain('/rooms/ABC12/control');
+    expect(url).toContain('/v1/rooms/ABC12/control');
     expect(JSON.parse(init.body as string)).toEqual({ action: 'advance' });
   });
 
@@ -146,7 +147,7 @@ describe('room-api', () => {
     });
     await startAnonymousSession('ABC12', 'Guest');
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toContain('/auth/anonymous');
+    expect(url).toContain('/v1/auth/anonymous');
     expect(JSON.parse(init.body as string)).toEqual({ code: 'ABC12', displayName: 'Guest' });
   });
 });

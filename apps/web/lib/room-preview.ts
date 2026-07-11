@@ -5,6 +5,8 @@
 // base off the server) and in Docker it is a published `localhost` port that resolves to the web
 // container, not the control-plane. Use the server-only CONTROL_PLANE_URL (service name / origin).
 
+import { V1_PREFIX } from '@branchout/protocol';
+
 // Server-side control-plane URL (not exposed to the browser); mirrors lib/session.ts.
 const CONTROL_PLANE_URL = process.env.CONTROL_PLANE_URL ?? 'http://localhost:4000';
 
@@ -22,9 +24,12 @@ export interface RoomPreview {
  * bad or expired code still unfurls as a valid invite.
  */
 export async function getRoomPreview(code: string): Promise<RoomPreview> {
-  const res = await fetch(`${CONTROL_PLANE_URL}/rooms/${encodeURIComponent(code)}/preview`, {
-    cache: 'no-store',
-  });
+  const res = await fetch(
+    `${CONTROL_PLANE_URL}${V1_PREFIX}/rooms/${encodeURIComponent(code)}/preview`,
+    {
+      cache: 'no-store',
+    },
+  );
   if (!res.ok) {
     throw new Error(`Room preview failed: ${res.status}`);
   }

@@ -43,6 +43,30 @@ needs `0007` + `0009`; `0010` needs `0006` + `0007` + `0008`.
 Builds on the scaffold's Dockerfiles + docker-compose (`0001`); deploys the app once the slice is
 runnable. No droplet address or secret lives in the repo.
 
+## Marketing surface, profiles, and room flow
+
+A batch of player-facing features: profiles + avatars, a shared top nav, a guided room flow,
+per-game feature pages for SEO, legal pages, and analytics. **Build `0033` (API versioning) first** -
+it is foundational and moves every API under `/v1`, so the rest are built on the versioned base.
+After that, build order is top to bottom; each is one PR. Dependencies noted below the table.
+
+| Spec | Title | State |
+|---|---|---|
+| `0033` | **API versioning under `/v1`** (foundational - builds first) | drafted |
+| `0027` | Player profiles + avatars (accounts, per-account stars/plays, profile + account pages) | drafted |
+| `0028` | Top nav + account menu (shared chrome) | drafted |
+| `0029` | Room flow - create -> pick a game -> invite; change game; icon+share invites | drafted |
+| `0030` | Game feature pages + sitemap + home links | drafted |
+| `0031` | Legal pages - privacy policy + terms of service | drafted |
+| `0032` | PostHog product analytics (first-party) | drafted |
+| `0034` | Zero-downtime deploys (docker-rollout, one service at a time) | drafted |
+
+`0034` is independent infra (updates the spec `0011` pipeline) and can build in its own PR anytime;
+sequence it **after `0033`** since both edit the Caddyfile. `0033` builds first (all `0027`-`0032` endpoints live under `/v1`). `0028` needs `0027`'s avatar,
+account page, and `logout`. `0030`'s "Start a game" CTA uses the `?game=<slug>` deep link `0029`
+defines, and reuses `0025`'s share cards. `0031` describes the analytics `0032` implements; both cite
+the first-party posture. `0027`/`0030` extend the web game registry (`0023`).
+
 ## Platform spine (control-plane)
 
 - Accounts + anonymous play - account model, sign-up, anonymous sessions.

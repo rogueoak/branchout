@@ -1,3 +1,4 @@
+import { V1_PREFIX } from '@branchout/protocol';
 import { cookies } from 'next/headers';
 
 // Server-side control-plane URL (not exposed to the browser).
@@ -19,7 +20,7 @@ export async function getSignedIn(): Promise<boolean> {
     const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
     if (!sessionId) return false;
 
-    const res = await fetch(`${CONTROL_PLANE_URL}/auth/me`, {
+    const res = await fetch(`${CONTROL_PLANE_URL}${V1_PREFIX}/auth/me`, {
       // Encode the cookie value defensively: a raw value carrying a `;`, `,`, or `=` would malform
       // the header. Session ids are base64url today, but the encode keeps the boundary robust.
       headers: { cookie: `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}` },

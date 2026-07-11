@@ -1,5 +1,6 @@
 'use client';
 
+import { V1_PREFIX } from '@branchout/protocol';
 import { type FormEvent, useState } from 'react';
 
 // The control-plane base URL. Overridable per environment; defaults to the local dev port.
@@ -22,7 +23,7 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch(`${CONTROL_PLANE_URL}/auth/login`, {
+      const res = await fetch(`${CONTROL_PLANE_URL}${V1_PREFIX}/auth/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         credentials: 'include',

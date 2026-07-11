@@ -24,7 +24,7 @@ function firstCall(fetchImpl: typeof fetch): [string, RequestInit] {
 }
 
 describe('HttpControlPlaneReporter', () => {
-  it('POSTs a round report as JSON to the control-plane /rounds endpoint', async () => {
+  it('POSTs a round report as JSON to the control-plane /v1/engine/rounds endpoint', async () => {
     const fetchImpl = okFetch();
     const reporter = new HttpControlPlaneReporter({ baseUrl: 'http://cp:4000', fetch: fetchImpl });
 
@@ -32,13 +32,15 @@ describe('HttpControlPlaneReporter', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, init] = firstCall(fetchImpl);
-    expect(url).toBe('http://cp:4000/rounds');
+    // baseUrl is the control-plane ORIGIN; the reporter appends the full versioned intake path
+    // (spec 0033), so the version lives in code, not in the CONTROL_PLANE_URL env value.
+    expect(url).toBe('http://cp:4000/v1/engine/rounds');
     expect(init.method).toBe('POST');
     expect(init.headers).toMatchObject({ 'content-type': 'application/json' });
     expect(JSON.parse(init.body as string)).toEqual(roundReport);
   });
 
-  it('POSTs a completion report to /games/complete', async () => {
+  it('POSTs a completion report to /v1/engine/games/complete', async () => {
     const fetchImpl = okFetch();
     const reporter = new HttpControlPlaneReporter({ baseUrl: 'http://cp:4000', fetch: fetchImpl });
     await reporter.reportComplete({
@@ -49,7 +51,7 @@ describe('HttpControlPlaneReporter', () => {
       standings: [],
     });
     const [url] = firstCall(fetchImpl);
-    expect(url).toBe('http://cp:4000/games/complete');
+    expect(url).toBe('http://cp:4000/v1/engine/games/complete');
   });
 
   it('strips a trailing slash from the base URL', async () => {
@@ -57,7 +59,7 @@ describe('HttpControlPlaneReporter', () => {
     const reporter = new HttpControlPlaneReporter({ baseUrl: 'http://cp:4000/', fetch: fetchImpl });
     await reporter.reportRound(roundReport);
     const [url] = firstCall(fetchImpl);
-    expect(url).toBe('http://cp:4000/rounds');
+    expect(url).toBe('http://cp:4000/v1/engine/rounds');
   });
 
   it('throws on a non-2xx response so the engine keeps the report queued', async () => {

@@ -1,5 +1,5 @@
 import type { StartHandoffRequest, StartHandoffResponse } from '@branchout/protocol';
-import { PROTOCOL_VERSION } from '@branchout/protocol';
+import { PROTOCOL_VERSION, V1_PREFIX } from '@branchout/protocol';
 
 /**
  * A host control proxied to the engine. `advance` steps the round lifecycle forward (the Trivia
@@ -32,9 +32,10 @@ export class EngineError extends Error {
 }
 
 /**
- * Talks to the engine over internal REST (spec 0007): `POST /sessions` for the start handoff and
- * `POST /sessions/:room/:game/control` for host controls. A shared internal token authenticates
- * the server-to-server call so only the control-plane can start or steer a session.
+ * Talks to the engine over internal REST (spec 0007): `POST /v1/sessions` for the start handoff and
+ * `POST /v1/sessions/:room/:game/control` for host controls (versioned under `/v1`, spec 0033). A
+ * shared internal token authenticates the server-to-server call so only the control-plane can start
+ * or steer a session.
  */
 export class HttpEngineClient implements EngineClient {
   constructor(
@@ -70,7 +71,7 @@ export class HttpEngineClient implements EngineClient {
   }
 
   async start(request: StartHandoffRequest): Promise<StartHandoffResponse> {
-    const response = await this.request(`${this.baseUrl}/sessions`, request, 'start');
+    const response = await this.request(`${this.baseUrl}${V1_PREFIX}/sessions`, request, 'start');
     if (!response.ok) {
       throw new EngineError(`engine start failed (${response.status})`, response.status);
     }
@@ -79,7 +80,7 @@ export class HttpEngineClient implements EngineClient {
 
   async control(room: string, game: string, action: ControlAction): Promise<void> {
     const response = await this.request(
-      `${this.baseUrl}/sessions/${encodeURIComponent(room)}/${encodeURIComponent(game)}/control`,
+      `${this.baseUrl}${V1_PREFIX}/sessions/${encodeURIComponent(room)}/${encodeURIComponent(game)}/control`,
       { v: PROTOCOL_VERSION, action },
       'control',
     );

@@ -34,9 +34,11 @@ describe('HttpEngineClient error mapping', () => {
     expect((error as EngineError).status).toBe(503);
   });
 
-  it('sends the internal token header when configured', async () => {
+  it('sends the internal token header to the versioned /v1/sessions handoff', async () => {
     let seen: Headers | undefined;
-    const fetchImpl = (async (_url: string, init: RequestInit) => {
+    let seenUrl: string | undefined;
+    const fetchImpl = (async (url: string, init: RequestInit) => {
+      seenUrl = url;
       seen = new Headers(init.headers);
       return new Response(
         JSON.stringify({ v: PROTOCOL_VERSION, room: 'r1', game: 'trivia', status: 'started' }),
@@ -47,5 +49,7 @@ describe('HttpEngineClient error mapping', () => {
 
     await client.start(request);
     expect(seen?.get('x-internal-token')).toBe('secret-token');
+    // The handoff targets the engine's versioned route (spec 0033).
+    expect(seenUrl).toBe('http://engine:4001/v1/sessions');
   });
 });
