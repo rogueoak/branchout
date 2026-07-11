@@ -35,19 +35,23 @@ export function ShareLink({ code, href }: { code: string; href: string }) {
   }
 
   async function share() {
-    if (canShare) {
-      try {
-        await navigator.share({
-          title: 'Join my Branch Out game',
-          text: `Join my game - room ${code}`,
-          url: shareUrl,
-        });
-        return;
-      } catch {
-        // The user dismissed the sheet, or share failed - fall back to copying the link.
-      }
+    // Only fall back to copy when the native sheet is UNSUPPORTED (desktop). When it is supported
+    // and the promise rejects, that is the user dismissing the sheet (AbortError) - swallow it and
+    // do nothing; silently copying on a deliberate dismiss would be surprising, and the copy button
+    // is right there for anyone who wants the link.
+    if (!canShare) {
+      await copy();
+      return;
     }
-    await copy();
+    try {
+      await navigator.share({
+        title: 'Join my Branch Out game',
+        text: `Join my game - room ${code}`,
+        url: shareUrl,
+      });
+    } catch {
+      // Dismissed or rejected by the OS - intentionally a no-op.
+    }
   }
 
   return (
@@ -67,14 +71,13 @@ export function ShareLink({ code, href }: { code: string; href: string }) {
       >
         {copied ? <CheckIcon /> : <CopyIcon />}
       </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={share}
-        aria-label="Share join link"
-      >
+      {/* The share button carries a visible label (icon + "Share"): it is the fast path to text a
+          friend, and two icon-only buttons side by side are hard to tell apart on a phone. The copy
+          button stays icon-only per the product directive. Kept `outline` (not a second `primary`)
+          to respect one-primary-per-view. */}
+      <Button type="button" variant="outline" size="sm" onClick={share} className="gap-1.5">
         <ShareIcon />
+        Share
       </Button>
       {/* A polite live region announces the copy to screen readers, since the button's only visible
           change is the icon swap. */}

@@ -42,7 +42,7 @@ describe('ShareLink', () => {
 
     render(<ShareLink code="ABC12" href="/join?code=ABC12" />);
     await screen.findByRole('link', { name: 'ABC12' });
-    fireEvent.click(screen.getByRole('button', { name: /share join link/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^share$/i }));
 
     await waitFor(() => {
       expect(share).toHaveBeenCalledWith(
@@ -58,10 +58,25 @@ describe('ShareLink', () => {
 
     render(<ShareLink code="ABC12" href="/join?code=ABC12" />);
     await screen.findByRole('link', { name: 'ABC12' });
-    fireEvent.click(screen.getByRole('button', { name: /share join link/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^share$/i }));
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(`${ORIGIN}/join?code=ABC12`);
     });
+  });
+
+  it('does NOT copy when a supported share sheet is dismissed (AbortError), not a fallback', async () => {
+    // Share IS supported here, but the user dismisses the sheet (share rejects). Dismissing must not
+    // silently copy the link - only an UNSUPPORTED sheet falls back to copy.
+    const share = vi.fn().mockRejectedValue(new DOMException('dismissed', 'AbortError'));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { share, clipboard: { writeText } });
+
+    render(<ShareLink code="ABC12" href="/join?code=ABC12" />);
+    await screen.findByRole('link', { name: 'ABC12' });
+    fireEvent.click(screen.getByRole('button', { name: /^share$/i }));
+
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+    expect(writeText).not.toHaveBeenCalled();
   });
 });

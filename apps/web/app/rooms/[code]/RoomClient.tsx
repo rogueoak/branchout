@@ -33,13 +33,14 @@ import { useGameClient } from '../../../lib/use-game-client';
 const DEFAULT_GAME_ID = 'trivia';
 const MEMBER_POLL_MS = 3000;
 
-// The host's create-flow setup steps (spec 0029). `pick` is the first game choice (advances to
-// `invite`); `change` is the in-room swap (returns to the lobby); `invite` is the share screen.
-// `null` is the lobby. Non-hosts never enter a step - they go straight to the lobby.
-type SetupStep = 'pick' | 'change' | 'invite' | null;
+// The host's create-flow setup steps (spec 0029), addressable via `?step=`: `pick` is the first
+// game choice (advances to `invite`), `invite` is the share screen; `null` is the lobby. The in-room
+// "Change game" swap is deliberately NOT a step here - it is transient local state (see `changing`),
+// so reloading or sharing a room URL never re-enters the picker. Non-hosts never enter a step.
+type SetupStep = 'pick' | 'invite' | null;
 
 function normalizeStep(raw: string | undefined): SetupStep {
-  return raw === 'pick' || raw === 'change' || raw === 'invite' ? raw : null;
+  return raw === 'pick' || raw === 'invite' ? raw : null;
 }
 
 interface RoomClientProps {
@@ -64,6 +65,9 @@ export function RoomClient({ code, initialStep }: RoomClientProps) {
   const [startError, setStartError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [step, setStep] = useState<SetupStep>(() => normalizeStep(initialStep));
+  // The in-room "Change game" picker is transient local state, not a `?step=` (so a reload/share of
+  // the room URL never re-opens it). Distinct from the create-flow `step` above.
+  const [changing, setChanging] = useState(false);
 
   // Hydrate what the join step remembered about this player. Without it, this browser is not a
   // known member of the room, so send them to the join screen. If the room already has a selected
@@ -85,6 +89,8 @@ export function RoomClient({ code, initialStep }: RoomClientProps) {
   const running = room?.status === 'running';
   // Only the host runs the setup wizard, and never while the game is running.
   const activeStep: SetupStep = isHost && !running ? step : null;
+  // The picker shows for the create-flow `pick` step or the in-room change-game (local) flow.
+  const showPicker = isHost && !running && (activeStep === 'pick' || changing);
 
   const goToStep = useCallback(
     (next: SetupStep) => {
@@ -93,6 +99,12 @@ export function RoomClient({ code, initialStep }: RoomClientProps) {
     },
     [code, router],
   );
+
+  // Clear a stale `?step=` left in a shared/reloaded URL when the viewer is not a host or the game is
+  // running - so the address bar matches the lobby/game they actually see (no ghost create-flow step).
+  useEffect(() => {
+    if (membership && step !== null && (!isHost || running)) goToStep(null);
+  }, [membership, isHost, running, step, goToStep]);
 
   // The host reads its own public playerId from the members list (its own host row); a non-host
   // relies on the playerId join returned and stored in membership. This is the identity the engine
@@ -200,12 +212,14 @@ export function RoomClient({ code, initialStep }: RoomClientProps) {
       } finally {
         setPicking(false);
       }
-      goToStep(step === 'change' ? null : 'invite');
+      // A change-game swap returns to the lobby; a first pick advances to the invite step.
+      if (changing) setChanging(false);
+      else goToStep('invite');
     },
-    [code, step, persist, goToStep],
+    [code, changing, persist, goToStep],
   );
 
-  const onChangeGame = useCallback(() => goToStep('change'), [goToStep]);
+  const onChangeGame = useCallback(() => setChanging(true), []);
 
   const onStart = useCallback(async () => {
     setStarting(true);
@@ -332,24 +346,22 @@ export function RoomClient({ code, initialStep }: RoomClientProps) {
               </div>
             )}
           </div>
-        ) : activeStep === 'pick' || activeStep === 'change' ? (
+        ) : showPicker ? (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <header className="flex flex-col gap-2">
-              <h1 className="text-h2 text-text">
-                {activeStep === 'change' ? 'Change game' : 'Pick a game'}
-              </h1>
+              <h1 className="text-h2 text-text">{changing ? 'Change game' : 'Pick a game'}</h1>
               <p className="text-body text-text-muted">
-                {activeStep === 'change'
+                {changing
                   ? 'Swap to a different game - your friends stay in the room.'
                   : 'Choose what to play. You can change it later.'}
               </p>
             </header>
             <GamePicker selected={game} onSelect={onPickGame} disabled={picking} />
-            {activeStep === 'change' ? (
+            {changing ? (
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => goToStep(null)}
+                onClick={() => setChanging(false)}
                 disabled={picking}
               >
                 Cancel

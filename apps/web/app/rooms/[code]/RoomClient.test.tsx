@@ -51,9 +51,22 @@ vi.mock('../../../lib/use-game-client', () => ({
   }),
 }));
 
-vi.mock('../../../components/game/Lobby', () => ({ Lobby: () => <div>LOBBY_VIEW</div> }));
+// The lobby is mocked to a marker, but it exposes the "Change game" trigger so a test can drive the
+// in-room change-game flow through RoomClient (the real Lobby owns that button).
+vi.mock('../../../components/game/Lobby', () => ({
+  Lobby: ({ onChangeGame }: { onChangeGame: () => void }) => (
+    <div>
+      LOBBY_VIEW
+      <button type="button" onClick={onChangeGame}>
+        Change game
+      </button>
+    </div>
+  ),
+}));
 vi.mock('../../../components/game/GameStage', () => ({ GameStage: () => <div>GAME_VIEW</div> }));
 
+import { fireEvent } from '@testing-library/react';
+import { RoomApiError } from '../../../lib/room-api';
 import { RoomClient } from './RoomClient';
 
 const roomAt = (status: string): RoomView => ({
@@ -91,6 +104,8 @@ beforeEach(() => {
   getRoom.mockReset();
   listMembers.mockReset();
   listMembers.mockResolvedValue([]);
+  hoisted.selectGame.mockReset();
+  hoisted.selectGame.mockResolvedValue(roomAt('lobby'));
 });
 
 afterEach(() => {
@@ -162,5 +177,62 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     render(<RoomClient code="ABC12" />);
 
     expect(await screen.findByText('LOBBY_VIEW')).toBeDefined();
+  });
+});
+
+describe('RoomClient in-room change game (local state, not ?step=)', () => {
+  it('opens the change-game picker from the lobby without touching the URL', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" />);
+    fireEvent.click(await screen.findByRole('button', { name: /change game/i }));
+
+    // The picker shows with the change-game heading; it is local state, so the URL is NOT changed.
+    expect(await screen.findByRole('heading', { name: /change game/i })).toBeDefined();
+    expect(hoisted.replace).not.toHaveBeenCalled();
+  });
+
+  it('Cancel returns to the lobby', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" />);
+    fireEvent.click(await screen.findByRole('button', { name: /change game/i }));
+    await screen.findByRole('heading', { name: /change game/i });
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(await screen.findByText('LOBBY_VIEW')).toBeDefined();
+  });
+
+  it('picking a game in the change flow returns to the LOBBY (not the invite step)', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" />);
+    fireEvent.click(await screen.findByRole('button', { name: /change game/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /pick liar liar/i }));
+
+    // Returns to the lobby, NOT the invite step - and never navigated the URL for the change flow.
+    expect(await screen.findByText('LOBBY_VIEW')).toBeDefined();
+    expect(screen.queryByRole('heading', { name: /invite your friends/i })).toBeNull();
+    expect(hoisted.selectGame).toHaveBeenCalledWith('ABC12', 'liar-liar', expect.anything());
+    expect(hoisted.replace).not.toHaveBeenCalled();
+  });
+});
+
+describe('RoomClient pick-step selectGame failure', () => {
+  it('keeps the host on the picker and surfaces the error when selection fails', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+    hoisted.selectGame.mockRejectedValueOnce(new RoomApiError(500, null, 'Could not select.'));
+
+    render(<RoomClient code="ABC12" initialStep="pick" />);
+    fireEvent.click(await screen.findByRole('button', { name: /pick liar liar/i }));
+
+    // Error is shown and the host stays on the pick step (not advanced to invite).
+    expect(await screen.findByText(/could not select/i)).toBeDefined();
+    expect(screen.getByRole('heading', { name: /pick a game/i })).toBeDefined();
+    expect(screen.queryByRole('heading', { name: /invite your friends/i })).toBeNull();
   });
 });

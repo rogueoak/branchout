@@ -22,4 +22,17 @@ describe('GameCard', () => {
     render(<GameCard game={triviaGameUi} />);
     expect(screen.queryByRole('button')).toBeNull();
   });
+
+  it('marks the selected card with aria-pressed and a ring (not a second primary button)', () => {
+    const { rerender } = render(
+      <GameCard game={triviaGameUi} onSelect={vi.fn()} selected={false} />,
+    );
+    const button = screen.getByRole('button', { name: /pick trivia/i });
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+
+    rerender(<GameCard game={triviaGameUi} onSelect={vi.fn()} selected />);
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    // The selection is expressed as a ring on the card, not by turning the control into a primary.
+    expect(button.querySelector('.ring-primary')).not.toBeNull();
+  });
 });

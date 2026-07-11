@@ -109,6 +109,26 @@ resolve from inside the web container) - the same client/server URL split `lib/s
 Any preview failure falls back to the generic card, so a share link never fails to unfurl.
 Absolute `og:image` URLs come from `metadataBase` (seeded by `NEXT_PUBLIC_SITE_URL`).
 
+## Room setup flow and deep link (spec 0029)
+
+Creating a room runs a host wizard - **create -> pick a game -> invite** - rendered by `RoomClient`.
+Two kinds of "where am I" state, deliberately kept apart:
+
+- **Create-flow steps are URL-addressable** via `?step=` (`pick`, `invite`; absent = lobby). The page
+  server-reads `searchParams.step` into an `initialStep` prop (the same pattern the join page uses),
+  and the client owns transitions with `router.replace`, so back/forward and reload are sane. A stale
+  `?step=` on a non-host or a running game is cleared once membership resolves.
+- **The in-room "Change game" picker is transient local state**, NOT a `?step=`, so reloading or
+  sharing a room URL never re-enters the picker.
+
+The **`?game=<slug>` deep link** on `/rooms` is the contract the game feature-page CTA (spec `0030`)
+consumes: `slug` is the `GameUiModule.id` (`trivia`, `liar-liar`). On create it is validated against
+the web registry (`getGameUi(slug)`) and, if known, selected during creation so the host lands on the
+`invite` step (the pick step is skipped); an unknown slug is ignored and falls back to `pick` without
+blocking room creation. The per-game display data the picker cards and the feature page both read
+(`name`, `tagline`, `summary`, `icon`) lives once on the web game registry, so adding a game stays
+"add a module + a registry entry".
+
 ## Deployment
 
 Docker Compose, both locally and on a server. Kubernetes is a someday, not a now.
