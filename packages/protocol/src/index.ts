@@ -1,3 +1,7 @@
+// API version prefix (spec 0033) - the single source of truth for the `/v1` path prefix and the
+// engine intake subpaths both ends of the report seam share.
+export { API_VERSION, V1_PREFIX, ENGINE_ROUNDS_SUBPATH, ENGINE_COMPLETE_SUBPATH } from './api';
+
 // Shared domain types and version stamp.
 export {
   PROTOCOL_VERSION,

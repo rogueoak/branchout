@@ -42,6 +42,21 @@ nothing platform-specific leaks into those services.
   (viewer left, remote right; stacked on small screens), in-game screens, profiles, and friend
   search/invite.
 
+## API versioning (spec 0033)
+
+Every functional API - control-plane REST (`/v1/auth`, `/v1/rooms`, and the internal `/v1/engine`
+report intake), game-engine REST (`/v1/sessions`), and the player WebSocket (connected at `/v1`) -
+is served under a `/v1` path prefix, so a future breaking change can run a second version beside it.
+The prefix is one shared constant (`V1_PREFIX` in `@branchout/protocol`) imported by both services
+and the web client, never a scattered literal; each service mounts its routes in one prefixed
+context so the route modules stay path-relative. `/health` is the deliberate exception: it is an
+operational liveness probe (compose healthchecks, the Caddy edge, uptime monitors), not a product
+API, so it stays at the root, un-versioned. Same-origin prod routing is unaffected - Caddy strips
+`/api` and proxies the rest, so the browser's `/api/v1/auth/login` reaches the control-plane as
+`/v1/auth/login`; only the internal engine-intake guard's path gains `/v1`. The engine's reporter
+targets the control-plane origin and appends the full `/v1/engine/...` intake path itself, so the
+version lives in code (not in the `CONTROL_PLANE_URL` env value, which is the plain origin).
+
 ## Game control flow
 
 1. Control-plane creates a room (for a chosen game, or empty to pick later). Host has an

@@ -17,11 +17,12 @@ beforeAll(async () => {
   server = createServer((req, res) => {
     res.setHeader('content-type', 'application/json');
     const url = req.url ?? '';
-    if (url === '/rooms/TRIVI/preview') {
+    // The preview fetch is versioned under /v1 (spec 0033); the real control-plane serves it there.
+    if (url === '/v1/rooms/TRIVI/preview') {
       res.end(
         JSON.stringify({ preview: { code: 'TRIVI', status: 'lobby', selectedGame: 'trivia' } }),
       );
-    } else if (url === '/rooms/EMPTY/preview') {
+    } else if (url === '/v1/rooms/EMPTY/preview') {
       res.end(JSON.stringify({ preview: { code: 'EMPTY', status: 'lobby', selectedGame: null } }));
     } else {
       res.statusCode = 404;

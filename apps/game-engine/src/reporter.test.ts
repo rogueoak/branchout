@@ -1,6 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PROTOCOL_VERSION, type RoundReport } from '@branchout/protocol';
+import {
+  ENGINE_COMPLETE_SUBPATH,
+  ENGINE_ROUNDS_SUBPATH,
+  PROTOCOL_VERSION,
+  V1_PREFIX,
+  type RoundReport,
+} from '@branchout/protocol';
 import { HttpControlPlaneReporter } from './reporter';
+
+// The expected intake paths are DERIVED from the shared constants both ends use, not re-typed as
+// literals. A stale hard-coded path (the feedback-0017 bug) cannot pass this test, because the same
+// constant drives the reporter and the control-plane route registration - the seam is pinned to one
+// source of truth, not two literals a reader hopes match.
+const ROUNDS_URL = `http://cp:4000${V1_PREFIX}${ENGINE_ROUNDS_SUBPATH}`;
+const COMPLETE_URL = `http://cp:4000${V1_PREFIX}${ENGINE_COMPLETE_SUBPATH}`;
 
 const roundReport: RoundReport = {
   v: PROTOCOL_VERSION,
@@ -24,7 +37,7 @@ function firstCall(fetchImpl: typeof fetch): [string, RequestInit] {
 }
 
 describe('HttpControlPlaneReporter', () => {
-  it('POSTs a round report as JSON to the control-plane /rounds endpoint', async () => {
+  it('POSTs a round report as JSON to the control-plane /v1/engine/rounds endpoint', async () => {
     const fetchImpl = okFetch();
     const reporter = new HttpControlPlaneReporter({ baseUrl: 'http://cp:4000', fetch: fetchImpl });
 
@@ -32,13 +45,15 @@ describe('HttpControlPlaneReporter', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, init] = firstCall(fetchImpl);
-    expect(url).toBe('http://cp:4000/rounds');
+    // baseUrl is the control-plane ORIGIN; the reporter appends the full versioned intake path
+    // (spec 0033), so the version lives in code, not in the CONTROL_PLANE_URL env value.
+    expect(url).toBe(ROUNDS_URL);
     expect(init.method).toBe('POST');
     expect(init.headers).toMatchObject({ 'content-type': 'application/json' });
     expect(JSON.parse(init.body as string)).toEqual(roundReport);
   });
 
-  it('POSTs a completion report to /games/complete', async () => {
+  it('POSTs a completion report to /v1/engine/games/complete', async () => {
     const fetchImpl = okFetch();
     const reporter = new HttpControlPlaneReporter({ baseUrl: 'http://cp:4000', fetch: fetchImpl });
     await reporter.reportComplete({
@@ -49,7 +64,7 @@ describe('HttpControlPlaneReporter', () => {
       standings: [],
     });
     const [url] = firstCall(fetchImpl);
-    expect(url).toBe('http://cp:4000/games/complete');
+    expect(url).toBe(COMPLETE_URL);
   });
 
   it('strips a trailing slash from the base URL', async () => {
@@ -57,7 +72,7 @@ describe('HttpControlPlaneReporter', () => {
     const reporter = new HttpControlPlaneReporter({ baseUrl: 'http://cp:4000/', fetch: fetchImpl });
     await reporter.reportRound(roundReport);
     const [url] = firstCall(fetchImpl);
-    expect(url).toBe('http://cp:4000/rounds');
+    expect(url).toBe(ROUNDS_URL);
   });
 
   it('throws on a non-2xx response so the engine keeps the report queued', async () => {

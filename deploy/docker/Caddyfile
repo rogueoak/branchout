@@ -2,10 +2,11 @@
 # Auto-TLS via ACME (Let's Encrypt). No email in this file (operator privacy;
 # set `email` in a local /etc/caddy/Caddyfile override on the host if needed).
 #
-# Same-origin path routing: one domain, one TLS certificate, no CORS.
-#   /api/*  -> control-plane:4000  (REST)
-#   /ws/*   -> game-engine:4001    (WebSocket upgrade)
-#   *       -> web:3000            (Next.js)
+# Same-origin path routing: one domain, one TLS certificate, no CORS. All functional APIs are
+# served under the `/v1` version prefix (spec 0033); `/health` stays unversioned.
+#   /api/v1/*  -> control-plane:4000  (REST, e.g. /api/v1/auth/login -> /v1/auth/login)
+#   /ws/*      -> game-engine:4001    (WebSocket upgrade; the browser connects to /ws/v1)
+#   *          -> web:3000            (Next.js)
 #
 # Validate before applying:
 #   docker compose -f deploy/docker/compose.proxy.yml exec caddy caddy validate --config /etc/caddy/Caddyfile
@@ -26,24 +27,25 @@ branchout.games {
     # HSTS: tell browsers to always use HTTPS for this domain (2 years).
     header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 
-    # WebSocket upgrade - game-engine handles /ws traffic. The engine's ws server
-    # accepts any path, so no prefix strip is needed; match both bare /ws and /ws/*.
+    # WebSocket upgrade - game-engine handles /ws traffic. The browser connects to the versioned
+    # /ws/v1 (spec 0033), but the engine's ws server accepts any path (room/game/player come from the
+    # `join` frame), so no prefix strip is needed; match both bare /ws and /ws/* (which covers /ws/v1).
     # Caddy preserves the Upgrade header automatically on a WebSocket handshake.
     @ws path /ws /ws/*
     handle @ws {
         reverse_proxy game-engine:4001
     }
 
-    # The engine report intake (control-plane /engine/*) is internal-only: the
+    # The engine report intake (control-plane /v1/engine/*) is internal-only: the
     # game-engine calls it over the container network, never the browser. Block it
     # from the internet so the (currently unauthenticated) money endpoint is not
     # reachable from outside. Must come before the general /api proxy below.
-    handle /api/engine/* {
+    handle /api/v1/engine/* {
         respond 404
     }
 
-    # REST API - control-plane serves /auth, /rooms, /engine (no /api prefix), so
-    # handle_path STRIPS /api before proxying: /api/auth/login -> /auth/login.
+    # REST API - control-plane serves /v1/auth, /v1/rooms, /v1/engine (no /api prefix),
+    # so handle_path STRIPS /api before proxying: /api/v1/auth/login -> /v1/auth/login.
     handle_path /api/* {
         reverse_proxy control-plane:4000
     }

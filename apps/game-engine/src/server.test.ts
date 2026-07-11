@@ -1,6 +1,7 @@
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
+import { V1_PREFIX } from '@branchout/protocol';
 import { createApp } from './app';
 import { GameEngine } from './engine';
 import { InMemoryPubSub } from './pubsub';
@@ -27,7 +28,10 @@ describe('game-engine Fastify + websocket integration', () => {
     attachGameSocket(app.server, engine, pubsub);
     await app.listen({ port: 0, host: '127.0.0.1' });
     const { port } = app.server.address() as AddressInfo;
-    url = `ws://127.0.0.1:${port}`;
+    // Connect at the versioned path (spec 0033): the engine ws server must accept `/v1`, so the
+    // client's versioned connect URL and the server agree - the seam the reporter fix taught us to
+    // pin rather than leave to two unproven ends.
+    url = `ws://127.0.0.1:${port}${V1_PREFIX}`;
   });
 
   afterAll(async () => {

@@ -1,5 +1,11 @@
 import { timingSafeEqual } from 'node:crypto';
-import { ProtocolError, parseGameCompleteReport, parseRoundReport } from '@branchout/protocol';
+import {
+  ENGINE_COMPLETE_SUBPATH,
+  ENGINE_ROUNDS_SUBPATH,
+  ProtocolError,
+  parseGameCompleteReport,
+  parseRoundReport,
+} from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { RoomError, type RoomService } from '../rooms/service';
@@ -45,8 +51,9 @@ export function registerEngineRoutes(app: FastifyInstance, deps: EngineRoutesDep
     return true;
   };
 
-  // Round report: record scoring and debit one credit, idempotent by roundId.
-  app.post('/engine/rounds', async (request, reply) => {
+  // Round report: record scoring and debit one credit, idempotent by roundId. The subpath is the
+  // shared constant the engine reporter also targets (under the `/v1` mount), so the seam cannot drift.
+  app.post(ENGINE_ROUNDS_SUBPATH, async (request, reply) => {
     if (!authorized(request, reply)) {
       return reply;
     }
@@ -60,8 +67,9 @@ export function registerEngineRoutes(app: FastifyInstance, deps: EngineRoutesDep
     return reply.code(200).send({ v: PROTOCOL_VERSION, status });
   });
 
-  // Game-complete report: convert final standings to stars and record, idempotent by gameId.
-  app.post('/engine/games/complete', async (request, reply) => {
+  // Game-complete report: convert final standings to stars and record, idempotent by gameId. Shared
+  // subpath constant (see the round route) keeps the reporter and this intake in lockstep.
+  app.post(ENGINE_COMPLETE_SUBPATH, async (request, reply) => {
     if (!authorized(request, reply)) {
       return reply;
     }

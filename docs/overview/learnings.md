@@ -335,3 +335,12 @@ Capture durable lessons as they emerge.
   no stars - stayed green. Drive the flow through to the scored result (host ranked first ->
   `recordGameComplete` -> the persisted stars award) so the outcome the player sees is what breaks.
   (Review `0013`.)
+- **When two sides of a seam must use the same path/key, make them one shared constant - don't rely
+  on a test hoping they match.** The engine reporter POSTed to `/rounds` while the control-plane intake
+  served `/engine/rounds`, so every report 404'd in prod (where `CONTROL_PLANE_URL` is set); local/e2e
+  left it unset (NoopReporter) so it never surfaced. Each end had its own test, neither asserting the
+  two literals were equal. The fix was a shared `ENGINE_ROUNDS_SUBPATH`/`ENGINE_COMPLETE_SUBPATH` in
+  `@branchout/protocol` that both the route registration and the reporter derive from - correct by
+  construction, which beats a seam test because it removes the failure mode rather than detecting it.
+  Also: a silent path mismatch hides when the failing path is a fire-and-forget report and the
+  test/dev env disables the caller; exercise the real caller against the real route. (Feedback `0017`.)

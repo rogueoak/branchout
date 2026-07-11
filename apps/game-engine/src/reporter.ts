@@ -3,7 +3,13 @@
 // idempotent with ids). The engine also dedupes on its side (see engine.ts), so a report is sent
 // at most once per round/game per run; the ids let the control-plane dedupe a retry too.
 
-import type { GameCompleteReport, RoundReport } from '@branchout/protocol';
+import {
+  ENGINE_COMPLETE_SUBPATH,
+  ENGINE_ROUNDS_SUBPATH,
+  V1_PREFIX,
+  type GameCompleteReport,
+  type RoundReport,
+} from '@branchout/protocol';
 
 export interface ControlPlaneReporter {
   reportRound(report: RoundReport): Promise<void>;
@@ -11,7 +17,11 @@ export interface ControlPlaneReporter {
 }
 
 export interface HttpReporterOptions {
-  /** Base URL of the control-plane, e.g. http://control-plane:4000. */
+  /**
+   * Base URL of the control-plane ORIGIN, e.g. `http://control-plane:4000` - no path suffix. The
+   * reporter appends the full versioned intake path (`/v1/engine/...`, spec 0033) itself, so the
+   * version stays in code (the shared `V1_PREFIX`), not spread into deploy env.
+   */
   baseUrl: string;
   /** Injected for tests; defaults to global fetch. */
   fetch?: typeof fetch;
@@ -28,11 +38,11 @@ export class HttpControlPlaneReporter implements ControlPlaneReporter {
   }
 
   async reportRound(report: RoundReport): Promise<void> {
-    await this.post('/rounds', report);
+    await this.post(`${V1_PREFIX}${ENGINE_ROUNDS_SUBPATH}`, report);
   }
 
   async reportComplete(report: GameCompleteReport): Promise<void> {
-    await this.post('/games/complete', report);
+    await this.post(`${V1_PREFIX}${ENGINE_COMPLETE_SUBPATH}`, report);
   }
 
   private async post(path: string, body: unknown): Promise<void> {

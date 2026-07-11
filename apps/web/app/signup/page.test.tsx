@@ -36,7 +36,7 @@ describe('signup page', () => {
 
     await waitFor(() => screen.getByRole('heading', { name: 'You are in' }));
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/signup'),
+      expect.stringContaining('/v1/auth/signup'),
       expect.objectContaining({ method: 'POST', credentials: 'include' }),
     );
   });
