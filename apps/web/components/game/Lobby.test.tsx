@@ -36,7 +36,7 @@ function renderLobby(props: Partial<Parameters<typeof Lobby>[0]>) {
       isHost
       me="pid_host"
       game="trivia"
-      onGameChange={() => {}}
+      onChangeGame={() => {}}
       config={defaultTriviaConfig()}
       onConfigChange={() => {}}
       onStart={() => {}}
@@ -55,13 +55,14 @@ describe('Lobby', () => {
     expect(screen.getByText('Host - Interactive')).toBeDefined();
   });
 
-  it('shows how to join on the same WiFi: the room code and the connect link', () => {
+  it('offers the invite affordance: the room code as a link into the join URL', () => {
     renderLobby({});
-    expect(screen.getByText('ABC12')).toBeDefined();
-    expect(screen.getByText(/on the same wifi/i)).toBeDefined();
-    // ShareLink resolves the join path to an absolute URL after mount; the code rides in the query.
-    const link = screen.getByRole('link', { name: /join\?code=ABC12/i });
+    expect(screen.getByText(/invite friends/i)).toBeDefined();
+    // ShareLink shows the code as the link text, resolving to the absolute join URL after mount.
+    const link = screen.getByRole('link', { name: 'ABC12' });
     expect(link.getAttribute('href')).toContain('code=ABC12');
+    // The copy control is an icon button, not the word "Copy".
+    expect(screen.getByRole('button', { name: /copy join link/i })).toBeDefined();
   });
 
   it('reflects a remote host in the roster badge', () => {
@@ -85,19 +86,20 @@ describe('Lobby', () => {
     expect(screen.queryByText(/Waiting for a viewer/)).toBeNull();
   });
 
-  it('lets the host pick a game and shows that game config panel', () => {
-    const onGameChange = vi.fn();
-    // The picker offers both registered games.
-    renderLobby({ onGameChange });
-    expect(screen.getByRole('button', { name: 'Trivia' })).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: 'Liar Liar' }));
-    expect(onGameChange).toHaveBeenCalledWith('liar-liar');
+  it('shows the selected game detail card and a Change game button (selection moved to the picker)', () => {
+    const onChangeGame = vi.fn();
+    renderLobby({ game: 'trivia', onChangeGame });
+    // The chosen game is shown as a detail card (name + summary), not a row of title buttons.
+    expect(screen.getByRole('heading', { name: 'Trivia' })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /change game/i }));
+    expect(onChangeGame).toHaveBeenCalled();
   });
 
-  it('renders the selected game config panel (Liar Liar)', () => {
+  it('renders the selected game config panel and detail card (Liar Liar)', () => {
     renderLobby({ game: 'liar-liar', config: defaultLiarLiarConfig() });
     // Liar Liar's config panel, not Trivia's category select.
     expect(screen.getByRole('button', { name: /random \(all\)/i })).toBeDefined();
+    // The detail card carries the game's tagline.
     expect(screen.getByText(/Bluff your friends/i)).toBeDefined();
   });
 

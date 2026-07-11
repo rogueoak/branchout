@@ -161,6 +161,16 @@ What the product does for users, grouped by area. Each capability maps to one or
       all-answered early close still applies, so 60s is the ceiling). Pausing freezes the clock and
       resuming continues from the time left. At reveal, the viewer shows every player's submitted
       answer with a correct/wrong marker.
+- [x] Room create flow and richer invites (spec `0029`) - hosting is a stepped, phone-first flow:
+      create a room -> pick a game (shown as a detail card: mark, name, tagline, summary - not a bare
+      title) -> invite friends. A `?game=<slug>` deep link (the "Start a game" CTA a feature page
+      will use, spec `0030`) pre-selects the game and skips the pick step, landing on invite. The
+      invite affordance is the room code as a link into the join URL, a copy-icon button (not the
+      word "Copy"), and a share button that opens the native share sheet where supported (falling
+      back to copy on desktop) - reused in the invite step and the lobby. In the room, a "Change
+      game" button reopens the card picker; the lobby shows the selected game's detail card and its
+      config panel. The per-game summary lives on the web game registry so the picker and a later
+      feature page share one source.
 - [ ] Profile pages and friend search/invite.
 
 ## Future

@@ -9,10 +9,17 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Wordmark } from '../../components/Wordmark';
 import { defaultMode } from '../../lib/default-mode';
+import { getGameUi } from '../../lib/games/registry';
 import { rememberMembership } from '../../lib/membership';
-import { RoomApiError, createRoom, fetchIdentity, setMode } from '../../lib/room-api';
+import { RoomApiError, createRoom, fetchIdentity, selectGame, setMode } from '../../lib/room-api';
 
-export function RoomsHome() {
+interface RoomsHomeProps {
+  /** The `?game=<slug>` deep link from a feature-page "Start a game" CTA (spec 0030): create a room
+   * pre-selected to this game and skip the pick step. Ignored if it is not a known game id. */
+  initialGame?: string;
+}
+
+export function RoomsHome({ initialGame }: RoomsHomeProps = {}) {
   const router = useRouter();
   const [isAccount, setIsAccount] = useState<boolean | null>(null);
   const [hostName, setHostName] = useState('Host');
@@ -45,13 +52,27 @@ export function RoomsHome() {
       // the host has its engine identity immediately - a host reloading mid-game is not bounced to
       // rejoin while the roster poll is skipped.
       const mode = defaultMode(typeof navigator === 'undefined' ? '' : navigator.userAgent);
+
+      // Deep link (spec 0029): if the "Start a game" CTA named a known game, select it now and skip
+      // the pick step, landing the host straight on invite. Otherwise the host picks a game first.
+      const preselected = initialGame ? getGameUi(initialGame) : undefined;
+      let roomToStore = room;
+      if (preselected) {
+        try {
+          roomToStore = await selectGame(room.code, preselected.id, preselected.defaultConfig());
+        } catch {
+          // If pre-selection fails, fall back to the pick step rather than blocking room creation.
+        }
+      }
+      const step = roomToStore.selectedGame ? 'invite' : 'pick';
+
       rememberMembership(room.code, {
         role: 'player',
         isHost: true,
         mode,
         nickname: hostName,
         player: playerId,
-        room,
+        room: roomToStore,
       });
       if (mode !== 'interactive') {
         try {
@@ -61,7 +82,7 @@ export function RoomsHome() {
           // the lobby, so a failed refinement should not block entering the room.
         }
       }
-      router.push(`/rooms/${room.code}`);
+      router.push(`/rooms/${room.code}?step=${step}`);
     } catch (err) {
       setError(err instanceof RoomApiError ? err.message : 'Could not create a room. Try again.');
       setCreating(false);

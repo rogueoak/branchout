@@ -2,22 +2,26 @@
 
 import { Button } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
+import { CheckIcon, CopyIcon, ShareIcon } from './icons';
 
 /**
- * The room's tap-to-join share link with a copy-to-clipboard shortcut.
+ * The room's invite affordance (spec 0029): the room CODE as a tappable link to the join URL, a
+ * copy button that is an ICON (not the word "Copy"), and a share button that opens the native share
+ * sheet on devices that support it (falling back to copy on desktop).
  *
- * The control-plane returns `shareLink` as a relative path (`/join?code=ABC12`) so it resolves
- * against whatever origin serves the app. That is fine for clicking, but a host who copies it to
- * send to a friend needs the full URL - a bare path is useless pasted into a text or DM. So we
- * resolve it against this origin to an absolute URL for both the visible link and the copied
- * text. Resolved after mount to avoid an SSR/CSR hydration mismatch (no `window` on the server);
- * `new URL` leaves an already-absolute href untouched.
+ * The control-plane returns `shareLink` as a relative path (`/join?code=ABC12`); a friend needs the
+ * full URL, so we resolve it against this origin after mount (no `window` on the server, so this
+ * avoids an SSR/CSR hydration mismatch). `navigator.share` exists on most mobile browsers and few
+ * desktops, so the share button is feature-detected and degrades to copy - it always does something.
  */
-export function ShareLink({ href }: { href: string }) {
+export function ShareLink({ code, href }: { code: string; href: string }) {
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState(href);
+  const [canShare, setCanShare] = useState(false);
+
   useEffect(() => {
     setShareUrl(new URL(href, window.location.origin).toString());
+    setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
   }, [href]);
 
   async function copy() {
@@ -30,14 +34,53 @@ export function ShareLink({ href }: { href: string }) {
     }
   }
 
+  async function share() {
+    if (canShare) {
+      try {
+        await navigator.share({
+          title: 'Join my Branch Out game',
+          text: `Join my game - room ${code}`,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // The user dismissed the sheet, or share failed - fall back to copying the link.
+      }
+    }
+    await copy();
+  }
+
   return (
-    <span className="flex flex-wrap items-center gap-2">
-      <a className="text-primary underline-offset-4 hover:underline" href={shareUrl}>
-        {shareUrl}
+    <span className="flex items-center gap-2">
+      <a
+        className="text-primary tabular-nums tracking-widest underline-offset-4 hover:underline"
+        href={shareUrl}
+      >
+        {code}
       </a>
-      <Button type="button" variant="outline" size="sm" onClick={copy}>
-        {copied ? 'Copied' : 'Copy link'}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={copy}
+        aria-label={copied ? 'Join link copied' : 'Copy join link'}
+      >
+        {copied ? <CheckIcon /> : <CopyIcon />}
       </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={share}
+        aria-label="Share join link"
+      >
+        <ShareIcon />
+      </Button>
+      {/* A polite live region announces the copy to screen readers, since the button's only visible
+          change is the icon swap. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? 'Join link copied' : ''}
+      </span>
     </span>
   );
 }

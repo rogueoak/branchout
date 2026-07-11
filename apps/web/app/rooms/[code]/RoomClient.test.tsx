@@ -11,9 +11,17 @@ import type { Membership } from '../../../lib/membership';
 const hoisted = vi.hoisted(() => ({
   getRoom: vi.fn(),
   listMembers: vi.fn(),
+  selectGame: vi.fn(),
+  replace: vi.fn(),
   recalled: null as Membership | null,
 }));
 const { getRoom, listMembers } = hoisted;
+
+// The setup wizard navigates between steps via the router; mock it so the steps render without a
+// real app-router context.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: hoisted.replace, push: vi.fn() }),
+}));
 
 vi.mock('../../../lib/room-api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/room-api')>();
@@ -21,6 +29,7 @@ vi.mock('../../../lib/room-api', async (importOriginal) => {
     ...actual,
     getRoom: (code: string) => hoisted.getRoom(code),
     listMembers: (code: string) => hoisted.listMembers(code),
+    selectGame: (...args: unknown[]) => hoisted.selectGame(...args),
   };
 });
 
@@ -67,6 +76,17 @@ function nonHostMembership(status: string): Membership {
   };
 }
 
+function hostMembership(status: string): Membership {
+  return {
+    role: 'player',
+    isHost: true,
+    mode: 'interactive',
+    nickname: 'Ada',
+    player: 'p1',
+    room: roomAt(status),
+  };
+}
+
 beforeEach(() => {
   getRoom.mockReset();
   listMembers.mockReset();
@@ -99,5 +119,48 @@ describe('RoomClient non-host transitions on the room-status poll', () => {
     // Starts in the game (recalled `running`), then the poll observes the exit and returns.
     expect(screen.getByText('GAME_VIEW')).toBeDefined();
     await waitFor(() => expect(screen.getByText('LOBBY_VIEW')).toBeDefined());
+  });
+});
+
+describe('RoomClient host setup wizard (spec 0029)', () => {
+  it('shows the pick step to a host arriving with ?step=pick', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" initialStep="pick" />);
+
+    expect(await screen.findByRole('heading', { name: /pick a game/i })).toBeDefined();
+    // The wizard replaces the lobby, not layers on top of it.
+    expect(screen.queryByText('LOBBY_VIEW')).toBeNull();
+  });
+
+  it('shows the invite step (room code) to a host at ?step=invite', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" initialStep="invite" />);
+
+    expect(await screen.findByRole('heading', { name: /invite your friends/i })).toBeDefined();
+    // The invite affordance shows the room code (as a join link).
+    expect(screen.getByRole('link', { name: 'ABC12' })).toBeDefined();
+  });
+
+  it('ignores the setup step for a non-host - it goes straight to the lobby', async () => {
+    hoisted.recalled = nonHostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" initialStep="pick" />);
+
+    expect(await screen.findByText('LOBBY_VIEW')).toBeDefined();
+    expect(screen.queryByRole('heading', { name: /pick a game/i })).toBeNull();
+  });
+
+  it('lands a host with no step in the lobby', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" />);
+
+    expect(await screen.findByText('LOBBY_VIEW')).toBeDefined();
   });
 });

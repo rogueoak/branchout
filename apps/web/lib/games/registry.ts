@@ -50,6 +50,12 @@ export interface GameUiModule {
   name: string;
   /** A short tagline for the picker. */
   tagline: string;
+  /** The game's on-theme mark as an inline SVG string (from `@branchout/brand`), shown on the detail
+   * card in the game picker (spec 0029). Not user input; inlined like the Wordmark icon. */
+  icon: string;
+  /** One plain sentence of what the game is - the detail card's body and the single source a later
+   * feature page (spec 0030) can share, so the picker and the marketing page never drift. */
+  summary: string;
   /** The default config a fresh lobby starts from. */
   defaultConfig: () => unknown;
   /** Validate a host config against the game's rules (mirrors the engine; the engine re-checks). */
