@@ -8,6 +8,7 @@
 import { Button, Input, Label, buttonVariants, inputVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
+import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import type { Viewer } from '../../lib/session';
 import { defaultMode } from '../../lib/default-mode';
@@ -88,11 +89,11 @@ export function JoinForm({ initialCode, viewer }: JoinFormProps) {
   }
 
   return (
-    <div className="min-h-screen bg-bg text-text">
+    <div className="flex min-h-screen flex-col bg-bg text-text">
       <TopNav viewer={viewer} />
       <form
         onSubmit={onSubmit}
-        className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12 sm:px-6"
+        className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-12 sm:px-6"
         noValidate
       >
         <header className="flex flex-col items-center gap-3 text-center">
@@ -169,6 +170,7 @@ export function JoinForm({ initialCode, viewer }: JoinFormProps) {
           Back
         </a>
       </form>
+      <Footer />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogu
 import { liarLiarSvg } from '@branchout/brand/liarliar';
 import { triviaSvg } from '@branchout/brand/trivia';
 import type { Viewer } from '../lib/session';
+import { Footer } from './Footer';
 import { TopNav } from './TopNav';
 
 interface LandingContentProps {
@@ -186,10 +187,8 @@ export function LandingContent({ viewer }: LandingContentProps) {
         <p className="mt-6 text-body-sm text-text-muted">More games on the way.</p>
       </section>
 
-      {/* Footer */}
-      <footer className="mx-auto max-w-5xl border-t border-border px-4 py-8 sm:px-6">
-        <p className="text-body-sm text-text-muted">Branch Out Games - where game night grows.</p>
-      </footer>
+      {/* Shared footer with the Privacy and Terms links (spec 0031). */}
+      <Footer />
     </div>
   );
 }

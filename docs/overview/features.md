@@ -183,6 +183,11 @@ What the product does for users, grouped by area. Each capability maps to one or
       dropdown to Manage account / Log out when signed in). Auth state is read server-side
       (`getViewer`) and injected so the correct nav renders on the first byte (no flash). Present on
       the marketing and rooms/join surfaces, omitted inside a running game (spec `0028`).
+- [x] Legal pages - a plain-language `/privacy` (first-party analytics, what accounts store,
+      anonymous play, IP/logs, processors, children, rights) and `/terms` (acceptance, acceptable
+      use, an "as is" no-warranty disclaimer, a liability limit, and a terms-can-change-any-time
+      clause). A shared `Footer` links to both from the marketing and rooms/join surfaces; the
+      contact email and last-updated date come from one constant each (spec `0031`).
 - [ ] Profile pages and friend search/invite.
 
 ## Future
