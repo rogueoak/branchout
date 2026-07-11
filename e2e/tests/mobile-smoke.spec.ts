@@ -1,9 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-import { signUpHost } from '../lib/helpers';
+import { signUp, signUpHost } from '../lib/helpers';
 
-// Mobile-first is the product's first non-negotiable (CLAUDE.md). This lane runs at a phone
-// viewport (Pixel 7, ~390px) and guards that the primary entry surfaces render and fit - no
-// horizontal overflow, key affordances visible - in a real small-viewport browser.
+// Mobile-first is the product's first non-negotiable (CLAUDE.md). This lane runs in a real phone
+// browser (the Pixel 7 device viewport) and guards that the primary entry surfaces render and fit -
+// no horizontal overflow, key affordances visible. The nav block below pins the exact 360px floor
+// the non-negotiable names, since the nav's wordmark + Games + CTA/avatar row is the most likely to
+// collide at the narrowest supported width.
 
 async function expectNoHorizontalOverflow(scrollWidth: number, clientWidth: number) {
   // Allow a 1px rounding slack; anything more means content pushes past the viewport.
@@ -31,6 +33,41 @@ test('landing page renders and fits on a phone', async ({ page }) => {
     clientWidth: document.documentElement.clientWidth,
   }));
   await expectNoHorizontalOverflow(scrollWidth, clientWidth);
+});
+
+test.describe('the shared top nav (spec 0028) at 360px', () => {
+  // Pin the exact 360px floor from the mobile-first non-negotiable (overriding the device viewport).
+  test.use({ viewport: { width: 360, height: 780 } });
+
+  test('signed-out nav shows Games + Sign up and fits on home and /rooms', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: /site navigation/i });
+    for (const path of ['/', '/rooms']) {
+      await page.goto(path);
+      await expect(nav).toBeVisible();
+      // `exact` so "Games" does not also match the wordmark link ("Branch Out Games home").
+      await expect(nav.getByRole('link', { name: 'Games', exact: true })).toBeVisible();
+      await expect(nav.getByRole('link', { name: 'Sign up', exact: true })).toBeVisible();
+      await expectFits(page);
+    }
+  });
+
+  test('signed-in nav shows the avatar menu on first paint (no flash) and the dropdown fits', async ({
+    page,
+  }) => {
+    await signUp(page);
+    await page.goto('/rooms');
+    const nav = page.getByRole('navigation', { name: /site navigation/i });
+    // The server-injected viewer means the signed-in nav (the avatar trigger) is present on the first
+    // paint - proving the page actually reads getViewer and there is no signed-out->in flash.
+    const trigger = nav.getByRole('button', { name: /account menu/i });
+    await expect(trigger).toBeVisible();
+    await expectFits(page);
+    // The dropdown (avatar + w-56 popover) opens and still fits at 360px.
+    await trigger.click();
+    await expect(page.getByRole('menu', { name: /account/i })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Log out' })).toBeVisible();
+    await expectFits(page);
+  });
 });
 
 test('join-by-code page renders and fits on a phone', async ({ page }) => {

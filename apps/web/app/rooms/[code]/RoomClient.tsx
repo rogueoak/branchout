@@ -12,6 +12,8 @@ import { GameStage, type HostControl } from '../../../components/game/GameStage'
 import { GamePicker } from '../../../components/game/GamePicker';
 import { Lobby } from '../../../components/game/Lobby';
 import { ShareLink } from '../../../components/game/ShareLink';
+import { TopNav } from '../../../components/TopNav';
+import type { Viewer } from '../../../lib/session';
 import { ENGINE_WS_URL } from '../../../lib/engine';
 import { recallMembership, rememberMembership, type Membership } from '../../../lib/membership';
 import {
@@ -47,9 +49,12 @@ interface RoomClientProps {
   code: string;
   /** The `?step=` query the create flow set (server-passed from the page), seeding the setup step. */
   initialStep?: string;
+  /** The signed-in identity for the shared top nav (spec 0028); shown in the lobby/setup, hidden in
+   * a running game. Server-passed so the nav renders without an auth flash. */
+  viewer: Viewer;
 }
 
-export function RoomClient({ code, initialStep }: RoomClientProps) {
+export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
   const router = useRouter();
   // `undefined` means "still hydrating from session storage"; `null` means "hydrated, not a member
   // of this room". Distinguishing them avoids flashing the join prompt to a valid member on load.
@@ -268,35 +273,46 @@ export function RoomClient({ code, initialStep }: RoomClientProps) {
     [code],
   );
 
+  // These pre-lobby states are not the running game, so they carry the shared nav too - only the
+  // running game omits it. Keeps "every non-in-game surface has the nav" a rule, not a per-branch call.
   if (membership === undefined) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
-        <p className="text-body text-text-muted" role="status">
-          Loading room {code.toUpperCase()}...
-        </p>
-      </main>
+      <>
+        <TopNav viewer={viewer} />
+        <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
+          <p className="text-body text-text-muted" role="status">
+            Loading room {code.toUpperCase()}...
+          </p>
+        </main>
+      </>
     );
   }
 
   if (!membership || !room) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
-        <h1 className="text-h2">Join room {code.toUpperCase()}</h1>
-        <p className="text-body text-text-muted">
-          You are not in this room yet. Join with the code to play.
-        </p>
-        <a
-          href={`/join?code=${encodeURIComponent(code)}`}
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          Go to join
-        </a>
-      </main>
+      <>
+        <TopNav viewer={viewer} />
+        <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
+          <h1 className="text-h2">Join room {code.toUpperCase()}</h1>
+          <p className="text-body text-text-muted">
+            You are not in this room yet. Join with the code to play.
+          </p>
+          <a
+            href={`/join?code=${encodeURIComponent(code)}`}
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Go to join
+          </a>
+        </main>
+      </>
     );
   }
 
   return (
     <main className="min-h-screen bg-bg text-text">
+      {/* The shared top nav (spec 0028) shows in the lobby and setup wizard, but NOT once the game is
+          running - the in-game stage keeps its own compact room-code/leave header, chrome-free. */}
+      {!running ? <TopNav viewer={viewer} /> : null}
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         {loadError ? (
           <p role="alert" className="mb-4 text-body-sm text-danger">

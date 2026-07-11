@@ -117,7 +117,7 @@ describe('RoomClient non-host transitions on the room-status poll', () => {
     hoisted.recalled = nonHostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('running'));
 
-    render(<RoomClient code="ABC12" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
 
     // Starts in the lobby (the recalled status), then the poll observes `running` and enters.
     expect(screen.getByText('LOBBY_VIEW')).toBeDefined();
@@ -129,11 +129,33 @@ describe('RoomClient non-host transitions on the room-status poll', () => {
     hoisted.recalled = nonHostMembership('running');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
-    render(<RoomClient code="ABC12" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
 
     // Starts in the game (recalled `running`), then the poll observes the exit and returns.
     expect(screen.getByText('GAME_VIEW')).toBeDefined();
     await waitFor(() => expect(screen.getByText('LOBBY_VIEW')).toBeDefined());
+  });
+});
+
+describe('RoomClient top nav (spec 0028)', () => {
+  it('shows the shared site nav in the lobby', async () => {
+    hoisted.recalled = nonHostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+
+    expect(screen.getByText('LOBBY_VIEW')).toBeDefined();
+    expect(screen.getByRole('navigation', { name: /site navigation/i })).toBeDefined();
+  });
+
+  it('hides the site nav once the game is running (the stage keeps its own header)', async () => {
+    hoisted.recalled = nonHostMembership('running');
+    getRoom.mockResolvedValue(roomAt('running'));
+
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+
+    expect(screen.getByText('GAME_VIEW')).toBeDefined();
+    expect(screen.queryByRole('navigation', { name: /site navigation/i })).toBeNull();
   });
 });
 
@@ -142,7 +164,7 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
-    render(<RoomClient code="ABC12" initialStep="pick" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} initialStep="pick" />);
 
     expect(await screen.findByRole('heading', { name: /pick a game/i })).toBeDefined();
     // The wizard replaces the lobby, not layers on top of it.
@@ -153,7 +175,7 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
-    render(<RoomClient code="ABC12" initialStep="invite" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} initialStep="invite" />);
 
     expect(await screen.findByRole('heading', { name: /invite your friends/i })).toBeDefined();
     // The invite affordance shows the room code (as a join link).
@@ -164,7 +186,7 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     hoisted.recalled = nonHostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
-    render(<RoomClient code="ABC12" initialStep="pick" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} initialStep="pick" />);
 
     expect(await screen.findByText('LOBBY_VIEW')).toBeDefined();
     expect(screen.queryByRole('heading', { name: /pick a game/i })).toBeNull();
@@ -174,7 +196,7 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
-    render(<RoomClient code="ABC12" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
 
     expect(await screen.findByText('LOBBY_VIEW')).toBeDefined();
   });
@@ -185,7 +207,7 @@ describe('RoomClient in-room change game (local state, not ?step=)', () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
-    render(<RoomClient code="ABC12" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
     fireEvent.click(await screen.findByRole('button', { name: /change game/i }));
 
     // The picker shows with the change-game heading; it is local state, so the URL is NOT changed.
@@ -197,7 +219,7 @@ describe('RoomClient in-room change game (local state, not ?step=)', () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
-    render(<RoomClient code="ABC12" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
     fireEvent.click(await screen.findByRole('button', { name: /change game/i }));
     await screen.findByRole('heading', { name: /change game/i });
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
@@ -209,7 +231,7 @@ describe('RoomClient in-room change game (local state, not ?step=)', () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
-    render(<RoomClient code="ABC12" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
     fireEvent.click(await screen.findByRole('button', { name: /change game/i }));
     fireEvent.click(await screen.findByRole('button', { name: /pick liar liar/i }));
 
@@ -227,7 +249,7 @@ describe('RoomClient pick-step selectGame failure', () => {
     getRoom.mockResolvedValue(roomAt('lobby'));
     hoisted.selectGame.mockRejectedValueOnce(new RoomApiError(500, null, 'Could not select.'));
 
-    render(<RoomClient code="ABC12" initialStep="pick" />);
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} initialStep="pick" />);
     fireEvent.click(await screen.findByRole('button', { name: /pick liar liar/i }));
 
     // Error is shown and the host stays on the pick step (not advanced to invite).

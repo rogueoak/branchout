@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getSignedIn } from './session';
+import { getSignedIn, getViewer } from './session';
+
+const ACCOUNT_ME = {
+  kind: 'account',
+  account: { gamerTag: 'CoolCat', nickname: 'Cat', avatar: 'sprout' },
+};
 
 // Mock next/headers so getSignedIn's cookie read is controllable in a unit test. The factory
 // returns a settable holder so each test picks the session id the request carries.
@@ -26,11 +31,28 @@ describe('getSignedIn - server-side session check', () => {
 
   it('returns true when the control plane reports an account session', async () => {
     cookieHolder.value = 'sid-123';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ACCOUNT_ME }));
+    expect(await getSignedIn()).toBe(true);
+  });
+
+  it('getViewer returns the account identity the nav needs for an account session', async () => {
+    cookieHolder.value = 'sid-123';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ACCOUNT_ME }));
+    expect(await getViewer()).toEqual({
+      signedIn: true,
+      gamerTag: 'CoolCat',
+      nickname: 'Cat',
+      avatar: 'sprout',
+    });
+  });
+
+  it('getViewer is signed-out for an account kind that carries no account object', async () => {
+    cookieHolder.value = 'sid-123';
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({ ok: true, json: async () => ({ kind: 'account' }) }),
     );
-    expect(await getSignedIn()).toBe(true);
+    expect(await getViewer()).toEqual({ signedIn: false });
   });
 
   it('returns false for a non-account (e.g. anonymous) session', async () => {

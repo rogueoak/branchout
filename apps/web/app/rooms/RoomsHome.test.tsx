@@ -39,7 +39,7 @@ afterEach(() => vi.clearAllMocks());
 
 describe('RoomsHome create flow', () => {
   it('routes to the pick step when there is no game deep link', async () => {
-    render(<RoomsHome />);
+    render(<RoomsHome viewer={{ signedIn: false }} />);
     fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
     await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=pick'));
     expect(roomApi.selectGame).not.toHaveBeenCalled();
@@ -47,7 +47,7 @@ describe('RoomsHome create flow', () => {
 
   it('pre-selects the game and skips to invite when ?game names a known game', async () => {
     vi.mocked(roomApi.selectGame).mockResolvedValue({ ...room, selectedGame: 'liar-liar' });
-    render(<RoomsHome initialGame="liar-liar" />);
+    render(<RoomsHome viewer={{ signedIn: false }} initialGame="liar-liar" />);
     fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
     await waitFor(() =>
       expect(roomApi.selectGame).toHaveBeenCalledWith('ABC12', 'liar-liar', expect.anything()),
@@ -56,7 +56,7 @@ describe('RoomsHome create flow', () => {
   });
 
   it('ignores an unknown ?game and falls back to the pick step', async () => {
-    render(<RoomsHome initialGame="not-a-game" />);
+    render(<RoomsHome viewer={{ signedIn: false }} initialGame="not-a-game" />);
     fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
     await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=pick'));
     expect(roomApi.selectGame).not.toHaveBeenCalled();
