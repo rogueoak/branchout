@@ -6,6 +6,9 @@ packages:
 
 allowBuilds:
   '@bundled-es-modules/glob': false
+  # core-js (a posthog-js transitive dep) only prints a funding message in its postinstall; no build
+  # step we need, so skip it - and pin the decision so pnpm does not gate the install.
+  core-js: false
   esbuild: true
   sharp: true
   style-dictionary: false

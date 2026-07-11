@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Avatar } from './Avatar';
 import { logout } from '../lib/account-api';
+import { identifyPlayer, resetAnalytics } from '../lib/analytics';
 
 interface AccountMenuProps {
   gamerTag: string;
@@ -26,6 +27,12 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLAnchorElement | HTMLButtonElement | null)[]>([]);
   const name = nickname || gamerTag;
+
+  // Analytics (spec 0032): this menu only renders for a signed-in player, so it is where we identify
+  // them - by their PUBLIC gamer tag (never email/session). Re-runs only if the tag changes.
+  useEffect(() => {
+    identifyPlayer(gamerTag);
+  }, [gamerTag]);
 
   const close = useCallback((returnFocus = true) => {
     setOpen(false);
@@ -84,6 +91,8 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
     } catch {
       // Best-effort: even if the revoke call fails, send them home; the cookie clear is idempotent.
     }
+    // Clear the analytics identity so a shared device does not attribute the next player to this one.
+    resetAnalytics();
     close(false);
     router.push('/');
     router.refresh();

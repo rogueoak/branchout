@@ -68,10 +68,18 @@ jobs:
           platforms: linux/amd64
           # Browser-facing URLs baked into the web bundle at build time. The other
           # apps' Dockerfiles do not declare these ARGs, so they ignore them.
+          # NEXT_PUBLIC_POSTHOG_KEY is the PostHog PROJECT key (publishable - it ships in the browser
+          # bundle anyway), read from a repo variable so it is not hardcoded in source and can differ
+          # per fork/env. Set it once: `gh variable set NEXT_PUBLIC_POSTHOG_KEY -b <phc_...>`. If unset,
+          # the bundle builds with analytics OFF (safe no-op), matching dev/e2e. The host is the
+          # same-origin /ingest proxy (rewritten to PostHog in next.config.mjs), so analytics is
+          # first-party behind the Caddy edge.
           build-args: |
             NEXT_PUBLIC_CONTROL_PLANE_URL=/api
             NEXT_PUBLIC_ENGINE_WS_URL=wss://branchout.games/ws
             NEXT_PUBLIC_SITE_URL=https://branchout.games
+            NEXT_PUBLIC_POSTHOG_KEY=${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+            NEXT_PUBLIC_POSTHOG_HOST=/ingest
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

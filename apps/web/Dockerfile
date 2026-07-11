@@ -22,9 +22,17 @@ ARG NEXT_PUBLIC_ENGINE_WS_URL=wss://branchout.games/ws
 # time (NEXT_PUBLIC_* are inlined into the bundle); a runtime env is ignored. Without this it
 # falls back to http://localhost:3000 and every share/home unfurl points at an unreachable host.
 ARG NEXT_PUBLIC_SITE_URL=https://branchout.games
+# PostHog analytics (spec 0032). Also build-time inlined: the key must be present at `next build` or
+# the browser bundle ships without it and analytics stays off. Empty by default so a build that does
+# not pass the key (any non-prod build) produces an analytics-disabled bundle. The host is the
+# same-origin proxy path (rewritten to PostHog in next.config.mjs).
+ARG NEXT_PUBLIC_POSTHOG_KEY=
+ARG NEXT_PUBLIC_POSTHOG_HOST=/ingest
 ENV NEXT_PUBLIC_CONTROL_PLANE_URL=$NEXT_PUBLIC_CONTROL_PLANE_URL
 ENV NEXT_PUBLIC_ENGINE_WS_URL=$NEXT_PUBLIC_ENGINE_WS_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY
+ENV NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 RUN pnpm --filter @branchout/web... build
 
 EXPOSE 3000

@@ -109,6 +109,25 @@ resolve from inside the web container) - the same client/server URL split `lib/s
 Any preview failure falls back to the generic card, so a share link never fails to unfurl.
 Absolute `og:image` URLs come from `metadataBase` (seeded by `NEXT_PUBLIC_SITE_URL`).
 
+## Product analytics (spec 0032)
+
+`apps/web` uses **PostHog**, wired **first-party**: `posthog-js` points at a same-origin `/ingest`
+path, and `next.config.mjs` `rewrites()` forward `/ingest/*` to the PostHog US cloud (ingestion +
+static assets). So the browser only ever calls our own domain - no third-party tracker hostname, and
+ad/tracking blockers that target PostHog's domain do not drop our product data. In prod this sits
+behind the same Caddy origin (everything except `/api` and `/ws` routes to `web`, so `/ingest` reaches
+Next and is rewritten). One module, `lib/analytics.ts`, owns the client lifecycle and every event
+name: `initAnalytics` runs **only in production with a key set** (a silent no-op in dev/test/CI, so
+developers never emit), captures manual `$pageview`s on route change (`AnalyticsProvider`), and fires
+the funnel via typed helpers (`room_created`, `game_picked`, `invite_copied`/`invite_shared`,
+`room_joined`, `game_started`, `game_completed`). A signed-in player is identified by their **public
+gamer tag** (never email/session), reset on logout. Session replay and autocapture are **off**, so no
+gameplay content or PII is sent - only the explicit events with non-sensitive properties (game id,
+round count). Because `NEXT_PUBLIC_*` are inlined at **build** time, `NEXT_PUBLIC_POSTHOG_KEY` is baked
+into the web image build (a build arg in `apps/web/Dockerfile`, sourced from the `NEXT_PUBLIC_POSTHOG_KEY`
+repo variable in `release.yml`) - the same build-time baking `NEXT_PUBLIC_SITE_URL` needs; a missing
+key yields an analytics-off bundle. The privacy policy (spec `0031`) describes exactly this.
+
 ## Room setup flow and deep link (spec 0029)
 
 Creating a room runs a host wizard - **create -> pick a game -> invite** - rendered by `RoomClient`.

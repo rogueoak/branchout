@@ -7,6 +7,10 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }
 const logout = vi.fn().mockResolvedValue(undefined);
 vi.mock('../lib/account-api', () => ({ logout: () => logout() }));
 
+// Analytics seam (spec 0032): identify by gamer tag on mount, reset on logout.
+vi.mock('../lib/analytics', () => ({ identifyPlayer: vi.fn(), resetAnalytics: vi.fn() }));
+import { identifyPlayer, resetAnalytics } from '../lib/analytics';
+
 import { AccountMenu } from './AccountMenu';
 
 function open() {
@@ -70,5 +74,16 @@ describe('AccountMenu', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
     await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
     expect(push).toHaveBeenCalledWith('/');
+  });
+
+  it('identifies the signed-in player by gamer tag on mount', () => {
+    render(<AccountMenu gamerTag="CoolCat" nickname="Cat" avatar="sprout" />);
+    expect(identifyPlayer).toHaveBeenCalledWith('CoolCat');
+  });
+
+  it('resets the analytics identity on logout', async () => {
+    open();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
+    await waitFor(() => expect(resetAnalytics).toHaveBeenCalledTimes(1));
   });
 });

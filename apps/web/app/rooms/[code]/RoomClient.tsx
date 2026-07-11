@@ -7,7 +7,8 @@
 
 import { Button, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { trackGameCompleted, trackGamePicked, trackGameStarted } from '../../../lib/analytics';
 import { GameStage, type HostControl } from '../../../components/game/GameStage';
 import { GamePicker } from '../../../components/game/GamePicker';
 import { Lobby } from '../../../components/game/Lobby';
@@ -167,6 +168,19 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
 
   const { state, submitAnswer, submitVote } = useGameClient(gameOptions);
 
+  // Analytics (spec 0032): "game completed" should be ONE event per finished game. Fire only on a real
+  // transition INTO `complete` from a prior non-complete phase (a ref tracks the previous phase) - so a
+  // reload/late-join that lands directly on `complete` does not fire - AND only for the host, so we get
+  // one event per game rather than one per connected client (players + spectators).
+  const prevPhaseRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = state.phase;
+    if (isHost && prev !== undefined && prev !== 'complete' && state.phase === 'complete') {
+      trackGameCompleted(room?.selectedGame ?? game);
+    }
+  }, [state.phase, isHost, room?.selectedGame, game]);
+
   const persist = useCallback(
     (nextRoom: RoomView, patch?: Partial<Membership>) => {
       setRoom(nextRoom);
@@ -210,6 +224,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
       setLoadError(null);
       try {
         const nextRoom = await selectGame(code, next, nextConfig);
+        trackGamePicked(next);
         persist(nextRoom);
       } catch (error) {
         if (error instanceof RoomApiError) setLoadError(error.message);
@@ -235,6 +250,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
       // game-agnostic and the control-plane debits per round.
       const rounds = getGameUi(game)?.roundsOf(config) ?? 10;
       const started = await startGame(code, rounds);
+      trackGameStarted(game, rounds);
       persist(started);
     } catch (error) {
       if (error instanceof RoomApiError) {

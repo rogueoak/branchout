@@ -157,6 +157,21 @@ Generate strong values with:
 openssl rand -base64 32   # run once for POSTGRES_PASSWORD, once for SESSION_SECRET
 ```
 
+### Analytics key (spec 0032)
+
+PostHog product analytics is off unless the project key is configured. It is a **repo variable**, not a
+secret (the PostHog project key is publishable - it ships in the browser bundle), and it is baked into
+the web image at **build** time (a `NEXT_PUBLIC_*` value), so set it before a deploy that should have
+analytics:
+
+```sh
+gh variable set NEXT_PUBLIC_POSTHOG_KEY -b 'phc_...'   # Settings -> Secrets and variables -> Actions -> Variables
+```
+
+Unset -> the bundle builds with analytics disabled (a safe no-op, same as dev/e2e). The browser sends
+analytics to the same-origin `/ingest` path (first-party); Next rewrites it to PostHog (US), and the
+Caddy edge routes `/ingest` to `web` like any non-`/api`/`/ws` path - no proxy change needed.
+
 ## Rollback
 
 Rollback is a redeploy of an older image. Options:

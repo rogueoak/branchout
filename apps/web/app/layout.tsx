@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { AnalyticsProvider } from '../components/AnalyticsProvider';
 import { SITE_URL } from '../lib/site';
 import './globals.css';
 
@@ -36,7 +37,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   // Confetti brand token layers, which are class-toggled (no prefers-color-scheme auto-flip).
   return (
     <html lang="en" className="dark">
-      <body>{children}</body>
+      <body>
+        {children}
+        <AnalyticsProvider />
+      </body>
     </html>
   );
 }
