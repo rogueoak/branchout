@@ -221,18 +221,23 @@ jobs:
             docker rollout -t 90 --wait-after-healthy 5 -f deploy/docker/compose.site.yml "$svc"
           done
 
-          # Gate on the FULL public path, not just the container HEALTHCHECK: a Caddy /
+          # Gate on the FULL public path, not just the container HEALTHCHECK: a Caddy
           # dynamic-upstream misconfig can leave every container healthy while visitors get
-          # 502s, and nothing else re-verifies the routing on each deploy. Hit the site through
-          # Caddy over loopback (--resolve, so it does not depend on DNS/hairpin) and fail the
-          # deploy if it is not reachable end to end.
+          # 502s, and nothing else re-verifies the routing on each deploy. Probe BOTH the page
+          # (web upstream) AND the REST API (/api -> control-plane upstream) so a broken block on
+          # either dynamic upstream fails the deploy - hitting only `/` would pass a broken /api.
+          # Through Caddy over loopback (--resolve, so it does not depend on DNS/hairpin).
+          # (The /ws upstream is not probed here: a WebSocket handshake is not a plain GET, and
+          # in-flight WS sessions self-heal via client reconnect over Redis - see deploy/README.md.)
           ok=""
           for _ in $(seq 1 10); do
             if curl -fsS --max-time 10 --resolve branchout.games:443:127.0.0.1 \
-                -o /dev/null https://branchout.games; then ok=1; break; fi
+                 -o /dev/null https://branchout.games &&
+               curl -fsS --max-time 10 --resolve branchout.games:443:127.0.0.1 \
+                 -o /dev/null https://branchout.games/api/v1/auth/me; then ok=1; break; fi
             sleep 2
           done
-          [ -n "$ok" ] || { echo "post-rollout health check failed: branchout.games is not reachable end-to-end"; exit 1; }
+          [ -n "$ok" ] || { echo "post-rollout health check failed: branchout.games is not reachable end-to-end (page + /api)"; exit 1; }
 
           # Prune old branchout images (label-scoped; running images are in-use
           # and kept; a cohosted stack's images are untouched).

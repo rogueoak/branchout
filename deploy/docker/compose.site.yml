@@ -7,7 +7,9 @@
 # Deploy is zero-downtime via docker-rollout (spec 0034), ONE app service at a
 # time - control-plane, then game-engine, then web - so the small droplet never
 # runs the whole stack twice. Postgres and Redis are never rolled (stateful, one
-# volume). CD pins IMAGE_TAG to the sha-<full> tag built in that run:
+# volume). Rolling one service must not recreate its `depends_on` neighbours:
+# docker-rollout scales with `--no-deps`, and the rehearsal asserts no dependency
+# container churns. CD pins IMAGE_TAG to the sha-<full> tag built in that run:
 #   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml pull
 #   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml up -d --no-recreate postgres redis
 #   IMAGE_TAG=sha-<commit> docker rollout -f deploy/docker/compose.site.yml control-plane

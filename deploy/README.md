@@ -42,14 +42,24 @@ service caps that transient instance so a leak during the overlap cannot OOM the
 
 - **Data tier is never rolled.** Postgres and Redis are stateful singletons on one volume; the
   deploy brings them up with `up -d --no-recreate` (a no-op when unchanged) and rolls only the
-  three app services.
+  three app services. Rolling a single app service must not recreate its dependencies - this rests
+  on docker-rollout scaling with `--no-deps` so `depends_on: service_healthy` does not pull a
+  neighbour into the swap; the rehearsal asserts no dependency container churns as a guard.
 - **Fail-safe.** An image that pulls but never goes healthy makes docker-rollout tear the _new_
   instance down and leave the old serving, failing the deploy non-zero. The deploy also gates on
-  an end-to-end `curl` through Caddy (over loopback) so a routing regression fails the deploy.
+  an end-to-end `curl` through Caddy (over loopback) on both the page and `/api`, so a routing
+  regression on either dynamic upstream fails the deploy.
+- **Not every path is drop-free.** The `/api` and `*` (page) routes are seamless. Two internal
+  hops bypass Caddy (`web` SSR -> `control-plane`, `control-plane` -> `game-engine`) and can see a
+  single per-connection blip when a keep-alive socket to the removed instance is re-dialed (absorbed
+  by the grace window, SSR's short GETs, and the report outbox). And `/ws` is **not** drop-free:
+  rolling `game-engine` severs in-flight WebSocket sessions, which self-heal via client reconnect
+  over Redis-backed state.
 - **Partial-rollout compatibility.** Because services roll one at a time, a new instance of one
-  briefly talks to an old instance of another; this relies on the versioned protocol envelope +
-  additive-field discipline. A genuinely breaking cross-service change needs an expand/contract
-  (two-phase) deploy - out of scope here, but do not ship a breaking protocol change in one push.
+  briefly talks to an old instance of another. Adding _optional_ fields under the **same**
+  `PROTOCOL_VERSION` is safe. **Do not bump `PROTOCOL_VERSION` in a rollout deploy:** `assertVersion`
+  is a strict equality check on the cross-service ingress, so a version bump is a hard cutover that
+  needs an expand/contract (two-phase, dual-version) deploy, not a single push.
 
 The plugin is installed on the host by the deploy job, **SHA-pinned and checksum-verified**
 before use (it is a shell script run during a privileged deploy).
