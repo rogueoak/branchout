@@ -2,6 +2,7 @@
 
 import { Button } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
+import { trackInviteCopied, trackInviteShared } from '../../lib/analytics';
 import { CheckIcon, CopyIcon, ShareIcon } from './icons';
 
 /**
@@ -27,6 +28,7 @@ export function ShareLink({ code, href }: { code: string; href: string }) {
   async function copy() {
     try {
       await navigator.clipboard.writeText(shareUrl);
+      trackInviteCopied();
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -49,6 +51,7 @@ export function ShareLink({ code, href }: { code: string; href: string }) {
         text: `Join my game - room ${code}`,
         url: shareUrl,
       });
+      trackInviteShared();
     } catch {
       // Dismissed or rejected by the OS - intentionally a no-op.
     }

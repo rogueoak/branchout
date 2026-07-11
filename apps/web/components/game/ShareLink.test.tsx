@@ -1,6 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShareLink } from './ShareLink';
+import { trackInviteCopied, trackInviteShared } from '../../lib/analytics';
+
+// The invite affordance fires funnel analytics (spec 0032); assert the seam without touching PostHog.
+vi.mock('../../lib/analytics', () => ({
+  trackInviteCopied: vi.fn(),
+  trackInviteShared: vi.fn(),
+}));
 
 // A relative shareLink resolves against whatever origin jsdom serves the app at.
 const ORIGIN = window.location.origin;
@@ -8,6 +15,7 @@ const ORIGIN = window.location.origin;
 describe('ShareLink', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -34,6 +42,7 @@ describe('ShareLink', () => {
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(`${ORIGIN}/join?code=ABC12`);
     });
+    expect(trackInviteCopied).toHaveBeenCalledTimes(1);
   });
 
   it('opens the native share sheet when the browser supports it', async () => {
@@ -49,6 +58,7 @@ describe('ShareLink', () => {
         expect.objectContaining({ url: `${ORIGIN}/join?code=ABC12` }),
       );
     });
+    expect(trackInviteShared).toHaveBeenCalledTimes(1);
   });
 
   it('falls back to copying when the native share sheet is unavailable (desktop)', async () => {
@@ -78,5 +88,7 @@ describe('ShareLink', () => {
 
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
     expect(writeText).not.toHaveBeenCalled();
+    // A dismissed share is not a completed share - no analytics event.
+    expect(trackInviteShared).not.toHaveBeenCalled();
   });
 });

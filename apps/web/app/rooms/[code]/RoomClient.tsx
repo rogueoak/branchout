@@ -8,6 +8,7 @@
 import { Button, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { trackGameCompleted, trackGamePicked, trackGameStarted } from '../../../lib/analytics';
 import { GameStage, type HostControl } from '../../../components/game/GameStage';
 import { GamePicker } from '../../../components/game/GamePicker';
 import { Lobby } from '../../../components/game/Lobby';
@@ -167,6 +168,13 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
 
   const { state, submitAnswer, submitVote } = useGameClient(gameOptions);
 
+  // Analytics (spec 0032): the game reaching its terminal `complete` phase is "game completed". Keyed
+  // on the phase alone so it fires once on the transition (complete is terminal, so it never re-fires).
+  useEffect(() => {
+    if (state.phase === 'complete') trackGameCompleted(room?.selectedGame ?? game);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
+
   const persist = useCallback(
     (nextRoom: RoomView, patch?: Partial<Membership>) => {
       setRoom(nextRoom);
@@ -210,6 +218,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
       setLoadError(null);
       try {
         const nextRoom = await selectGame(code, next, nextConfig);
+        trackGamePicked(next);
         persist(nextRoom);
       } catch (error) {
         if (error instanceof RoomApiError) setLoadError(error.message);
@@ -235,6 +244,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
       // game-agnostic and the control-plane debits per round.
       const rounds = getGameUi(game)?.roundsOf(config) ?? 10;
       const started = await startGame(code, rounds);
+      trackGameStarted(game, rounds);
       persist(started);
     } catch (error) {
       if (error instanceof RoomApiError) {

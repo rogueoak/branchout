@@ -7,6 +7,7 @@
 import { Button, Input, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { trackRoomCreated } from '../../lib/analytics';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import { defaultMode } from '../../lib/default-mode';
@@ -50,6 +51,7 @@ export function RoomsHome({ initialGame, viewer }: RoomsHomeProps) {
     setError(null);
     try {
       const { room, playerId } = await createRoom();
+      trackRoomCreated();
       // The host is a full player: remember it as such with the host flag, and set its mode from
       // the device (createRoom seeds `interactive` server-side; this refines it, and the host can
       // still change it in the lobby). Store the host's public playerId (echoed by createRoom) so

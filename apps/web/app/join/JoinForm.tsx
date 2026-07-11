@@ -8,6 +8,7 @@
 import { Button, Input, Label, buttonVariants, inputVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
+import { trackRoomJoined } from '../../lib/analytics';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import type { Viewer } from '../../lib/session';
@@ -73,6 +74,7 @@ export function JoinForm({ initialCode, viewer }: JoinFormProps) {
         }
       }
       const { room, playerId } = result;
+      trackRoomJoined();
       rememberMembership(trimmedCode, {
         role,
         ...(role === 'player' ? { mode } : {}),

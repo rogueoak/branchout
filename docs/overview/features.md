@@ -188,6 +188,13 @@ What the product does for users, grouped by area. Each capability maps to one or
       use, an "as is" no-warranty disclaimer, a liability limit, and a terms-can-change-any-time
       clause). A shared `Footer` links to both from the marketing and rooms/join surfaces; the
       contact email and last-updated date come from one constant each (spec `0031`).
+- [x] Product analytics - first-party PostHog (spec `0032`). PostHog JS talks to a same-origin
+      `/ingest` path (Next rewrites -> PostHog US), so every request is to our own domain; it runs in
+      production only (a no-op in dev/test/CI and when the key is unset). One `lib/analytics.ts` owns
+      the event names and fires the funnel (room created, game picked, invite copied/shared, join,
+      game started, game completed) plus manual pageviews; a signed-in player is identified by their
+      public gamer tag, reset on logout. Session replay and autocapture are off, so no gameplay
+      content or PII is captured. The key is baked into the web image at build time.
 - [ ] Profile pages and friend search/invite.
 
 ## Future
