@@ -2,6 +2,7 @@
 
 import { V1_PREFIX } from '@branchout/protocol';
 import { type FormEvent, useState } from 'react';
+import { internalNext } from '../../lib/internal-next';
 
 // The control-plane base URL. Overridable per environment; defaults to the local dev port.
 const CONTROL_PLANE_URL = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? 'http://localhost:4000';
@@ -36,6 +37,16 @@ export default function SignupPage() {
         body: JSON.stringify({ email, password, gamerTag }),
       });
       if (res.ok) {
+        // Honor a validated internal `next` (a feature-page CTA carries the intended game here), so
+        // the account lands straight in the room flow; otherwise show the default "you are in" note.
+        const dest =
+          typeof window === 'undefined'
+            ? null
+            : internalNext(new URLSearchParams(window.location.search).get('next'));
+        if (dest) {
+          window.location.assign(dest);
+          return;
+        }
         setDone(true);
         return;
       }

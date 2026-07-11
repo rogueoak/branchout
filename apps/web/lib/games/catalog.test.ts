@@ -9,6 +9,7 @@ import {
   gameJsonLd,
   getCatalogEntry,
   playHref,
+  startGameHref,
 } from './catalog';
 
 describe('game catalog', () => {
@@ -46,6 +47,13 @@ describe('game catalog', () => {
   it('makes absolute URLs against the site origin', () => {
     expect(absoluteUrl('/games/trivia')).toBe(`${SITE_URL}/games/trivia`);
   });
+
+  it('routes the Start CTA by auth: signed-in straight to play, anonymous through signup', () => {
+    // A signed-in visitor can host, so go straight to the room deep link.
+    expect(startGameHref('trivia', true)).toBe('/rooms?game=trivia');
+    // An anonymous visitor goes to signup first, carrying the game as a validated internal `next`.
+    expect(startGameHref('trivia', false)).toBe('/signup?next=%2Frooms%3Fgame%3Dtrivia');
+  });
 });
 
 describe('gameFeatureMetadata', () => {
@@ -55,7 +63,7 @@ describe('gameFeatureMetadata', () => {
     expect(String(meta.description)).toContain('Trivia');
     expect(meta.alternates?.canonical).toBe(`${SITE_URL}/games/trivia`);
     const ogImages = meta.openGraph?.images as { url: string }[];
-    expect(ogImages[0].url).toBe('/share-trivia.png');
+    expect(ogImages[0].url).toBe(`${SITE_URL}/share-trivia.png`);
     expect((meta.twitter as { card?: string }).card).toBe('summary_large_image');
   });
 

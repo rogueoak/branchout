@@ -1,6 +1,23 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SignupPage from './page';
+import { internalNext } from '../../lib/internal-next';
+
+describe('internalNext (post-signup redirect validation)', () => {
+  it('accepts a same-origin absolute path (the game deep link)', () => {
+    expect(internalNext('/rooms?game=trivia')).toBe('/rooms?game=trivia');
+    expect(internalNext('/account')).toBe('/account');
+  });
+
+  it('rejects external, protocol-relative, backslash, and empty targets', () => {
+    expect(internalNext(null)).toBeNull();
+    expect(internalNext('')).toBeNull();
+    expect(internalNext('//evil.com')).toBeNull();
+    expect(internalNext('https://evil.com')).toBeNull();
+    expect(internalNext('/\\evil.com')).toBeNull();
+    expect(internalNext('rooms?game=trivia')).toBeNull();
+  });
+});
 
 function fillAndSubmit() {
   fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'player@example.com' } });

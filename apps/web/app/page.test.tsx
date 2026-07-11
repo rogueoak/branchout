@@ -79,6 +79,19 @@ describe('home page - anonymous visitor', () => {
     expect(liarLiar).toHaveProperty('href', expect.stringContaining('/games/liar-liar'));
   });
 
+  it('adds a direct Play shortcut on each card for a signed-in player (skips the learn hop)', () => {
+    render(<LandingContent viewer={{ signedIn: true, gamerTag: 'CoolCat' }} />);
+    const playTrivia = screen.getByRole('link', { name: /play trivia now/i });
+    expect(playTrivia).toHaveProperty('href', expect.stringContaining('/rooms?game=trivia'));
+    // The learn-first card link is still present for everyone.
+    expect(screen.getByRole('link', { name: /learn about trivia/i })).toBeDefined();
+  });
+
+  it('shows no Play shortcut for an anonymous visitor (learn first only)', () => {
+    render(<LandingContent viewer={{ signedIn: false }} />);
+    expect(screen.queryByRole('link', { name: /play trivia now/i })).toBeNull();
+  });
+
   it('renders a footer landmark', () => {
     render(<LandingContent viewer={{ signedIn: false }} />);
     expect(screen.getByRole('contentinfo')).toBeDefined();

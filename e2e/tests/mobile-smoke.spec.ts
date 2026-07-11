@@ -38,21 +38,40 @@ test('landing page renders and fits on a phone', async ({ page }) => {
 test.describe('game feature pages (spec 0030) at 360px', () => {
   test.use({ viewport: { width: 360, height: 780 } });
 
-  test('the games index and a feature page render, fit, and the CTA deep-links into play', async ({
-    page,
-  }) => {
+  test('the games index and a feature page render, fit, and carry JSON-LD', async ({ page }) => {
     // Index lists the games and links to each feature page.
     await page.goto('/games');
     await expect(page.getByRole('heading', { name: 'Games', level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: /learn about trivia/i })).toBeVisible();
     await expectFits(page);
 
-    // Feature page: overview + a "Start a game" CTA that deep-links with the game preselected (0029).
+    // Feature page: hero + the how-to and categories sections, all fitting at 360.
     await page.goto('/games/trivia');
     await expect(page.getByRole('heading', { name: 'Trivia', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /how to play/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^categories$/i })).toBeVisible();
+    await expectFits(page);
+
+    // JSON-LD structured data is actually rendered and typed as a VideoGame (not just unit-tested).
+    const ld = await page.locator('script[type="application/ld+json"]').first().textContent();
+    expect(JSON.parse(ld ?? '{}')['@type']).toBe('VideoGame');
+
+    // Anonymous visitor: the "Start a game" CTA routes to signup first, preserving the game (0030
+    // review) - a first-timer must not hit the "hosting needs an account" wall with the game lost.
+    const start = page.getByRole('link', { name: 'Start a game' }).first();
+    await expect(start).toHaveAttribute('href', '/signup?next=%2Frooms%3Fgame%3Dtrivia');
+  });
+
+  test('an unknown game slug returns 404', async ({ page }) => {
+    const resp = await page.goto('/games/does-not-exist');
+    expect(resp?.status()).toBe(404);
+  });
+
+  test('a signed-in visitor gets the direct play CTA (skips signup)', async ({ page }) => {
+    await signUp(page);
+    await page.goto('/games/trivia');
     const start = page.getByRole('link', { name: 'Start a game' }).first();
     await expect(start).toHaveAttribute('href', '/rooms?game=trivia');
-    await expectFits(page);
   });
 });
 

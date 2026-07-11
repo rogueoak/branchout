@@ -6,7 +6,7 @@
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
-import { GAME_CATALOG, featurePath } from '../lib/games/catalog';
+import { GAME_CATALOG, featurePath, playHref } from '../lib/games/catalog';
 import type { Viewer } from '../lib/session';
 import { Footer } from './Footer';
 import { TopNav } from './TopNav';
@@ -124,43 +124,56 @@ export function LandingContent({ viewer }: LandingContentProps) {
               the marketing data comes from the shared catalog so the teaser never drifts from the
               feature page or the room picker. */}
           {GAME_CATALOG.map((game) => (
-            <a
-              key={game.slug}
-              href={featurePath(game.slug)}
-              aria-label={`Learn about ${game.name}`}
-              className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              <Card className="h-full transition-colors hover:border-primary">
-                <CardHeader>
-                  {/* Icon and title sit on one row: the game mark leads, the name beside it. The
+            // The whole card links to the feature page (learn first). For a signed-in player who
+            // already knows the game, a secondary "Play" link below it skips the extra hop straight
+            // into the room deep link. Sibling links (not nested) so the markup stays valid.
+            <div key={game.slug} className="flex flex-col gap-2">
+              <a
+                href={featurePath(game.slug)}
+                aria-label={`Learn about ${game.name}`}
+                className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <Card className="h-full transition-colors hover:border-primary">
+                  <CardHeader>
+                    {/* Icon and title sit on one row: the game mark leads, the name beside it. The
                       mark is a build-time SVG string from the brand package (not user input),
                       inlined the same way the Wordmark renders the app icon. min-w-0 + break-words
                       so a long name cannot overflow the phone. aria-hidden because the card title
                       and the link's aria-label already name the game. */}
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span
-                      aria-hidden="true"
-                      className="inline-block h-12 w-12 shrink-0 overflow-hidden rounded-xl [&>svg]:h-full [&>svg]:w-full"
-                      dangerouslySetInnerHTML={{ __html: game.icon }}
-                    />
-                    <CardTitle asChild>
-                      <h3 className="break-words">{game.name}</h3>
-                    </CardTitle>
-                  </div>
-                  <Badge variant={game.badge.variant} className="mt-1 w-fit">
-                    {game.badge.label}
-                  </Badge>
-                  <CardDescription>{game.summary}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-body-sm text-text-muted">{game.categories.join(', ')}</p>
-                  <p className="text-body-sm mt-4 flex items-center gap-1.5 font-medium text-primary">
-                    Learn more
-                    <ArrowRightIcon />
-                  </p>
-                </CardContent>
-              </Card>
-            </a>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span
+                        aria-hidden="true"
+                        className="inline-block h-12 w-12 shrink-0 overflow-hidden rounded-xl [&>svg]:h-full [&>svg]:w-full"
+                        dangerouslySetInnerHTML={{ __html: game.icon }}
+                      />
+                      <CardTitle asChild>
+                        <h3 className="break-words">{game.name}</h3>
+                      </CardTitle>
+                    </div>
+                    <Badge variant={game.badge.variant} className="mt-1 w-fit">
+                      {game.badge.label}
+                    </Badge>
+                    <CardDescription>{game.summary}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-body-sm text-text-muted">{game.categories.join(', ')}</p>
+                    <p className="text-body-sm mt-4 flex items-center gap-1.5 font-medium text-primary">
+                      Learn more
+                      <ArrowRightIcon />
+                    </p>
+                  </CardContent>
+                </Card>
+              </a>
+              {viewer.signedIn ? (
+                <a
+                  href={playHref(game.slug)}
+                  aria-label={`Play ${game.name} now`}
+                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                >
+                  Play now
+                </a>
+              ) : null}
+            </div>
           ))}
         </div>
         <p className="mt-6 text-body-sm text-text-muted">More games on the way.</p>

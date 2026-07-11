@@ -6,7 +6,7 @@ import {
   gameFeatureMetadata,
   gameJsonLd,
   getCatalogEntry,
-  playHref,
+  startGameHref,
 } from '../../../lib/games/catalog';
 import { getViewer } from '../../../lib/session';
 
@@ -38,6 +38,9 @@ export default async function GameFeaturePage({ params }: PageProps) {
   const entry = getCatalogEntry(slug);
   if (!entry) notFound();
   const viewer = await getViewer();
+  // Auth-aware CTA: signed-in -> straight into the room deep link; anonymous -> signup first,
+  // preserving the game (a first-timer must not hit the "hosting needs an account" wall).
+  const startHref = startGameHref(entry.slug, viewer.signedIn);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -67,10 +70,7 @@ export default async function GameFeaturePage({ params }: PageProps) {
         <p className="text-body text-text-muted max-w-xl">{entry.tagline}</p>
         <p className="text-body text-text-muted max-w-xl">{entry.description}</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <a
-            href={playHref(entry.slug)}
-            className={buttonVariants({ variant: 'primary', size: 'lg' })}
-          >
+          <a href={startHref} className={buttonVariants({ variant: 'primary', size: 'lg' })}>
             Start a game
           </a>
           <a href="/games" className={buttonVariants({ variant: 'outline', size: 'lg' })}>
@@ -115,10 +115,7 @@ export default async function GameFeaturePage({ params }: PageProps) {
       {/* Closing CTA */}
       <section className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-4 py-16 text-center sm:px-6">
         <h2 className="text-h2 text-text">Ready to play {entry.name}?</h2>
-        <a
-          href={playHref(entry.slug)}
-          className={buttonVariants({ variant: 'primary', size: 'lg' })}
-        >
+        <a href={startHref} className={buttonVariants({ variant: 'primary', size: 'lg' })}>
           Start a game
         </a>
       </section>

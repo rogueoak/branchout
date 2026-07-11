@@ -161,6 +161,17 @@ export function playHref(slug: string): string {
   return `/rooms?game=${encodeURIComponent(slug)}`;
 }
 
+/**
+ * The feature-page "Start a game" CTA target. A signed-in visitor goes straight to the room deep
+ * link; an anonymous visitor (who cannot host yet) goes to signup first, carrying the intended game
+ * as a validated internal `next` so the preselection survives the round-trip - otherwise the biggest
+ * marketing CTA drops a first-timer on the "hosting needs an account" wall and loses the game.
+ */
+export function startGameHref(slug: string, signedIn: boolean): string {
+  const play = playHref(slug);
+  return signedIn ? play : `/signup?next=${encodeURIComponent(play)}`;
+}
+
 /** Absolute URL for a site path, using the public origin (crawlers need absolute URLs). */
 export function absoluteUrl(path: string): string {
   return new URL(path, SITE_URL).toString();
@@ -180,13 +191,17 @@ export function gameFeatureMetadata(slug: string): Metadata | undefined {
       title: entry.seoTitle,
       description: entry.seoDescription,
       url,
-      images: [{ url: entry.shareImage, width: 1200, height: 630, alt: entry.shareAlt }],
+      // Absolute image URL, matching `canonical` and the JSON-LD image - one convention (crawlers
+      // and some unfurlers want absolute, not metadataBase-relative).
+      images: [
+        { url: absoluteUrl(entry.shareImage), width: 1200, height: 630, alt: entry.shareAlt },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: entry.seoTitle,
       description: entry.seoDescription,
-      images: [entry.shareImage],
+      images: [absoluteUrl(entry.shareImage)],
     },
   };
 }
