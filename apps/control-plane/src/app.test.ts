@@ -8,6 +8,8 @@ import type { SessionCookieConfig } from './config';
 import { CreditLedger } from './credits/ledger';
 import { InMemoryLedgerRepository } from './credits/repository.memory';
 import { FreeTierProvider } from './credits/tiers';
+import { InMemoryPlaysRepository } from './profiles/plays.memory';
+import { ProfileService } from './profiles/service';
 import { FakeEngineClient } from './rooms/engine-client.fake';
 import { InMemoryMembershipStore } from './rooms/membership.memory';
 import { InMemoryRoomRepository } from './rooms/repository.memory';
@@ -32,21 +34,25 @@ function makeApp() {
   const sessions = new InMemorySessionStore(3600_000);
   const ledger = new CreditLedger(new InMemoryLedgerRepository(), new FreeTierProvider());
   const engine = new FakeEngineClient();
+  const plays = new InMemoryPlaysRepository();
   const rooms = new RoomService(
     new InMemoryRoomRepository(),
     new InMemoryMembershipStore(),
     ledger,
     engine,
+    plays,
   );
+  const profiles = new ProfileService(accounts, plays);
   const app = createApp({
     checks: { checkPostgres: async () => true, checkRedis: async () => true },
     accounts,
+    profiles,
     sessions,
     rooms,
     cookie: cookieConfig,
     webOrigins: ['http://localhost:3000'],
   });
-  return { app, accounts, sessions, repo, engine };
+  return { app, accounts, sessions, repo, engine, plays };
 }
 
 /** Pull the session cookie value out of a response's set-cookie header. */
@@ -645,15 +651,19 @@ function makeAppWithToken(token: string) {
   const accounts = new AccountService(repo, fakeHasher);
   const sessions = new InMemorySessionStore(3600_000);
   const ledger = new CreditLedger(new InMemoryLedgerRepository(), new FreeTierProvider());
+  const plays = new InMemoryPlaysRepository();
   const rooms = new RoomService(
     new InMemoryRoomRepository(),
     new InMemoryMembershipStore(),
     ledger,
     new FakeEngineClient(),
+    plays,
   );
+  const profiles = new ProfileService(accounts, plays);
   const app = createApp({
     checks: { checkPostgres: async () => true, checkRedis: async () => true },
     accounts,
+    profiles,
     sessions,
     rooms,
     cookie: cookieConfig,
@@ -662,3 +672,117 @@ function makeAppWithToken(token: string) {
   });
   return { app };
 }
+
+describe('profile endpoints (spec 0027)', () => {
+  /** Sign up and return the session cookie for authenticated PATCH calls. */
+  async function signedIn(app: ReturnType<typeof makeApp>['app']) {
+    const res = await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+    return sessionCookie(res);
+  }
+
+  it('PATCH /v1/auth/avatar updates the avatar and /me reflects it; rejects anon and unknown id', async () => {
+    const { app } = makeApp();
+    const cookie = await signedIn(app);
+
+    const ok = await app.inject({
+      method: 'PATCH',
+      url: '/v1/auth/avatar',
+      headers: { cookie },
+      payload: { avatar: 'berry' },
+    });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().account.avatar).toBe('berry');
+
+    const me = await app.inject({ method: 'GET', url: '/v1/auth/me', headers: { cookie } });
+    expect(me.json().account).toMatchObject({ avatar: 'berry', visibility: 'public' });
+
+    // Unknown avatar id -> 400.
+    const bad = await app.inject({
+      method: 'PATCH',
+      url: '/v1/auth/avatar',
+      headers: { cookie },
+      payload: { avatar: 'not-real' },
+    });
+    expect(bad.statusCode).toBe(400);
+
+    // No session -> 401.
+    const anon = await app.inject({
+      method: 'PATCH',
+      url: '/v1/auth/avatar',
+      payload: { avatar: 'berry' },
+    });
+    expect(anon.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('PATCH /v1/auth/visibility updates visibility; rejects anon and invalid value', async () => {
+    const { app } = makeApp();
+    const cookie = await signedIn(app);
+
+    const ok = await app.inject({
+      method: 'PATCH',
+      url: '/v1/auth/visibility',
+      headers: { cookie },
+      payload: { visibility: 'private' },
+    });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().account.visibility).toBe('private');
+
+    const bad = await app.inject({
+      method: 'PATCH',
+      url: '/v1/auth/visibility',
+      headers: { cookie },
+      payload: { visibility: 'everyone' },
+    });
+    expect(bad.statusCode).toBe(400);
+
+    const anon = await app.inject({
+      method: 'PATCH',
+      url: '/v1/auth/visibility',
+      payload: { visibility: 'private' },
+    });
+    expect(anon.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('GET /v1/profiles/:gamerTag returns a public profile, 404s an unknown tag, and leaks no PII', async () => {
+    const { app } = makeApp();
+    await signedIn(app); // creates gamerTag "CoolCat", email player@example.com
+
+    const res = await app.inject({ method: 'GET', url: '/v1/profiles/CoolCat' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().profile).toMatchObject({
+      gamerTag: 'CoolCat',
+      totalStars: 0,
+      visibility: 'public',
+      restricted: false,
+    });
+    // Never leaks the email or an account id.
+    const body = res.body;
+    expect(body).not.toContain(validSignup.email);
+    expect(body).not.toContain('acct_');
+
+    const missing = await app.inject({ method: 'GET', url: '/v1/profiles/ghost' });
+    expect(missing.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('a private profile over /v1/profiles hides the detail (restricted)', async () => {
+    const { app } = makeApp();
+    const cookie = await signedIn(app);
+    await app.inject({
+      method: 'PATCH',
+      url: '/v1/auth/visibility',
+      headers: { cookie },
+      payload: { visibility: 'private' },
+    });
+    const res = await app.inject({ method: 'GET', url: '/v1/profiles/CoolCat' });
+    expect(res.json().profile).toEqual({
+      gamerTag: 'CoolCat',
+      totalStars: 0,
+      visibility: 'private',
+      restricted: true,
+    });
+    await app.close();
+  });
+});

@@ -73,6 +73,8 @@ describe('AccountService.signup', () => {
       findByGamerTagNormalized: async () => null,
       findById: async () => null,
       updateNickname: async () => null,
+      updateAvatar: async () => null,
+      updateVisibility: async () => null,
       create: async (): Promise<Account> => {
         throw new DuplicateAccountError('gamerTag');
       },
@@ -139,5 +141,54 @@ describe('AccountService.changeNickname', () => {
 
   it('rejects an invalid nickname', async () => {
     await expect(service.changeNickname(accountId, '   ')).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
+describe('AccountService profile fields (spec 0027)', () => {
+  let service: AccountService;
+  let accountId: string;
+
+  beforeEach(async () => {
+    service = new AccountService(new InMemoryAccountRepository(), fakeHasher);
+    const account = await service.signup({
+      email: 'player@example.com',
+      password: 'supersecret',
+      gamerTag: 'CoolCat',
+    });
+    accountId = account.id;
+  });
+
+  it('seeds a deterministic default avatar on signup and reports it publicly', async () => {
+    const again = new AccountService(new InMemoryAccountRepository(), fakeHasher);
+    const a = await again.signup({
+      email: 'a@x.com',
+      password: 'supersecret',
+      gamerTag: 'CoolCat',
+    });
+    const b = await new AccountService(new InMemoryAccountRepository(), fakeHasher).signup({
+      email: 'b@x.com',
+      password: 'supersecret',
+      gamerTag: 'CoolCat',
+    });
+    expect(a.avatar).toBeTruthy();
+    // Same tag -> same deterministic default avatar.
+    expect(a.avatar).toBe(b.avatar);
+    expect(a.visibility).toBe('public');
+  });
+
+  it('changes the avatar to a known id and rejects an unknown one', async () => {
+    const updated = await service.changeAvatar(accountId, 'berry');
+    expect(updated.avatar).toBe('berry');
+    await expect(service.changeAvatar(accountId, 'not-a-real-avatar')).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  it('changes visibility to a valid value and rejects an invalid one', async () => {
+    const updated = await service.changeVisibility(accountId, 'private');
+    expect(updated.visibility).toBe('private');
+    await expect(service.changeVisibility(accountId, 'everyone')).rejects.toBeInstanceOf(
+      ValidationError,
+    );
   });
 });

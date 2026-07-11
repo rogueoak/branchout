@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { CreditLedger } from '../credits/ledger';
 import { InMemoryLedgerRepository } from '../credits/repository.memory';
 import { StaticTierProvider, type Tier } from '../credits/tiers';
+import { InMemoryPlaysRepository } from '../profiles/plays.memory';
 import type { Session } from '../sessions/session';
 import { FakeEngineClient } from './engine-client.fake';
 import { newPlayerId } from './membership';
@@ -27,8 +28,9 @@ function harness(tiers: Record<string, Tier> = {}) {
   const ledgerRepo = new InMemoryLedgerRepository();
   const ledger = new CreditLedger(ledgerRepo, new StaticTierProvider(tiers));
   const engine = new FakeEngineClient();
-  const service = new RoomService(repo, membership, ledger, engine);
-  return { service, repo, membership, ledger, ledgerRepo, engine };
+  const plays = new InMemoryPlaysRepository();
+  const service = new RoomService(repo, membership, ledger, engine, plays);
+  return { service, repo, membership, ledger, ledgerRepo, engine, plays };
 }
 
 async function standing(player: string, rank: number): Promise<Standing> {
@@ -217,6 +219,41 @@ describe('host plays as a player', () => {
       rank: 1,
       stars: 3,
     });
+  });
+
+  it('records per-account plays on game-complete: maps playerId->accountId, skips anon, idempotent', async () => {
+    // Spec 0027: the game-complete seam writes account-scoped history so a profile has real stars.
+    const { service, plays } = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    const { room, playerId } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'trivia', {});
+    // Bo is anonymous - no account, so no play should be recorded for them.
+    const { playerId: bo } = await service.join(room.code, anon('Bo'), {
+      role: 'player',
+      nickname: 'Bo',
+      mode: 'remote',
+    });
+    await service.start(room.code, host, 1);
+    const report: GameCompleteReport = {
+      v: PROTOCOL_VERSION,
+      room: room.id,
+      game: 'trivia',
+      gameId: 'g1',
+      standings: [
+        { player: playerId, nickname: 'Ada', score: 30, rank: 1 },
+        { player: bo, nickname: 'Bo', score: 10, rank: 2 },
+      ],
+    };
+    expect(await service.recordGameComplete(report)).toBe('recorded');
+    // The host (an account) earns 3 stars for rank 1; the anonymous player records nothing.
+    expect(await plays.totalStars('host_acct')).toBe(3);
+    const recent = await plays.recentPlays('host_acct', 10);
+    expect(recent).toHaveLength(1);
+    expect(recent[0]).toMatchObject({ game: 'trivia', rank: 1, stars: 3, gameId: 'g1' });
+
+    // A duplicate report (same gameId) is idempotent - stars do not double.
+    expect(await service.recordGameComplete(report)).toBe('duplicate');
+    expect(await plays.totalStars('host_acct')).toBe(3);
   });
 
   it('lets a solo interactive host satisfy the viewer gate and start', async () => {

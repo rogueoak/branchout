@@ -15,6 +15,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@branchout/brand": "workspace:*",
     "@branchout/protocol": "workspace:*",
     "@branchout/service-runtime": "workspace:*",
     "@fastify/cookie": "^11.0.2",

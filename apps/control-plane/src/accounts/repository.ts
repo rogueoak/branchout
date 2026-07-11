@@ -1,5 +1,19 @@
 import type { Pool } from 'pg';
 
+/**
+ * Profile visibility (spec 0027). `public` shows the full profile; `private` shows only the
+ * always-public gamer tag + stars; `friends-only` behaves as `private` to non-friends until the
+ * friend graph ships (a later spec), so today it is effectively private to anyone but the owner.
+ */
+export type ProfileVisibility = 'public' | 'friends-only' | 'private';
+
+/** The visibility values in one place, for validation and the picker. */
+export const PROFILE_VISIBILITIES: readonly ProfileVisibility[] = [
+  'public',
+  'friends-only',
+  'private',
+];
+
 /** An account as stored. The password hash never leaves the repository layer casually - see
  * `AccountService`, which returns `PublicAccount` to callers. */
 export interface Account {
@@ -9,6 +23,10 @@ export interface Account {
   gamerTag: string;
   gamerTagNormalized: string;
   nickname: string;
+  /** The chosen avatar id (spec 0027); one of `@branchout/brand/avatar-ids`. */
+  avatar: string;
+  /** Who may see the full profile (spec 0027). */
+  visibility: ProfileVisibility;
   emailVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +39,8 @@ export interface NewAccount {
   gamerTag: string;
   gamerTagNormalized: string;
   nickname: string;
+  /** The deterministic default avatar the service seeds from the gamer tag. */
+  avatar: string;
 }
 
 /**
@@ -34,6 +54,8 @@ export interface AccountRepository {
   findById(id: string): Promise<Account | null>;
   findByGamerTagNormalized(normalized: string): Promise<Account | null>;
   updateNickname(id: string, nickname: string): Promise<Account | null>;
+  updateAvatar(id: string, avatar: string): Promise<Account | null>;
+  updateVisibility(id: string, visibility: ProfileVisibility): Promise<Account | null>;
 }
 
 /** Raised when a unique constraint (email or gamer tag) is violated at the database. */
@@ -51,6 +73,8 @@ interface AccountRow {
   gamer_tag: string;
   gamer_tag_normalized: string;
   nickname: string;
+  avatar: string;
+  profile_visibility: ProfileVisibility;
   email_verified: boolean;
   created_at: Date;
   updated_at: Date;
@@ -64,6 +88,8 @@ function mapRow(row: AccountRow): Account {
     gamerTag: row.gamer_tag,
     gamerTagNormalized: row.gamer_tag_normalized,
     nickname: row.nickname,
+    avatar: row.avatar,
+    visibility: row.profile_visibility,
     emailVerified: row.email_verified,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -80,8 +106,8 @@ export class PostgresAccountRepository implements AccountRepository {
   async create(account: NewAccount): Promise<Account> {
     try {
       const result = await this.pool.query<AccountRow>(
-        `INSERT INTO accounts (email, password_hash, gamer_tag, gamer_tag_normalized, nickname)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO accounts (email, password_hash, gamer_tag, gamer_tag_normalized, nickname, avatar)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
         [
           account.email,
@@ -89,6 +115,7 @@ export class PostgresAccountRepository implements AccountRepository {
           account.gamerTag,
           account.gamerTagNormalized,
           account.nickname,
+          account.avatar,
         ],
       );
       // A RETURNING insert always yields exactly one row.
@@ -130,6 +157,24 @@ export class PostgresAccountRepository implements AccountRepository {
     const result = await this.pool.query<AccountRow>(
       `UPDATE accounts SET nickname = $2, updated_at = now() WHERE id = $1 RETURNING *`,
       [id, nickname],
+    );
+    const row = result.rows[0];
+    return row ? mapRow(row) : null;
+  }
+
+  async updateAvatar(id: string, avatar: string): Promise<Account | null> {
+    const result = await this.pool.query<AccountRow>(
+      `UPDATE accounts SET avatar = $2, updated_at = now() WHERE id = $1 RETURNING *`,
+      [id, avatar],
+    );
+    const row = result.rows[0];
+    return row ? mapRow(row) : null;
+  }
+
+  async updateVisibility(id: string, visibility: ProfileVisibility): Promise<Account | null> {
+    const result = await this.pool.query<AccountRow>(
+      `UPDATE accounts SET profile_visibility = $2, updated_at = now() WHERE id = $1 RETURNING *`,
+      [id, visibility],
     );
     const row = result.rows[0];
     return row ? mapRow(row) : null;

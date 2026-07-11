@@ -33,6 +33,14 @@
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"
+    },
+    "./avatar-ids": {
+      "types": "./dist/avatar-ids.d.ts",
+      "import": "./dist/avatar-ids.js"
+    },
+    "./avatars": {
+      "types": "./dist/avatars.d.ts",
+      "import": "./dist/avatars.js"
     }
   },
   "scripts": {

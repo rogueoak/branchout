@@ -3,6 +3,7 @@ import {
   type AccountRepository,
   DuplicateAccountError,
   type NewAccount,
+  type ProfileVisibility,
 } from './repository';
 
 /**
@@ -30,6 +31,8 @@ export class InMemoryAccountRepository implements AccountRepository {
       gamerTag: account.gamerTag,
       gamerTagNormalized: account.gamerTagNormalized,
       nickname: account.nickname,
+      avatar: account.avatar,
+      visibility: 'public',
       emailVerified: false,
       createdAt: now,
       updatedAt: now,
@@ -67,6 +70,26 @@ export class InMemoryAccountRepository implements AccountRepository {
       return null;
     }
     account.nickname = nickname;
+    account.updatedAt = new Date();
+    return { ...account };
+  }
+
+  async updateAvatar(id: string, avatar: string): Promise<Account | null> {
+    const account = this.byId.get(id);
+    if (!account) {
+      return null;
+    }
+    account.avatar = avatar;
+    account.updatedAt = new Date();
+    return { ...account };
+  }
+
+  async updateVisibility(id: string, visibility: ProfileVisibility): Promise<Account | null> {
+    const account = this.byId.get(id);
+    if (!account) {
+      return null;
+    }
+    account.visibility = visibility;
     account.updatedAt = new Date();
     return { ...account };
   }

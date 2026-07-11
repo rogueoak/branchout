@@ -8,6 +8,8 @@ export default defineConfig({
     'src/trivia.ts',
     'src/liarliar.ts',
     'src/brand.ts',
+    'src/avatar-ids.ts',
+    'src/avatars.ts',
   ],
   outDir: 'dist',
   format: ['esm'],

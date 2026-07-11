@@ -31,11 +31,18 @@ What the product does for users, grouped by area. Each capability maps to one or
       nickname (defaults to the gamer tag), and a join-by-code path that mints an ephemeral
       anonymous session with no account row. Redis-backed sessions behind an httpOnly cookie;
       `/signup` and `/login` pages in `apps/web`.
-- [ ] Public profile - gamer tag (always public), nickname (defaults to gamer tag), avatar from
-      a set of cartoon characters, stars badge, recent-plays timeline.
-- [ ] Privacy - profile public / friends-only / private (gamer tag and stars stay public).
+- [x] Public profile - gamer tag (always public), nickname, an avatar chosen from a fixed set of
+      12 on-theme cartoon characters (bundled brand SVGs, deterministic default seeded from the tag),
+      a total-stars badge, and a recent-plays timeline, at `/u/[gamerTag]`; a signed-in player
+      manages nickname/avatar/visibility and logs out at `/account`. Per-account game history is
+      recorded at the game-complete intake (mapping each standing's `playerId` -> the room member's
+      `accountId`, idempotent), since `room_games.stars` is keyed by the ephemeral player id (spec
+      `0027`).
+- [x] Privacy - profile public / friends-only / private, applied as a server-side projection on the
+      public read (gamer tag and total stars always public; the rest gated). `friends-only` resolves
+      to private-to-non-owners until the friend graph ships (spec `0027`).
 - [ ] Presence - online status and player status (idle, or in a game and which one).
-- [ ] Friends - search by gamer tag, connect, invite.
+- [ ] Friends - search by gamer tag, connect, invite (then `friends-only` gains real gating).
 
 ## Stars and monetization
 

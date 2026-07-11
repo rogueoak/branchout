@@ -1,6 +1,7 @@
 import { accountMigrations } from './accounts/migrations';
 import { creditMigrations } from './credits/migrations';
 import type { Migration } from './db/migrations';
+import { profileMigrations } from './profiles/migrations';
 import { roomMigrations } from './rooms/migrations';
 
 /**
@@ -12,4 +13,5 @@ export const allMigrations: Migration[] = [
   ...accountMigrations,
   ...roomMigrations,
   ...creditMigrations,
+  ...profileMigrations,
 ];

@@ -149,6 +149,46 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     }
   });
 
+  // Change avatar: account sessions only. The id is validated against the bounded set in the service.
+  app.patch('/auth/avatar', async (request, reply) => {
+    const session = await currentSession(request);
+    if (!session || session.kind !== 'account' || !session.accountId) {
+      return reply.code(401).send({ error: 'Sign in to change your avatar.' });
+    }
+    try {
+      const account = await accounts.changeAvatar(
+        session.accountId,
+        asString(request.body, 'avatar'),
+      );
+      return reply.code(200).send({ account });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return reply.code(400).send({ error: error.message, field: error.code });
+      }
+      throw error;
+    }
+  });
+
+  // Change profile visibility: account sessions only.
+  app.patch('/auth/visibility', async (request, reply) => {
+    const session = await currentSession(request);
+    if (!session || session.kind !== 'account' || !session.accountId) {
+      return reply.code(401).send({ error: 'Sign in to change your privacy.' });
+    }
+    try {
+      const account = await accounts.changeVisibility(
+        session.accountId,
+        asString(request.body, 'visibility'),
+      );
+      return reply.code(200).send({ account });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return reply.code(400).send({ error: error.message, field: error.code });
+      }
+      throw error;
+    }
+  });
+
   // Anonymous join-by-code: mint an ephemeral session with a display name and no account row.
   // It carries a session id and display name only and cannot host (see canHost).
   app.post('/auth/anonymous', async (request, reply) => {

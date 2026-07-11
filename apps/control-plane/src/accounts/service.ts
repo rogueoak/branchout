@@ -1,18 +1,27 @@
 import { randomBytes } from 'node:crypto';
+import { defaultAvatarFor, isAvatarId } from '@branchout/brand/avatar-ids';
 import { validateDisplayName } from '../validation/display-name';
 import { validateEmail } from './email';
-import { validateGamerTag } from './gamertag';
+import { normalizeGamerTag, validateGamerTag } from './gamertag';
 import type { PasswordHasher } from './hasher';
-import { type Account, type AccountRepository, DuplicateAccountError } from './repository';
+import {
+  type Account,
+  type AccountRepository,
+  DuplicateAccountError,
+  PROFILE_VISIBILITIES,
+  type ProfileVisibility,
+} from './repository';
 
 export const PASSWORD_MIN = 8;
 export const PASSWORD_MAX = 200;
 
-/** The identity fields safe to hand back to a caller. Never carries the password hash. */
+/** The identity fields safe to hand back to a caller. Never carries the password hash or email. */
 export interface PublicAccount {
   id: string;
   gamerTag: string;
   nickname: string;
+  avatar: string;
+  visibility: ProfileVisibility;
 }
 
 /** A validation failure with a stable code and a user-safe message. */
@@ -46,7 +55,13 @@ export interface LoginInput {
 }
 
 function toPublic(account: Account): PublicAccount {
-  return { id: account.id, gamerTag: account.gamerTag, nickname: account.nickname };
+  return {
+    id: account.id,
+    gamerTag: account.gamerTag,
+    nickname: account.nickname,
+    avatar: account.avatar,
+    visibility: account.visibility,
+  };
 }
 
 /**
@@ -101,6 +116,8 @@ export class AccountService {
         gamerTag: displayTag,
         gamerTagNormalized: tag.normalized!,
         nickname: displayTag,
+        // A deterministic default avatar from the tag, so a new account always has one (spec 0027).
+        avatar: defaultAvatarFor(displayTag),
       });
       return toPublic(account);
     } catch (error) {
@@ -143,12 +160,45 @@ export class AccountService {
     return account ? toPublic(account) : null;
   }
 
+  /** Look up an account by its (public, unique) gamer tag - the key the public profile page uses. */
+  async getByGamerTag(rawTag: string): Promise<PublicAccount | null> {
+    const account = await this.repo.findByGamerTagNormalized(normalizeGamerTag(rawTag));
+    return account ? toPublic(account) : null;
+  }
+
   async changeNickname(id: string, rawNickname: string): Promise<PublicAccount> {
     const nickname = validateDisplayName(rawNickname);
     if (!nickname.ok) {
       throw new ValidationError('nickname', nickname.error!);
     }
     const account = await this.repo.updateNickname(id, nickname.value!);
+    if (!account) {
+      throw new ValidationError('account', 'Account not found.');
+    }
+    return toPublic(account);
+  }
+
+  /** Set the account's avatar. The id is validated against the bounded set (never free text). */
+  async changeAvatar(id: string, avatar: unknown): Promise<PublicAccount> {
+    if (!isAvatarId(avatar)) {
+      throw new ValidationError('avatar', 'Pick an avatar from the set.');
+    }
+    const account = await this.repo.updateAvatar(id, avatar);
+    if (!account) {
+      throw new ValidationError('account', 'Account not found.');
+    }
+    return toPublic(account);
+  }
+
+  /** Set the account's profile visibility. Validated against the enum. */
+  async changeVisibility(id: string, visibility: unknown): Promise<PublicAccount> {
+    if (
+      typeof visibility !== 'string' ||
+      !(PROFILE_VISIBILITIES as readonly string[]).includes(visibility)
+    ) {
+      throw new ValidationError('visibility', 'Choose a valid visibility.');
+    }
+    const account = await this.repo.updateVisibility(id, visibility as ProfileVisibility);
     if (!account) {
       throw new ValidationError('account', 'Account not found.');
     }

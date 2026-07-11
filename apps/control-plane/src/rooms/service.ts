@@ -7,6 +7,7 @@ import type {
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import { CreditLedger } from '../credits/ledger';
 import { standingsToStars } from '../credits/stars';
+import type { NewAccountPlay, PlaysRepository } from '../profiles/plays';
 import type { Session } from '../sessions/session';
 import { canHost } from '../sessions/session';
 import { validateDisplayName } from '../validation/display-name';
@@ -117,6 +118,7 @@ export class RoomService {
     private readonly membership: MembershipStore,
     private readonly ledger: CreditLedger,
     private readonly engine: EngineClient,
+    private readonly plays: PlaysRepository,
   ) {}
 
   /**
@@ -415,14 +417,40 @@ export class RoomService {
     if (!room) {
       throw new RoomError('not_found', 'Unknown room for game-complete report.');
     }
+    const awards = standingsToStars(report.standings);
     const recorded = await this.repo.recordGame({
       gameId: report.gameId,
       roomId: room.id,
       game: report.game,
       standings: report.standings,
-      stars: standingsToStars(report.standings),
+      stars: awards,
     });
     if (recorded) {
+      // Record per-account play history (spec 0027) so a profile can total stars and list games.
+      // Only on the first record (not a duplicate report), and the plays store is itself idempotent
+      // by (accountId, gameId), so a retry never double-counts. Map each standing's public playerId
+      // -> the room member's accountId; anonymous members have no account and are simply not recorded.
+      const members = await this.membership.list(room.id);
+      const accountByPlayer = new Map(
+        members.filter((m) => m.accountId).map((m) => [m.playerId, m.accountId as string]),
+      );
+      const plays: NewAccountPlay[] = awards.flatMap((award) => {
+        const accountId = accountByPlayer.get(award.player);
+        return accountId
+          ? [
+              {
+                accountId,
+                gameId: report.gameId,
+                game: report.game,
+                rank: award.rank,
+                stars: award.stars,
+              },
+            ]
+          : [];
+      });
+      if (plays.length > 0) {
+        await this.plays.recordPlays(plays);
+      }
       await this.repo.setStatus(room.id, 'lobby');
     }
     return recorded ? 'recorded' : 'duplicate';
