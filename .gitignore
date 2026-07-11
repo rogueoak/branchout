@@ -30,3 +30,6 @@ apps/web/public/og.png
 apps/web/public/share-trivia.png
 apps/web/public/share-liarliar.png
 apps/web/public/share-join.png
+
+# Playwright MCP scratch (console logs, screenshots) - local only
+.playwright-mcp/
