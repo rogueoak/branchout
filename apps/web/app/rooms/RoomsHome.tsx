@@ -7,19 +7,22 @@
 import { Button, Input, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Wordmark } from '../../components/Wordmark';
+import { TopNav } from '../../components/TopNav';
 import { defaultMode } from '../../lib/default-mode';
 import { getGameUi } from '../../lib/games/registry';
 import { rememberMembership } from '../../lib/membership';
 import { RoomApiError, createRoom, fetchIdentity, selectGame, setMode } from '../../lib/room-api';
+import type { Viewer } from '../../lib/session';
 
 interface RoomsHomeProps {
   /** The `?game=<slug>` deep link from a feature-page "Start a game" CTA (spec 0030): create a room
    * pre-selected to this game and skip the pick step. Ignored if it is not a known game id. */
   initialGame?: string;
+  /** The signed-in identity for the shared top nav (spec 0028), read server-side to avoid a flash. */
+  viewer: Viewer;
 }
 
-export function RoomsHome({ initialGame }: RoomsHomeProps = {}) {
+export function RoomsHome({ initialGame, viewer }: RoomsHomeProps) {
   const router = useRouter();
   const [isAccount, setIsAccount] = useState<boolean | null>(null);
   const [hostName, setHostName] = useState('Host');
@@ -95,10 +98,10 @@ export function RoomsHome({ initialGame }: RoomsHomeProps = {}) {
   }
 
   return (
-    <main className="min-h-screen bg-bg text-text">
-      <div className="mx-auto flex max-w-2xl flex-col gap-10 px-4 py-16 sm:px-6">
+    <div className="min-h-screen bg-bg text-text">
+      <TopNav viewer={viewer} />
+      <main className="mx-auto flex max-w-2xl flex-col gap-10 px-4 py-16 sm:px-6">
         <header className="flex flex-col items-center gap-4 text-center">
-          <Wordmark />
           <h1 className="text-display text-text">Play a game</h1>
           <p className="text-body text-text-muted">
             Start a room and share the code, or join a game a friend already started.
@@ -156,7 +159,7 @@ export function RoomsHome({ initialGame }: RoomsHomeProps = {}) {
             </Button>
           </div>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

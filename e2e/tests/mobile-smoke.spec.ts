@@ -33,6 +33,22 @@ test('landing page renders and fits on a phone', async ({ page }) => {
   await expectNoHorizontalOverflow(scrollWidth, clientWidth);
 });
 
+test('the shared top nav renders and fits on a phone (spec 0028)', async ({ page }) => {
+  // Signed-out: the nav shows Games + a Sign up CTA on home and on /rooms, and fits at ~390px.
+  const nav = page.getByRole('navigation', { name: /site navigation/i });
+  for (const path of ['/', '/rooms']) {
+    await page.goto(path);
+    await expect(nav).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Games' })).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Sign up' })).toBeVisible();
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    await expectNoHorizontalOverflow(scrollWidth, clientWidth);
+  }
+});
+
 test('join-by-code page renders and fits on a phone', async ({ page }) => {
   await page.goto('/join?code=ABC12');
   await expect(page.getByRole('button', { name: /join room/i })).toBeVisible();

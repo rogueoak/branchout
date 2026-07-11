@@ -178,6 +178,11 @@ What the product does for users, grouped by area. Each capability maps to one or
       game" button reopens the card picker; the lobby shows the selected game's detail card and its
       config panel. The per-game summary lives on the web game registry so the picker and a later
       feature page share one source.
+- [x] Top nav and account menu - a shared `TopNav` (wordmark + Games link on the left; Sign up (the
+      one primary) + Log in on the right when signed out; the player's avatar with an accessible
+      dropdown to Manage account / Log out when signed in). Auth state is read server-side
+      (`getViewer`) and injected so the correct nav renders on the first byte (no flash). Present on
+      the marketing and rooms/join surfaces, omitted inside a running game (spec `0028`).
 - [ ] Profile pages and friend search/invite.
 
 ## Future

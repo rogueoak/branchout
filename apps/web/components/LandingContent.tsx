@@ -8,10 +8,11 @@ import { Badge, buttonVariants } from '@rogueoak/canopy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
 import { liarLiarSvg } from '@branchout/brand/liarliar';
 import { triviaSvg } from '@branchout/brand/trivia';
-import { Wordmark } from './Wordmark';
+import type { Viewer } from '../lib/session';
+import { TopNav } from './TopNav';
 
 interface LandingContentProps {
-  signedIn: boolean;
+  viewer: Viewer;
 }
 
 /**
@@ -78,29 +79,16 @@ const GAMES = [
   },
 ];
 
-export function LandingContent({ signedIn }: LandingContentProps) {
-  const primaryCta = signedIn
+export function LandingContent({ viewer }: LandingContentProps) {
+  const primaryCta = viewer.signedIn
     ? { label: 'Play now', href: '/rooms' }
     : { label: 'Sign up free', href: '/signup' };
 
   return (
     <div className="bg-bg text-text">
-      {/* Site header: wordmark on the left, Log in on the right. A signed-in visitor is already
-          authenticated, so the "Log in" link is hidden rather than contradicting the hero's
-          "Play now" CTA. */}
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-        <Wordmark />
-        <nav aria-label="Site navigation">
-          {signedIn ? null : (
-            <a
-              href="/login"
-              className="text-body-sm font-medium text-text-muted underline-offset-4 hover:text-text hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              Log in
-            </a>
-          )}
-        </nav>
-      </header>
+      {/* The shared top nav (spec 0028) replaces the old bespoke header: Games + wordmark on the left,
+          Sign up / Log in or the account avatar on the right. */}
+      <TopNav viewer={viewer} />
 
       {/* Hero */}
       <section

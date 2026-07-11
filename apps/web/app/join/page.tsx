@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getRoomPreview } from '../../lib/room-preview';
+import { getViewer } from '../../lib/session';
 import { shareCardFor } from '../../lib/share-card';
 import { JoinForm } from './JoinForm';
 
@@ -44,5 +45,6 @@ export default async function JoinPage({
   searchParams: Promise<{ code?: string }>;
 }) {
   const { code } = await searchParams;
-  return <JoinForm initialCode={(code ?? '').toUpperCase()} />;
+  const viewer = await getViewer();
+  return <JoinForm initialCode={(code ?? '').toUpperCase()} viewer={viewer} />;
 }

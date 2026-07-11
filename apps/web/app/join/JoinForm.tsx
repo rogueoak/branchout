@@ -8,7 +8,8 @@
 import { Button, Input, Label, buttonVariants, inputVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
-import { Wordmark } from '../../components/Wordmark';
+import { TopNav } from '../../components/TopNav';
+import type { Viewer } from '../../lib/session';
 import { defaultMode } from '../../lib/default-mode';
 import { rememberMembership } from '../../lib/membership';
 import {
@@ -21,9 +22,11 @@ import {
 
 interface JoinFormProps {
   initialCode: string;
+  /** The signed-in identity for the shared top nav (spec 0028), read server-side to avoid a flash. */
+  viewer: Viewer;
 }
 
-export function JoinForm({ initialCode }: JoinFormProps) {
+export function JoinForm({ initialCode, viewer }: JoinFormProps) {
   const router = useRouter();
   const [code, setCode] = useState(initialCode);
   const [nickname, setNickname] = useState('');
@@ -85,14 +88,14 @@ export function JoinForm({ initialCode }: JoinFormProps) {
   }
 
   return (
-    <main className="min-h-screen bg-bg text-text">
+    <div className="min-h-screen bg-bg text-text">
+      <TopNav viewer={viewer} />
       <form
         onSubmit={onSubmit}
-        className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-4 py-12 sm:px-6"
+        className="mx-auto flex max-w-md flex-col gap-6 px-4 py-12 sm:px-6"
         noValidate
       >
         <header className="flex flex-col items-center gap-3 text-center">
-          <Wordmark />
           <h1 className="text-h2 text-text">Join the game</h1>
         </header>
 
@@ -166,6 +169,6 @@ export function JoinForm({ initialCode }: JoinFormProps) {
           Back
         </a>
       </form>
-    </main>
+    </div>
   );
 }
