@@ -36,7 +36,8 @@ test('account edits reflect on the public profile, gated by visibility', async (
   // Private: gamer tag + stars stay public; nickname and the recent-games section are hidden.
   await page.goto(`/u/${account.gamerTag}`);
   await expect(page.getByText(/This profile is private/)).toBeVisible();
-  await expect(page.getByText(`@${account.gamerTag}`)).toBeVisible();
+  // `exact` so it matches only the header line, not the document <title> (`Name (@tag) - Branch Out`).
+  await expect(page.getByText(`@${account.gamerTag}`, { exact: true })).toBeVisible();
   await expect(page.getByText('NebulaFox')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Recent games' })).toHaveCount(0);
 
@@ -59,7 +60,8 @@ test.describe('mobile-first at 360px (CLAUDE.md rule 1)', () => {
     await expectFits(page);
 
     await page.goto(`/u/${account.gamerTag}`);
-    await expect(page.getByText(`@${account.gamerTag}`)).toBeVisible();
+    // `exact` so it matches only the header line, not the document <title> (`Name (@tag) - Branch Out`).
+    await expect(page.getByText(`@${account.gamerTag}`, { exact: true })).toBeVisible();
     await expectFits(page);
   });
 });
