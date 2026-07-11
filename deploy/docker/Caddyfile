@@ -27,13 +27,37 @@ branchout.games {
     # HSTS: tell browsers to always use HTTPS for this domain (2 years).
     header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 
+    # Zero-downtime deploys (spec 0034): every upstream below uses DYNAMIC A-record
+    # resolution instead of a static `reverse_proxy host:port`. A static upstream
+    # resolves the service name once and caches the IP, so after a docker-rollout swap
+    # (a new Compose-indexed instance replaces the old) Caddy would keep hitting the
+    # GONE container. `dynamic a` re-resolves the service alias against Docker's embedded
+    # DNS (127.0.0.11) every second, so Caddy load-balances across whatever instances are
+    # live and follows the swap; during a rollout both resolve, and when the old one is
+    # removed the next refresh drops it. `lb_try_duration`/`lb_retries` retry onto a live
+    # instance and `fail_duration` (connect-failures only, no `unhealthy_status`, so a
+    # genuine app 5xx never benches the sole steady-state upstream) closes the <=1s window
+    # where the cached set still lists the departed IP. See overview/architecture.md.
+
     # WebSocket upgrade - game-engine handles /ws traffic. The browser connects to the versioned
     # /ws/v1 (spec 0033), but the engine's ws server accepts any path (room/game/player come from the
     # `join` frame), so no prefix strip is needed; match both bare /ws and /ws/* (which covers /ws/v1).
-    # Caddy preserves the Upgrade header automatically on a WebSocket handshake.
+    # Caddy preserves the Upgrade header automatically on a WebSocket handshake, dynamic upstream included.
     @ws path /ws /ws/*
     handle @ws {
-        reverse_proxy game-engine:4001
+        reverse_proxy {
+            dynamic a {
+                name game-engine
+                port 4001
+                refresh 1s
+                resolvers 127.0.0.11
+                versions ipv4
+                dial_timeout 3s
+            }
+            lb_try_duration 5s
+            lb_retries 3
+            fail_duration 2s
+        }
     }
 
     # The engine report intake (control-plane /v1/engine/*) is internal-only: the
@@ -47,11 +71,35 @@ branchout.games {
     # REST API - control-plane serves /v1/auth, /v1/rooms, /v1/engine (no /api prefix),
     # so handle_path STRIPS /api before proxying: /api/v1/auth/login -> /v1/auth/login.
     handle_path /api/* {
-        reverse_proxy control-plane:4000
+        reverse_proxy {
+            dynamic a {
+                name control-plane
+                port 4000
+                refresh 1s
+                resolvers 127.0.0.11
+                versions ipv4
+                dial_timeout 3s
+            }
+            lb_try_duration 5s
+            lb_retries 3
+            fail_duration 2s
+        }
     }
 
     # Everything else goes to the Next.js web app.
     handle {
-        reverse_proxy web:3000
+        reverse_proxy {
+            dynamic a {
+                name web
+                port 3000
+                refresh 1s
+                resolvers 127.0.0.11
+                versions ipv4
+                dial_timeout 3s
+            }
+            lb_try_duration 5s
+            lb_retries 3
+            fail_duration 2s
+        }
     }
 }

@@ -290,6 +290,20 @@ Capture durable lessons as they emerge.
 
 ## Deployment and infra
 
+- **A zero-downtime claim must account for every connection, not just the ones through the load
+  balancer.** Making Caddy follow a docker-rollout swap (dynamic upstreams) only covers the
+  edge-fronted routes. The internal service-to-service hops (`web` SSR -> `control-plane`,
+  `control-plane` -> `game-engine`) bypass the balancer and see a one-off keep-alive re-dial blip;
+  in-flight WebSocket sessions on the rolled service drop and must reconnect. Enumerate every
+  connection and state which are seamless, which blip-and-retry, and which drop-and-reconnect - do not
+  let "the proxy follows the swap" stand in for the whole system. And verify through the path a user
+  actually takes (hammer every drop-free upstream during the rehearsal), not out-of-band. (Feedback
+  `0018`.)
+- **A rolling deploy's compatibility window is bounded by the strictness of its version check.** With
+  a strict-equality gate (`assertVersion` throws on `!== PROTOCOL_VERSION`), a one-service-at-a-time
+  roll is safe only for *optional fields added under the same version*; bumping the version at all is a
+  hard cutover that needs an expand/contract (dual-version) deploy. State that boundary precisely
+  rather than hand-waving "relies on the versioned envelope + additive fields". (Feedback `0018`.)
 - **Compose relative paths resolve against the compose file's directory, not the shell's cwd.**
   `env_file`, build `context`, and bind-mount sources are all anchored to the directory the
   compose file lives in (or `--project-directory`), regardless of where you run `docker compose`.

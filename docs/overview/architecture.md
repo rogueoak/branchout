@@ -138,10 +138,42 @@ on a shared external Docker network, `edge`, defined under `deploy/docker/`:
 Deploys are hands-off: every push to `main` runs `.github/workflows/release.yml`
 (verify -> build the three images -> deploy). The deploy job SSHes into the droplet as `deploy`,
 force-syncs the repo, pulls the run's private images (GHCR login with the run-scoped
-`GITHUB_TOKEN`, `packages: read`), writes `deploy/docker/.env.prod` from GitHub secrets, and rolls
-the stack forward health-gated with `up -d --wait`. Server secrets live only in that host env file
-and in GitHub Actions secrets - never in the repo. Rollback is a redeploy of an older `sha`;
-`cleanup-images.yml` bounds image disk use. See `deploy/README.md` for host setup and secrets.
+`GITHUB_TOKEN`, `packages: read`), and writes `deploy/docker/.env.prod` from GitHub secrets.
+Server secrets live only in that host env file and in GitHub Actions secrets - never in the repo.
+Rollback is a redeploy of an older `sha`; `cleanup-images.yml` bounds image disk use. See
+`deploy/README.md` for host setup and secrets.
+
+**Zero-downtime rollout (spec 0034).** The deploy no longer recreates containers in place
+(`up -d --wait`, which 502s for the seconds a container is down). It uses the **docker-rollout**
+plugin (SHA-pinned + checksum-verified on the host) to roll each app service - scale to a second
+Compose-indexed instance, wait for its healthcheck, drop the old - while Caddy follows the swap via
+**dynamic A-record upstreams** (re-resolving the service alias against Docker DNS every second).
+Because the droplet cannot run the whole stack twice, services roll **one at a time, backend first**:
+`control-plane` -> `game-engine` -> `web`, so peak memory is baseline + one extra app instance, which
+`mem_limit`s cap. Postgres and Redis are never rolled (stateful, single volume; `up -d --no-recreate`).
+An unhealthy image fails safe (the old instance keeps serving) and the deploy gates on an end-to-end
+`curl` through Caddy (page + `/api`). **Capacity rule:** the host must fit baseline + one extra app
+instance + Postgres/Redis + headroom + swap; the caps assume the current droplet's RAM, and `mem_limit`
+is a hard OOM-kill ceiling set well above real use (incl. SSR cold start), so it only bounds a runaway,
+never trips a healthy roll.
+
+**What "follows the swap" does and does not cover.** Caddy's dynamic upstreams re-resolve the alias
+for the three edge-fronted routes (`/api` -> control-plane, `/ws` -> game-engine, `*` -> web). Two
+hops do **not** pass through Caddy and so are not covered by it: `web` SSR -> `control-plane:4000`
+(session/room-preview reads) and `control-plane` -> `game-engine:4001` (the handoff/control client).
+Docker DNS re-resolves the alias per new connection, so new requests reach the surviving instance, but
+a keep-alive socket pinned to the instance being removed fails once and undici re-dials on the next
+attempt - a brief per-connection blip, not sustained downtime. The `--wait-after-healthy` grace plus
+the control-plane's report **outbox** (retries) and SSR's short-lived GETs absorb it. Separately,
+`/ws` is **not drop-free**: rolling `game-engine` severs in-flight WebSocket sessions, which self-heal
+via client reconnect over Redis-backed state - acceptable, but distinct from the seamless `/api`/`*`
+paths. **Partial-rollout compatibility:** because services roll separately, a new instance of one
+briefly talks to an old instance of another. Adding *optional* fields under the **same**
+`PROTOCOL_VERSION` is safe; **do not bump `PROTOCOL_VERSION` in a rollout deploy** - `assertVersion` is
+a strict equality check on the cross-service ingress, so a version bump is a hard cutover that needs an
+expand/contract (dual-version) rollout, not a single push. `deploy/rollout-rehearsal.sh` is the
+automatable proof (hammers Caddy on the page + `/api` during a local rollout and asserts zero drops, a
+changed instance, and no dependency churn).
 
 ## Build tooling
 

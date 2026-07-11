@@ -4,9 +4,17 @@
 # network. Postgres and Redis are on the internal-only `db` network; they
 # are not reachable from the host or from Caddy.
 #
-# Deploy (CD pins IMAGE_TAG to the sha-<full> tag built in that run):
+# Deploy is zero-downtime via docker-rollout (spec 0034), ONE app service at a
+# time - control-plane, then game-engine, then web - so the small droplet never
+# runs the whole stack twice. Postgres and Redis are never rolled (stateful, one
+# volume). Rolling one service must not recreate its `depends_on` neighbours:
+# docker-rollout scales with `--no-deps`, and the rehearsal asserts no dependency
+# container churns. CD pins IMAGE_TAG to the sha-<full> tag built in that run:
 #   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml pull
-#   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml up -d --wait
+#   IMAGE_TAG=sha-<commit> docker compose -f deploy/docker/compose.site.yml up -d --no-recreate postgres redis
+#   IMAGE_TAG=sha-<commit> docker rollout -f deploy/docker/compose.site.yml control-plane
+#   IMAGE_TAG=sha-<commit> docker rollout -f deploy/docker/compose.site.yml game-engine
+#   IMAGE_TAG=sha-<commit> docker rollout -f deploy/docker/compose.site.yml web
 #
 # Secrets come from a host-side env_file the deploy job writes next to this
 # compose file as deploy/docker/.env.prod (mode 0600). `env_file: .env.prod`
@@ -18,8 +26,17 @@ name: branchout
 services:
   web:
     image: ghcr.io/rogueoak/branchout/web:${IMAGE_TAG:-latest}
-    container_name: branchout-web
+    # No container_name: docker-rollout (spec 0034) runs two Compose-indexed
+    # instances (branchout-web-1 / -2) during a rollout, so a fixed name blocks the
+    # overlap. The service keeps its `web` network alias; Caddy resolves it via Docker
+    # DNS to whichever instances are live.
     restart: unless-stopped
+    # Memory cap for the brief double-up: sized well above the real SSR footprint so it
+    # never trips in normal operation and only bounds a runaway/leak while two web
+    # instances overlap during a rollout. The host must fit baseline + one extra app
+    # instance + Postgres/Redis + headroom + swap (see overview/architecture.md).
+    mem_limit: 400m
+    mem_reservation: 192m
     expose:
       - '3000'
     env_file: .env.prod
@@ -43,8 +60,13 @@ services:
 
   control-plane:
     image: ghcr.io/rogueoak/branchout/control-plane:${IMAGE_TAG:-latest}
-    container_name: branchout-control-plane
+    # No container_name (see web): docker-rollout runs two indexed instances during a
+    # rollout; the `control-plane` alias is what web (SSR) and Caddy (/api) resolve.
     restart: unless-stopped
+    # Memory cap for the rollout double-up (see web); a Fastify service is lighter than
+    # the SSR web tier, so a smaller ceiling still sits well above its real footprint.
+    mem_limit: 300m
+    mem_reservation: 128m
     expose:
       - '4000'
     env_file: .env.prod
@@ -70,8 +92,13 @@ services:
 
   game-engine:
     image: ghcr.io/rogueoak/branchout/game-engine:${IMAGE_TAG:-latest}
-    container_name: branchout-game-engine
+    # No container_name (see web): docker-rollout runs two indexed instances during a
+    # rollout; the `game-engine` alias is what control-plane and Caddy (/ws) resolve.
     restart: unless-stopped
+    # Memory cap for the rollout double-up (see web); matches control-plane's Fastify
+    # footprint - a ceiling well above real use that only caps a runaway during overlap.
+    mem_limit: 300m
+    mem_reservation: 128m
     expose:
       - '4001'
     env_file: .env.prod
