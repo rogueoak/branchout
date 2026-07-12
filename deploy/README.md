@@ -161,6 +161,10 @@ How it wires together:
   deploy SSH key: `rsync -az --delete ... branchout-data/data/ "$USER@$HOST:branchout-data/data/"`.
   `--delete` keeps the box an exact mirror of the tagged content. It writes `GAME_DATA_HOST`
   (`$HOME/branchout-data`) into `.env.prod` so compose can resolve the host path.
+- **Optional until provisioned.** The data steps are gated on `DATA_REPO_TOKEN` being set
+  (`HAS_DATA_TOKEN`). When the secret is absent the checkout + rsync are skipped and the box keeps
+  its **last-synced** data, so an unrelated app deploy is never blocked on the data pipeline. Set the
+  secret to activate the sync; from then on every deploy re-mirrors the pinned tag.
 - **Read-only mount.** `compose.site.yml` bind-mounts `${GAME_DATA_HOST}/data` at
   `/srv/game-data/data:ro` into **game-engine** (the real reader; it loads the banks at boot) and
   **admin** (the same mount, for future content moderation), and sets `GAME_DATA_DIR=/srv/game-data`
@@ -207,7 +211,7 @@ Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branc
 | `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                                                                                                                          |
 | `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                                                                                                                               |
 | `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)                                                                                                          |
-| `DATA_REPO_TOKEN`     | Read-only fine-grained PAT with **Contents: read** on `rogueoak/branchout-data` (spec 0041); GHA uses it to check out the pinned game-data tag and rsync it to the box. Required before the next real deploy. |
+| `DATA_REPO_TOKEN`     | Read-only fine-grained PAT with **Contents: read** on `rogueoak/branchout-data` (spec 0041); GHA uses it to check out the pinned game-data tag and rsync it to the box. Optional: without it the deploy skips the data sync and the box keeps its last-synced data; set it to activate the pipeline. |
 
 Generate strong values with:
 
