@@ -158,7 +158,7 @@ How it wires together:
   `$HOME/branchout-data` and, on every deploy, the remote script fetches and checks out the pinned
   tag from `deploy/data.version`. The box authenticates with a **read-only deploy key** (org deploy
   keys are enabled) via a scoped `github-data` SSH alias (`~/.ssh/config` -> `IdentityFile
-  ~/.ssh/branchout_data_deploy`), so only the data repo uses that key and no cross-repo token is
+~/.ssh/branchout_data_deploy`), so only the data repo uses that key and no cross-repo token is
   needed. The deploy writes `GAME_DATA_HOST` (`$HOME/branchout-data`) into `.env.prod` so compose can
   resolve the host path. The sync is **best-effort**: if GitHub is unreachable or the tag is missing,
   the box keeps its currently checked-out data and the deploy continues (the app deploy is never
@@ -213,16 +213,16 @@ brings up Caddy and the full site.
 
 Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branchout repo:
 
-| Secret                | Value                                                                                                                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet)                                                                                                  |
-| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                                                                                                                          |
-| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                                                                                                                                |
-| `DEPLOY_USER`         | `deploy`                                                                                                                                                                                                      |
-| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                                                                                                                      |
-| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                                                                                                                          |
-| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                                                                                                                               |
-| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)                                                                                                          |
+| Secret                | Value                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet) |
+| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                         |
+| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                               |
+| `DEPLOY_USER`         | `deploy`                                                                                                     |
+| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                     |
+| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                         |
+| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                              |
+| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)         |
 
 Generate strong values with:
 
