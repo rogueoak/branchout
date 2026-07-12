@@ -6,7 +6,7 @@ describe('NotFound (404 page)', () => {
   it('shows the friendly lost message and a button link home', () => {
     render(<NotFound />);
     expect(screen.getByRole('heading', { name: /whoops, looks like you are lost/i })).toBeDefined();
-    const home = screen.getByRole('link', { name: /go home/i });
+    const home = screen.getByRole('link', { name: /let.?s go home/i });
     expect(home.getAttribute('href')).toBe('/');
   });
 });

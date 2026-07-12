@@ -9,7 +9,9 @@ export default function NotFound() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-6 text-center text-text">
       <Wordmark />
-      <p className="text-body-sm font-semibold uppercase tracking-wide text-text-muted">404</p>
+      <p className="text-body-sm font-semibold uppercase tracking-wide text-text-muted">
+        Off the map
+      </p>
       <h1 className="text-h2 text-text">Whoops, looks like you are lost!</h1>
       <p className="text-body text-text-muted max-w-md">
         The page you are looking for does not exist or has moved.

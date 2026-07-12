@@ -69,7 +69,9 @@ test.describe('game feature pages (spec 0030) at 360px', () => {
     await expect(
       page.getByRole('heading', { name: /whoops, looks like you are lost/i }),
     ).toBeVisible();
-    await expect(page.getByRole('link', { name: /go home/i })).toHaveAttribute('href', '/');
+    await expect(page.getByRole('link', { name: /let.?s go home/i })).toHaveAttribute('href', '/');
+    // The longer heading + full-width button must still fit a 360px phone.
+    await expectFits(page);
   });
 
   test('a signed-in visitor gets the direct play CTA (skips signup)', async ({ page }) => {
