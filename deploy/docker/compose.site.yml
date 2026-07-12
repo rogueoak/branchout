@@ -146,9 +146,9 @@ services:
     # game-engine is the real reader (it loads both game banks at boot). The bind mount is compatible
     # with docker-rollout: a read-only host path, identical on both indexed instances during a swap.
     # The `/home/deploy/branchout-data` default is only a dev/misconfig fallback: the real deploy
-    # always sets GAME_DATA_HOST in .env.prod. It must track the rsync target and the written
-    # GAME_DATA_HOST (both $HOME/branchout-data), which agree only while the deploy user is `deploy`;
-    # if that user ever changes, update all three together (or this default silently mounts nothing).
+    # always sets GAME_DATA_HOST in .env.prod. It must track the box's data clone path (both
+    # $HOME/branchout-data), which agree only while the deploy user is `deploy`; if that user ever
+    # changes, update both together (or this default silently mounts nothing).
     volumes:
       - ${GAME_DATA_HOST:-/home/deploy/branchout-data}/data:/srv/game-data/data:ro
     environment:

@@ -98,14 +98,14 @@ total/per-category count or difficulty-spread gate, because the bank grows over 
 is deliberately uneven - a fixed count/spread check would only fight the content.
 
 The content is versioned by a git **tag** in the private repo, pinned in `deploy/data.version` (a
-bare semver). Because org policy blocks SSH deploy keys on the droplet, the box holds no GitHub
-credential and never fetches the data repo. Instead the `release.yml` `deploy` job checks out
-`branchout-data` at the pinned tag on the runner (a read-only `DATA_REPO_TOKEN` PAT) and **rsyncs**
-its `data/` to the box over the existing deploy SSH key (`--delete` for an exact mirror), then writes
-`GAME_DATA_HOST` into `.env.prod`. `compose.site.yml` bind-mounts `${GAME_DATA_HOST}/data` read-only
-into `game-engine` (the real reader) and `admin` (for future moderation) at `/srv/game-data/data`,
-with `GAME_DATA_DIR=/srv/game-data`. The read-only mount is identical on both docker-rollout
-instances, so it is compatible with the zero-downtime swap.
+bare semver). On every deploy the box fetches and checks out that tag from its own clone of
+`branchout-data`, authenticating with a **read-only deploy key** scoped to that repo (a `github-data`
+SSH alias), then writes `GAME_DATA_HOST` into `.env.prod`. The sync is best-effort: an unreachable
+GitHub or a missing tag leaves the last-good checkout in place rather than blocking the app deploy.
+`compose.site.yml` bind-mounts `${GAME_DATA_HOST}/data` read-only into `game-engine` (the real
+reader) and `admin` (for future moderation) at `/srv/game-data/data`, with
+`GAME_DATA_DIR=/srv/game-data`. The read-only mount is identical on both docker-rollout instances, so
+it is compatible with the zero-downtime swap.
 
 ## Auth rate limiting (spec 0036)
 

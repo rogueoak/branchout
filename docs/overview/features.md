@@ -25,9 +25,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       spec `0011`; first cutover (one-time coming-soon decommission + secrets) is operator-run.
 - [x] External game data - the real game banks live in a separate **private** repo, not the public
       one. The public repo ships only a tiny valid sample; production reads the full bank from the
-      private repo, pinned to the tag in `deploy/data.version`, checked out in CI and rsynced to the
-      box, then bind-mounted read-only into `game-engine`/`admin` (the engine loader reads it via
-      `GAME_DATA_DIR`). The box holds no GitHub credential (spec `0041`).
+      private repo, pinned to the tag in `deploy/data.version`, pulled on the deploy box via a
+      read-only deploy key, then bind-mounted read-only into `game-engine`/`admin` (the engine loader
+      reads it via `GAME_DATA_DIR`) (spec `0041`).
 
 ## Accounts and profiles
 
