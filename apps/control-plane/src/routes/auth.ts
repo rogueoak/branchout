@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { normalizeEmail } from '../accounts/email';
 import { AccountService, ConflictError, ValidationError } from '../accounts/service';
-import type { SessionCookieConfig } from '../config';
+import type { RateLimitConfig, SessionCookieConfig } from '../config';
+import type { RateLimiter } from '../ratelimit/limiter';
 import type { Session } from '../sessions/session';
 import type { SessionStore } from '../sessions/store';
 import { validateDisplayName } from '../validation/display-name';
@@ -9,6 +11,18 @@ export interface AuthDeps {
   accounts: AccountService;
   sessions: SessionStore;
   cookie: SessionCookieConfig;
+  /** Rate limiter for the sign-in / sign-up lockouts (spec 0036). */
+  limiter: RateLimiter;
+  /** Rate-limit thresholds. */
+  rateLimit: RateLimitConfig;
+}
+
+/** A uniform 429 that reveals nothing about the account (no enumeration via wording or status). */
+function tooManyAttempts(reply: FastifyReply, retryAfterSeconds: number): FastifyReply {
+  return reply
+    .code(429)
+    .header('Retry-After', String(retryAfterSeconds))
+    .send({ error: 'Too many attempts. Please try again later.' });
 }
 
 /** Read a string field from an unknown JSON body without trusting its type. */
@@ -37,7 +51,7 @@ function cookieOptions(cookie: SessionCookieConfig) {
 
 /** Register the auth + identity endpoints on the app. */
 export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
-  const { accounts, sessions, cookie } = deps;
+  const { accounts, sessions, cookie, limiter, rateLimit } = deps;
 
   const setSessionCookie = (reply: FastifyReply, session: Session): void => {
     reply.setCookie(cookie.name, session.id, cookieOptions(cookie));
@@ -60,8 +74,15 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     return sessions.read(id);
   };
 
-  // Sign up: create the account, then open an account session.
+  // Sign up: create the account, then open an account session. Capped per client IP so one source
+  // cannot mass-create accounts; every attempt (valid or not) counts against the cap.
   app.post('/auth/signup', async (request, reply) => {
+    const limitKey = `signup:${request.ip}`;
+    const verdict = await limiter.check(limitKey, rateLimit.signupMaxPerIp);
+    if (verdict.blocked) {
+      return tooManyAttempts(reply, verdict.retryAfterSeconds);
+    }
+    await limiter.record(limitKey, rateLimit.signupWindowSeconds);
     try {
       const account = await accounts.signup({
         email: asString(request.body, 'email'),
@@ -89,15 +110,22 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   });
 
   // Log in: verify credentials, then open an account session. A wrong email or password both
-  // return the same 401 so the response never reveals which field was wrong.
+  // return the same 401 so the response never reveals which field was wrong. Failed attempts lock
+  // per (account, IP) - the account key is the spoof-resistant anchor (an IP alone can be rotated) -
+  // and a successful sign-in clears the counter so earlier typos never punish a legitimate user.
   app.post('/auth/login', async (request, reply) => {
-    const account = await accounts.login({
-      email: asString(request.body, 'email'),
-      password: asString(request.body, 'password'),
-    });
+    const email = asString(request.body, 'email');
+    const limitKey = `login:${normalizeEmail(email)}:${request.ip}`;
+    const verdict = await limiter.check(limitKey, rateLimit.loginMaxAttempts);
+    if (verdict.blocked) {
+      return tooManyAttempts(reply, verdict.retryAfterSeconds);
+    }
+    const account = await accounts.login({ email, password: asString(request.body, 'password') });
     if (!account) {
+      await limiter.record(limitKey, rateLimit.loginWindowSeconds);
       return reply.code(401).send({ error: 'Invalid email or password.' });
     }
+    await limiter.reset(limitKey);
     const session = await sessions.create({
       kind: 'account',
       accountId: account.id,

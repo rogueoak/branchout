@@ -3,7 +3,8 @@ import cors from '@fastify/cors';
 import { V1_PREFIX } from '@branchout/protocol';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { AccountService } from './accounts/service';
-import type { SessionCookieConfig } from './config';
+import type { RateLimitConfig, SessionCookieConfig } from './config';
+import type { RateLimiter } from './ratelimit/limiter';
 import { registerAuthRoutes } from './routes/auth';
 import { registerEngineRoutes } from './routes/engine';
 import { registerProfileRoutes } from './routes/profiles';
@@ -29,6 +30,10 @@ export interface AppDeps {
   webOrigins: string[];
   /** Shared secret the engine presents on the report intake; left unset only in trusted dev. */
   internalToken?: string;
+  /** Rate limiter backing the auth-endpoint lockouts (spec 0036). */
+  limiter: RateLimiter;
+  /** Auth rate-limit thresholds. */
+  rateLimit: RateLimitConfig;
 }
 
 /**
@@ -39,7 +44,11 @@ export interface AppDeps {
  * anyway). CORS and cookie plugins register at the root, so the `/v1` child context inherits them.
  */
 export function createApp(deps: AppDeps): FastifyInstance {
-  const app = Fastify();
+  // trustProxy: the control-plane is only reachable through the Caddy edge (no published host port),
+  // so `request.ip` must come from the `X-Forwarded-For` Caddy sets - otherwise every client would
+  // share the proxy's IP and one rate-limit bucket. The per-account login key is the spoof-resistant
+  // anchor (account lockout holds even if XFF is rotated); the per-IP sign-up cap is best-effort.
+  const app = Fastify({ trustProxy: true });
 
   app.register(cors, {
     origin: deps.webOrigins,
@@ -72,6 +81,8 @@ export function createApp(deps: AppDeps): FastifyInstance {
         accounts: deps.accounts,
         sessions: deps.sessions,
         cookie: deps.cookie,
+        limiter: deps.limiter,
+        rateLimit: deps.rateLimit,
       });
 
       registerRoomRoutes(v1, {

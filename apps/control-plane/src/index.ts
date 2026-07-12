@@ -12,6 +12,7 @@ import { runMigrations } from './db/migrations';
 import { allMigrations } from './migrations';
 import { PostgresPlaysRepository } from './profiles/plays.postgres';
 import { ProfileService } from './profiles/service';
+import { RedisRateLimiter, type RateLimitRedis } from './ratelimit/limiter';
 import { HttpEngineClient } from './rooms/engine-client';
 import { RedisMembershipStore, type MembershipRedis } from './rooms/membership.redis';
 import { PostgresRoomRepository } from './rooms/repository';
@@ -77,6 +78,15 @@ async function main(): Promise<void> {
     expire: (key, seconds) => redis.expire(key, seconds),
   };
   const membership = new RedisMembershipStore(membershipRedis, config.membershipTtlSeconds);
+  // Auth rate-limiting / lockout counters in Redis (spec 0036).
+  const rateLimitRedis: RateLimitRedis = {
+    get: (key) => redis.get(key),
+    incr: (key) => redis.incr(key),
+    expire: (key, seconds) => redis.expire(key, seconds),
+    ttl: (key) => redis.ttl(key),
+    del: (key) => redis.del(key),
+  };
+  const limiter = new RedisRateLimiter(rateLimitRedis);
   const ledger = new CreditLedger(new PostgresLedgerRepository(pool), new FreeTierProvider());
   const engine = new HttpEngineClient(config.engineUrl, config.internalToken);
   const plays = new PostgresPlaysRepository(pool);
@@ -101,6 +111,8 @@ async function main(): Promise<void> {
     cookie: config.cookie,
     webOrigins: config.webOrigins,
     ...(config.internalToken ? { internalToken: config.internalToken } : {}),
+    limiter,
+    rateLimit: config.rateLimit,
   });
 
   const shutdown = (signal: string) => {
