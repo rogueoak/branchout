@@ -107,6 +107,29 @@ test.describe('insider surface (spec 0035)', () => {
     expect(res?.status()).toBe(404);
   });
 
+  test('the account page links insiders to the surface and hides it from everyone else (spec 0039)', async ({
+    page,
+  }) => {
+    const account = await signUp(page);
+
+    // A normal signed-up account: the account page shows no insider entry point at all - the surface
+    // is never advertised to accounts that cannot enter it.
+    await page.goto(`${BASE_URL}/account`);
+    await expect(page.getByRole('heading', { name: account.gamerTag })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Insider game previews' })).toHaveCount(0);
+
+    // Grant the role out-of-band, reload: the button appears and targets the insider host. The href
+    // is built from the baked apex origin, so it points at `insider.` + the apex (asserted by the
+    // hostname prefix, robust to whether the build baked branchout.games or localhost).
+    grantInsider(account.gamerTag);
+    await page.goto(`${BASE_URL}/account`);
+    const link = page.getByRole('link', { name: 'Insider game previews' });
+    await expect(link).toBeVisible();
+    const href = await link.getAttribute('href');
+    expect(href, 'insider button should have a target').toBeTruthy();
+    expect(new URL(href!).hostname.startsWith('insider.')).toBe(true);
+  });
+
   test('the insider surface fits a 360px phone (mobile-first)', async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
     try {
