@@ -152,6 +152,9 @@ jobs:
           # deploy/data.version. The box authenticates to the private repo with a READ-ONLY deploy
           # key via the `github-data` SSH alias (~/.ssh/config -> IdentityFile branchout_data_deploy;
           # one-time host setup, see deploy/README.md). The compose mount reads $DATA_REPO/data.
+          # The checkout is FORCED and the tree is cleaned first: like the branchout self-sync above,
+          # a stray untracked or locally-modified file on the box must never wedge a future sync (a
+          # plain `checkout` aborts when an untracked file collides with the target tree).
           # Best-effort: if GitHub is unreachable or the tag is missing, keep the currently
           # checked-out data and continue - an app deploy is never blocked on the data pipeline, and
           # the read-only mount always has the last-good content.
@@ -163,7 +166,8 @@ jobs:
           fi
           if [ -d "$DATA_REPO/.git" ]; then
             if git -C "$DATA_REPO" fetch --tags --prune origin >/dev/null 2>&1 &&
-               git -C "$DATA_REPO" checkout --detach "tags/$DATA_VERSION" >/dev/null 2>&1; then
+               git -C "$DATA_REPO" clean -fd >/dev/null 2>&1 &&
+               git -C "$DATA_REPO" checkout -f --detach "tags/$DATA_VERSION" >/dev/null 2>&1; then
               echo "game-data synced to $DATA_VERSION"
             else
               echo "WARNING: game-data sync to '$DATA_VERSION' failed; keeping existing $(git -C "$DATA_REPO" describe --tags 2>/dev/null || echo unknown)"
