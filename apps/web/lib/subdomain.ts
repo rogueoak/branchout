@@ -65,6 +65,25 @@ export function apexHost(hostHeader: string): string {
   return hostHeader.replace(/^insider\./i, '').toLowerCase();
 }
 
+/**
+ * The insider origin for a given apex origin - the inverse of `apexHost`, for building an outbound
+ * link from the apex (e.g. the account page) to the insider surface. `https://branchout.games` ->
+ * `https://insider.branchout.games`; `http://localhost:3100` -> `http://insider.localhost:3100`.
+ * Reuses `INSIDER_PREFIX` so the dev/e2e and prod hosts both fall out of the origin. A trailing
+ * slash is ignored; a non-URL input is returned unchanged (defensive - the caller falls back to a
+ * relative link rather than crashing the page).
+ */
+export function insiderOrigin(apexOrigin: string): string {
+  const trimmed = apexOrigin.replace(/\/$/, '');
+  try {
+    const url = new URL(trimmed);
+    url.hostname = `${INSIDER_PREFIX}${url.hostname}`;
+    return url.origin;
+  } catch {
+    return trimmed;
+  }
+}
+
 /** Whether a `next` return-target URL points at one of our own hosts (so it is safe to redirect to). */
 function isTrustedNextUrl(nextUrl: string): boolean {
   try {

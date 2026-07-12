@@ -5,6 +5,7 @@ import {
   apexHost,
   apexLoginUrl,
   hostname,
+  insiderOrigin,
   insiderRewritePath,
   isInsiderHost,
   isInsiderPath,
@@ -28,6 +29,21 @@ describe('subdomain routing helpers (spec 0035)', () => {
   it('strips only the leading label to reach the apex host, keeping the port', () => {
     expect(apexHost('insider.branchout.games')).toBe('branchout.games');
     expect(apexHost('insider.localhost:3100')).toBe('localhost:3100');
+  });
+
+  it('builds the insider origin from an apex origin (the outbound link, spec 0039)', () => {
+    expect(insiderOrigin('https://branchout.games')).toBe('https://insider.branchout.games');
+    expect(insiderOrigin('http://localhost:3100')).toBe('http://insider.localhost:3100');
+    // A trailing slash is ignored.
+    expect(insiderOrigin('https://branchout.games/')).toBe('https://insider.branchout.games');
+    // Only the origin survives - a stray path/query on the input is dropped (URL.origin).
+    expect(insiderOrigin('https://branchout.games/account?x=1')).toBe(
+      'https://insider.branchout.games',
+    );
+    // A non-URL input is returned unchanged (caller falls back to a relative link) - both the empty
+    // string and a non-empty malformed value hit the catch.
+    expect(insiderOrigin('')).toBe('');
+    expect(insiderOrigin('not a url')).toBe('not a url');
   });
 
   it('builds an absolute apex login URL with the given scheme', () => {

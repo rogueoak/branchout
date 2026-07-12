@@ -15,6 +15,8 @@ export interface MeAccount {
   nickname: string;
   avatar: string;
   visibility: Visibility;
+  /** Beta-tester entitlement (spec 0035): gates the "Insider game previews" entry point (spec 0039). */
+  insider?: boolean;
 }
 
 export interface Me {

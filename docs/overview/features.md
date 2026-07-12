@@ -211,7 +211,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       tree by path. One login spans the apex and the subdomain (session cookie scoped to
       `.branchout.games`). It reuses the main look and feel with an "Insider" nav label and an
       empty-state index of test games (games added later). The role is granted out-of-band (a DB
-      update) until the admin console (spec `0037`) ships a toggle (spec `0035`).
+      update) until the admin console (spec `0037`) ships a toggle (spec `0035`). The account page
+      shows an "Insider game previews" button that links to the surface, rendered only for insider
+      accounts (spec `0039`).
 - [ ] Profile pages and friend search/invite.
 
 ## Future

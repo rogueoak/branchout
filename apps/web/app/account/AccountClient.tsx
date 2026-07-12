@@ -21,6 +21,7 @@ import {
   type MeAccount,
   type Visibility,
 } from '../../lib/account-api';
+import { insiderOrigin } from '../../lib/subdomain';
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string; hint: string }[] = [
   { value: 'public', label: 'Public', hint: 'Anyone can see your profile.' },
@@ -245,6 +246,30 @@ export function AccountClient() {
             {VISIBILITY_OPTIONS.find((o) => o.value === account.visibility)?.hint}
           </p>
         </section>
+
+        {account.insider ? (
+          // Insider-only entry point to the insider surface (spec 0039). Rendered only for insiders
+          // so the surface is never advertised to accounts that cannot enter it. The href is built
+          // from the apex origin (NEXT_PUBLIC_SITE_URL, else the current origin in the browser) so
+          // dev/e2e (`insider.localhost`) and prod (`insider.branchout.games`) both fall out of it.
+          <section aria-labelledby="insider-heading" className="flex flex-col gap-3">
+            <h2 id="insider-heading" className="text-h4 text-text">
+              Insider
+            </h2>
+            <p className="text-body-sm text-text-muted">
+              You have early access to games we are still building.
+            </p>
+            <a
+              href={insiderOrigin(
+                (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '') ||
+                  (typeof window !== 'undefined' ? window.location.origin : ''),
+              )}
+              className={buttonVariants({ variant: 'primary' })}
+            >
+              Insider game previews
+            </a>
+          </section>
+        ) : null}
 
         <section aria-label="Session" className="flex flex-col gap-3 border-t border-border pt-6">
           <Button type="button" variant="outline" onClick={onLogout}>
