@@ -27,7 +27,7 @@ What the product does for users, grouped by area. Each capability maps to one or
       one. The public repo ships only a tiny valid sample; production reads the full bank from the
       private repo, pinned to the tag in `deploy/data.version`, checked out in CI and rsynced to the
       box, then bind-mounted read-only into `game-engine`/`admin` (the engine loader reads it via
-      `GAME_DATA_DIR`). The box holds no GitHub credential (spec `0039`).
+      `GAME_DATA_DIR`). The box holds no GitHub credential (spec `0040`).
 
 ## Accounts and profiles
 
@@ -98,9 +98,9 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Trivia question bank - questions across 8 categories (Nature, Food, Animals, Science, People,
       Places, Things, History), each rated 1-10 for difficulty (spec `0016`), with a loader and a
       structural validator (schema, id format + uniqueness, bounded difficulty, no duplicate prompt
-      in a category - no total/per-category count or spread gate, spec `0039`). The public repo ships
+      in a category - no total/per-category count or spread gate, spec `0040`). The public repo ships
       a small sample; the full bank is served from a private data repo mounted at deploy time (specs
-      `0009`, `0016`, `0039`).
+      `0009`, `0016`, `0040`).
 - [x] First reference game - Trivia: host-configured category (8 + Random), rounds (1-100,
       default 10) and a difficulty min-max range (1-10, default 4-6, spec `0016`) that draws only
       questions rated in the range (widening to the nearest rating when exhausted); free-text answer
@@ -117,10 +117,10 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Liar Liar clue bank - research-sourced absurd-but-true clues across the eight categories
       (people, places, events, sports, food, nature, animals, things), each carrying a `source` URL,
       gated by `validateClueBank` (schema, `<category>-NNN` id convention + uniqueness, prompt
-      uniqueness in a category - structural only, no coverage gate, spec `0039`). The public repo
+      uniqueness in a category - structural only, no coverage gate, spec `0040`). The public repo
       ships a small sample; the full bank is served from the private data repo mounted at deploy time.
       Liar Liar is registered in the engine boot alongside Trivia, so a host can start and play it
-      (specs `0022`, `0039`).
+      (specs `0022`, `0040`).
 
 ## Web
 

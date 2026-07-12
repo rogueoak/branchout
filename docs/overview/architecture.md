@@ -83,7 +83,7 @@ version lives in code (not in the `CONTROL_PLANE_URL` env value, which is the pl
   (`schema_migrations` ledger + ordered SQL, applied on boot and via a `migrate` script). Add a
   migration by appending the next id; never edit a shipped one (spec `0004`).
 
-## External game data (spec 0039)
+## External game data (spec 0040)
 
 The real game banks (Trivia questions, Liar Liar clues) live in a separate **private** repo
 (`rogueoak/branchout-data`), not in this public monorepo. The public repo ships only a tiny valid
