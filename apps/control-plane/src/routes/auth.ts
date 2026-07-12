@@ -75,10 +75,10 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   };
 
   // Sign up: create the account, then open an account session. Capped per client IP so one source
-  // cannot mass-create accounts; every attempt (valid or not) counts against the cap. This cap is
-  // best-effort: there is no account to anchor on yet, and request.ip (X-Forwarded-For) is
-  // client-forgeable behind Caddy, so a determined attacker who rotates XFF can evade it. It still
-  // deters casual abuse; hardening the client IP at the edge (strip/replace XFF) is a follow-up.
+  // cannot mass-create accounts; every attempt (valid or not) counts against the cap. The IP is
+  // trustworthy on the edge-fronted path: Caddy replaces X-Forwarded-For with the true peer (spec
+  // 0038), so a source cannot rotate XFF past the cap. (A direct dev call to the published
+  // control-plane port has no Caddy, so request.ip is unsanitized there - dev is not a trust boundary.)
   app.post('/auth/signup', async (request, reply) => {
     const limitKey = `signup:${request.ip}`;
     const verdict = await limiter.check(limitKey, rateLimit.signupMaxPerIp);
@@ -114,14 +114,15 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
   // Log in: verify credentials, then open an account session. A wrong email or password both
   // return the same 401 so the response never reveals which field was wrong. Failed attempts lock
-  // per ACCOUNT (the submitted email), NOT per (account, IP): request.ip comes from a
-  // client-forgeable X-Forwarded-For (Caddy appends rather than strips it), so folding the IP into
-  // the key would let an attacker rotate XFF to a fresh bucket per request and brute-force past the
-  // lockout. The account is the one dimension the attacker cannot rotate, so it is the anchor. A
-  // successful sign-in clears the counter so earlier typos never punish a legitimate user.
-  // Tradeoff: account-only lockout lets someone briefly (one window) lock a targeted account by
-  // failing logins - the standard account-lockout tradeoff, bounded by the short window; softening
-  // it (CAPTCHA / progressive delay) is a future enhancement.
+  // per ACCOUNT (the submitted email), NOT per (account, IP). The account is the anchor on its own
+  // merit: an attacker brute-forcing one account can come from many source IPs (a botnet has real,
+  // distinct ones), so a per-IP or per-(account,IP) key just splits the attack into many buckets and
+  // never trips - the target account is the one dimension that stays constant. (This holds regardless
+  // of whether the IP itself is trustworthy; spec 0038 sanitizes the IP at the edge, but that helps
+  // the per-IP signup cap, not this.) A successful sign-in clears the counter so earlier typos never
+  // punish a legitimate user. Tradeoff: account-only lockout lets someone briefly (one window) lock a
+  // targeted account by failing logins - the standard account-lockout tradeoff, bounded by the short
+  // window; softening it (CAPTCHA / progressive delay) is a future enhancement.
   app.post('/auth/login', async (request, reply) => {
     const email = asString(request.body, 'email');
     const limitKey = `login:${normalizeEmail(email)}`;

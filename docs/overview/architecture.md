@@ -88,16 +88,16 @@ version lives in code (not in the `CONTROL_PLANE_URL` env value, which is the pl
 The auth endpoints are rate-limited/lockable against brute force and mass account creation, backed by
 the Redis we already run (a small fixed-window counter, `RateLimiter`, with an in-memory variant for
 tests - the same store-plus-fake shape as sessions). **Sign-in** locks on the **account** alone
-(`login:<email>`) and resets on a successful login. The account is the anchor precisely because it is
-the one dimension the caller cannot forge: `request.ip` comes from `X-Forwarded-For`, which Caddy
-*appends* to rather than strips, so a client can supply it - folding the IP into the lockout key would
-let an attacker rotate XFF to a fresh bucket per request and brute-force past the lock. **Sign-up**
-caps per client IP, which is therefore **best-effort** (a rotated XFF evades it; there is no account to
-anchor on yet). Over-limit returns `429` + `Retry-After` with a uniform message, so the limiter is
-never an account-enumeration oracle. `Fastify({ trustProxy: true })` gives `request.ip` its best
-available value (else every client shares the proxy's IP); hardening it into a trustworthy identity
-(strip/replace XFF at the Caddy edge, or scope proxy trust to the hop) is a follow-up that also
-benefits the admin surface (spec `0037`). The fixed window has a known ~`2x limit` boundary burst.
+(`login:<email>`) and resets on a successful login. The account is the anchor because it is the one
+dimension the caller cannot forge - defence-in-depth that holds even if the IP trust chain ever
+regresses. **Sign-up** caps per client IP, and that IP is now **trustworthy**: the Caddy edge
+**replaces** `X-Forwarded-For` with the true connection peer (`{remote_host}`) before proxying to
+control-plane (spec `0038`), so a client can no longer forge it to rotate past the cap. `request.ip`
+is reliable under one assumption - the droplet terminates TLS directly (no LB/proxy in front); revisit
+the trusted hop if that changes. Over-limit returns `429` + `Retry-After` with a uniform message, so
+the limiter is never an account-enumeration oracle. `Fastify({ trustProxy: true })` reads that
+edge-sanitized header (else every client would share the proxy's IP). The fixed window has a known
+~`2x limit` boundary burst.
 Thresholds are env-tunable (`LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_SECONDS`, `SIGNUP_MAX_PER_IP`,
 `SIGNUP_WINDOW_SECONDS`); the limiter is reused by the admin login (spec `0037`).
 

@@ -44,13 +44,14 @@ export interface AppDeps {
  * anyway). CORS and cookie plugins register at the root, so the `/v1` child context inherits them.
  */
 export function createApp(deps: AppDeps): FastifyInstance {
-  // trustProxy: without it, behind Caddy every client shares the proxy's IP and one rate-limit
-  // bucket, so `request.ip` reads the `X-Forwarded-For` Caddy sets. But that IP is best-effort, NOT a
-  // trustworthy identity: Caddy *appends* to a client-supplied XFF rather than stripping it, and the
-  // dev infra compose even publishes port 4000 to the host - so a caller can forge XFF. Therefore the
-  // login lockout anchors on the ACCOUNT (which cannot be forged), and the per-IP sign-up cap is
-  // explicitly best-effort. Hardening the client IP at the edge (strip/replace XFF, or scope trust to
-  // the proxy hop) is a follow-up that also benefits the admin surface (spec 0037).
+  // trustProxy: `request.ip` reads the `X-Forwarded-For` Caddy sets (without it, behind Caddy every
+  // client would share the proxy's IP and one rate-limit bucket). This IP is trustworthy because the
+  // Caddy edge REPLACES X-Forwarded-For with the true connection peer ({remote_host}) before proxying
+  // (spec 0038), so a client cannot forge it - on the EDGE-FRONTED path. Two caveats: (1) it assumes
+  // the droplet terminates TLS directly (no LB/proxy in front) - revisit the trusted hop if that
+  // changes; (2) in dev the infra compose publishes this port with no Caddy, so request.ip is
+  // unsanitized there - dev is not a trust boundary. The login lockout still anchors on the ACCOUNT
+  // (defence-in-depth, correct even if the IP trust chain regresses); the per-IP sign-up cap now bites.
   const app = Fastify({ trustProxy: true });
 
   app.register(cors, {

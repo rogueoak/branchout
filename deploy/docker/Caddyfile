@@ -34,12 +34,11 @@
 # genuine app 5xx never benches the sole steady-state upstream) closes the <=1s window
 # where the cached set still lists the departed IP. See overview/architecture.md.
 
-# The API + WebSocket routing, shared by every site block that fronts the app.
-(api_ws) {
-    # WebSocket upgrade - game-engine handles /ws traffic. The browser connects to the versioned
-    # /ws/v1 (spec 0033), but the engine's ws server accepts any path (room/game/player come from the
-    # `join` frame), so no prefix strip is needed; match both bare /ws and /ws/* (which covers /ws/v1).
-    # Caddy preserves the Upgrade header automatically on a WebSocket handshake, dynamic upstream included.
+# game-engine WebSocket upstream (spec 0033). The browser connects to the versioned /ws/v1, but the
+# engine's ws server accepts any path (room/game/player come from the `join` frame), so no prefix strip
+# is needed; match both bare /ws and /ws/*. Caddy preserves the Upgrade header automatically on a
+# WebSocket handshake, dynamic upstream included.
+(ws) {
     @ws path /ws /ws/*
     handle @ws {
         reverse_proxy {
@@ -56,17 +55,21 @@
             fail_duration 2s
         }
     }
+}
 
-    # The engine report intake (control-plane /v1/engine/*) is internal-only: the
-    # game-engine calls it over the container network, never the browser. Block it
-    # from the internet so the (currently unauthenticated) money endpoint is not
-    # reachable from outside. Must come before the general /api proxy below.
+# control-plane REST upstream. Owns the trusted-client-IP header (spec 0038) so EVERY block that fronts
+# control-plane's /api - apex, insiders, and admin (spec 0037) - inherits an unforgeable request.ip from
+# ONE place, never a per-block copy that could drift out of sync.
+(api) {
+    # The engine report intake (control-plane /v1/engine/*) is internal-only: the game-engine calls it
+    # over the container network, never the browser. Block it from the internet so the (currently
+    # unauthenticated) money endpoint is not reachable from outside. Must come before the general /api.
     handle /api/v1/engine/* {
         respond 404
     }
 
-    # REST API - control-plane serves /v1/auth, /v1/rooms, /v1/engine (no /api prefix),
-    # so handle_path STRIPS /api before proxying: /api/v1/auth/login -> /v1/auth/login.
+    # REST API - control-plane serves /v1/auth, /v1/rooms, /v1/engine (no /api prefix), so handle_path
+    # STRIPS /api before proxying: /api/v1/auth/login -> /v1/auth/login.
     handle_path /api/* {
         reverse_proxy {
             dynamic a {
@@ -80,8 +83,23 @@
             lb_try_duration 5s
             lb_retries 3
             fail_duration 2s
+            # Trustworthy client IP (spec 0038): REPLACE X-Forwarded-For with the true connection peer so
+            # control-plane's request.ip cannot be forged. Caddy is the public TLS terminator, so
+            # {remote_host} is the real client; without this Caddy appends to a client-supplied XFF and
+            # the leftmost value (what trustProxy reads) is attacker-controlled - letting a source rotate
+            # past the /auth/signup per-IP cap. Living in this shared snippet means every /api front (apex,
+            # insiders, admin) gets it. Applies only to the edge-fronted path: a direct dev call to the
+            # published control-plane port has no Caddy and no sanitized XFF.
+            header_up X-Forwarded-For {remote_host}
         }
     }
+}
+
+# API + WebSocket together, for the surfaces that need both (apex, insiders). Admin (spec 0037) imports
+# `api` alone - it has no WebSocket.
+(api_ws) {
+    import ws
+    import api
 }
 
 # Everything else goes to the Next.js web app (the catch-all; must import after api_ws).

@@ -28,7 +28,8 @@ leaves a live counter with no expiry.
 - Anchor the login lockout on `login:<email>` alone - the caller cannot change which account they are
   attacking, so the counter is not evadable. Documented the accepted tradeoff (account-lockout can be
   used to briefly lock a target; bounded by the short window; CAPTCHA / progressive delay is a future
-  softener). The per-IP signup cap stays but is documented as best-effort.
+  softener). The per-IP signup cap stayed best-effort at the time - **resolved in spec `0038`**, where
+  the Caddy edge replaces `X-Forwarded-For` with the true peer so the cap's IP can no longer be forged.
 - `check` self-heals: a counter at/over the limit with `ttl < 0` (no expiry) is an anomaly, so it is
   deleted and the actor starts a fresh window rather than being locked forever. Guarded the count parse
   against `NaN`. Added a fake-Redis contract test that exercises exactly this path.
