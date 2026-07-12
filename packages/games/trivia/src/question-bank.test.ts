@@ -54,6 +54,13 @@ describe('question-bank - sample data', () => {
     expect(sample.difficulty).toBeGreaterThanOrEqual(1);
     expect(sample.difficulty).toBeLessThanOrEqual(10);
 
+    // The sample must carry all 8 categories (loadQuestionBank flattens 8 files); a truncated or
+    // renamed sample file would otherwise shrink the bank silently while still passing `length > 0`.
+    const present = new Set(questions.map((q) => q.category));
+    for (const category of CATEGORIES) {
+      expect(present.has(category), `${category} present`).toBe(true);
+    }
+
     expect(() => validateQuestionBank(questions)).not.toThrow();
   });
 });
@@ -97,9 +104,11 @@ describe('validateQuestionBank - structural violations', () => {
     expect(() => validateQuestionBank(bank)).toThrow('difficulty');
   });
 
-  it('throws on duplicate prompt within a category', () => {
+  it('throws on duplicate prompt within a category (case- and space-insensitive)', () => {
     const bank = makeValidBank();
-    bank[1] = { ...bank[1]!, id: 'nature-002', prompt: bank[0]!.prompt };
+    // A case/space variant of the first prompt exercises the validator's trim().toLowerCase()
+    // normalization, so a dropped .toLowerCase() would fail this test.
+    bank[1] = { ...bank[1]!, id: 'nature-002', prompt: `  ${bank[0]!.prompt.toUpperCase()}  ` };
     expect(() => validateQuestionBank(bank)).toThrow('duplicate prompt');
   });
 });

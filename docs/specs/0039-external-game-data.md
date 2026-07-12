@@ -36,6 +36,10 @@ In:
 - `packages/games/trivia` and `packages/games/liar-liar` - remove completeness gates, shrink data to
   a sample, update tests.
 - `deploy/` - `data.version`, `compose.site.yml` mount + env, `README.md` docs, `release.yml` sync.
+  The `admin` service gets the same read-only mount + `GAME_DATA_DIR` as `game-engine`, but its mount
+  is **intentionally inert today**: admin does not read the banks yet. It is provisioned now so the
+  future content-moderation surface needs no deploy change; the trade-off is that a data-checkout
+  failure also blocks admin's rollout, acceptable because the deploy fails closed regardless.
 
 Out:
 - The private `branchout-data` repo itself, its content, and its release tagging - operator-run,

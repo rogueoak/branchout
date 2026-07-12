@@ -146,8 +146,14 @@ How it wires together:
 
 - **Pinned tag.** `deploy/data.version` holds a bare semver (e.g. `0.1.0`) that is a **git tag** in
   the private repo. To ship new content: tag the private repo (`0.1.1`), then bump `data.version`
-  here in a normal PR. The deploy checks out exactly that tag - the content version is pinned in
-  git, auditable, and rolls back with the code.
+  here in a normal PR. The deploy checks out exactly that ref - the content version is pinned in
+  git, auditable, and rolls back with the code. The deploy step validates the file (first line only,
+  semver/hex charset) before it becomes a checkout ref.
+  **Tag mutability.** A git tag can be force-moved, so "pinned + rolls back with the code" holds only
+  if the data repo's release tags are **protected against force-move** (a tag-protection rule on
+  `rogueoak/branchout-data`, restricting who can move a `*.*.*` tag) - this repo pins its GitHub
+  Actions to commit SHAs for exactly this reason. If you cannot protect tags, put a **full 40-char
+  commit SHA** in `data.version` instead (the validator accepts it) for a truly immutable pin.
 - **Data ships from GitHub Actions, not the box.** Org policy blocks SSH deploy keys on the droplet,
   so the box holds **no GitHub credential** and never talks to GitHub for the data repo. Instead the
   `deploy` job in `release.yml` checks out `rogueoak/branchout-data` at the pinned tag on the runner

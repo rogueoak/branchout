@@ -93,9 +93,12 @@ export function validateClueBank(clues: readonly LiarLiarClue[]): void {
       );
     }
 
-    // Id must follow the <category>-NNN convention (3-digit zero-padded suffix).
-    const idPattern = new RegExp(`^${clue.category}-\\d{3}$`);
-    if (!idPattern.test(clue.id)) {
+    // Id must follow the <category>-NNN convention (3-digit zero-padded suffix). Use a static
+    // pattern + a startsWith check (matching the trivia validator) rather than interpolating
+    // clue.category into a regex source - correct here since category is pre-validated, but the
+    // static form removes the injection footgun and reads the same across both games.
+    const idPattern = /^[a-z]+-\d{3}$/;
+    if (!idPattern.test(clue.id) || !clue.id.startsWith(`${clue.category}-`)) {
       throw new Error(
         `liar-liar clue bank: clue id "${clue.id}" must match ${clue.category}-NNN (3 digits)`,
       );

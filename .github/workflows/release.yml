@@ -96,22 +96,47 @@ jobs:
       # repo over its own git remote inside the SSH script; this checkout is only for the runner.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      # Read the pinned game-data version (a git tag in the private data repo). Org policy blocks SSH
-      # deploy keys on the box, so the box holds NO GitHub credentials and cannot fetch the data repo;
-      # GitHub Actions checks the data out here and ships it to the box (see below).
+      # Read the pinned game-data version (a git tag - or a full 40-char commit SHA - in the private
+      # data repo). Org policy blocks SSH deploy keys on the box, so the box holds NO GitHub
+      # credentials and cannot fetch the data repo; GitHub Actions checks the data out here and ships
+      # it to the box (see below). Take only the first line and validate its charset: the value
+      # becomes the checkout `ref` and flows to the box via GAME_DATA_HOST, so a stray newline (which
+      # would inject extra $GITHUB_OUTPUT keys) or a non-ref character must fail the job here, loudly.
       - name: Read pinned data version
         id: dataver
-        run: echo "version=$(cat deploy/data.version)" >> "$GITHUB_OUTPUT"
+        run: |
+          V="$(head -1 deploy/data.version | tr -d '[:space:]')"
+          case "$V" in
+            '' | *[!0-9a-fA-F.]* )
+              echo "invalid deploy/data.version: '$V' (expected a bare semver tag or a commit SHA)" >&2
+              exit 1
+              ;;
+          esac
+          echo "version=$V" >> "$GITHUB_OUTPUT"
 
-      # Check out the PRIVATE game-data repo at the pinned tag, into ./branchout-data. Uses a
+      # Check out the PRIVATE game-data repo at the pinned ref, into ./branchout-data. Uses a
       # read-only fine-grained PAT (DATA_REPO_TOKEN, Contents:read on rogueoak/branchout-data) - the
-      # run's own GITHUB_TOKEN is scoped to branchout only and cannot read another repo.
+      # run's own GITHUB_TOKEN is scoped to branchout only and cannot read another repo. NOTE: a tag
+      # is mutable, so the "pinned + rolls back with the code" guarantee holds only if the data repo's
+      # release tags are protected against force-move (or data.version holds a full commit SHA). See
+      # deploy/README.md.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: rogueoak/branchout-data
           ref: ${{ steps.dataver.outputs.version }}
           token: ${{ secrets.DATA_REPO_TOKEN }}
           path: branchout-data
+
+      # Fail closed at the SOURCE: if the checkout above produced no data (missing/expired
+      # DATA_REPO_TOKEN, or a ref with no data/ dir), stop now with a legible error rather than
+      # letting `rsync --delete` empty the box's data dir and surface only as a late 502 at the
+      # post-rollout health gate.
+      - name: Assert game data is present
+        run: |
+          test -d branchout-data/data && [ -n "$(ls -A branchout-data/data)" ] || {
+            echo "branchout-data/data is missing or empty - refusing to sync (would empty the box)" >&2
+            exit 1
+          }
 
       - name: Deploy over SSH
         env:
