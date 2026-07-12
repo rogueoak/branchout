@@ -7,16 +7,20 @@ const linkClass =
   'text-body-sm text-text-muted underline-offset-4 hover:text-text hover:underline ' +
   'focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
 
-export function Footer() {
+// `linkOrigin` crosses the legal links to another origin (spec 0035): on a subdomain surface
+// (insiders) whose middleware rewrites every path into its tree, apex-relative `/privacy` would 404,
+// so the surface passes its apex origin. Unset = relative (the default on the apex itself).
+export function Footer({ linkOrigin }: { linkOrigin?: string }) {
+  const to = (path: string) => (linkOrigin ? `${linkOrigin}${path}` : path);
   return (
     <footer className="mx-auto mt-auto w-full max-w-5xl border-t border-border px-4 py-8 sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-body-sm text-text-muted">Branch Out Games - where game night grows.</p>
         <nav aria-label="Legal" className="flex flex-wrap gap-4">
-          <a href="/privacy" className={linkClass}>
+          <a href={to('/privacy')} className={linkClass}>
             Privacy
           </a>
-          <a href="/terms" className={linkClass}>
+          <a href={to('/terms')} className={linkClass}>
             Terms
           </a>
         </nav>

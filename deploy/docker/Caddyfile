@@ -8,6 +8,12 @@
 #   /ws/*      -> game-engine:4001    (WebSocket upgrade; the browser connects to /ws/v1)
 #   *          -> web:3000            (Next.js)
 #
+# The apex and the insiders subdomain (spec 0035) share this exact routing - the insiders surface is
+# served by the same `web` process (host-aware middleware rewrites it), and re-serving /api + /ws
+# same-origin under insiders keeps it CORS-free. To stay DRY the routing lives in two snippets
+# (`api_ws`, `web`) that each site block imports. Admin (spec 0037) is a separate static app with its
+# own block; it is not part of these snippets.
+#
 # Validate before applying:
 #   docker compose -f deploy/docker/compose.proxy.yml exec caddy caddy validate --config /etc/caddy/Caddyfile
 
@@ -16,29 +22,20 @@
     # snippet (/etc/caddy/Caddyfile.d/*.caddy) if you want expiry notifications.
 }
 
-# Redirect www to apex (permanent).
-www.branchout.games {
-    redir https://branchout.games{uri} permanent
-}
+# Zero-downtime deploys (spec 0034): every upstream below uses DYNAMIC A-record
+# resolution instead of a static `reverse_proxy host:port`. A static upstream
+# resolves the service name once and caches the IP, so after a docker-rollout swap
+# (a new Compose-indexed instance replaces the old) Caddy would keep hitting the
+# GONE container. `dynamic a` re-resolves the service alias against Docker's embedded
+# DNS (127.0.0.11) every second, so Caddy load-balances across whatever instances are
+# live and follows the swap; during a rollout both resolve, and when the old one is
+# removed the next refresh drops it. `lb_try_duration`/`lb_retries` retry onto a live
+# instance and `fail_duration` (connect-failures only, no `unhealthy_status`, so a
+# genuine app 5xx never benches the sole steady-state upstream) closes the <=1s window
+# where the cached set still lists the departed IP. See overview/architecture.md.
 
-branchout.games {
-    encode gzip zstd
-
-    # HSTS: tell browsers to always use HTTPS for this domain (2 years).
-    header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-
-    # Zero-downtime deploys (spec 0034): every upstream below uses DYNAMIC A-record
-    # resolution instead of a static `reverse_proxy host:port`. A static upstream
-    # resolves the service name once and caches the IP, so after a docker-rollout swap
-    # (a new Compose-indexed instance replaces the old) Caddy would keep hitting the
-    # GONE container. `dynamic a` re-resolves the service alias against Docker's embedded
-    # DNS (127.0.0.11) every second, so Caddy load-balances across whatever instances are
-    # live and follows the swap; during a rollout both resolve, and when the old one is
-    # removed the next refresh drops it. `lb_try_duration`/`lb_retries` retry onto a live
-    # instance and `fail_duration` (connect-failures only, no `unhealthy_status`, so a
-    # genuine app 5xx never benches the sole steady-state upstream) closes the <=1s window
-    # where the cached set still lists the departed IP. See overview/architecture.md.
-
+# The API + WebSocket routing, shared by every site block that fronts the app.
+(api_ws) {
     # WebSocket upgrade - game-engine handles /ws traffic. The browser connects to the versioned
     # /ws/v1 (spec 0033), but the engine's ws server accepts any path (room/game/player come from the
     # `join` frame), so no prefix strip is needed; match both bare /ws and /ws/* (which covers /ws/v1).
@@ -85,8 +82,10 @@ branchout.games {
             fail_duration 2s
         }
     }
+}
 
-    # Everything else goes to the Next.js web app.
+# Everything else goes to the Next.js web app (the catch-all; must import after api_ws).
+(web) {
     handle {
         reverse_proxy {
             dynamic a {
@@ -102,4 +101,33 @@ branchout.games {
             fail_duration 2s
         }
     }
+}
+
+# Cross-cutting settings shared by every first-party host block: compression + HSTS. A new surface
+# (spec 0037's admin) gets the same baseline by importing one snippet, so the blocks cannot drift.
+(site_base) {
+    encode gzip zstd
+
+    # HSTS: tell browsers to always use HTTPS for this domain (2 years).
+    header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+}
+
+# Redirect www to apex (permanent).
+www.branchout.games {
+    redir https://branchout.games{uri} permanent
+}
+
+branchout.games {
+    import site_base
+    import api_ws
+    import web
+}
+
+# Insiders surface (spec 0035): same routing as the apex, served by the same `web` process. The
+# host-aware middleware in `web` rewrites requests here into the /insiders tree; re-serving /api and
+# /ws same-origin keeps the surface CORS-free. Needs an `insiders` A record -> the droplet.
+insiders.branchout.games {
+    import site_base
+    import api_ws
+    import web
 }

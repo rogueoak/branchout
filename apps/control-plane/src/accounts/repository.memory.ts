@@ -33,6 +33,7 @@ export class InMemoryAccountRepository implements AccountRepository {
       nickname: account.nickname,
       avatar: account.avatar,
       visibility: 'public',
+      insider: false,
       emailVerified: false,
       createdAt: now,
       updatedAt: now,
@@ -97,5 +98,13 @@ export class InMemoryAccountRepository implements AccountRepository {
   /** Test-only helper: drop an account, to simulate a session whose row is gone. */
   deleteById(id: string): void {
     this.byId.delete(id);
+  }
+
+  /** Test-only helper: set the insider flag, standing in for the out-of-band grant (spec 0035). */
+  setInsider(id: string, insider: boolean): void {
+    const account = this.byId.get(id);
+    if (account) {
+      account.insider = insider;
+    }
   }
 }

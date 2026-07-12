@@ -55,4 +55,18 @@ describe('TopNav', () => {
       buttonVariants({ variant: 'outline', size: 'sm' }),
     );
   });
+
+  it('renders a surface label pill when given one (the insiders marker, spec 0035)', () => {
+    render(
+      <TopNav viewer={{ signedIn: true, gamerTag: 'CoolCat', nickname: 'Cat' }} label="Insiders" />,
+    );
+    expect(screen.getByText('Insiders')).toBeDefined();
+    // The account menu still renders alongside the label.
+    expect(screen.getByRole('button', { name: /account menu for cat/i })).toBeDefined();
+  });
+
+  it('renders no surface label by default', () => {
+    render(<TopNav viewer={{ signedIn: false }} />);
+    expect(screen.queryByText('Insiders')).toBeNull();
+  });
 });

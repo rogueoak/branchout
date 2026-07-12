@@ -22,6 +22,8 @@ export interface PublicAccount {
   nickname: string;
   avatar: string;
   visibility: ProfileVisibility;
+  /** Beta-tester entitlement (spec 0035): the web gates the insiders surface on this. */
+  insider: boolean;
 }
 
 /** A validation failure with a stable code and a user-safe message. */
@@ -61,6 +63,7 @@ function toPublic(account: Account): PublicAccount {
     nickname: account.nickname,
     avatar: account.avatar,
     visibility: account.visibility,
+    insider: account.insider,
   };
 }
 

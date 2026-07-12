@@ -374,3 +374,14 @@ Capture durable lessons as they emerge.
   construction, which beats a seam test because it removes the failure mode rather than detecting it.
   Also: a silent path mismatch hides when the failing path is a fire-and-forget report and the
   test/dev env disables the caller; exercise the real caller against the real route. (Feedback `0017`.)
+
+## Subdomain surfaces
+
+- **A shared chrome component on a rewrite-based subdomain surface emits host-relative links that
+  404.** The insiders surface (`insiders.`) is one `web` process that middleware rewrites into an
+  `/insiders` tree; the reused `TopNav`/`Footer` link `/games`, `/privacy`, etc., which on that host
+  resolve into the gated tree (only the index exists) and 404 - a dead end a tester hits on the happy
+  path. Cross chrome links to the apex (pass an apex `linkOrigin`); keep surface-owned content
+  relative. And a gate that redirects across hosts must carry an **origin-validated** return target
+  (`?next=`) and never build an absolute redirect from the inbound `Host` header - strip-only-the-label
+  on an untrusted `Host` is a latent open redirect. (Review `0035`, feedback `0019`.)
