@@ -194,7 +194,10 @@ An unhealthy image fails safe (the old instance keeps serving) and the deploy ga
 `curl` through Caddy (page + `/api`). **Capacity rule:** the host must fit baseline + one extra app
 instance + Postgres/Redis + headroom + swap; the caps assume the current droplet's RAM, and `mem_limit`
 is a hard OOM-kill ceiling set well above real use (incl. SSR cold start), so it only bounds a runaway,
-never trips a healthy roll.
+never trips a healthy roll. The droplet (1 vCPU / 1.9 GiB) has a **2 GiB swapfile** provisioned
+(`/swapfile`, in `/etc/fstab`, `vm.swappiness=10`) as an OOM backstop, not for steady paging. Caps are
+trimmed to leave room for additional UI services: `web` 320m, `control-plane` 256m, `game-engine` 256m
+(each `--memory-swap` at 2x). CPU is near-idle; RAM is the binding constraint for adding services.
 
 **What "follows the swap" does and does not cover.** Caddy's dynamic upstreams re-resolve the alias
 for the three edge-fronted routes (`/api` -> control-plane, `/ws` -> game-engine, `*` -> web). Two
