@@ -207,4 +207,26 @@ export class AccountService {
     }
     return toPublic(account);
   }
+
+  /** Grant or revoke the insider role (spec 0037 admin toggle). */
+  async changeInsider(id: string, insider: unknown): Promise<PublicAccount> {
+    if (typeof insider !== 'boolean') {
+      throw new ValidationError('insider', 'insider must be a boolean.');
+    }
+    const account = await this.repo.updateInsider(id, insider);
+    if (!account) {
+      throw new ValidationError('account', 'Account not found.');
+    }
+    return toPublic(account);
+  }
+
+  /** A page of players for the admin console, optionally filtered by gamer tag (spec 0037). */
+  async listPlayers(opts: {
+    query?: string;
+    limit: number;
+    offset: number;
+  }): Promise<{ items: PublicAccount[]; total: number }> {
+    const page = await this.repo.listAccounts(opts);
+    return { items: page.items.map(toPublic), total: page.total };
+  }
 }

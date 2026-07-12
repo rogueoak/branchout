@@ -90,6 +90,8 @@ describe('AccountService.signup', () => {
       updateNickname: async () => null,
       updateAvatar: async () => null,
       updateVisibility: async () => null,
+      updateInsider: async () => null,
+      listAccounts: async () => ({ items: [], total: 0 }),
       create: async (): Promise<Account> => {
         throw new DuplicateAccountError('gamerTag');
       },

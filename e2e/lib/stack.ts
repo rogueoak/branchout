@@ -14,8 +14,11 @@ const infra = join(repoRoot, 'infra');
 export const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 3100);
 const CONTROL_PLANE_PORT = Number(process.env.E2E_CONTROL_PLANE_PORT ?? 4100);
 const GAME_ENGINE_PORT = Number(process.env.E2E_GAME_ENGINE_PORT ?? 4101);
+export const ADMIN_PORT = Number(process.env.E2E_ADMIN_PORT ?? 3102);
 
 export const BASE_URL = `http://localhost:${WEB_PORT}`;
+/** The admin console (spec 0037) is its own service on a shifted port. */
+export const ADMIN_URL = `http://localhost:${ADMIN_PORT}`;
 
 // Docker binary is `docker` on PATH by default; override with DOCKER_BIN for a non-standard install
 // (e.g. a Colima setup where the CLI is not symlinked).
@@ -38,6 +41,7 @@ const composeEnv: NodeJS.ProcessEnv = {
   WEB_PORT: String(WEB_PORT),
   CONTROL_PLANE_PORT: String(CONTROL_PLANE_PORT),
   GAME_ENGINE_PORT: String(GAME_ENGINE_PORT),
+  ADMIN_PORT: String(ADMIN_PORT),
 };
 
 // Base (production-shaped) + dev overlay (browser -> localhost, runtime NEXT_PUBLIC_*, SSR

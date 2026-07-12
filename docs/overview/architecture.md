@@ -346,3 +346,23 @@ the *public* identity a UI needs, never the secret that authenticates the caller
 
 Trellis (`docs/rules/`) and Spectra (`docs/spectra/`) govern how changes ship: specs before
 features, tests/lint/build green before merge, persona review on PRs.
+
+## Admin console (spec 0037)
+
+The operator console is a **separate Next.js service** (`apps/admin`), served by Caddy at
+`admin.branchout.games` - not the `web` process. It is a fourth app service on the droplet; the swap +
+trimmed `mem_limit`s (spec 0034) leave the headroom, and an operator-only surface stays light (its own
+modest `mem_limit`). It reaches control-plane's `/api` **same-origin** (Caddy's admin block imports the
+shared `api` snippet, so it inherits the trusted-client-IP header from spec 0038), and gates
+server-side (a `requireAdmin` layout guard) while control-plane re-checks the admin session on every
+`/v1/admin/*` call - the authoritative boundary.
+
+Admin is a **separate identity** from players, deliberately: its own `admin_accounts` table (never the
+player `accounts`), its own Redis session namespace (`admin_session:`), and a **host-only** cookie
+(`branchout_admin_session`, no `Domain`) - so a player/insider session can never satisfy the admin gate
+and an admin session never appears on the public site. There is **no public admin signup**: the first
+admin is reconciled from `ADMIN_ROOT_EMAIL`/`ADMIN_ROOT_PASSWORD` on boot (env is the source of truth -
+break-glass recovery), and further admins are created from within the console. The admin login reuses
+the spec 0036 limiter, anchored on the admin account. The console lists players by gamer tag, opens a
+profile, and grants/revokes the `insider` role (spec 0035). MFA is a documented follow-up; rate
+limiting is the v1 control. `admin` rolls after `web` in the zero-downtime deploy.

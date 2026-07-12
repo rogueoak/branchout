@@ -208,3 +208,9 @@ What the product does for users, grouped by area. Each capability maps to one or
 ## Future
 
 - [ ] iOS and Android clients of the same services.
+
+## Admin console (spec 0037)
+
+An operator console at `admin.branchout.games` (a separate Next.js app with a separate admin identity):
+sign in as an admin, create more admins, browse players by gamer tag, open a profile, and grant/revoke
+a player's insider access. No public admin signup; the root admin is env-seeded on boot.

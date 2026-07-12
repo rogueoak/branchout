@@ -2,6 +2,9 @@ import { createRedisClient, pingRedis } from '@branchout/service-runtime';
 import { createHasher } from './accounts/hasher';
 import { PostgresAccountRepository } from './accounts/repository';
 import { AccountService } from './accounts/service';
+import { PostgresAdminRepository } from './admin/repository';
+import { AdminService } from './admin/service';
+import { type AdminSessionRedis, RedisAdminSessionStore } from './admin/session';
 import { createApp } from './app';
 import { loadConfig } from './config';
 import { CreditLedger } from './credits/ledger';
@@ -65,6 +68,30 @@ async function main(): Promise<void> {
   };
   const sessions = new RedisSessionStore(sessionRedis, config.cookie.ttlSeconds);
 
+  // Separate admin identity (spec 0037): its own store + Redis session namespace, never the player
+  // pool/cookie. Reconcile the env-seeded root admin on boot (env is the source of truth for its
+  // password - a break-glass recovery); there is no public admin signup.
+  const admins = new AdminService(new PostgresAdminRepository(pool), hasher);
+  const adminSessionRedis: AdminSessionRedis = {
+    set: (key, value, options) => redis.set(key, value, options),
+    get: (key) => redis.get(key),
+    del: (key) => redis.del(key),
+    expire: (key, seconds) => redis.expire(key, seconds),
+  };
+  const adminSessions = new RedisAdminSessionStore(
+    adminSessionRedis,
+    config.adminCookie.ttlSeconds,
+  );
+  try {
+    await admins.ensureRootAdmin(config.adminRootEmail, config.adminRootPassword);
+    if (config.adminRootEmail) {
+      console.log('[control-plane] root admin reconciled');
+    }
+  } catch (error) {
+    console.error('[control-plane] root admin bootstrap failed, aborting boot', error);
+    throw error;
+  }
+
   // Live room membership/presence in Redis; durable room + history and the credit ledger in
   // Postgres. Tiers default to Free until the Purchases spec adds real subscriptions.
   const membershipRedis: MembershipRedis = {
@@ -109,6 +136,9 @@ async function main(): Promise<void> {
     sessions,
     rooms,
     cookie: config.cookie,
+    admins,
+    adminSessions,
+    adminCookie: config.adminCookie,
     webOrigins: config.webOrigins,
     ...(config.internalToken ? { internalToken: config.internalToken } : {}),
     limiter,

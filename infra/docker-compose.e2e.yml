@@ -16,6 +16,9 @@ services:
       # `.branchout.games`. The insiders spec instead plants the session cookie on the insiders host
       # directly (see e2e/tests/insiders.spec.ts), which exercises the same middleware + layout +
       # role gate; the Domain-setting itself is covered by the control-plane config/auth unit tests.
+      # Seed a known root admin so the admin e2e (spec 0037) can log in.
+      ADMIN_ROOT_EMAIL: root@branchout.test
+      ADMIN_ROOT_PASSWORD: e2e-root-admin-password
 
   postgres:
     # !reset clears the list inherited from the base compose (Compose spec merge override).

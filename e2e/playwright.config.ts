@@ -40,6 +40,8 @@ export default defineConfig({
         'profile.spec.ts',
         // Insiders subdomain gate + surface (spec 0035); includes its own 360px phone check.
         'insiders.spec.ts',
+        // Admin console: separate identity, user management, insider toggle (spec 0037).
+        'admin.spec.ts',
       ],
     },
     // The product is mobile-first, so a phone-viewport lane guards that the key surfaces render and

@@ -58,6 +58,24 @@ export interface AccountRepository {
   updateNickname(id: string, nickname: string): Promise<Account | null>;
   updateAvatar(id: string, avatar: string): Promise<Account | null>;
   updateVisibility(id: string, visibility: ProfileVisibility): Promise<Account | null>;
+  /** Grant or revoke the insider role (spec 0037 admin toggle). */
+  updateInsider(id: string, insider: boolean): Promise<Account | null>;
+  /** Paginated player list for the admin console, optionally filtered by gamer tag (spec 0037). */
+  listAccounts(opts: ListAccountsOptions): Promise<AccountPage>;
+}
+
+/** Options for the admin player list: an optional gamer-tag substring, plus a page window. */
+export interface ListAccountsOptions {
+  /** A gamer-tag substring to match (normalized); empty/absent lists everyone. */
+  query?: string;
+  limit: number;
+  offset: number;
+}
+
+/** One page of accounts plus the total match count, for the console's pagination. */
+export interface AccountPage {
+  items: Account[];
+  total: number;
 }
 
 /** Raised when a unique constraint (email or gamer tag) is violated at the database. */
@@ -182,5 +200,41 @@ export class PostgresAccountRepository implements AccountRepository {
     );
     const row = result.rows[0];
     return row ? mapRow(row) : null;
+  }
+
+  async updateInsider(id: string, insider: boolean): Promise<Account | null> {
+    const result = await this.pool.query<AccountRow>(
+      `UPDATE accounts SET insider = $2, updated_at = now() WHERE id = $1 RETURNING *`,
+      [id, insider],
+    );
+    const row = result.rows[0];
+    return row ? mapRow(row) : null;
+  }
+
+  async listAccounts(opts: ListAccountsOptions): Promise<AccountPage> {
+    const query = (opts.query ?? '').trim().toLowerCase();
+    // Match a gamer-tag substring; `LIKE` on the normalized column with the pattern parameterized so
+    // a `%`/`_` in the input is escaped (it is a literal value, never concatenated into the SQL).
+    if (query) {
+      const pattern = `%${query.replace(/[%_\\]/g, '\\$&')}%`;
+      const items = await this.pool.query<AccountRow>(
+        `SELECT * FROM accounts WHERE gamer_tag_normalized LIKE $1 ESCAPE '\\'
+         ORDER BY gamer_tag_normalized LIMIT $2 OFFSET $3`,
+        [pattern, opts.limit, opts.offset],
+      );
+      const count = await this.pool.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM accounts WHERE gamer_tag_normalized LIKE $1 ESCAPE '\\'`,
+        [pattern],
+      );
+      return { items: items.rows.map(mapRow), total: Number(count.rows[0]!.count) };
+    }
+    const items = await this.pool.query<AccountRow>(
+      `SELECT * FROM accounts ORDER BY gamer_tag_normalized LIMIT $1 OFFSET $2`,
+      [opts.limit, opts.offset],
+    );
+    const count = await this.pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count FROM accounts`,
+    );
+    return { items: items.rows.map(mapRow), total: Number(count.rows[0]!.count) };
   }
 }

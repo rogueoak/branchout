@@ -60,6 +60,34 @@ services:
       # It has no business talking to Postgres/Redis directly, so it stays off `db`.
       - edge
 
+  admin:
+    # The admin console (spec 0037): a separate Next.js service, its own rollout target. Caddy fronts
+    # admin.branchout.games -> this service, and re-serves /api same-origin to control-plane.
+    image: ghcr.io/rogueoak/branchout/admin:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    # Low-traffic operator surface; a modest cap, above its real SSR footprint (see the capacity note
+    # in overview/architecture.md - swap + trimmed caps from 0034 leave room for this 4th app service).
+    mem_limit: 320m
+    mem_reservation: 160m
+    expose:
+      - '3002'
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:3002/health -o /dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      # admin makes server-side (SSR) calls to control-plane; wait for it to be healthy.
+      control-plane:
+        condition: service_healthy
+    networks:
+      # edge only: reaches control-plane over `edge`; never Postgres/Redis directly.
+      - edge
+
   control-plane:
     image: ghcr.io/rogueoak/branchout/control-plane:${IMAGE_TAG:-latest}
     # No container_name (see web): docker-rollout runs two indexed instances during a
