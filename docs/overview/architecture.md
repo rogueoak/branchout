@@ -355,6 +355,15 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   uses). A module may also **reject a single submission** (`collectMove` returns `rejected`): the
   engine replies to that one device with a targeted `move_rejected` frame and writes no state -
   never a broadcast (used for "someone already submitted that" in a bluffing game).
+- **Server-authoritative games** (spec `0043`, Teeter Tower). A game's payloads are opaque, so a
+  module can own *shared simulation state*, not just per-player answers: Teeter runs Matter.js
+  **headless in the engine**, keeps the authoritative tower in `scratch`, and treats one piece-drop
+  as one round - `collectMove` takes `{ angle, dropX }`, `reveal` simulates the drop once and streams
+  the settle as a keyframe **track** so every client renders the identical tower (the browser runs no
+  physics). Determinism (seeded PRNG, fixed timestep, capped steps) keeps the single server sim
+  reproducible. A game may declare `manifest.visibility: 'insider'`; the web registry hides such games
+  from the public picker/pages/sitemap and surfaces them only to insiders (a follow-up should add the
+  matching control-plane start guard for defence in depth).
 - **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for
   the life of a game, recovered on reconnect. It also persists the current phase's streamed frames
   (prompt/reveal/standings) so `join` can replay them as ordered catch-up - pub/sub only reaches
