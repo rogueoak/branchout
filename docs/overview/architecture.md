@@ -83,6 +83,30 @@ version lives in code (not in the `CONTROL_PLANE_URL` env value, which is the pl
   (`schema_migrations` ledger + ordered SQL, applied on boot and via a `migrate` script). Add a
   migration by appending the next id; never edit a shipped one (spec `0004`).
 
+## External game data (spec 0039)
+
+The real game banks (Trivia questions, Liar Liar clues) live in a separate **private** repo
+(`rogueoak/branchout-data`), not in this public monorepo. The public repo ships only a tiny valid
+**sample** under each game's `data/` (8 Trivia items per category, 5 Liar Liar per category, all 8
+categories) so the code, unit tests, and local runs stay honest without carrying the full content.
+The game SDK's fs asset loader (`packages/game-sdk`) has one branch: if `GAME_DATA_DIR` is set and
+non-empty it reads every game's `data/` from that mount, else it walks up to the game package's own
+bundled sample. The relative read paths (`data/trivia/...`, `data/liar-liar/...`) are unchanged, so a
+single mount root serves both games. Boot-time validation is **structural per-item only** (id format
++ uniqueness, required fields, bounded difficulty, no duplicate prompt in a category); there is no
+total/per-category count or difficulty-spread gate, because the bank grows over time and its spread
+is deliberately uneven - a fixed count/spread check would only fight the content.
+
+The content is versioned by a git **tag** in the private repo, pinned in `deploy/data.version` (a
+bare semver). Because org policy blocks SSH deploy keys on the droplet, the box holds no GitHub
+credential and never fetches the data repo. Instead the `release.yml` `deploy` job checks out
+`branchout-data` at the pinned tag on the runner (a read-only `DATA_REPO_TOKEN` PAT) and **rsyncs**
+its `data/` to the box over the existing deploy SSH key (`--delete` for an exact mirror), then writes
+`GAME_DATA_HOST` into `.env.prod`. `compose.site.yml` bind-mounts `${GAME_DATA_HOST}/data` read-only
+into `game-engine` (the real reader) and `admin` (for future moderation) at `/srv/game-data/data`,
+with `GAME_DATA_DIR=/srv/game-data`. The read-only mount is identical on both docker-rollout
+instances, so it is compatible with the zero-downtime swap.
+
 ## Auth rate limiting (spec 0036)
 
 The auth endpoints are rate-limited/lockable against brute force and mass account creation, backed by

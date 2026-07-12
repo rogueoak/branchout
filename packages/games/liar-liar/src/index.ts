@@ -24,8 +24,6 @@ export {
 export {
   loadClueBank,
   validateClueBank,
-  validateSeedBank,
-  MIN_CLUES_PER_CATEGORY,
   CATEGORIES,
   type LiarLiarClue,
   type LiarLiarCategory,

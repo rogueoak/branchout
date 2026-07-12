@@ -1,9 +1,13 @@
 // Trivia question bank: loader and validator for the 8-category question set.
 //
-// Data lives at this package's data/trivia/<category>.json (200 questions per file, 1600 total).
-// IDs use a lowercase-category prefix, e.g. `nature-001`. The loader takes an injected AssetLoader
-// (from @branchout/game-sdk) rooted at this package, so it reads the data whether the code runs
-// from `src` under tsx or from the bundled `dist` - no self-locating filesystem walk.
+// Data lives at data/trivia/<category>.json (one file per category). The public repo ships a small
+// SAMPLE; the full bank is served from the private data repo mounted at GAME_DATA_DIR (see
+// deploy/README.md and packages/game-sdk assets). IDs use a lowercase-category prefix, e.g.
+// `nature-001`. The loader takes an injected AssetLoader (from @branchout/game-sdk) rooted at the
+// data source, so it reads whether the code runs from `src` under tsx, the bundled `dist`, or the
+// mount - no self-locating filesystem walk. The bank grows over time and its difficulty spread is
+// deliberately uneven, so validation checks per-item structure only, never a total/per-category
+// count or a spread.
 
 import type { AssetLoader } from '@branchout/game-sdk';
 
@@ -43,23 +47,9 @@ export const CATEGORIES: readonly string[] = [
   'History',
 ] as const;
 
-/** Expected total question count across all categories. */
-const TOTAL_EXPECTED = 1600;
-
-/** Expected questions per category. */
-const PER_CATEGORY = 200;
-
 /** Difficulty rating bounds - every question rates an integer in this inclusive range. */
 export const DIFFICULTY_MIN = 1;
 export const DIFFICULTY_MAX = 10;
-
-/**
- * A category must spread across the scale, not clump at one rating: at least this many distinct
- * ratings and at least this wide a span. This guards a degenerate re-rate (e.g. everything a 5)
- * that would make the host's min-max range meaningless, without demanding a precise distribution.
- */
-const MIN_DISTINCT_RATINGS = 6;
-const MIN_RATING_SPAN = 6;
 
 // ---------------------------------------------------------------------------
 // Loader
@@ -67,8 +57,9 @@ const MIN_RATING_SPAN = 6;
 
 /**
  * Reads all 8 trivia JSON files through the injected asset loader and returns the combined question
- * array. The loader is rooted at this package (see the trivia plugin's `create`), so paths resolve
- * to `data/trivia/<category>.json` regardless of where the process is launched from.
+ * array. The loader is rooted at the data source (the package's bundled sample, or the mount at
+ * GAME_DATA_DIR - see the trivia plugin's `create`), so paths resolve to `data/trivia/<category>.json`
+ * regardless of where the process is launched from.
  */
 export async function loadQuestionBank(assets: AssetLoader): Promise<TriviaQuestion[]> {
   const perCategory = await Promise.all(
@@ -90,41 +81,33 @@ export async function loadQuestionBank(assets: AssetLoader): Promise<TriviaQuest
 // ---------------------------------------------------------------------------
 
 /**
- * Validates the full question bank against all spec constraints.
- * Throws with a descriptive message on the first violation found.
- * Returns void on success.
+ * Validates the STRUCTURE of every question in the bank. Runs at engine boot on any bank size (the
+ * public sample or the full private bank) - there is no total, per-category count, or difficulty
+ * spread gate, because the bank grows over time and its spread is deliberately uneven. Throws with a
+ * descriptive message on the first violation found; returns void on success.
  *
- * Rules enforced:
- * 1. Exactly 1600 questions total.
- * 2. Exactly 200 questions per category (matched on `question.category`).
- * 3. Each `id` is unique across the entire bank.
- * 4. Each `id` matches the pattern `<lowercase-category>-NNN` (3-digit zero-padded suffix).
- * 5. `answers` is non-empty and every answer is a non-empty all-lowercase string.
- * 6. `difficulty` is an integer 1-10.
- * 7. Each category spreads across the scale (>= 6 distinct ratings, span >= 6).
- * 8. No duplicate `prompt` values within a single category.
+ * Per-item rules enforced:
+ * 1. Each `id` is unique across the entire bank.
+ * 2. Each `id` matches the pattern `<lowercase-category>-NNN` (3-digit zero-padded suffix).
+ * 3. `answers` is non-empty and every answer is a non-empty all-lowercase string.
+ * 4. `difficulty` is an integer 1-10.
+ * 5. No duplicate `prompt` values within a single category.
  */
 export function validateQuestionBank(questions: TriviaQuestion[]): void {
-  // 1. Total count
-  if (questions.length !== TOTAL_EXPECTED) {
-    throw new Error(
-      `question-bank validation failed: expected ${TOTAL_EXPECTED} total questions, got ${questions.length}`,
-    );
-  }
-
   const seenIds = new Set<string>();
-  const byCategory = new Map<string, TriviaQuestion[]>();
+  // Track prompts seen per category, so a duplicate prompt in the same category is caught.
+  const promptsByCategory = new Map<string, Set<string>>();
 
   for (const q of questions) {
     const pos = `question id=${q.id}`;
 
-    // 3. Unique IDs
+    // 1. Unique IDs
     if (seenIds.has(q.id)) {
       throw new Error(`question-bank validation failed: duplicate id "${q.id}"`);
     }
     seenIds.add(q.id);
 
-    // 4. ID format: <lowercase-category>-NNN
+    // 2. ID format: <lowercase-category>-NNN
     const expectedPrefix = q.category.toLowerCase();
     const idPattern = /^[a-z]+-\d{3}$/;
     if (!idPattern.test(q.id) || !q.id.startsWith(`${expectedPrefix}-`)) {
@@ -134,7 +117,7 @@ export function validateQuestionBank(questions: TriviaQuestion[]): void {
       );
     }
 
-    // 5. Answers
+    // 3. Answers
     if (!Array.isArray(q.answers) || q.answers.length === 0) {
       throw new Error(`question-bank validation failed: ${pos} has empty answers array`);
     }
@@ -149,7 +132,7 @@ export function validateQuestionBank(questions: TriviaQuestion[]): void {
       }
     }
 
-    // 6. Difficulty is an integer 1-10
+    // 4. Difficulty is an integer 1-10
     if (
       !Number.isInteger(q.difficulty) ||
       q.difficulty < DIFFICULTY_MIN ||
@@ -161,45 +144,18 @@ export function validateQuestionBank(questions: TriviaQuestion[]): void {
       );
     }
 
-    // Group by category for per-category checks
-    const bucket = byCategory.get(q.category) ?? [];
-    bucket.push(q);
-    byCategory.set(q.category, bucket);
-  }
-
-  // Per-category checks
-  for (const category of CATEGORIES) {
-    const bucket = byCategory.get(category) ?? [];
-
-    // 2. 200 per category
-    if (bucket.length !== PER_CATEGORY) {
+    // 5. No duplicate prompts within a category
+    let seenPrompts = promptsByCategory.get(q.category);
+    if (!seenPrompts) {
+      seenPrompts = new Set<string>();
+      promptsByCategory.set(q.category, seenPrompts);
+    }
+    const normalised = q.prompt.trim().toLowerCase();
+    if (seenPrompts.has(normalised)) {
       throw new Error(
-        `question-bank validation failed: category "${category}" has ${bucket.length} questions, expected ${PER_CATEGORY}`,
+        `question-bank validation failed: duplicate prompt in category "${q.category}": "${q.prompt}"`,
       );
     }
-
-    // 7. Difficulty spread: the category must span the scale, not clump at one rating.
-    const ratings = bucket.map((q) => q.difficulty);
-    const distinct = new Set(ratings).size;
-    const span = Math.max(...ratings) - Math.min(...ratings);
-    if (distinct < MIN_DISTINCT_RATINGS || span < MIN_RATING_SPAN) {
-      throw new Error(
-        `question-bank validation failed: category "${category}" difficulty is too clumped` +
-          ` (${distinct} distinct ratings, span ${span}; need >= ${MIN_DISTINCT_RATINGS} distinct` +
-          ` and span >= ${MIN_RATING_SPAN})`,
-      );
-    }
-
-    // 8. No duplicate prompts within a category
-    const seenPrompts = new Set<string>();
-    for (const q of bucket) {
-      const normalised = q.prompt.trim().toLowerCase();
-      if (seenPrompts.has(normalised)) {
-        throw new Error(
-          `question-bank validation failed: duplicate prompt in category "${category}": "${q.prompt}"`,
-        );
-      }
-      seenPrompts.add(normalised);
-    }
+    seenPrompts.add(normalised);
   }
 }

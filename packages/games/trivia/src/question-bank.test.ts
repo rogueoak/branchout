@@ -1,5 +1,7 @@
-// CI gate: loads the real question bank from disk and validates it end-to-end.
-// A failing test here means the data files or the validator are broken.
+// CI gate: loads the public SAMPLE question bank from disk and validates its structure end-to-end.
+// A failing integration test here means the sample data files or the loader/validator are broken.
+// The validator checks per-item structure only (no total/per-category count, no difficulty spread) -
+// the bank grows and its spread is uneven, so the synthetic tests below cover only structural rules.
 
 import { describe, it, expect } from 'vitest';
 import { createFsAssetLoaderFactory } from '@branchout/game-sdk';
@@ -18,8 +20,7 @@ const assets = createFsAssetLoaderFactory().forModule(import.meta.url);
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Build a minimal valid bank of `n` questions for a single category. Ratings cycle 1-10 so every
- *  category spans the full scale (satisfies the spread rule). */
+/** Build a minimal valid bank of `n` questions for a single category (distinct ids/prompts). */
 function makeQuestions(category: string, n: number): TriviaQuestion[] {
   const prefix = category.toLowerCase();
   return Array.from({ length: n }, (_, i) => ({
@@ -31,19 +32,19 @@ function makeQuestions(category: string, n: number): TriviaQuestion[] {
   }));
 }
 
-/** Build a valid 1600-question bank across all 8 categories. */
+/** A small valid bank across all 8 categories - structural checks pass regardless of size. */
 function makeValidBank(): TriviaQuestion[] {
-  return CATEGORIES.flatMap((cat) => makeQuestions(cat, 200));
+  return CATEGORIES.flatMap((cat) => makeQuestions(cat, 5));
 }
 
 // ---------------------------------------------------------------------------
-// Integration tests (real data)
+// Integration test (real sample data)
 // ---------------------------------------------------------------------------
 
-describe('question-bank - real data', () => {
-  it('loads 1600 questions across all 8 categories', async () => {
+describe('question-bank - sample data', () => {
+  it('loads a non-empty sample and passes the structural validator', async () => {
     const questions = await loadQuestionBank(assets);
-    expect(questions).toHaveLength(1600);
+    expect(questions.length).toBeGreaterThan(0);
 
     const sample = questions[0]!;
     expect(typeof sample.id).toBe('string');
@@ -53,50 +54,29 @@ describe('question-bank - real data', () => {
     expect(sample.difficulty).toBeGreaterThanOrEqual(1);
     expect(sample.difficulty).toBeLessThanOrEqual(10);
 
-    const byCategory = new Map<string, number>();
-    for (const q of questions) {
-      byCategory.set(q.category, (byCategory.get(q.category) ?? 0) + 1);
-    }
-    for (const category of CATEGORIES) {
-      expect(byCategory.get(category), `${category} count`).toBe(200);
-    }
-  });
-
-  it('passes full validator without throwing', async () => {
-    const questions = await loadQuestionBank(assets);
     expect(() => validateQuestionBank(questions)).not.toThrow();
   });
 });
 
 // ---------------------------------------------------------------------------
-// Validator unit tests (synthetic data)
+// Validator unit tests (synthetic data) - structural rules only
 // ---------------------------------------------------------------------------
 
-describe('validateQuestionBank - rule violations', () => {
-  it('throws when total count is wrong', () => {
-    const bank = makeValidBank().slice(0, 1599);
-    expect(() => validateQuestionBank(bank)).toThrow('1600');
-  });
-
-  it('throws when a category has the wrong count', () => {
-    const bank = makeValidBank();
-    // Remove one Nature question so count becomes 199
-    const without = bank.filter((q) => !(q.category === 'Nature' && q.id === 'nature-200'));
-    // Add a duplicate-category question to keep total at 1600
-    without.push({
-      id: 'history-201',
-      category: 'History',
-      prompt: 'Extra?',
-      answers: ['x'],
-      difficulty: 5,
-    });
-    expect(() => validateQuestionBank(without)).toThrow('Nature');
+describe('validateQuestionBank - structural violations', () => {
+  it('accepts a small valid bank of any size', () => {
+    expect(() => validateQuestionBank(makeValidBank())).not.toThrow();
   });
 
   it('throws on duplicate id', () => {
     const bank = makeValidBank();
     bank[1] = { ...bank[0]! };
     expect(() => validateQuestionBank(bank)).toThrow('duplicate id');
+  });
+
+  it('throws on an invalid id format', () => {
+    const bank = makeValidBank();
+    bank[0] = { ...bank[0]!, id: 'nature-1' }; // two digits short
+    expect(() => validateQuestionBank(bank)).toThrow('invalid id format');
   });
 
   it('throws when an answer is not lowercase', () => {
@@ -115,15 +95,6 @@ describe('validateQuestionBank - rule violations', () => {
     const bank = makeValidBank();
     bank[0] = { ...bank[0]!, difficulty: 4.5 };
     expect(() => validateQuestionBank(bank)).toThrow('difficulty');
-  });
-
-  it('throws when a category clumps its difficulty (too little spread)', () => {
-    const bank = makeValidBank();
-    // Flatten every Nature question to a single rating: 1 distinct value, span 0.
-    for (const q of bank) {
-      if (q.category === 'Nature') (q as { difficulty: number }).difficulty = 5;
-    }
-    expect(() => validateQuestionBank(bank)).toThrow('Nature');
   });
 
   it('throws on duplicate prompt within a category', () => {

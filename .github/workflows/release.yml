@@ -92,6 +92,27 @@ jobs:
     runs-on: ubuntu-latest
     # deploy only reads the repo and calls out over SSH; no extra permissions needed.
     steps:
+      # Check out this repo so we can read the pinned data version. The box also self-syncs this
+      # repo over its own git remote inside the SSH script; this checkout is only for the runner.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Read the pinned game-data version (a git tag in the private data repo). Org policy blocks SSH
+      # deploy keys on the box, so the box holds NO GitHub credentials and cannot fetch the data repo;
+      # GitHub Actions checks the data out here and ships it to the box (see below).
+      - name: Read pinned data version
+        id: dataver
+        run: echo "version=$(cat deploy/data.version)" >> "$GITHUB_OUTPUT"
+
+      # Check out the PRIVATE game-data repo at the pinned tag, into ./branchout-data. Uses a
+      # read-only fine-grained PAT (DATA_REPO_TOKEN, Contents:read on rogueoak/branchout-data) - the
+      # run's own GITHUB_TOKEN is scoped to branchout only and cannot read another repo.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: rogueoak/branchout-data
+          ref: ${{ steps.dataver.outputs.version }}
+          token: ${{ secrets.DATA_REPO_TOKEN }}
+          path: branchout-data
+
       - name: Deploy over SSH
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -121,6 +142,16 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
+          # Ship the private game-data (checked out at the pinned tag above) to the box over the same
+          # deploy key. The box holds no GitHub credential, so GHA is the only path the data reaches
+          # it. --delete keeps the mirror exact (a removed/renamed data file is removed on the box too).
+          # The destination is the host clone path the compose mount reads (GAME_DATA_HOST).
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$USER@$HOST" 'mkdir -p ~/branchout-data/data'
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes" \
+            branchout-data/data/ "$USER@$HOST:branchout-data/data/"
+
           # Pass every value to the remote shell over the encrypted stdin channel,
           # not on the SSH command line: printf %q emits a shell-safe assignment for
           # any value (a single quote or special char can't break the script), and
@@ -145,6 +176,12 @@ jobs:
           cd "$REPO"
           git fetch --prune origin
           git reset --hard origin/main
+
+          # Private game-data (spec 0039): the box holds NO GitHub credentials and does not fetch the
+          # data repo. GitHub Actions checks out rogueoak/branchout-data at the tag in
+          # deploy/data.version and rsyncs its data/ to $HOME/branchout-data/data BEFORE this script
+          # runs (see the deploy step). GAME_DATA_HOST below points the compose mount at that dir.
+          DATA_REPO="$HOME/branchout-data"
 
           # Ensure the shared edge network exists (idempotent).
           docker network inspect edge >/dev/null 2>&1 || docker network create edge
@@ -223,6 +260,10 @@ jobs:
             # not present a token yet (follow-up). Caddy blocks /api/engine/* from the
             # internet, so the intake is only reachable internally - open here is safe.
             printf 'ALLOW_UNAUTHENTICATED_ENGINE=1\n'
+            # Host path of the private game-data repo (cloned + tag-pinned above). Compose
+            # bind-mounts $GAME_DATA_HOST/data read-only into game-engine/admin and sets
+            # GAME_DATA_DIR so the asset loader reads the mount (see deploy/README.md).
+            printf 'GAME_DATA_HOST=%s\n' "$DATA_REPO"
           } > "$ENV_FILE"
 
           # Pre-pull every image so a rollout's new container starts instantly (no pull

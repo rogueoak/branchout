@@ -364,7 +364,7 @@ export const liarLiarPlugin: GamePlugin<ResolvedLiarLiarConfig> = {
   create: async (services) => {
     const bank = await loadClueBank(services.assets.forModule(import.meta.url));
     // Fail fast on malformed shipped data: abort boot with a clear error rather than crashing
-    // mid-game. (Coverage is a test-time gate via validateSeedBank, not required at boot.)
+    // mid-game. Structural per-item checks only - no category-count gate (the bank grows over time).
     validateClueBank(bank);
     return createLiarLiarGame(bank, services.rng);
   },

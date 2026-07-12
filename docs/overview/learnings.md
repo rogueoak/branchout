@@ -306,6 +306,28 @@ Capture durable lessons as they emerge.
 
 ## Deployment and infra
 
+- **Don't gate growing content on a fixed count or spread - validate item structure, not the
+  collection's shape.** The Trivia/Liar Liar banks carried a total-count, per-category-count, and
+  difficulty-spread gate. Content grows over time and its spread is deliberately uneven, so those
+  gates only fight the content: a valid new question fails CI for being the 201st, and a re-rate that
+  legitimately clumps a category trips the spread check. Keep the checks that stop a *malformed item*
+  from crashing the engine (id format + uniqueness, required fields, bounded values, no duplicate
+  prompt in a category) and drop every check on the collection's size or distribution. A validator
+  named for structure must run on a bank of any size. (Spec `0039`.)
+- **When the deploy box can't hold a credential for a second source, pull it in CI and push it to the
+  box - don't make the box reach out.** Org policy blocked an SSH deploy key on the droplet, so the
+  box could not `git fetch` the private game-data repo. Rather than thread a GitHub token onto the box
+  (a long-lived credential on a shared host), GitHub Actions checks the private repo out at the pinned
+  tag on the runner and rsyncs it to the box over the *existing* deploy SSH key. The box stays
+  credential-free; the runner already has scoped, ephemeral tokens. Pin the content by a git tag in a
+  version file so it rolls back with the code, and mirror with `rsync --delete` so a removed file is
+  removed on the box. (Spec `0039`.)
+- **A read-only bind mount from a host path is docker-rollout-safe; a mount that both instances read
+  is fine to double.** Serving game data from a `:ro` host bind mount works with the zero-downtime
+  swap because the path is identical and read-only on both Compose-indexed instances - nothing to
+  reconcile when they overlap. Reserve the "never roll this" treatment for stateful single-volume
+  services (Postgres/Redis), not for a shared read-only mount. (Spec `0039`.)
+
 - **A zero-downtime claim must account for every connection, not just the ones through the load
   balancer.** Making Caddy follow a docker-rollout swap (dynamic upstreams) only covers the
   edge-fronted routes. The internal service-to-service hops (`web` SSR -> `control-plane`,

@@ -135,6 +135,36 @@ creates the `edge` network, validates the Caddyfile, brings up the proxy, writes
 file from secrets, and rolls forward the app stack - no manual steps are needed after the
 prerequisites above.
 
+## External game data (spec 0039)
+
+The real game banks (Trivia questions, Liar Liar clues) live in a **separate private repo**,
+`git@github.com:rogueoak/branchout-data.git`, not in this public repo. The public repo ships only a
+tiny valid **sample** (a handful of items per category) so the code, unit tests, and local runs stay
+honest; production reads the full bank from the private repo mounted read-only into the containers.
+
+How it wires together:
+
+- **Pinned tag.** `deploy/data.version` holds a bare semver (e.g. `0.1.0`) that is a **git tag** in
+  the private repo. To ship new content: tag the private repo (`0.1.1`), then bump `data.version`
+  here in a normal PR. The deploy checks out exactly that tag - the content version is pinned in
+  git, auditable, and rolls back with the code.
+- **Data ships from GitHub Actions, not the box.** Org policy blocks SSH deploy keys on the droplet,
+  so the box holds **no GitHub credential** and never talks to GitHub for the data repo. Instead the
+  `deploy` job in `release.yml` checks out `rogueoak/branchout-data` at the pinned tag on the runner
+  (using the `DATA_REPO_TOKEN` secret), then **rsyncs** its `data/` to the box over the existing
+  deploy SSH key: `rsync -az --delete ... branchout-data/data/ "$USER@$HOST:branchout-data/data/"`.
+  `--delete` keeps the box an exact mirror of the tagged content. It writes `GAME_DATA_HOST`
+  (`$HOME/branchout-data`) into `.env.prod` so compose can resolve the host path.
+- **Read-only mount.** `compose.site.yml` bind-mounts `${GAME_DATA_HOST}/data` at
+  `/srv/game-data/data:ro` into **game-engine** (the real reader; it loads the banks at boot) and
+  **admin** (the same mount, for future content moderation), and sets `GAME_DATA_DIR=/srv/game-data`
+  on both. The mount is read-only and identical on both docker-rollout instances, so it is compatible
+  with the zero-downtime swap.
+- **Loader.** With `GAME_DATA_DIR` set, `@branchout/game-sdk`'s fs asset loader reads every game's
+  `data/` from the mount instead of the package's bundled sample (the relative paths
+  `data/trivia/...` / `data/liar-liar/...` are unchanged, so one mount root serves both games). Unset
+  (local dev, tests, e2e), it falls back to the bundled sample.
+
 ## One-time decommission of the coming-soon stack
 
 **An operator must run this once over SSH, before the first real deploy.**
@@ -161,16 +191,17 @@ brings up Caddy and the full site.
 
 Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branchout repo:
 
-| Secret                | Value                                                                                                        |
-| --------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet) |
-| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                         |
-| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                               |
-| `DEPLOY_USER`         | `deploy`                                                                                                     |
-| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                     |
-| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                         |
-| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                              |
-| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)         |
+| Secret                | Value                                                                                                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet)                                                                                                  |
+| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                                                                                                                          |
+| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                                                                                                                                |
+| `DEPLOY_USER`         | `deploy`                                                                                                                                                                                                      |
+| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                                                                                                                      |
+| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                                                                                                                          |
+| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                                                                                                                               |
+| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)                                                                                                          |
+| `DATA_REPO_TOKEN`     | Read-only fine-grained PAT with **Contents: read** on `rogueoak/branchout-data` (spec 0039); GHA uses it to check out the pinned game-data tag and rsync it to the box. Required before the next real deploy. |
 
 Generate strong values with:
 
