@@ -109,10 +109,10 @@ A fresh droplet needs:
 
 5. **DNS**: `A` records for `branchout.games` and `www.branchout.games` pointing at the
    droplet IP. Caddy needs this to issue TLS certificates via ACME (Let's Encrypt).
-   Add an `insiders.branchout.games` `A` record too (spec 0035): its Caddyfile block reuses the
+   Add an `insider.branchout.games` `A` record too (spec 0035): its Caddyfile block reuses the
    shared `api_ws` + `web` snippets and is served by the same `web` process, but Caddy still issues a
    per-host TLS cert, so the record must resolve to the droplet. For one login to span the apex and
-   the insiders subdomain, the session cookie must be scoped to the parent domain: set
+   the insider subdomain, the session cookie must be scoped to the parent domain: set
    `COOKIE_DOMAIN=.branchout.games` in `deploy/docker/.env.prod` (unset elsewhere keeps it host-only).
    Add an `admin.branchout.games` `A` record too (spec 0037): its Caddyfile block imports the shared
    `api` snippet and proxies the rest to the separate `admin` Next.js service. The admin session is a

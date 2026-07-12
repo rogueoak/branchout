@@ -1,13 +1,13 @@
 // Host-aware routing helpers for the subdomain surfaces (spec 0035). Pure functions, so the
 // middleware stays a thin adapter over `next/server` and the routing logic is unit-testable without
-// mocking the Next runtime. Today only `insiders.` exists; the admin console (spec 0037) is a
+// mocking the Next runtime. Today only `insider.` exists; the admin console (spec 0037) is a
 // separate static app served by Caddy, so it never reaches this Next middleware.
 
-/** The subdomain label that selects the insiders surface. */
-export const INSIDERS_PREFIX = 'insiders.';
+/** The subdomain label that selects the insider surface. */
+export const INSIDER_PREFIX = 'insider.';
 
-/** The internal segment the insiders host rewrites into. */
-export const INSIDERS_SEGMENT = '/insiders';
+/** The internal segment the insider host rewrites into. */
+export const INSIDER_SEGMENT = '/insider';
 
 /**
  * The session cookie name. Owned here (a pure module with no server deps) so the edge middleware and
@@ -23,12 +23,12 @@ export function hostname(hostHeader: string | null | undefined): string {
 }
 
 /**
- * Whether a request is for the insiders surface. Matches `insiders.branchout.games` and
- * `insiders.localhost[:port]` alike (a bare-label check, so it works in prod and in local/e2e where
+ * Whether a request is for the insider surface. Matches `insider.branchout.games` and
+ * `insider.localhost[:port]` alike (a bare-label check, so it works in prod and in local/e2e where
  * `*.localhost` resolves to 127.0.0.1).
  */
-export function isInsidersHost(hostHeader: string | null | undefined): boolean {
-  return hostname(hostHeader).startsWith(INSIDERS_PREFIX);
+export function isInsiderHost(hostHeader: string | null | undefined): boolean {
+  return hostname(hostHeader).startsWith(INSIDER_PREFIX);
 }
 
 /**
@@ -57,12 +57,12 @@ export function schemeFrom(xForwardedProto: string | null | undefined, fallback:
 }
 
 /**
- * The apex host for an insiders host, keeping any port, lowercased. `insiders.branchout.games` ->
- * `branchout.games`; `insiders.localhost:3100` -> `localhost:3100`. Only the leading label is
+ * The apex host for an insider host, keeping any port, lowercased. `insider.branchout.games` ->
+ * `branchout.games`; `insider.localhost:3100` -> `localhost:3100`. Only the leading label is
  * stripped.
  */
 export function apexHost(hostHeader: string): string {
-  return hostHeader.replace(/^insiders\./i, '').toLowerCase();
+  return hostHeader.replace(/^insider\./i, '').toLowerCase();
 }
 
 /** Whether a `next` return-target URL points at one of our own hosts (so it is safe to redirect to). */
@@ -75,10 +75,10 @@ function isTrustedNextUrl(nextUrl: string): boolean {
 }
 
 /**
- * The login URL a signed-out insiders visitor is sent to. Redirecting to the insiders host's own
- * `/login` would just rewrite the login page back into the gated tree, so a trusted insiders host
+ * The login URL a signed-out insider visitor is sent to. Redirecting to the insider host's own
+ * `/login` would just rewrite the login page back into the gated tree, so a trusted insider host
  * crosses back to the APEX login; an optional origin-validated `nextUrl` rides along as `?next=` so
- * login can return the visitor to the surface. If the insiders `host` itself is not one of ours
+ * login can return the visitor to the surface. If the insider `host` itself is not one of ours
  * (a spoofed `Host` header - never reachable through Caddy in prod), we do NOT build an absolute URL
  * from it; we return a relative `/login` the caller resolves against its own origin, closing a
  * Host-header open redirect.
@@ -92,17 +92,17 @@ export function apexLoginUrl(host: string, scheme: string, nextUrl?: string): st
 }
 
 /**
- * The internal path the insiders host serves for a public path. `/` -> `/insiders`; `/games` ->
- * `/insiders/games`. Idempotent: an already-prefixed path is returned unchanged, so an accidental
+ * The internal path the insider host serves for a public path. `/` -> `/insider`; `/games` ->
+ * `/insider/games`. Idempotent: an already-prefixed path is returned unchanged, so an accidental
  * double rewrite can never happen.
  */
-export function insidersRewritePath(pathname: string): string {
-  if (isInsidersPath(pathname)) return pathname;
-  if (pathname === '/') return INSIDERS_SEGMENT;
-  return `${INSIDERS_SEGMENT}${pathname}`;
+export function insiderRewritePath(pathname: string): string {
+  if (isInsiderPath(pathname)) return pathname;
+  if (pathname === '/') return INSIDER_SEGMENT;
+  return `${INSIDER_SEGMENT}${pathname}`;
 }
 
-/** Whether a path targets the insiders tree - used by the layout host-guard. */
-export function isInsidersPath(pathname: string): boolean {
-  return pathname === INSIDERS_SEGMENT || pathname.startsWith(`${INSIDERS_SEGMENT}/`);
+/** Whether a path targets the insider tree - used by the layout host-guard. */
+export function isInsiderPath(pathname: string): boolean {
+  return pathname === INSIDER_SEGMENT || pathname.startsWith(`${INSIDER_SEGMENT}/`);
 }

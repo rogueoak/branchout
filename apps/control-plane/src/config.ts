@@ -9,7 +9,7 @@ export interface SessionCookieConfig {
   sameSite: 'lax' | 'strict' | 'none';
   /**
    * Cookie Domain attribute. Unset (the default) makes the cookie host-only. Set to a parent domain
-   * (e.g. `.branchout.games`) so one session spans the apex and its subdomains - the insiders surface
+   * (e.g. `.branchout.games`) so one session spans the apex and its subdomains - the insider surface
    * needs this (spec 0035). Left unset in local/dev where every surface shares one host.
    */
   domain?: string;

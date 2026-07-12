@@ -21,7 +21,7 @@ describe('Footer', () => {
   });
 
   it('crosses the legal links to the apex when given a linkOrigin (spec 0035)', () => {
-    // On the insiders subdomain, a relative /privacy would rewrite into the insiders tree and 404,
+    // On the insider subdomain, a relative /privacy would rewrite into the insider tree and 404,
     // so the surface passes its apex origin and the links become absolute.
     render(<Footer linkOrigin="https://branchout.games" />);
     expect(screen.getByRole('link', { name: 'Privacy' })).toHaveProperty(

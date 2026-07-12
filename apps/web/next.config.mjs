@@ -5,7 +5,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    // Enables `forbidden()` / `unauthorized()` (Next 15.1): the insiders layout (spec 0035) calls
+    // Enables `forbidden()` / `unauthorized()` (Next 15.1): the insider layout (spec 0035) calls
     // `forbidden()` for a signed-in non-insider so the app returns a real, styled 403 rather than a
     // 200 "not allowed" page.
     authInterrupts: true,

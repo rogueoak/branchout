@@ -195,12 +195,12 @@ What the product does for users, grouped by area. Each capability maps to one or
       game started, game completed) plus manual pageviews; a signed-in player is identified by their
       public gamer tag, reset on logout. Session replay and autocapture are off, so no gameplay
       content or PII is captured. The key is baked into the web image at build time.
-- [x] Insiders surface - a beta-tester surface at `insiders.branchout.games`, served by the same
+- [x] Insider surface - a beta-tester surface at `insider.branchout.games`, served by the same
       `web` process via host-aware middleware (no extra container). Gated by an account-level
       `insider` role (surfaced through `/auth/me`): the tree's layout sends a signed-out visitor to
       the apex login and returns a real 403 for a signed-in non-insider; the apex cannot reach the
       tree by path. One login spans the apex and the subdomain (session cookie scoped to
-      `.branchout.games`). It reuses the main look and feel with an "Insiders" nav label and an
+      `.branchout.games`). It reuses the main look and feel with an "Insider" nav label and an
       empty-state index of test games (games added later). The role is granted out-of-band (a DB
       update) until the admin console (spec `0037`) ships a toggle (spec `0035`).
 - [ ] Profile pages and friend search/invite.

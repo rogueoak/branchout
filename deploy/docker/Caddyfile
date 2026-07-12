@@ -8,9 +8,9 @@
 #   /ws/*      -> game-engine:4001    (WebSocket upgrade; the browser connects to /ws/v1)
 #   *          -> web:3000            (Next.js)
 #
-# The apex and the insiders subdomain (spec 0035) share this exact routing - the insiders surface is
+# The apex and the insider subdomain (spec 0035) share this exact routing - the insider surface is
 # served by the same `web` process (host-aware middleware rewrites it), and re-serving /api + /ws
-# same-origin under insiders keeps it CORS-free. To stay DRY the routing lives in snippets
+# same-origin under insider keeps it CORS-free. To stay DRY the routing lives in snippets
 # (`ws`, `api`, `api_ws`, `web`) that each site block imports. Admin (spec 0037) is a separate Next.js
 # service on its own block; it imports `api` (no `/ws`) and proxies the rest to the `admin` service.
 #
@@ -58,7 +58,7 @@
 }
 
 # control-plane REST upstream. Owns the trusted-client-IP header (spec 0038) so EVERY block that fronts
-# control-plane's /api - apex, insiders, and admin (spec 0037) - inherits an unforgeable request.ip from
+# control-plane's /api - apex, insider, and admin (spec 0037) - inherits an unforgeable request.ip from
 # ONE place, never a per-block copy that could drift out of sync.
 (api) {
     # The engine report intake (control-plane /v1/engine/*) is internal-only: the game-engine calls it
@@ -88,14 +88,14 @@
             # {remote_host} is the real client; without this Caddy appends to a client-supplied XFF and
             # the leftmost value (what trustProxy reads) is attacker-controlled - letting a source rotate
             # past the /auth/signup per-IP cap. Living in this shared snippet means every /api front (apex,
-            # insiders, admin) gets it. Applies only to the edge-fronted path: a direct dev call to the
+            # insider, admin) gets it. Applies only to the edge-fronted path: a direct dev call to the
             # published control-plane port has no Caddy and no sanitized XFF.
             header_up X-Forwarded-For {remote_host}
         }
     }
 }
 
-# API + WebSocket together, for the surfaces that need both (apex, insiders). Admin (spec 0037) imports
+# API + WebSocket together, for the surfaces that need both (apex, insider). Admin (spec 0037) imports
 # `api` alone - it has no WebSocket.
 (api_ws) {
     import ws
@@ -141,10 +141,10 @@ branchout.games {
     import web
 }
 
-# Insiders surface (spec 0035): same routing as the apex, served by the same `web` process. The
-# host-aware middleware in `web` rewrites requests here into the /insiders tree; re-serving /api and
-# /ws same-origin keeps the surface CORS-free. Needs an `insiders` A record -> the droplet.
-insiders.branchout.games {
+# Insider surface (spec 0035): same routing as the apex, served by the same `web` process. The
+# host-aware middleware in `web` rewrites requests here into the /insider tree; re-serving /api and
+# /ws same-origin keeps the surface CORS-free. Needs an `insider` A record -> the droplet.
+insider.branchout.games {
     import site_base
     import api_ws
     import web

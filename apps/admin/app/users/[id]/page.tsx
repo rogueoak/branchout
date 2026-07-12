@@ -54,7 +54,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         <div className="mt-8 rounded-md border border-border p-4">
           <h2 className="text-body font-semibold text-text">Insider access</h2>
           <p className="mt-1 text-body-sm text-text-muted">
-            Grant or revoke this player&apos;s access to the insiders surface.
+            Grant or revoke this player&apos;s access to the insider surface.
           </p>
           <div className="mt-3">
             <InsiderToggle userId={account.id} initialInsider={account.insider} />

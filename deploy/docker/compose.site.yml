@@ -22,7 +22,7 @@
 # Required keys: POSTGRES_PASSWORD, SESSION_SECRET
 # Optional (spec 0004/0006): DATABASE_URL, REDIS_URL, INTERNAL_TOKEN
 # Optional (spec 0035): COOKIE_DOMAIN=.branchout.games - scopes the session cookie to the parent
-#   domain so one login spans the apex + the insiders subdomain (unset keeps it host-only).
+#   domain so one login spans the apex + the insider subdomain (unset keeps it host-only).
 name: branchout
 
 services:

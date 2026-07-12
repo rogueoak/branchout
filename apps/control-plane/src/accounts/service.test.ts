@@ -42,7 +42,7 @@ describe('AccountService.signup', () => {
       password: 'supersecret',
       gamerTag: 'Tester',
     });
-    // Fresh accounts are not insiders; the flag is part of the public identity.
+    // Fresh accounts are not insider; the flag is part of the public identity.
     expect(account.insider).toBe(false);
 
     // Granting out-of-band (the spec 0035 stand-in) shows through the public account.

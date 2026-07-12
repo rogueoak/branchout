@@ -38,8 +38,8 @@ export default defineConfig({
         'share-unfurl.spec.ts',
         'trivia-round.spec.ts',
         'profile.spec.ts',
-        // Insiders subdomain gate + surface (spec 0035); includes its own 360px phone check.
-        'insiders.spec.ts',
+        // Insider subdomain gate + surface (spec 0035); includes its own 360px phone check.
+        'insider.spec.ts',
         // Admin console: separate identity, user management, insider toggle (spec 0037).
         'admin.spec.ts',
       ],

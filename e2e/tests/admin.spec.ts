@@ -6,11 +6,11 @@ import { ADMIN_URL, WEB_PORT } from '../lib/stack';
 // with a SEPARATE identity (its own store + host-only cookie). The root admin is seeded from env by
 // the control-plane on boot (see infra/docker-compose.e2e.yml). The risk this guards is authorization:
 // only a valid admin session reaches the console, a player session does not, and an admin can grant a
-// player the insider role (proven through to the insiders surface). The seeded root's credentials
+// player the insider role (proven through to the insider surface). The seeded root's credentials
 // match the e2e overlay.
 const ROOT = { email: 'root@branchout.test', password: 'e2e-root-admin-password' };
 const PLAYER_COOKIE = 'branchout_session';
-const INSIDERS_URL = `http://insiders.localhost:${WEB_PORT}`;
+const INSIDER_URL = `http://insider.localhost:${WEB_PORT}`;
 
 async function adminLogin(page: Page, email: string, password: string): Promise<void> {
   await page.goto(`${ADMIN_URL}/login`);
@@ -20,16 +20,16 @@ async function adminLogin(page: Page, email: string, password: string): Promise<
   await page.waitForURL(`${ADMIN_URL}/users`);
 }
 
-/** Copy the player session cookie onto the insiders host - the local stand-in for prod's parent-domain
- * cookie (see insiders.spec), so the same player session reaches `insiders.localhost`. */
-async function spanPlayerSessionToInsiders(context: BrowserContext): Promise<void> {
+/** Copy the player session cookie onto the insider host - the local stand-in for prod's parent-domain
+ * cookie (see insider.spec), so the same player session reaches `insider.localhost`. */
+async function spanPlayerSessionToInsider(context: BrowserContext): Promise<void> {
   const session = (await context.cookies()).find((c) => c.name === PLAYER_COOKIE);
   if (!session) throw new Error('no player session cookie - signUp did not set one');
   await context.addCookies([
     {
       name: PLAYER_COOKIE,
       value: session.value,
-      domain: 'insiders.localhost',
+      domain: 'insider.localhost',
       path: '/',
       httpOnly: true,
       secure: false,
@@ -39,7 +39,7 @@ async function spanPlayerSessionToInsiders(context: BrowserContext): Promise<voi
 }
 
 test.describe('admin console (spec 0037)', () => {
-  test('root admin signs in, grants a player insider (who then reaches insiders), and creates another admin', async ({
+  test('root admin signs in, grants a player insider (who then reaches insider), and creates another admin', async ({
     page,
     browser,
   }) => {
@@ -58,15 +58,15 @@ test.describe('admin console (spec 0037)', () => {
     await expect(page.getByRole('button', { name: /revoke insider/i })).toBeVisible();
 
     // Prove the write actually took (the button would flip even if it were dropped): the player now
-    // reaches the insiders surface. The player session is still in this context (from signUp); span it
-    // to the insiders host and load it in a fresh page.
-    await spanPlayerSessionToInsiders(page.context());
-    const insiders = await page.context().newPage();
+    // reaches the insider surface. The player session is still in this context (from signUp); span it
+    // to the insider host and load it in a fresh page.
+    await spanPlayerSessionToInsider(page.context());
+    const insider = await page.context().newPage();
     try {
-      await insiders.goto(INSIDERS_URL);
-      await expect(insiders.getByRole('heading', { name: 'Insiders' })).toBeVisible();
+      await insider.goto(INSIDER_URL);
+      await expect(insider.getByRole('heading', { name: 'Insider' })).toBeVisible();
     } finally {
-      await insiders.close();
+      await insider.close();
     }
 
     // Create another admin.

@@ -22,7 +22,7 @@ export interface PublicAccount {
   nickname: string;
   avatar: string;
   visibility: ProfileVisibility;
-  /** Beta-tester entitlement (spec 0035): the web gates the insiders surface on this. */
+  /** Beta-tester entitlement (spec 0035): the web gates the insider surface on this. */
   insider: boolean;
 }
 

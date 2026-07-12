@@ -9,7 +9,7 @@ const CONTROL_PLANE_URL = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? 'http://l
 
 /**
  * A `?next=` return target, kept only if it points at one of our own hosts (open-redirect defence -
- * the value can come from a subdomain gate, e.g. insiders sends the visitor here to log in and
+ * the value can come from a subdomain gate, e.g. insider sends the visitor here to log in and
  * return). Read on the client from the current URL so the page needs no Suspense boundary.
  */
 function readTrustedNext(): string | null {
@@ -32,7 +32,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  // An origin-validated return target (e.g. the insiders surface that sent a signed-out visitor here).
+  // An origin-validated return target (e.g. the insider surface that sent a signed-out visitor here).
   const [next, setNext] = useState<string | null>(null);
   useEffect(() => {
     setNext(readTrustedNext());

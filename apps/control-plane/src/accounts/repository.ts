@@ -27,7 +27,7 @@ export interface Account {
   avatar: string;
   /** Who may see the full profile (spec 0027). */
   visibility: ProfileVisibility;
-  /** Beta-tester entitlement (spec 0035): gates the insiders surface. Granted out-of-band for now. */
+  /** Beta-tester entitlement (spec 0035): gates the insider surface. Granted out-of-band for now. */
   insider: boolean;
   emailVerified: boolean;
   createdAt: Date;
