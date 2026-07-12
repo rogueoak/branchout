@@ -2,7 +2,8 @@
 
 // The shared site top nav (spec 0028). Present on the marketing and room hosting/joining surfaces,
 // absent inside a running game (each surface opts in by rendering this, so there is no fragile
-// hide-on-route check). Left: the wordmark (home) + a Games link. Right: signed out shows Log in
+// hide-on-route check). Left: the wordmark (home), an optional surface badge, + a Games link. Right:
+// signed out shows Log in
 // (quiet) and a Sign up CTA (primary by default, de-emphasized via `signupVariant` on a page whose
 // body already owns the signup primary - one-primary-per-view); signed in shows the player's avatar
 // opening the account menu. The `viewer` is read server-side and injected as a prop, so the correct
@@ -19,8 +20,8 @@ import { Wordmark } from './Wordmark';
 // `signupVariant` lets a surface de-emphasize the nav's Sign up CTA. On a page whose body already
 // carries the primary signup action (the home hero's "Sign up free"), pass `outline` so there is one
 // primary per view; elsewhere (/rooms, /join, the lobby) the nav CTA is the page's primary.
-// `label` renders a small pill on the right (spec 0035): a surface marker like "Insider" so a
-// tester always knows which surface they are on. Omitted on the main site.
+// `label` renders a small pill just after the wordmark (spec 0035): a surface marker like "Insider"
+// so a tester always knows which surface they are on. Omitted on the main site.
 // `linkOrigin` crosses the nav's own links to another origin (spec 0035): on a subdomain surface
 // (insider) whose middleware rewrites every path into its tree, an apex-relative `/games` would
 // 404, so the surface passes its apex origin and the chrome links absolute to the apex. Unset =
@@ -51,6 +52,14 @@ export function TopNav({
           >
             <Wordmark />
           </a>
+          {/* The surface badge (e.g. "Insider", spec 0035) sits right after the wordmark so the
+              marker reads as part of the brand lockup - left-aligned, matching the admin console's
+              "Admin" badge. Omitted on the main apex. */}
+          {label ? (
+            <Badge variant="primary" className="uppercase tracking-wide">
+              {label}
+            </Badge>
+          ) : null}
           <a
             href={to('/games')}
             className="text-body-sm font-medium text-text-muted underline-offset-4 hover:text-text hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -60,11 +69,6 @@ export function TopNav({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {label ? (
-            <Badge variant="primary" className="uppercase tracking-wide">
-              {label}
-            </Badge>
-          ) : null}
           {viewer.signedIn && viewer.gamerTag ? (
             <AccountMenu
               gamerTag={viewer.gamerTag}

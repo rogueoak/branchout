@@ -29,6 +29,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@branchout/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@branchout/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
