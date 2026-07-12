@@ -1,4 +1,4 @@
-# 0040 - External game data (private repo mount)
+# 0041 - External game data (private repo mount)
 
 ## Problem
 

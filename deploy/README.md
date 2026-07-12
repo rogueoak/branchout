@@ -135,7 +135,7 @@ creates the `edge` network, validates the Caddyfile, brings up the proxy, writes
 file from secrets, and rolls forward the app stack - no manual steps are needed after the
 prerequisites above.
 
-## External game data (spec 0040)
+## External game data (spec 0041)
 
 The real game banks (Trivia questions, Liar Liar clues) live in a **separate private repo**,
 `git@github.com:rogueoak/branchout-data.git`, not in this public repo. The public repo ships only a
@@ -207,7 +207,7 @@ Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branc
 | `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                                                                                                                          |
 | `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                                                                                                                               |
 | `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)                                                                                                          |
-| `DATA_REPO_TOKEN`     | Read-only fine-grained PAT with **Contents: read** on `rogueoak/branchout-data` (spec 0040); GHA uses it to check out the pinned game-data tag and rsync it to the box. Required before the next real deploy. |
+| `DATA_REPO_TOKEN`     | Read-only fine-grained PAT with **Contents: read** on `rogueoak/branchout-data` (spec 0041); GHA uses it to check out the pinned game-data tag and rsync it to the box. Required before the next real deploy. |
 
 Generate strong values with:
 

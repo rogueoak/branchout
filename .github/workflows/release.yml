@@ -202,7 +202,7 @@ jobs:
           git fetch --prune origin
           git reset --hard origin/main
 
-          # Private game-data (spec 0040): the box holds NO GitHub credentials and does not fetch the
+          # Private game-data (spec 0041): the box holds NO GitHub credentials and does not fetch the
           # data repo. GitHub Actions checks out rogueoak/branchout-data at the tag in
           # deploy/data.version and rsyncs its data/ to $HOME/branchout-data/data BEFORE this script
           # runs (see the deploy step). GAME_DATA_HOST below points the compose mount at that dir.
