@@ -3,7 +3,8 @@ import cors from '@fastify/cors';
 import { V1_PREFIX } from '@branchout/protocol';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { AccountService } from './accounts/service';
-import type { SessionCookieConfig } from './config';
+import type { RateLimitConfig, SessionCookieConfig } from './config';
+import type { RateLimiter } from './ratelimit/limiter';
 import { registerAuthRoutes } from './routes/auth';
 import { registerEngineRoutes } from './routes/engine';
 import { registerProfileRoutes } from './routes/profiles';
@@ -29,6 +30,10 @@ export interface AppDeps {
   webOrigins: string[];
   /** Shared secret the engine presents on the report intake; left unset only in trusted dev. */
   internalToken?: string;
+  /** Rate limiter backing the auth-endpoint lockouts (spec 0036). */
+  limiter: RateLimiter;
+  /** Auth rate-limit thresholds. */
+  rateLimit: RateLimitConfig;
 }
 
 /**
@@ -39,7 +44,14 @@ export interface AppDeps {
  * anyway). CORS and cookie plugins register at the root, so the `/v1` child context inherits them.
  */
 export function createApp(deps: AppDeps): FastifyInstance {
-  const app = Fastify();
+  // trustProxy: without it, behind Caddy every client shares the proxy's IP and one rate-limit
+  // bucket, so `request.ip` reads the `X-Forwarded-For` Caddy sets. But that IP is best-effort, NOT a
+  // trustworthy identity: Caddy *appends* to a client-supplied XFF rather than stripping it, and the
+  // dev infra compose even publishes port 4000 to the host - so a caller can forge XFF. Therefore the
+  // login lockout anchors on the ACCOUNT (which cannot be forged), and the per-IP sign-up cap is
+  // explicitly best-effort. Hardening the client IP at the edge (strip/replace XFF, or scope trust to
+  // the proxy hop) is a follow-up that also benefits the admin surface (spec 0037).
+  const app = Fastify({ trustProxy: true });
 
   app.register(cors, {
     origin: deps.webOrigins,
@@ -72,6 +84,8 @@ export function createApp(deps: AppDeps): FastifyInstance {
         accounts: deps.accounts,
         sessions: deps.sessions,
         cookie: deps.cookie,
+        limiter: deps.limiter,
+        rateLimit: deps.rateLimit,
       });
 
       registerRoomRoutes(v1, {

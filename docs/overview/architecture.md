@@ -83,6 +83,24 @@ version lives in code (not in the `CONTROL_PLANE_URL` env value, which is the pl
   (`schema_migrations` ledger + ordered SQL, applied on boot and via a `migrate` script). Add a
   migration by appending the next id; never edit a shipped one (spec `0004`).
 
+## Auth rate limiting (spec 0036)
+
+The auth endpoints are rate-limited/lockable against brute force and mass account creation, backed by
+the Redis we already run (a small fixed-window counter, `RateLimiter`, with an in-memory variant for
+tests - the same store-plus-fake shape as sessions). **Sign-in** locks on the **account** alone
+(`login:<email>`) and resets on a successful login. The account is the anchor precisely because it is
+the one dimension the caller cannot forge: `request.ip` comes from `X-Forwarded-For`, which Caddy
+*appends* to rather than strips, so a client can supply it - folding the IP into the lockout key would
+let an attacker rotate XFF to a fresh bucket per request and brute-force past the lock. **Sign-up**
+caps per client IP, which is therefore **best-effort** (a rotated XFF evades it; there is no account to
+anchor on yet). Over-limit returns `429` + `Retry-After` with a uniform message, so the limiter is
+never an account-enumeration oracle. `Fastify({ trustProxy: true })` gives `request.ip` its best
+available value (else every client shares the proxy's IP); hardening it into a trustworthy identity
+(strip/replace XFF at the Caddy edge, or scope proxy trust to the hop) is a follow-up that also
+benefits the admin surface (spec `0037`). The fixed window has a known ~`2x limit` boundary burst.
+Thresholds are env-tunable (`LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_SECONDS`, `SIGNUP_MAX_PER_IP`,
+`SIGNUP_WINDOW_SECONDS`); the limiter is reused by the admin login (spec `0037`).
+
 ## Design system and theme
 
 UI is built on rogueoak/canopy (`@rogueoak/canopy` components + `@rogueoak/roots` tokens).

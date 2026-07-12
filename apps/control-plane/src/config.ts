@@ -17,6 +17,21 @@ export interface SessionCookieConfig {
   ttlSeconds: number;
 }
 
+/**
+ * Auth rate-limiting / lockout thresholds (spec 0036). Sign-in locks per (account, IP) so brute
+ * force is bounded even when the IP rotates; sign-up caps per IP to blunt mass account creation.
+ */
+export interface RateLimitConfig {
+  /** Failed sign-ins per (account, IP) within the window before a 429 lockout. */
+  loginMaxAttempts: number;
+  /** Fixed-window length for the sign-in lockout, in seconds. */
+  loginWindowSeconds: number;
+  /** Sign-ups per client IP within the window before a 429. */
+  signupMaxPerIp: number;
+  /** Fixed-window length for the sign-up cap, in seconds. */
+  signupWindowSeconds: number;
+}
+
 export interface ServiceConfig {
   port: number;
   databaseUrl: string;
@@ -30,6 +45,8 @@ export interface ServiceConfig {
   internalToken?: string;
   /** TTL for live room membership/presence in Redis; refreshed on each write. */
   membershipTtlSeconds: number;
+  /** Auth rate-limiting / lockout thresholds. */
+  rateLimit: RateLimitConfig;
 }
 
 /** One week, in seconds - the default session lifetime. */
@@ -38,11 +55,30 @@ const DEFAULT_SESSION_TTL = 60 * 60 * 24 * 7;
 /** Twelve hours - the default lifetime for a room's idle live membership in Redis. */
 const DEFAULT_MEMBERSHIP_TTL = 60 * 60 * 12;
 
+/** Auth rate-limit defaults: 5 sign-in tries / 15 min; 10 sign-ups / hour per IP. */
+const DEFAULT_LOGIN_MAX_ATTEMPTS = 5;
+const DEFAULT_LOGIN_WINDOW = 60 * 15;
+const DEFAULT_SIGNUP_MAX_PER_IP = 10;
+const DEFAULT_SIGNUP_WINDOW = 60 * 60;
+
 function parseBool(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined) {
     return fallback;
   }
   return value === 'true' || value === '1';
+}
+
+/**
+ * A positive integer from the environment, else the fallback. Guards the rate-limit knobs: a garbage
+ * value would otherwise become `NaN`, and a `NaN` limit makes `count < NaN` false -> everyone is
+ * instantly locked out. Zero/negative are rejected too (a limit must be at least 1).
+ */
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  if (value === undefined) {
+    return fallback;
+  }
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
 }
 
 /**
@@ -84,5 +120,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     engineUrl: env.ENGINE_URL ?? 'http://localhost:4001',
     ...(env.INTERNAL_API_TOKEN ? { internalToken: env.INTERNAL_API_TOKEN } : {}),
     membershipTtlSeconds: Number(env.MEMBERSHIP_TTL_SECONDS ?? DEFAULT_MEMBERSHIP_TTL),
+    rateLimit: {
+      loginMaxAttempts: parsePositiveInt(env.LOGIN_MAX_ATTEMPTS, DEFAULT_LOGIN_MAX_ATTEMPTS),
+      loginWindowSeconds: parsePositiveInt(env.LOGIN_WINDOW_SECONDS, DEFAULT_LOGIN_WINDOW),
+      signupMaxPerIp: parsePositiveInt(env.SIGNUP_MAX_PER_IP, DEFAULT_SIGNUP_MAX_PER_IP),
+      signupWindowSeconds: parsePositiveInt(env.SIGNUP_WINDOW_SECONDS, DEFAULT_SIGNUP_WINDOW),
+    },
   };
 }

@@ -38,3 +38,43 @@ describe('loadConfig cookie policy', () => {
     expect(config.webOrigins).toEqual(['https://a.example', 'https://b.example']);
   });
 });
+
+describe('loadConfig rate limiting (spec 0036)', () => {
+  it('defaults to sane auth thresholds', () => {
+    const { rateLimit } = loadConfig({ ...base });
+    expect(rateLimit).toEqual({
+      loginMaxAttempts: 5,
+      loginWindowSeconds: 900,
+      signupMaxPerIp: 10,
+      signupWindowSeconds: 3600,
+    });
+  });
+
+  it('reads the thresholds from the environment', () => {
+    const { rateLimit } = loadConfig({
+      ...base,
+      LOGIN_MAX_ATTEMPTS: '3',
+      LOGIN_WINDOW_SECONDS: '60',
+      SIGNUP_MAX_PER_IP: '2',
+      SIGNUP_WINDOW_SECONDS: '120',
+    });
+    expect(rateLimit).toEqual({
+      loginMaxAttempts: 3,
+      loginWindowSeconds: 60,
+      signupMaxPerIp: 2,
+      signupWindowSeconds: 120,
+    });
+  });
+
+  it('falls back to the default on a garbage threshold (a NaN limit would lock everyone out)', () => {
+    const { rateLimit } = loadConfig({
+      ...base,
+      LOGIN_MAX_ATTEMPTS: 'abc',
+      SIGNUP_MAX_PER_IP: '0',
+      LOGIN_WINDOW_SECONDS: '-5',
+    });
+    expect(rateLimit.loginMaxAttempts).toBe(5); // not NaN
+    expect(rateLimit.signupMaxPerIp).toBe(10); // zero rejected
+    expect(rateLimit.loginWindowSeconds).toBe(900); // negative rejected
+  });
+});
