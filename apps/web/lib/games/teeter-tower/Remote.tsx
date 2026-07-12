@@ -36,6 +36,23 @@ function nicknameOf(players: PlayerView[], id: string): string {
   return players.find((player) => player.player === id)?.nickname ?? id;
 }
 
+/**
+ * Translate an engine rejection reason into player-clear copy. The engine's raw reasons
+ * (teeter-tower.ts) read like internal verdicts ("not your turn", "drop above the required line",
+ * "piece overlaps the tower", "malformed move"); rendered verbatim they can contradict the trailing
+ * prompt (e.g. "not your turn - re-aim and drop again"). This maps the known reasons to friendly,
+ * self-contained lines and falls back to a generic nudge for anything unexpected.
+ */
+function rejectionMessage(reason: string): string {
+  const map: Record<string, string> = {
+    'not your turn': 'Hold tight - it is not your turn yet.',
+    'drop above the required line': 'Drop it higher, above the marked line.',
+    'piece overlaps the tower': 'That spot is blocked - nudge it over and try again.',
+    'malformed move': 'That did not send cleanly - re-aim and drop again.',
+  };
+  return map[reason] ?? 'That drop did not land - re-aim and drop again.';
+}
+
 export function TeeterRemote({ state, me, onMove }: GameRemoteProps) {
   const { phase, round } = state;
   const prompt = asTeeterPrompt(state.prompt);
@@ -213,7 +230,7 @@ export function TeeterRemote({ state, me, onMove }: GameRemoteProps) {
 
       {state.rejected ? (
         <p role="alert" className="text-body-sm text-danger">
-          {state.rejected} - re-aim and drop again.
+          {rejectionMessage(state.rejected)}
         </p>
       ) : null}
 
@@ -222,11 +239,24 @@ export function TeeterRemote({ state, me, onMove }: GameRemoteProps) {
         className="w-full overflow-hidden rounded-xl border border-border bg-bg"
         style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}`, touchAction: 'none' }}
         onPointerDown={(e) => {
+          // Capture the pointer so a finger that drifts off the edge of a small (~360px) board
+          // mid-drag keeps tracking (mobile-first, CLAUDE.md rule #1). touch-action:none stays set.
+          e.currentTarget.setPointerCapture(e.pointerId);
           if (aim === 'spinning') handleBoardTap();
           else handlePointerMove(e.clientX);
         }}
         onPointerMove={(e) => {
           if (e.buttons === 1) handlePointerMove(e.clientX);
+        }}
+        onPointerUp={(e) => {
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+          }
+        }}
+        onPointerCancel={(e) => {
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+          }
         }}
       >
         <canvas

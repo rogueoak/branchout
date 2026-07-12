@@ -86,6 +86,12 @@ export function TeeterViewer({ state, onAdvance }: GameViewProps) {
   const [animating, setAnimating] = useState(false);
   const playedRevealKey = useRef<string | null>(null);
   const advancedRound = useRef<number | null>(null);
+  // A pending "advance after a beat" timer, so a solo player can read the "Level cleared" status +
+  // score tick before the next piece spawns. Cleared on unmount / round change.
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** How long to linger on the settled tower before the continuous auto-advance fires (ms). */
+  const ADVANCE_DELAY_MS = 900;
 
   // The values the draw loop reads without re-subscribing rAF each render. Refs keep the animation
   // loop stable while state drives when to start/stop it.
@@ -115,7 +121,9 @@ export function TeeterViewer({ state, onAdvance }: GameViewProps) {
   }, [reveal, state.round]);
 
   // Advance once per round when we are resting at leaderboard (continuous play). Guarded so a
-  // re-render or a repeated leaderboard frame never fires it twice.
+  // re-render or a repeated leaderboard frame never schedules it twice. A short beat lets a solo
+  // player read the "Level cleared" status + score tick before the next piece spawns. The guard is
+  // claimed at schedule time (not fire time), so a repeated frame during the delay is a no-op.
   function maybeAdvance(): void {
     if (
       phaseRef.current === 'leaderboard' &&
@@ -123,7 +131,10 @@ export function TeeterViewer({ state, onAdvance }: GameViewProps) {
       advancedRound.current !== roundRef.current
     ) {
       advancedRound.current = roundRef.current;
-      onAdvanceRef.current();
+      advanceTimer.current = setTimeout(() => {
+        advanceTimer.current = null;
+        onAdvanceRef.current?.();
+      }, ADVANCE_DELAY_MS);
     }
   }
 
@@ -132,6 +143,17 @@ export function TeeterViewer({ state, onAdvance }: GameViewProps) {
   useEffect(() => {
     if (!animating && phase === 'leaderboard') maybeAdvance();
   }, [animating, phase, state.round]);
+
+  // Clear any pending advance timer when the round changes or the component unmounts, so a beat that
+  // has not fired yet never advances a round it no longer belongs to.
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current !== null) {
+        clearTimeout(advanceTimer.current);
+        advanceTimer.current = null;
+      }
+    };
+  }, [state.round]);
 
   // The draw loop. One rAF loop lives for the component's life; it draws the rest tower every frame
   // and, while animating, advances the settle playback in real time, ending it (and checking the

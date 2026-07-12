@@ -21,9 +21,19 @@ import {
   type RoomMember,
 } from './membership';
 import { DuplicateCodeError, type Room, type RoomConfig, type RoomRepository } from './repository';
+import type { AccountRepository } from '../accounts/repository';
 
 /** How many fresh codes to try before giving up when they keep colliding (astronomically rare). */
 const CODE_ATTEMPTS = 8;
+
+/**
+ * Games gated to insiders (spec 0043). This mirrors each engine plugin manifest's
+ * `visibility: 'insider'` and the web registry's picker filter; it is duplicated here because the
+ * control-plane does not load the game packages. The web filter is only a UI convenience - THIS set
+ * is the authoritative gate, so a crafted API call cannot start an insider game. Keep it in sync
+ * when a game's visibility changes (a shared source of truth across the three layers is a follow-up).
+ */
+const INSIDER_GAME_IDS: ReadonlySet<string> = new Set(['teeter-tower']);
 
 /** A room error with a stable code the routes map to an HTTP status and a user-safe message. */
 export class RoomError extends Error {
@@ -119,7 +129,23 @@ export class RoomService {
     private readonly ledger: CreditLedger,
     private readonly engine: EngineClient,
     private readonly plays: PlaysRecorder,
+    private readonly accounts: Pick<AccountRepository, 'findById'>,
   ) {}
+
+  /**
+   * Enforce a game's insider visibility server-side (spec 0043). The web hides insider-only games
+   * from the picker, but that is only a UI filter - this is the authoritative gate, so a crafted
+   * `selectGame`/`start` call cannot start an insider game for a non-insider. An insider-only game
+   * requires the host account to hold the insider role (the same flag that gates the insider
+   * surface, spec 0035).
+   */
+  private async assertGameVisibleToHost(room: Room, game: string): Promise<void> {
+    if (!INSIDER_GAME_IDS.has(game)) return;
+    const host = await this.accounts.findById(room.hostAccountId);
+    if (!host?.insider) {
+      throw new RoomError('forbidden', 'That game is available to insiders only for now.');
+    }
+  }
 
   /**
    * Create a room for a signed-in host. Only an account session may host (anonymous players never
@@ -242,6 +268,7 @@ export class RoomService {
     if (typeof game !== 'string' || game.trim().length === 0) {
       throw new RoomError('no_game', 'Select a game first.');
     }
+    await this.assertGameVisibleToHost(room, game.trim());
     const updated = await this.repo.setSelectedGame(room.id, game.trim(), config);
     return toView(updated ?? room);
   }
@@ -257,6 +284,9 @@ export class RoomService {
     if (!room.selectedGame) {
       throw new RoomError('no_game', 'Select a game before starting.');
     }
+    // Defence in depth: re-check visibility at start, not just at select, so a game set by any path
+    // still cannot be started by a non-insider.
+    await this.assertGameVisibleToHost(room, room.selectedGame);
     const requested = Number.isInteger(rounds) && rounds > 0 ? rounds : 1;
 
     const members = await this.membership.list(room.id);

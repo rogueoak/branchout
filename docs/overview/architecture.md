@@ -361,7 +361,10 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   as one round - `collectMove` takes `{ angle, dropX }`, `reveal` simulates the drop once and streams
   the settle as a keyframe **track** so every client renders the identical tower (the browser runs no
   physics). Determinism (seeded PRNG, fixed timestep, capped steps) keeps the single server sim
-  reproducible. A game may declare `manifest.visibility: 'insider'`; the web registry hides such games
+  reproducible. Scaling seam: `module.reveal` runs the settle (up to `MAX_STEPS=300` fixed steps)
+  SYNCHRONOUSLY inside the engine's per-session lock on the single-threaded event loop, so a settle
+  head-of-line-blocks other rooms/games - the worker-thread/queue offload (out-of-scope follow-up) is
+  the escape hatch. A game may declare `manifest.visibility: 'insider'`; the web registry hides such games
   from the public picker/pages/sitemap and surfaces them only to insiders (a follow-up should add the
   matching control-plane start guard for defence in depth).
 - **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for

@@ -58,7 +58,8 @@ async function main(): Promise<void> {
   );
 
   const hasher = await createHasher();
-  const accounts = new AccountService(new PostgresAccountRepository(pool), hasher);
+  const accountRepo = new PostgresAccountRepository(pool);
+  const accounts = new AccountService(accountRepo, hasher);
   // Adapt the redis client to the narrow surface the session store needs.
   const sessionRedis: SessionRedis = {
     set: (key, value, options) => redis.set(key, value, options),
@@ -123,6 +124,7 @@ async function main(): Promise<void> {
     ledger,
     engine,
     plays,
+    accountRepo,
   );
   const profiles = new ProfileService(accounts, plays);
 

@@ -189,6 +189,43 @@ describe('move rejection', () => {
     expect(bad.rejected?.reason).toMatch(/malformed/i);
   });
 
+  it('normalizes an unbounded angle into (-PI, PI] when storing the move', () => {
+    // An angle of 2*PI is geometrically identical to 0, but the raw input is unbounded. The parser
+    // wraps it, so the stored pending angle is the canonical 0 (within float epsilon).
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const scratch = game.configure({}, players('p1')).scratch;
+    const base = ctx({ round: 0, scratch });
+    const started = game.startRound(base);
+    const active = (started.prompt as TeeterPrompt).activePlayer;
+    const collected = game.collectMove(
+      { ...base, scratch: started.scratch },
+      active,
+      JSON.stringify({ angle: Math.PI * 2, dropX: 410 }),
+    );
+    expect(collected.rejected).toBeUndefined();
+    const pending = (collected.scratch as { pending: TeeterMove }).pending;
+    expect(pending.angle).toBeCloseTo(0, 10);
+    expect(pending.angle).toBeGreaterThan(-Math.PI);
+    expect(pending.angle).toBeLessThanOrEqual(Math.PI);
+  });
+
+  it('wraps a large positive angle to a bounded equivalent', () => {
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const scratch = game.configure({}, players('p1')).scratch;
+    const base = ctx({ round: 0, scratch });
+    const started = game.startRound(base);
+    const active = (started.prompt as TeeterPrompt).activePlayer;
+    // 5*PI wraps to PI (the (-PI, PI] boundary keeps PI, not -PI).
+    const collected = game.collectMove(
+      { ...base, scratch: started.scratch },
+      active,
+      JSON.stringify({ angle: Math.PI * 5, dropX: 410 }),
+    );
+    expect(collected.rejected).toBeUndefined();
+    const pending = (collected.scratch as { pending: TeeterMove }).pending;
+    expect(pending.angle).toBeCloseTo(Math.PI, 10);
+  });
+
   // The ported overlap + min-drop-line legality rules are exercised directly in physics.test.ts,
   // where a held piece can be positioned at an arbitrary (illegal) transform. Through collectMove the
   // server always picks a clearing drop height, so the reachable move-level rejections are the
@@ -251,6 +288,72 @@ describe('level transition', () => {
     expect(reveal.target).toBe(LEVELS[1]!.target);
     expect(nextScratch.levelIndex).toBe(1);
     expect(nextScratch.tower).toHaveLength(0); // tower reset for the new level
+    // The cleared level's 100 is banked into the cumulative total even though bestHeight resets.
+    expect(reveal.score).toBe(100);
+    expect((nextScratch as unknown as { totalScore: number }).totalScore).toBe(100);
+    // And the emitted delta equals the reveal score (cumulative), so HUD and leaderboard agree.
+    const total = revealed.scores.reduce((s, e) => s + e.points, 0);
+    expect(total).toBe(reveal.score);
+  });
+
+  it('reveal.score is the cumulative total that emitted deltas sum to, across a level clear', () => {
+    // Pre-seed a tower already at level 0's target so the first drop clears it (banks 100), then a
+    // second drop on the fresh level adds a further per-level band. reveal.score must equal the sum
+    // of every emitted delta so far - the same scale the leaderboard accumulates.
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const target = LEVELS[0]!.target;
+    const half = target / 2 + 20;
+    const tallBlock = {
+      id: 1,
+      verts: [
+        [
+          { x: -30, y: -half },
+          { x: 30, y: -half },
+          { x: 30, y: half },
+          { x: -30, y: half },
+        ],
+      ],
+      x: 410,
+      y: GROUND_TOP - half,
+      angle: 0,
+      skin: { fill: '#fff', stroke: '#000' },
+      eyes: [],
+    };
+    let scratch: Record<string, unknown> = {
+      seed: 42,
+      levelIndex: 0,
+      tower: [tallBlock],
+      bestHeight: 0,
+      totalScore: 0,
+      nextId: 2,
+      pending: null,
+    };
+
+    let emittedSum = 0;
+    // Round that clears level 0 (banks 100).
+    const first = playRound(game, scratch, 5, { angle: 0, dropX: 250 });
+    scratch = first.scratch;
+    emittedSum += (first as unknown as { reveal: TeeterReveal }).reveal.score; // first delta == total
+    expect(first.reveal.cleared).toBe(true);
+    expect(first.reveal.score).toBe(100);
+
+    // A second drop on the fresh level 1 tower - its emitted delta is added to the running total.
+    const base = ctx({ round: 6, scratch });
+    const started = game.startRound(base);
+    const active = (started.prompt as TeeterPrompt).activePlayer;
+    const collected = game.collectMove(
+      { ...base, scratch: started.scratch },
+      active,
+      JSON.stringify({ angle: 0, dropX: 410 }),
+    );
+    expect(collected.rejected).toBeUndefined();
+    const revealed = game.reveal({ ...base, scratch: collected.scratch });
+    const reveal = revealed.reveal as TeeterReveal;
+    emittedSum += revealed.scores.reduce((s, e) => s + e.points, 0);
+
+    // The HUD score is the running total, and it equals the sum of every emitted delta.
+    expect(reveal.score).toBe(emittedSum);
+    expect(reveal.score).toBeGreaterThanOrEqual(100);
   });
 });
 

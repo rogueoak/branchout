@@ -41,7 +41,12 @@ export const LEVELS: readonly Level[] = [
   { name: 'The Pendulum', target: 620, pieces: 22, pendulum: true },
 ];
 
-/** Total pieces across every level - the engine's total round count. */
+/**
+ * Total pieces across every level - the engine's total round count. NOTE: v1 has no fail state on
+ * purpose. Each level's `pieces` budget is NOT enforced as an "out of pieces" loss - a level ends
+ * only on reaching its target - so this is simply the fixed round count the game plays through. An
+ * out-of-pieces / retry lose path (the prototype has one) is a deliberate follow-up.
+ */
 export const TOTAL_ROUNDS = LEVELS.reduce((sum, level) => sum + level.pieces, 0);
 
 export const PALETTE: readonly Skin[] = [

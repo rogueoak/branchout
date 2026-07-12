@@ -24,7 +24,8 @@
   "dependencies": {
     "@branchout/protocol": "workspace:*",
     "@branchout/game-sdk": "workspace:*",
-    "matter-js": "^0.20.0"
+    "matter-js": "^0.20.0",
+    "poly-decomp": "^0.3.0"
   },
   "devDependencies": {
     "@branchout/config": "workspace:*",

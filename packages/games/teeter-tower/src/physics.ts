@@ -5,6 +5,7 @@
 // fixed timestep with a hard step cap bounds the run so it can never hang.
 
 import Matter from 'matter-js';
+import decomp from 'poly-decomp';
 import type { SeededRng } from './rng';
 import {
   CENTER_X,
@@ -24,7 +25,12 @@ import {
 } from './levels';
 import type { Body as BodyPayload, Eye, Frame, Piece, Skin, Vec2 } from './types';
 
-const { Bodies, Body, Composite, Constraint, Engine, Query } = Matter;
+const { Bodies, Body, Common, Composite, Constraint, Engine, Query } = Matter;
+
+// Wire poly-decomp once at module load so `Bodies.fromVertices` decomposes the concave "blob" piece
+// into convex parts instead of silently falling back to a convex hull (which also logs a console.warn
+// on every settle). poly-decomp is deterministic, so this keeps the sim reproducible.
+Common.setDecomp(decomp);
 
 // ---------------------------------------------------------------------------
 // Fixed-timestep + settle tuning (all deterministic; no wall-clock anywhere)

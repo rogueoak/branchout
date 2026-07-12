@@ -73,6 +73,13 @@ interface TeeterScratch {
   tower: StoredBody[];
   /** Best height reached this level (px above the platform) - the scoring basis. */
   bestHeight: number;
+  /**
+   * The cumulative game score: the running total of every emitted score delta so far. Because
+   * bestHeight resets to 0 on a level clear, the per-level band (heightToScore) alone would disagree
+   * with the engine's accumulated scores across levels; this running total is the single scale both
+   * the Viewer HUD (reveal.score) and the leaderboard/FinalResults (accumulated scores) read.
+   */
+  totalScore: number;
   /** Monotonic id for the next dropped piece. */
   nextId: number;
   /** The active player's pending move for the current round, or null until submitted. */
@@ -80,7 +87,7 @@ interface TeeterScratch {
 }
 
 function emptyScratch(seed: number): TeeterScratch {
-  return { seed, levelIndex: 0, tower: [], bestHeight: 0, nextId: 1, pending: null };
+  return { seed, levelIndex: 0, tower: [], bestHeight: 0, totalScore: 0, nextId: 1, pending: null };
 }
 
 function asScratch(scratch: Readonly<Record<string, unknown>>): TeeterScratch {
@@ -90,6 +97,7 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): TeeterScratch {
     levelIndex: s.levelIndex ?? 0,
     tower: s.tower ?? [],
     bestHeight: s.bestHeight ?? 0,
+    totalScore: s.totalScore ?? 0,
     nextId: s.nextId ?? 1,
     pending: s.pending ?? null,
   };
@@ -134,7 +142,19 @@ function parseMove(move: string): TeeterMove | null {
   const m = raw as Partial<TeeterMove>;
   if (typeof m.angle !== 'number' || !Number.isFinite(m.angle)) return null;
   if (typeof m.dropX !== 'number' || !Number.isFinite(m.dropX)) return null;
-  return { angle: m.angle, dropX: m.dropX };
+  // Defense-in-depth: normalize the angle into (-PI, PI]. Rotation is periodic, so a huge or tiny
+  // value is legal but noisy; wrapping keeps the settle geometry identical while bounding the input
+  // (dropX is already clamped downstream by clampDropX).
+  return { angle: normalizeAngle(m.angle), dropX: m.dropX };
+}
+
+/** Wrap an angle (radians) into the canonical (-PI, PI] range. */
+function normalizeAngle(angle: number): number {
+  const twoPi = Math.PI * 2;
+  let a = angle % twoPi;
+  if (a > Math.PI) a -= twoPi;
+  else if (a <= -Math.PI) a += twoPi;
+  return a;
 }
 
 /**
@@ -149,6 +169,10 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       validateConfig(config);
       // Derive the base seed once from the injected rng; everything reproducible flows from it.
       const seed = Math.floor(rng() * 0xffffffff) >>> 0;
+      // v1 has NO fail state on purpose. TOTAL_ROUNDS is the sum of every level's `pieces` budget
+      // (11 + 20 + 22 in levels.ts), but that budget is not enforced as an "out of pieces" loss: a
+      // level ends only on reaching its target, and the game runs the fixed round count regardless.
+      // An out-of-pieces / retry lose flow (the prototype has one) is a deliberate follow-up.
       return {
         scratch: toRecord(emptyScratch(seed)),
         rounds: TOTAL_ROUNDS,
@@ -241,7 +265,9 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
           track: [],
           tower: toBodyPayloads(scratch.tower),
           height,
-          score: heightToScore(Math.max(scratch.bestHeight, height), level.target),
+          // No settle ran, so the cumulative game score is unchanged. Report the running total (the
+          // same scale the leaderboard reads), not the per-level band.
+          score: scratch.totalScore,
           level: scratch.levelIndex,
           target: level.target,
           cleared: false,
@@ -262,13 +288,18 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       const settle = simulateDrop(scratch.tower, drop, level.target, level.pendulum);
       scratch.tower = settle.tower;
 
+      // Score is a running total across all levels. Each drop's delta is this level's band gain
+      // (heightToScore of the new best minus the prior best); we add it to the cumulative total so
+      // reveal.score (the Viewer HUD) and the accumulated engine scores (the leaderboard) agree.
       const priorScore = heightToScore(scratch.bestHeight, level.target);
       scratch.bestHeight = Math.max(scratch.bestHeight, settle.height);
       const newScore = heightToScore(scratch.bestHeight, level.target);
       const delta = newScore - priorScore;
+      scratch.totalScore += delta;
 
       // Level cleared when the tower reaches the target: advance the internal level and reset the
-      // tower for the next one (the score band stays at 100 for the cleared line).
+      // tower for the next one. bestHeight resets to 0 for the new level, but totalScore carries the
+      // 100 already banked for this cleared level (the running total never resets).
       let cleared = false;
       if (settle.height >= level.target && scratch.levelIndex < LEVELS.length - 1) {
         cleared = true;
@@ -287,7 +318,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         track: settle.track,
         tower: toBodyPayloads(scratch.tower),
         height: cleared && scratch.tower.length === 0 ? 0 : settle.height,
-        score: newScore,
+        // The cumulative game score (sum of all emitted deltas), so the HUD matches the leaderboard.
+        score: scratch.totalScore,
         level: scratch.levelIndex,
         target: revealLevel.target,
         cleared,
