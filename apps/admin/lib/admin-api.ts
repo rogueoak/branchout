@@ -7,11 +7,16 @@ import { V1_PREFIX } from '@branchout/protocol';
 // bare `/api${path}` would 404 in prod. `credentials: 'include'` carries the cookie; responses are
 // returned raw for the caller to branch on status.
 async function send(path: string, body?: unknown): Promise<Response> {
+  // Only declare a JSON content-type when we actually send a body: Fastify rejects an empty body
+  // under `content-type: application/json` with a 400, which would break the no-body POSTs
+  // (logout, hard-delete). So a bodyless call sends no content-type header at all.
+  const hasBody = body !== undefined;
   return fetch(`/api${V1_PREFIX}${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
     credentials: 'include',
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(hasBody
+      ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
+      : {}),
   });
 }
 
@@ -22,6 +27,8 @@ export const createAdmin = (email: string, password: string) =>
   send('/admin/admins', { email, password });
 export const setInsider = (userId: string, insider: boolean) =>
   send(`/admin/users/${userId}/insider`, { insider });
+/** Hard-delete a player - purges the account row (spec 0040). */
+export const deleteUser = (userId: string) => send(`/admin/users/${userId}/delete`);
 
 /** Read a `{ error }` message from a failed response, with a safe fallback. */
 export async function errorMessage(res: Response): Promise<string> {

@@ -37,6 +37,7 @@ export class InMemoryAccountRepository implements AccountRepository {
       visibility: 'public',
       insider: false,
       emailVerified: false,
+      deletedAt: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -53,9 +54,11 @@ export class InMemoryAccountRepository implements AccountRepository {
     return null;
   }
 
-  async findById(id: string): Promise<Account | null> {
+  async findById(id: string, opts?: { includeDeleted?: boolean }): Promise<Account | null> {
     const account = this.byId.get(id);
-    return account ? { ...account } : null;
+    if (!account) return null;
+    if (account.deletedAt && !opts?.includeDeleted) return null;
+    return { ...account };
   }
 
   async findByGamerTagNormalized(normalized: string): Promise<Account | null> {
@@ -105,6 +108,24 @@ export class InMemoryAccountRepository implements AccountRepository {
     account.insider = insider;
     account.updatedAt = new Date();
     return { ...account };
+  }
+
+  async softDelete(id: string): Promise<Account | null> {
+    const account = this.byId.get(id);
+    if (!account) {
+      return null;
+    }
+    // Mirror the Postgres tombstone: stamp deleted_at (once) and free the unique identity columns so
+    // the same email + gamer tag can register again, keeping the display gamer tag + nickname.
+    account.deletedAt ??= new Date();
+    account.email = `deleted-${account.id}@deleted.invalid`;
+    account.gamerTagNormalized = `deleted-${account.id}`;
+    account.updatedAt = new Date();
+    return { ...account };
+  }
+
+  async hardDelete(id: string): Promise<boolean> {
+    return this.byId.delete(id);
   }
 
   async listAccounts(opts: ListAccountsOptions): Promise<AccountPage> {

@@ -24,6 +24,12 @@ export interface PublicAccount {
   visibility: ProfileVisibility;
   /** Beta-tester entitlement (spec 0035): the web gates the insider surface on this. */
   insider: boolean;
+  /** When the account was soft-deleted (spec 0040); null while live. Only ever non-null on the
+   * admin read path - player/auth reads never load a deleted account (it is null-by-construction on
+   * `/auth/me`, since `getById` filters deleted rows, not null-by-type). If a later change adds a
+   * second admin-only field (or an undelete flow), split an `AdminAccount` DTO from `PublicAccount`
+   * here rather than widening this shared shape. */
+  deletedAt: Date | null;
 }
 
 /** A validation failure with a stable code and a user-safe message. */
@@ -64,6 +70,7 @@ function toPublic(account: Account): PublicAccount {
     avatar: account.avatar,
     visibility: account.visibility,
     insider: account.insider,
+    deletedAt: account.deletedAt,
   };
 }
 
@@ -143,7 +150,11 @@ export class AccountService {
     const account = email.ok ? await this.repo.findByEmail(email.normalized!) : null;
     const hash = account?.passwordHash ?? (await this.getDummyHash());
     const ok = await this.hasher.verify(hash, password);
-    return account && ok ? toPublic(account) : null;
+    // A soft-deleted account cannot log in (spec 0040). In practice its email is tombstoned so
+    // findByEmail never returns it, but guard here too - and after the verify runs, so the deleted
+    // path costs the same as a live one (no timing signal). deletedAt is checked last so it does not
+    // short-circuit the hash verify.
+    return account && ok && !account.deletedAt ? toPublic(account) : null;
   }
 
   /**
@@ -159,8 +170,30 @@ export class AccountService {
   }
 
   async getById(id: string): Promise<PublicAccount | null> {
+    // findById excludes soft-deleted rows by default, so a deleted account reads as gone here - the
+    // /auth/me self-revoke then logs the stale session out (spec 0040).
     const account = await this.repo.findById(id);
     return account ? toPublic(account) : null;
+  }
+
+  /** Like getById, but includes soft-deleted accounts - for the admin console, which must still show
+   * a deleted player (spec 0040). */
+  async getByIdForAdmin(id: string): Promise<PublicAccount | null> {
+    const account = await this.repo.findById(id, { includeDeleted: true });
+    return account ? toPublic(account) : null;
+  }
+
+  /** Soft-delete the caller's own account (spec 0040): keep the row (flagged deleted, visible to
+   * admins) but free the email + gamer tag for reuse. Returns null if the account is already gone. */
+  async softDeleteSelf(id: string): Promise<PublicAccount | null> {
+    const account = await this.repo.softDelete(id);
+    return account ? toPublic(account) : null;
+  }
+
+  /** Hard-delete an account (spec 0040, admin only): purge the row. Returns true if a row was
+   * removed. account_game_plays cascades; the credit ledger is kept by design. */
+  async hardDelete(id: string): Promise<boolean> {
+    return this.repo.hardDelete(id);
   }
 
   /** Look up an account by its (public, unique) gamer tag - the key the public profile page uses. */

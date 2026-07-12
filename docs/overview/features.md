@@ -46,6 +46,12 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Privacy - profile public / friends-only / private, applied as a server-side projection on the
       public read (gamer tag and total stars always public; the rest gated). `friends-only` resolves
       to private-to-non-owners until the friend graph ships (spec `0027`).
+- [x] Account deletion - a "Danger zone" on `/account` lets a player soft-delete their own account
+      behind a two-step confirm: the row is kept (flagged `deleted_at`, still visible to admins) but
+      the email + gamer tag are freed for reuse, and the player is logged out and cannot sign back
+      in. An admin can hard-delete any player from the console (purges the row + game history, keeps
+      the credit ledger for audit; hosted rooms are left intact since their history is shared). The
+      admin list/detail flag a soft-deleted account as "Deleted" (spec `0040`).
 - [ ] Presence - online status and player status (idle, or in a game and which one).
 - [ ] Friends - search by gamer tag, connect, invite (then `friends-only` gains real gating).
 
@@ -223,5 +229,6 @@ What the product does for users, grouped by area. Each capability maps to one or
 ## Admin console (spec 0037)
 
 An operator console at `admin.branchout.games` (a separate Next.js app with a separate admin identity):
-sign in as an admin, create more admins, browse players by gamer tag, open a profile, and grant/revoke
-a player's insider access. No public admin signup; the root admin is env-seeded on boot.
+sign in as an admin, create more admins, browse players by gamer tag, open a profile, grant/revoke
+a player's insider access, and hard-delete a player (spec `0040`). A player who self-soft-deleted is
+still listed, flagged "Deleted". No public admin signup; the root admin is env-seeded on boot.

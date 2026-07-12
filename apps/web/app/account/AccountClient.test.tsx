@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
   setAvatar: vi.fn(),
   setVisibility: vi.fn(),
   logout: vi.fn(),
+  deleteAccount: vi.fn(),
 }));
 
 vi.mock('../../lib/account-api', () => ({
@@ -139,5 +140,43 @@ describe('AccountClient', () => {
     const link = await screen.findByRole('link', { name: 'Insider game previews' });
     const href = link.getAttribute('href') ?? '';
     expect(new URL(href).hostname.startsWith('insider.')).toBe(true);
+  });
+
+  it('deletes the account only after a confirm step, then routes home (spec 0040)', async () => {
+    api.fetchMe.mockResolvedValue({ kind: 'account', account });
+    api.deleteAccount.mockResolvedValue(undefined);
+    render(<AccountClient />);
+    await screen.findByRole('heading', { name: 'Ada' });
+
+    // First tap reveals the confirm - it does NOT delete yet.
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    expect(api.deleteAccount).not.toHaveBeenCalled();
+
+    // Confirming deletes and routes home.
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete my account' }));
+    await waitFor(() => expect(api.deleteAccount).toHaveBeenCalled());
+    expect(push).toHaveBeenCalledWith('/');
+  });
+
+  it('cancels the delete confirm without deleting (spec 0040)', async () => {
+    api.fetchMe.mockResolvedValue({ kind: 'account', account });
+    render(<AccountClient />);
+    await screen.findByRole('heading', { name: 'Ada' });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    // Back to the initial state, nothing deleted.
+    expect(screen.getByRole('button', { name: 'Delete account' })).toBeDefined();
+    expect(api.deleteAccount).not.toHaveBeenCalled();
+  });
+
+  it('surfaces an error when the delete fails and does not route away (spec 0040)', async () => {
+    api.fetchMe.mockResolvedValue({ kind: 'account', account });
+    api.deleteAccount.mockRejectedValue(new Error('network down'));
+    render(<AccountClient />);
+    await screen.findByRole('heading', { name: 'Ada' });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete my account' }));
+    expect(await screen.findByRole('alert')).toBeDefined();
+    expect(push).not.toHaveBeenCalledWith('/');
   });
 });

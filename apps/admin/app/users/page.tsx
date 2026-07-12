@@ -6,6 +6,8 @@ interface Player {
   gamerTag: string;
   nickname: string;
   insider: boolean;
+  /** Set when the player soft-deleted their account (spec 0040); null while live. */
+  deletedAt: string | null;
 }
 interface UsersPage {
   items: Player[];
@@ -79,11 +81,18 @@ export default async function UsersPage({
                   </a>
                   <p className="truncate text-caption text-text-muted">{u.nickname}</p>
                 </div>
-                {u.insider ? (
-                  <span className="shrink-0 rounded-full border border-primary px-2 py-0.5 text-caption uppercase tracking-wide text-primary">
-                    Insider
-                  </span>
-                ) : null}
+                <div className="flex shrink-0 items-center gap-2">
+                  {u.deletedAt ? (
+                    <span className="rounded-full bg-danger/15 px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-danger">
+                      Deleted
+                    </span>
+                  ) : null}
+                  {u.insider ? (
+                    <span className="rounded-full border border-primary px-2 py-0.5 text-caption uppercase tracking-wide text-primary">
+                      Insider
+                    </span>
+                  ) : null}
+                </div>
               </li>
             ))
           )}

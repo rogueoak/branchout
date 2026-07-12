@@ -155,6 +155,21 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     return reply.code(200).send({ ok: true });
   });
 
+  // Delete my account (spec 0040): soft-delete the caller's own account, then revoke the session and
+  // clear the cookie - the same teardown as logout, so the deleted user is immediately signed out.
+  // Account sessions only (an anonymous session has no account to delete). The row is kept (flagged
+  // deleted, visible to admins) but the email + gamer tag are freed for reuse.
+  app.delete('/auth/account', async (request, reply) => {
+    const session = await currentSession(request);
+    if (!session || session.kind !== 'account' || !session.accountId) {
+      return reply.code(401).send({ error: 'Sign in to delete your account.' });
+    }
+    await accounts.softDeleteSelf(session.accountId);
+    await sessions.revoke(session.id);
+    clearSessionCookie(reply);
+    return reply.code(200).send({ ok: true });
+  });
+
   // Me: report the current identity. Account, anonymous, or unauthenticated.
   app.get('/auth/me', async (request, reply) => {
     const session = await currentSession(request);

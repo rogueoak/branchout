@@ -91,6 +91,8 @@ describe('AccountService.signup', () => {
       updateAvatar: async () => null,
       updateVisibility: async () => null,
       updateInsider: async () => null,
+      softDelete: async () => null,
+      hardDelete: async () => false,
       listAccounts: async () => ({ items: [], total: 0 }),
       create: async (): Promise<Account> => {
         throw new DuplicateAccountError('gamerTag');
@@ -207,5 +209,66 @@ describe('AccountService profile fields (spec 0027)', () => {
     await expect(service.changeVisibility(accountId, 'everyone')).rejects.toBeInstanceOf(
       ValidationError,
     );
+  });
+});
+
+describe('AccountService deletion (spec 0040)', () => {
+  let repo: InMemoryAccountRepository;
+  let service: AccountService;
+  let accountId: string;
+
+  beforeEach(async () => {
+    repo = new InMemoryAccountRepository();
+    service = new AccountService(repo, fakeHasher);
+    const account = await service.signup({
+      email: 'player@example.com',
+      password: 'supersecret',
+      gamerTag: 'Cat',
+    });
+    accountId = account.id;
+  });
+
+  it('soft-delete stamps deletedAt and frees the email + gamer tag for reuse', async () => {
+    const deleted = await service.softDeleteSelf(accountId);
+    expect(deleted?.deletedAt).toBeInstanceOf(Date);
+
+    // The unique identity columns are tombstoned, so the same email + tag register a fresh account.
+    const fresh = await service.signup({
+      email: 'player@example.com',
+      password: 'supersecret',
+      gamerTag: 'Cat',
+    });
+    expect(fresh.id).not.toBe(accountId);
+  });
+
+  it('a soft-deleted account cannot log in', async () => {
+    await service.softDeleteSelf(accountId);
+    expect(
+      await service.login({ email: 'player@example.com', password: 'supersecret' }),
+    ).toBeNull();
+  });
+
+  it('getById hides a soft-deleted account, getByIdForAdmin still returns it (flagged)', async () => {
+    await service.softDeleteSelf(accountId);
+    expect(await service.getById(accountId)).toBeNull();
+    const forAdmin = await service.getByIdForAdmin(accountId);
+    expect(forAdmin?.id).toBe(accountId);
+    expect(forAdmin?.deletedAt).toBeInstanceOf(Date);
+    // The display gamer tag survives the tombstone so the console can still name the row.
+    expect(forAdmin?.gamerTag).toBe('Cat');
+  });
+
+  it('listPlayers includes a soft-deleted account with its deletedAt so the console can flag it', async () => {
+    await service.softDeleteSelf(accountId);
+    const { items } = await service.listPlayers({ limit: 20, offset: 0 });
+    const row = items.find((i) => i.id === accountId);
+    expect(row?.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it('hard-delete removes the row entirely', async () => {
+    expect(await service.hardDelete(accountId)).toBe(true);
+    expect(await service.getByIdForAdmin(accountId)).toBeNull();
+    // A second hard delete is a no-op (nothing to remove).
+    expect(await service.hardDelete(accountId)).toBe(false);
   });
 });

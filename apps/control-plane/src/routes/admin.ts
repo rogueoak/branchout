@@ -165,11 +165,25 @@ export function registerAdminRoutes(app: FastifyInstance, deps: AdminDeps): void
     const current = await requireAdmin(request, reply);
     if (!current) return reply;
     const { id } = request.params as { id: string };
-    const account = await accounts.getById(id);
+    // Admin read includes soft-deleted accounts (spec 0040) so the console can show + flag them.
+    const account = await accounts.getByIdForAdmin(id);
     if (!account) {
       return reply.code(404).send({ error: 'User not found.' });
     }
     return reply.code(200).send({ account });
+  });
+
+  // Hard-delete a player (spec 0040): purge the account row. account_game_plays cascades; the credit
+  // ledger is kept for audit and hosted rooms are left intact (their history is shared). Admin only.
+  app.post('/admin/users/:id/delete', async (request, reply) => {
+    const current = await requireAdmin(request, reply);
+    if (!current) return reply;
+    const { id } = request.params as { id: string };
+    const deleted = await accounts.hardDelete(id);
+    if (!deleted) {
+      return reply.code(404).send({ error: 'User not found.' });
+    }
+    return reply.code(200).send({ ok: true });
   });
 
   // Grant or revoke a player's insider role (spec 0035 toggle).

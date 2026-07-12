@@ -117,6 +117,21 @@ Capture durable lessons as they emerge.
 - **A vote/quorum denominator should count only *connected* eligible voters.** In a live game
   where devices drop, dividing by the whole roster treats an offline player as an implicit "no"
   and can make a legitimate majority unreachable; gate on `connected`. (Feedback `0004`.)
+- **A soft-delete that frees the unique keys makes the row unfindable by those keys - split the
+  read paths, don't filter one.** Soft-deleting an account (spec `0040`) tombstones the
+  unique-constrained columns (email, normalized gamer tag) so a departing player can re-register,
+  but that means an admin search *by the old tag* no longer matches the deleted row (it lists only
+  under a browse). Keep the display columns for identification, and give the operator read path its
+  own method (`getByIdForAdmin` / an unfiltered list) rather than making one `getById` both hide
+  deleted rows from players and show them to admins - a single flag-checked path serves neither well.
+  Same rule let sessions self-heal: once `getById` refuses a deleted row, the existing `/auth/me`
+  self-revoke logs the stale session out, so no Redis scan is needed. (Spec `0040`.)
+- **Purge only the departing entity's *own* data; leave shared history.** Hard-deleting an account
+  cascades its per-account rows (`account_game_plays`) but must not delete the rooms it hosted:
+  `room_games`/`room_rounds` hold the recorded history of *every* participant, so purging them to
+  clean up one host erases other players' records (and the missing `ON DELETE CASCADE` would fault
+  the delete anyway). A dangling `host_account_id` (no FK, transient rooms) is the lesser evil.
+  (Spec `0040`.)
 
 ## Auth and security
 

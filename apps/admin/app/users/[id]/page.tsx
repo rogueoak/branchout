@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { adminFetch, requireAdmin } from '../../../lib/admin-session';
 import { AdminNav } from '../../../components/AdminNav';
+import { DeleteUser } from './DeleteUser';
 import { InsiderToggle } from './InsiderToggle';
 
 interface Player {
@@ -10,6 +11,8 @@ interface Player {
   avatar: string;
   visibility: string;
   insider: boolean;
+  /** Set when the player soft-deleted their account (spec 0040); null while live. */
+  deletedAt: string | null;
 }
 
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -30,7 +33,14 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         >
           &larr; Back to users
         </a>
-        <h1 className="mt-2 text-h2 text-text">{account.gamerTag}</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <h1 className="text-h2 text-text">{account.gamerTag}</h1>
+          {account.deletedAt ? (
+            <span className="rounded-full bg-danger/15 px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-danger">
+              Deleted
+            </span>
+          ) : null}
+        </div>
 
         <dl className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -58,6 +68,17 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           </p>
           <div className="mt-3">
             <InsiderToggle userId={account.id} initialInsider={account.insider} />
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-md border border-danger/40 p-4">
+          <h2 className="text-body font-semibold text-danger">Delete player</h2>
+          <p className="mt-1 text-body-sm text-text-muted">
+            Permanently remove this account and its game history from the database. The credit
+            ledger is kept for audit. This cannot be undone.
+          </p>
+          <div className="mt-3">
+            <DeleteUser userId={account.id} gamerTag={account.gamerTag} />
           </div>
         </div>
       </section>

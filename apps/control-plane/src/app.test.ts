@@ -89,6 +89,7 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
     repo,
     engine,
     plays,
+    ledger,
     limiter,
     admins,
     adminSessions,
@@ -234,6 +235,53 @@ describe('POST /auth/login', () => {
     });
     expect(res.statusCode).toBe(401);
     expect(res.json().error).toBe('Invalid email or password.');
+    await app.close();
+  });
+});
+
+describe('DELETE /auth/account - self soft-delete (spec 0040)', () => {
+  it('signs the caller out, blocks re-login, and frees the email + gamer tag for reuse', async () => {
+    const { app } = makeApp();
+    const signup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
+    const cookie = sessionCookie(signup);
+
+    const del = await app.inject({
+      method: 'DELETE',
+      url: '/v1/auth/account',
+      headers: { cookie },
+    });
+    expect(del.statusCode).toBe(200);
+    // The session cookie is cleared, and the (now revoked) session reads as unauthenticated.
+    expect(String(del.headers['set-cookie'])).toContain('branchout_session=;');
+    const me = await app.inject({ method: 'GET', url: '/v1/auth/me', headers: { cookie } });
+    expect(me.json().kind).toBe('unauthenticated');
+
+    // The deleted account cannot log back in...
+    const relogin = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: { email: validSignup.email, password: validSignup.password },
+    });
+    expect(relogin.statusCode).toBe(401);
+
+    // ...but the same email + gamer tag can register a fresh account (freed for reuse).
+    const again = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
+    expect(again.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it('requires an account session (an anonymous / signed-out caller is refused)', async () => {
+    const { app } = makeApp();
+    const res = await app.inject({ method: 'DELETE', url: '/v1/auth/account' });
+    expect(res.statusCode).toBe(401);
     await app.close();
   });
 });
@@ -1147,6 +1195,92 @@ describe('admin console API (spec 0037)', () => {
     await t.app.close();
   });
 
+  it('hard-deletes a player (spec 0040): the row is gone and the user leaves the list', async () => {
+    const t = makeApp();
+    const cookie = await asRootAdmin(t);
+    await t.app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+    const list1 = await t.app.inject({
+      method: 'GET',
+      url: '/v1/admin/users?query=cool',
+      headers: { cookie },
+    });
+    const player = (list1.json() as { items: Array<{ id: string; gamerTag: string }> }).items.find(
+      (u) => u.gamerTag === 'CoolCat',
+    );
+    expect(player).toBeTruthy();
+
+    // Seed a credit-ledger entry for the player. Hard delete must KEEP the ledger (audit) even as it
+    // purges the account - that is the whole reason admin-delete is hard, not soft. (The sibling
+    // guarantee, account_game_plays cascading away, is a Postgres FK `ON DELETE CASCADE` that the
+    // in-memory harness does not model, so it is verified by the migration/schema, not asserted here.)
+    await t.ledger.grantDaily(player!.id);
+    const balanceBefore = await t.ledger.balance(player!.id);
+    expect(balanceBefore).toBeGreaterThan(0);
+
+    const del = await t.app.inject({
+      method: 'POST',
+      url: `/v1/admin/users/${player!.id}/delete`,
+      headers: { cookie },
+    });
+    expect(del.statusCode).toBe(200);
+
+    // The ledger rows survive the purge - the balance is unchanged (a regression guard against the
+    // service ever being changed to also delete the ledger).
+    expect(await t.ledger.balance(player!.id)).toBe(balanceBefore);
+
+    // The detail 404s and the list no longer shows the player - the row is truly gone.
+    const detail = await t.app.inject({
+      method: 'GET',
+      url: `/v1/admin/users/${player!.id}`,
+      headers: { cookie },
+    });
+    expect(detail.statusCode).toBe(404);
+    const list2 = await t.app.inject({
+      method: 'GET',
+      url: '/v1/admin/users?query=cool',
+      headers: { cookie },
+    });
+    expect((list2.json() as { items: unknown[] }).items).toHaveLength(0);
+
+    // A second delete is a 404 (nothing left to remove).
+    const again = await t.app.inject({
+      method: 'POST',
+      url: `/v1/admin/users/${player!.id}/delete`,
+      headers: { cookie },
+    });
+    expect(again.statusCode).toBe(404);
+    await t.app.close();
+  });
+
+  it('keeps a self-soft-deleted player visible to the admin, flagged deleted (spec 0040)', async () => {
+    const t = makeApp();
+    const cookie = await asRootAdmin(t);
+    const signup = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
+    const playerCookie = sessionCookie(signup);
+    // The player deletes their own account.
+    const del = await t.app.inject({
+      method: 'DELETE',
+      url: '/v1/auth/account',
+      headers: { cookie: playerCookie },
+    });
+    expect(del.statusCode).toBe(200);
+
+    // The admin still sees the row, now carrying deletedAt (the console flags it "Deleted"). Search
+    // by the original tag no longer matches - soft-delete frees the normalized tag for reuse - so the
+    // row is found by browsing the unfiltered list, where the preserved display gamer tag still shows.
+    const list = await t.app.inject({ method: 'GET', url: '/v1/admin/users', headers: { cookie } });
+    const player = (
+      list.json() as { items: Array<{ gamerTag: string; deletedAt: string | null }> }
+    ).items.find((u) => u.gamerTag === 'CoolCat');
+    expect(player).toBeTruthy();
+    expect(player!.deletedAt).toBeTruthy();
+    await t.app.close();
+  });
+
   it('gates every admin route against no session AND against a player session', async () => {
     const t = makeApp();
     const signup = await t.app.inject({
@@ -1161,6 +1295,7 @@ describe('admin console API (spec 0037)', () => {
       { method: 'GET', url: '/v1/admin/users' },
       { method: 'GET', url: '/v1/admin/users/some-id' },
       { method: 'POST', url: '/v1/admin/users/some-id/insider' },
+      { method: 'POST', url: '/v1/admin/users/some-id/delete' },
     ];
     for (const r of routes) {
       const anon = await t.app.inject({ method: r.method, url: r.url });
