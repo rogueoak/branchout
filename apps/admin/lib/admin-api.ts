@@ -22,6 +22,8 @@ export const createAdmin = (email: string, password: string) =>
   send('/admin/admins', { email, password });
 export const setInsider = (userId: string, insider: boolean) =>
   send(`/admin/users/${userId}/insider`, { insider });
+/** Hard-delete a player - purges the account row (spec 0040). */
+export const deleteUser = (userId: string) => send(`/admin/users/${userId}/delete`);
 
 /** Read a `{ error }` message from a failed response, with a safe fallback. */
 export async function errorMessage(res: Response): Promise<string> {

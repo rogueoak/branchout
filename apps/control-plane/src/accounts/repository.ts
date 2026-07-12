@@ -30,6 +30,9 @@ export interface Account {
   /** Beta-tester entitlement (spec 0035): gates the insider surface. Granted out-of-band for now. */
   insider: boolean;
   emailVerified: boolean;
+  /** When the account was soft-deleted (spec 0040); null while live. A soft-deleted account cannot
+   * authenticate but stays visible in the admin console until an admin hard-deletes it. */
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,14 +56,29 @@ export interface NewAccount {
 export interface AccountRepository {
   create(account: NewAccount): Promise<Account>;
   findByEmail(normalizedEmail: string): Promise<Account | null>;
-  findById(id: string): Promise<Account | null>;
+  /**
+   * Look up by id. Soft-deleted rows (spec 0040) are excluded by default so player/auth paths never
+   * load a deleted account; pass `{ includeDeleted: true }` for the admin console, which must still
+   * see them.
+   */
+  findById(id: string, opts?: { includeDeleted?: boolean }): Promise<Account | null>;
   findByGamerTagNormalized(normalized: string): Promise<Account | null>;
   updateNickname(id: string, nickname: string): Promise<Account | null>;
   updateAvatar(id: string, avatar: string): Promise<Account | null>;
   updateVisibility(id: string, visibility: ProfileVisibility): Promise<Account | null>;
   /** Grant or revoke the insider role (spec 0037 admin toggle). */
   updateInsider(id: string, insider: boolean): Promise<Account | null>;
-  /** Paginated player list for the admin console, optionally filtered by gamer tag (spec 0037). */
+  /**
+   * Soft-delete (spec 0040): stamp `deleted_at` and free the unique-constrained identity columns
+   * (email + normalized gamer tag) so the same email/tag can register again, keeping the display
+   * gamer tag + nickname for the admin console. Returns the updated row, or null if not found.
+   */
+  softDelete(id: string): Promise<Account | null>;
+  /** Hard-delete (spec 0040): remove the row outright. `account_game_plays` cascades; the credit
+   * ledger is kept by design. Returns true if a row was deleted. */
+  hardDelete(id: string): Promise<boolean>;
+  /** Paginated player list for the admin console, optionally filtered by gamer tag (spec 0037).
+   * Includes soft-deleted rows (spec 0040) so the console can flag them. */
   listAccounts(opts: ListAccountsOptions): Promise<AccountPage>;
 }
 
@@ -97,6 +115,7 @@ interface AccountRow {
   profile_visibility: ProfileVisibility;
   insider: boolean;
   email_verified: boolean;
+  deleted_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -113,6 +132,7 @@ function mapRow(row: AccountRow): Account {
     visibility: row.profile_visibility,
     insider: row.insider,
     emailVerified: row.email_verified,
+    deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -160,8 +180,12 @@ export class PostgresAccountRepository implements AccountRepository {
     return row ? mapRow(row) : null;
   }
 
-  async findById(id: string): Promise<Account | null> {
-    const result = await this.pool.query<AccountRow>('SELECT * FROM accounts WHERE id = $1', [id]);
+  async findById(id: string, opts?: { includeDeleted?: boolean }): Promise<Account | null> {
+    // Player/auth reads exclude soft-deleted rows; the admin console passes includeDeleted (spec 0040).
+    const sql = opts?.includeDeleted
+      ? 'SELECT * FROM accounts WHERE id = $1'
+      : 'SELECT * FROM accounts WHERE id = $1 AND deleted_at IS NULL';
+    const result = await this.pool.query<AccountRow>(sql, [id]);
     const row = result.rows[0];
     return row ? mapRow(row) : null;
   }
@@ -209,6 +233,33 @@ export class PostgresAccountRepository implements AccountRepository {
     );
     const row = result.rows[0];
     return row ? mapRow(row) : null;
+  }
+
+  async softDelete(id: string): Promise<Account | null> {
+    // Stamp deleted_at and free the unique-constrained identity columns so the same email + gamer tag
+    // can be registered again (spec 0040). The display gamer_tag + nickname are kept so the admin
+    // console still shows who the row was. Tombstoning to a value derived from the id keeps both
+    // unique columns collision-free. Idempotent-ish: a second call rewrites to the same tombstone.
+    const result = await this.pool.query<AccountRow>(
+      `UPDATE accounts
+         SET deleted_at = COALESCE(deleted_at, now()),
+             email = 'deleted-' || id || '@deleted.invalid',
+             gamer_tag_normalized = 'deleted-' || id,
+             updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [id],
+    );
+    const row = result.rows[0];
+    return row ? mapRow(row) : null;
+  }
+
+  async hardDelete(id: string): Promise<boolean> {
+    // Remove the row outright (spec 0040). account_game_plays cascades (FK ON DELETE CASCADE); the
+    // credit ledger is kept by design (append-only audit) and rooms are left intact (their history is
+    // shared across participants). Sessions self-revoke on next use once the row is gone.
+    const result = await this.pool.query('DELETE FROM accounts WHERE id = $1', [id]);
+    return (result.rowCount ?? 0) > 0;
   }
 
   async listAccounts(opts: ListAccountsOptions): Promise<AccountPage> {

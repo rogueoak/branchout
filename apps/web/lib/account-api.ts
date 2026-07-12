@@ -92,3 +92,9 @@ export async function setVisibility(visibility: Visibility): Promise<MeAccount> 
 export async function logout(): Promise<void> {
   await request('/auth/logout', { method: 'POST' });
 }
+
+/** Soft-delete the caller's own account (spec 0040). The server frees the email + gamer tag for
+ * reuse, revokes the session, and clears the cookie - so the caller is signed out on return. */
+export async function deleteAccount(): Promise<void> {
+  await request('/auth/account', { method: 'DELETE' });
+}

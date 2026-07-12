@@ -13,6 +13,7 @@ import { Avatar } from '../../components/Avatar';
 import { Wordmark } from '../../components/Wordmark';
 import {
   AccountApiError,
+  deleteAccount,
   fetchMe,
   logout,
   setAvatar,
@@ -41,6 +42,9 @@ export function AccountClient() {
   const [savingAvatar, setSavingAvatar] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Two-step delete (spec 0040): the first tap reveals the confirm, so no single tap is destructive.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -114,6 +118,21 @@ export function AccountClient() {
       // Best-effort: even if the call fails, send them home; the cookie clear is idempotent.
     }
     router.push('/');
+  }
+
+  async function onDeleteAccount() {
+    setDeleting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await deleteAccount();
+      // The server has revoked the session and cleared the cookie; send them home, signed out.
+      router.push('/');
+    } catch (err) {
+      setError(toMessage(err));
+      setDeleting(false);
+      setConfirmingDelete(false);
+    }
   }
 
   if (account === undefined) {
@@ -275,6 +294,60 @@ export function AccountClient() {
           <Button type="button" variant="outline" onClick={onLogout}>
             Log out
           </Button>
+        </section>
+
+        {/* Danger zone (spec 0040): a two-step self-delete. The first tap reveals the confirm, so no
+            single tap deletes the account. On success the server has already signed the player out. */}
+        <section
+          aria-labelledby="danger-heading"
+          className="flex flex-col gap-3 border-t border-danger/40 pt-6"
+        >
+          <h2 id="danger-heading" className="text-h4 text-danger">
+            Delete account
+          </h2>
+          {confirmingDelete ? (
+            <>
+              <p className="text-body-sm text-text-muted">
+                This permanently deletes your account. Your gamer tag and email are freed up, and
+                you cannot undo this.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={onDeleteAccount}
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Yes, delete my account'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-body-sm text-text-muted">
+                Permanently delete your account. This cannot be undone.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setError(null);
+                  setNotice(null);
+                  setConfirmingDelete(true);
+                }}
+              >
+                Delete account
+              </Button>
+            </>
+          )}
         </section>
       </div>
     </main>

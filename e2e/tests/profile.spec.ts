@@ -50,6 +50,32 @@ test('account edits reflect on the public profile, gated by visibility', async (
   await expect(page.getByRole('heading', { name: 'Recent games' })).toBeVisible();
 });
 
+test('a player deletes their own account, and the email + gamer tag are freed for reuse (spec 0040)', async ({
+  page,
+}) => {
+  const account = await signUp(page);
+  await page.goto('/account');
+  await expect(page.getByRole('heading', { name: account.gamerTag })).toBeVisible();
+
+  // Two-step delete: the first tap reveals the confirm, the second deletes.
+  await page.getByRole('button', { name: 'Delete account' }).click();
+  await page.getByRole('button', { name: 'Yes, delete my account' }).click();
+
+  // Routed home and signed out - the account page now shows the signed-out state.
+  await page.waitForURL((url) => url.pathname === '/');
+  await page.goto('/account');
+  await expect(page.getByRole('link', { name: 'Log in' })).toBeVisible();
+
+  // The same email + gamer tag register a fresh account through the real signup UI (freed for reuse:
+  // no duplicate 409). Re-using the helper's exact steps with the ORIGINAL credentials.
+  await page.goto('/signup');
+  await page.getByLabel('Email').fill(account.email);
+  await page.getByLabel('Password').fill(account.password);
+  await page.getByLabel('Gamer tag').fill(account.gamerTag);
+  await page.getByRole('button', { name: /create account/i }).click();
+  await expect(page.getByText(/you are in/i)).toBeVisible();
+});
+
 test.describe('mobile-first at 360px (CLAUDE.md rule 1)', () => {
   test.use({ viewport: { width: 360, height: 780 } });
 

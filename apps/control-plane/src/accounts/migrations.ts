@@ -51,4 +51,16 @@ export const accountMigrations: Migration[] = [
         ADD COLUMN IF NOT EXISTS insider boolean NOT NULL DEFAULT false;
     `,
   },
+  {
+    // Spec 0040: account deletion lifecycle. A nullable timestamp marks a soft-deleted account
+    // (absent = live) - a self-service delete sets it, the admin console reads it to flag the row,
+    // and an admin hard delete removes the row outright. Nullable with no default so every existing
+    // row stays live (the versioned-envelope learning).
+    id: 8,
+    name: 'add_account_soft_delete',
+    sql: `
+      ALTER TABLE accounts
+        ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+    `,
+  },
 ];

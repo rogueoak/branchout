@@ -97,6 +97,52 @@ test.describe('admin console (spec 0037)', () => {
     }
   });
 
+  test('an admin hard-deletes a player, who then disappears from the list (spec 0040)', async ({
+    page,
+  }) => {
+    const account = await signUp(page);
+    await adminLogin(page, ROOT.email, ROOT.password);
+
+    await page.goto(`${ADMIN_URL}/users?query=${account.gamerTag.toLowerCase()}`);
+    await page.getByRole('link', { name: account.gamerTag }).click();
+    await page.waitForURL(new RegExp(`${ADMIN_URL}/users/`));
+
+    // Two-step delete: reveal the confirm, then purge.
+    await page.getByRole('button', { name: 'Delete player' }).click();
+    await page.getByRole('button', { name: 'Yes, delete this player' }).click();
+
+    // Routed back to the list, and a fresh search no longer finds the player - the row is gone.
+    await page.waitForURL(`${ADMIN_URL}/users`);
+    await page.goto(`${ADMIN_URL}/users?query=${account.gamerTag.toLowerCase()}`);
+    await expect(page.getByRole('link', { name: account.gamerTag })).toHaveCount(0);
+  });
+
+  test('a player who deletes their own account is flagged Deleted in the console (spec 0040)', async ({
+    page,
+  }) => {
+    // The player cookie (web origin) and admin cookie (admin origin) live in one context but on
+    // different origins, so they coexist - no need for two browsers.
+    const account = await signUp(page);
+    await adminLogin(page, ROOT.email, ROOT.password);
+
+    await page.goto(`${ADMIN_URL}/users?query=${account.gamerTag.toLowerCase()}`);
+    await page.getByRole('link', { name: account.gamerTag }).click();
+    await page.waitForURL(new RegExp(`${ADMIN_URL}/users/`));
+    const detailUrl = page.url();
+    // Not deleted yet.
+    await expect(page.getByText('Deleted', { exact: true })).toHaveCount(0);
+
+    // The player deletes their own account (back on the web origin, where their session still lives).
+    await page.goto('/account');
+    await page.getByRole('button', { name: 'Delete account' }).click();
+    await page.getByRole('button', { name: 'Yes, delete my account' }).click();
+    await page.waitForURL((url) => url.pathname === '/');
+
+    // The admin reloads the detail page: the row survives, now flagged Deleted (soft delete).
+    await page.goto(detailUrl);
+    await expect(page.getByText('Deleted', { exact: true })).toBeVisible();
+  });
+
   test('an unauthenticated visitor is sent to the admin login', async ({ browser }) => {
     const context = await browser.newContext();
     try {
