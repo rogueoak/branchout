@@ -35,8 +35,8 @@ services:
     # never trips in normal operation and only bounds a runaway/leak while two web
     # instances overlap during a rollout. The host must fit baseline + one extra app
     # instance + Postgres/Redis + headroom + swap (see overview/architecture.md).
-    mem_limit: 400m
-    mem_reservation: 192m
+    mem_limit: 320m
+    mem_reservation: 160m
     expose:
       - '3000'
     env_file: .env.prod
@@ -65,7 +65,7 @@ services:
     restart: unless-stopped
     # Memory cap for the rollout double-up (see web); a Fastify service is lighter than
     # the SSR web tier, so a smaller ceiling still sits well above its real footprint.
-    mem_limit: 300m
+    mem_limit: 256m
     mem_reservation: 128m
     expose:
       - '4000'
@@ -97,7 +97,7 @@ services:
     restart: unless-stopped
     # Memory cap for the rollout double-up (see web); matches control-plane's Fastify
     # footprint - a ceiling well above real use that only caps a runaway during overlap.
-    mem_limit: 300m
+    mem_limit: 256m
     mem_reservation: 128m
     expose:
       - '4001'
