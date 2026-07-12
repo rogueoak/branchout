@@ -127,6 +127,15 @@ What the product does for users, grouped by area. Each capability maps to one or
       ships a small sample; the full bank is served from the private data repo mounted at deploy time.
       Liar Liar is registered in the engine boot alongside Trivia, so a host can start and play it
       (specs `0022`, `0041`).
+- [~] Third game (insider-only) - Teeter Tower: a physics stacking game where a turn is
+      `{ angle, dropX }` on the generic `move` channel (spec `0042`). Unlike the quiz games the
+      physics is **server-authoritative** - Matter.js runs headless in the engine, one piece-drop is
+      one round, and the settle is streamed to every client as a keyframe track so all viewers see
+      the identical tower; the browser is a pure renderer (`@branchout/game-teeter-tower`, spec
+      `0043`). Gated to insiders via a game `visibility: 'insider'` flag: hidden from the public
+      picker/pages/sitemap, surfaced on the insider home (a card deep-links into a solo room).
+      Playable solo now; the turn abstraction (active player = `round % players`) is built for
+      multiplayer later.
 
 ## Web
 

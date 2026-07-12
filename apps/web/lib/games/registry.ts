@@ -11,6 +11,13 @@ import type { GameState } from '../game-state';
 export interface GameViewProps {
   state: GameState;
   me?: string;
+  /**
+   * Advance to the next round on the host's behalf, or undefined when this viewer cannot advance
+   * (a non-host, or the shell chose not to wire it). The shell passes `() => onControl('advance')`
+   * only for the host; it is game-agnostic - most games ignore it, but a continuous-play game (Teeter
+   * Tower) calls it once after its settle animation finishes so the next piece spawns without a tap.
+   */
+  onAdvance?: () => void;
 }
 
 /** Props a game remote (the private controller) receives: state, identity, and the wire actions. */
@@ -46,6 +53,13 @@ export interface ConfigValidation {
 export interface GameUiModule {
   /** The engine game id (matches the plugin id: `trivia`, `liar-liar`). */
   id: string;
+  /**
+   * Catalog visibility (spec 0043), mirroring the engine manifest's `visibility`. `'public'` (the
+   * default when unset) games appear in the normal picker and the public marketing surfaces;
+   * `'insider'` games are hidden from non-insiders (the picker filter, the public /games index, the
+   * feature pages, and the sitemap all exclude them). Gating is enforced via `gamesForViewer`.
+   */
+  visibility?: 'public' | 'insider';
   /** The display name shown in the host's game picker. */
   name: string;
   /** A short tagline for the picker. */
@@ -74,15 +88,21 @@ export interface GameUiModule {
 // from here without a cycle (types are erased; the value import lands last).
 import { triviaGameUi } from './trivia';
 import { liarLiarGameUi } from './liar-liar';
+import { teeterTowerGameUi } from './teeter-tower';
 
 /** Every registered game UI module, keyed by game id. Adding a game is adding it here. */
 export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [triviaGameUi.id]: triviaGameUi,
   [liarLiarGameUi.id]: liarLiarGameUi,
+  [teeterTowerGameUi.id]: teeterTowerGameUi,
 };
 
 /** The host's game options, in display order. */
-export const GAME_UI_LIST: readonly GameUiModule[] = [triviaGameUi, liarLiarGameUi];
+export const GAME_UI_LIST: readonly GameUiModule[] = [
+  triviaGameUi,
+  liarLiarGameUi,
+  teeterTowerGameUi,
+];
 
 /** The default game a fresh room starts on, and the safe fallback for an unknown id. */
 export const DEFAULT_GAME_UI: GameUiModule = triviaGameUi;
@@ -91,3 +111,22 @@ export const DEFAULT_GAME_UI: GameUiModule = triviaGameUi;
 export function getGameUi(id: string | undefined | null): GameUiModule | undefined {
   return id ? GAME_UI_MODULES[id] : undefined;
 }
+
+/** True when a module is public (or has no explicit visibility, which defaults to public). */
+export function isPublicGame(module: GameUiModule): boolean {
+  return module.visibility !== 'insider';
+}
+
+/**
+ * The games a given viewer may see and select, filtered by insider entitlement (spec 0043): an
+ * insider sees every game; a non-insider sees only public games. Used wherever the room-create picker
+ * builds its options and by the deep-link guard, so an insider-only game never leaks to a non-insider.
+ */
+export function gamesForViewer(insider: boolean): readonly GameUiModule[] {
+  return insider ? GAME_UI_LIST : GAME_UI_LIST.filter(isPublicGame);
+}
+
+/** The insider-only games (spec 0043), for the insider surface's game index. */
+export const INSIDER_GAME_UI_LIST: readonly GameUiModule[] = GAME_UI_LIST.filter(
+  (module) => !isPublicGame(module),
+);

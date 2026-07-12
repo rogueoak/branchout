@@ -6,6 +6,7 @@ import { InMemoryLedgerRepository } from '../credits/repository.memory';
 import { StaticTierProvider, type Tier } from '../credits/tiers';
 import { InMemoryPlaysRepository } from '../profiles/plays.memory';
 import type { Session } from '../sessions/session';
+import type { Account } from '../accounts/repository';
 import { FakeEngineClient } from './engine-client.fake';
 import { newPlayerId } from './membership';
 import { InMemoryMembershipStore } from './membership.memory';
@@ -29,8 +30,14 @@ function harness(tiers: Record<string, Tier> = {}) {
   const ledger = new CreditLedger(ledgerRepo, new StaticTierProvider(tiers));
   const engine = new FakeEngineClient();
   const plays = new InMemoryPlaysRepository();
-  const service = new RoomService(repo, membership, ledger, engine, plays);
-  return { service, repo, membership, ledger, ledgerRepo, engine, plays };
+  // A minimal accounts stub for the insider-visibility gate (spec 0043): only `findById().insider`
+  // is read. Tests add an account id to `insiderAccounts` to grant the role.
+  const insiderAccounts = new Set<string>();
+  const accounts = {
+    findById: async (id: string) => ({ insider: insiderAccounts.has(id) }) as unknown as Account,
+  };
+  const service = new RoomService(repo, membership, ledger, engine, plays, accounts);
+  return { service, repo, membership, ledger, ledgerRepo, engine, plays, insiderAccounts };
 }
 
 async function standing(player: string, rank: number): Promise<Standing> {
@@ -156,6 +163,46 @@ describe('kick', () => {
     });
     // The host cannot kick themselves.
     await expect(service.kick(room.code, host, host.id)).rejects.toMatchObject({ code: 'invalid' });
+  });
+});
+
+describe('insider-only game visibility (spec 0043)', () => {
+  it('a non-insider host cannot select an insider-only game', async () => {
+    const { service } = harness();
+    const host = account();
+    const { room } = await service.createRoom(host);
+    await expect(service.selectGame(room.code, host, 'teeter-tower', {})).rejects.toMatchObject({
+      code: 'forbidden',
+    });
+  });
+
+  it('an insider host can select and start an insider-only game', async () => {
+    const { service, insiderAccounts } = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    insiderAccounts.add('host_acct');
+    const { room } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'teeter-tower', {});
+    const view = await service.start(room.code, host, 1);
+    expect(view.status).toBe('running');
+  });
+
+  it('start re-checks visibility: a non-insider cannot start a pre-selected insider game', async () => {
+    // Selection is blocked for a non-insider, so set the game straight on the repo to prove the
+    // start-side gate is a genuine second line of defence (not reachable via selectGame).
+    const { service, repo } = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await repo.setSelectedGame(room.id, 'teeter-tower', {});
+    await expect(service.start(room.code, host, 1)).rejects.toMatchObject({ code: 'forbidden' });
+  });
+
+  it('a public game is unaffected by the insider gate', async () => {
+    const { service } = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'trivia', {});
+    const view = await service.start(room.code, host, 1);
+    expect(view.status).toBe('running');
   });
 });
 

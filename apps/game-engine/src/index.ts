@@ -11,6 +11,7 @@ import { createGameServices } from './services';
 import { registerPlugins } from './plugins';
 import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
+import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -40,7 +41,7 @@ async function main(): Promise<void> {
   // broken game.
   const services = createGameServices();
   const { registry, configSchemas } = await registerPlugins(
-    [triviaPlugin, liarLiarPlugin],
+    [triviaPlugin, liarLiarPlugin, teeterTowerPlugin],
     services,
   );
   console.log(`[game-engine] registered games: ${registry.ids().join(', ')}`);

@@ -4,7 +4,7 @@
 // create-flow's pick step and the in-room change-game flow. Presentational and game-agnostic - it
 // reads GAME_UI_LIST so adding a game is adding a registry entry, no picker edit.
 
-import { GAME_UI_LIST } from '../../lib/games/registry';
+import { gamesForViewer } from '../../lib/games/registry';
 import { GameCard } from './GameCard';
 
 interface GamePickerProps {
@@ -12,12 +12,17 @@ interface GamePickerProps {
   selected?: string;
   onSelect: (id: string) => void;
   disabled?: boolean;
+  /**
+   * Whether the viewer is an insider (spec 0043). Insider-only games appear only when true; a
+   * non-insider never sees or selects them. Defaults to false so a missing flag hides them.
+   */
+  insider?: boolean;
 }
 
-export function GamePicker({ selected, onSelect, disabled }: GamePickerProps) {
+export function GamePicker({ selected, onSelect, disabled, insider = false }: GamePickerProps) {
   return (
     <div role="group" aria-label="Choose a game" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {GAME_UI_LIST.map((game) => (
+      {gamesForViewer(insider).map((game) => (
         <GameCard
           key={game.id}
           game={game}

@@ -1,0 +1,38 @@
+{
+  "name": "@branchout/game-teeter-tower",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Teeter Tower: an engine-authoritative headless physics stacking game, as a @branchout/game-sdk plugin package (spec 0043).",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@branchout/protocol": "workspace:*",
+    "@branchout/game-sdk": "workspace:*",
+    "matter-js": "^0.20.0",
+    "poly-decomp": "^0.3.0"
+  },
+  "devDependencies": {
+    "@branchout/config": "workspace:*",
+    "@types/matter-js": "^0.20.2",
+    "@types/node": "^20.17.10",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

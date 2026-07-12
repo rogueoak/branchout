@@ -63,6 +63,7 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
     ledger,
     engine,
     plays,
+    repo,
   );
   const profiles = new ProfileService(accounts, plays);
   const adminRepo = new InMemoryAdminRepository();
@@ -927,6 +928,7 @@ function makeAppWithToken(token: string) {
     ledger,
     new FakeEngineClient(),
     plays,
+    repo,
   );
   const profiles = new ProfileService(accounts, plays);
   const app = createApp({

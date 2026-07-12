@@ -146,7 +146,14 @@ export function GameStage({
       >
         {viewerVisible && ui ? (
           <div className="order-1">
-            <ui.Viewer state={state} me={me} />
+            {/* onAdvance is game-agnostic: the host viewer can advance the round, and a
+                continuous-play game (Teeter Tower) uses it to auto-spawn the next piece after its
+                settle animation. Other games ignore it. Undefined for a non-host. */}
+            <ui.Viewer
+              state={state}
+              me={me}
+              onAdvance={isHost ? () => onControl('advance') : undefined}
+            />
           </div>
         ) : null}
         {remoteVisible && ui ? (

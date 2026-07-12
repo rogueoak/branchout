@@ -157,6 +157,9 @@ importers:
       '@branchout/game-sdk':
         specifier: workspace:*
         version: link:../../packages/game-sdk
+      '@branchout/game-teeter-tower':
+        specifier: workspace:*
+        version: link:../../packages/games/teeter-tower
       '@branchout/game-trivia':
         specifier: workspace:*
         version: link:../../packages/games/trivia
@@ -359,6 +362,40 @@ importers:
       '@branchout/config':
         specifier: workspace:*
         version: link:../../config
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.43
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
+
+  packages/games/teeter-tower:
+    dependencies:
+      '@branchout/game-sdk':
+        specifier: workspace:*
+        version: link:../../game-sdk
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../../protocol
+      matter-js:
+        specifier: ^0.20.0
+        version: 0.20.0
+      poly-decomp:
+        specifier: ^0.3.0
+        version: 0.3.0
+    devDependencies:
+      '@branchout/config':
+        specifier: workspace:*
+        version: link:../../config
+      '@types/matter-js':
+        specifier: ^0.20.2
+        version: 0.20.2
       '@types/node':
         specifier: ^20.17.10
         version: 20.19.43
@@ -2473,6 +2510,9 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
+  '@types/matter-js@0.20.2':
+    resolution: {integrity: sha512-3PPKy3QxvZ89h9+wdBV2488I1JLVs7DEpIkPvgO8JC1mUdiVSO37ZIvVctOTD7hIq8OAL2gJ3ugGSuUip6DhCw==}
+
   '@types/node@20.19.43':
     resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
 
@@ -3705,6 +3745,9 @@ packages:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
 
+  matter-js@0.20.0:
+    resolution: {integrity: sha512-iC9fYR7zVT3HppNnsFsp9XOoQdQN2tUyfaKg4CHLH8bN+j6GT4Gw7IH2rP0tflAebrHFw730RR3DkVSZRX8hwA==}
+
   memfs@4.57.8:
     resolution: {integrity: sha512-bApYhn8BLpFAnAQmFfEl/NPN+8qx5Ar3V4Qt3ek23mVwBEElzV7c6XoPkb/PCG8ZFpowCEpHcPwMFTwHS7tSMA==}
     peerDependencies:
@@ -3968,6 +4011,9 @@ packages:
     resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
     engines: {node: '>=18'}
     hasBin: true
+
+  poly-decomp@0.3.0:
+    resolution: {integrity: sha512-hWeBxGzPYiybmI4548Fca7Up/0k1qS5+79cVHI9+H33dKya5YNb9hxl0ZnDaDgvrZSuYFBhkCK/HOnqN7gefkQ==}
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -6370,6 +6416,8 @@ snapshots:
 
   '@types/json-schema@7.0.15': {}
 
+  '@types/matter-js@0.20.2': {}
+
   '@types/node@20.19.43':
     dependencies:
       undici-types: 6.21.0
@@ -7824,6 +7872,8 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
+  matter-js@0.20.0: {}
+
   memfs@4.57.8(tslib@2.8.1):
     dependencies:
       '@jsonjoy.com/fs-core': 4.57.8(tslib@2.8.1)
@@ -8126,6 +8176,8 @@ snapshots:
       playwright-core: 1.61.1
     optionalDependencies:
       fsevents: 2.3.2
+
+  poly-decomp@0.3.0: {}
 
   possible-typed-array-names@1.1.0: {}
 

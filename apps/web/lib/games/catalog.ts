@@ -9,7 +9,7 @@
 
 import type { Metadata } from 'next';
 import { SITE_URL } from '../site';
-import { GAME_UI_LIST, getGameUi, type GameUiModule } from './registry';
+import { GAME_UI_LIST, getGameUi, isPublicGame, type GameUiModule } from './registry';
 
 /** One how-to-play step shown on a feature page. */
 export interface HowToStep {
@@ -111,6 +111,39 @@ const MARKETING: Record<string, GameMarketing> = {
       'Play Liar Liar free in your browser: a Fibbage-style bluffing game. Write a fake answer to a ' +
       'wild-but-true clue, then pick the real one hidden among the lies. Start a room - no app.',
   },
+  // Teeter Tower is insider-only (spec 0043): the entry exists so the build-time "every registered
+  // game needs marketing copy" check passes, but the PUBLIC_GAME_CATALOG below excludes it, so it
+  // never appears on the public /games index, the feature pages, or the sitemap. Its share card is a
+  // placeholder (no public raster is generated for an insider game); it satisfies the shape check and
+  // is never surfaced publicly.
+  'teeter-tower': {
+    description:
+      'Teeter Tower is a physics stacking game for phones. Spin a wobbly, googly-eyed piece, lock ' +
+      'its angle, and drop it onto the tower. Reach the target line across three levels - a warm-up, ' +
+      'a taller climb, and a swinging pendulum - without toppling the stack. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Spin and lock',
+        body: 'A googly-eyed piece spins on the board. Tap to lock the angle you want it to drop at.',
+      },
+      {
+        title: 'Aim the drop',
+        body: 'Drag to line the piece up over the tower, then drop it and watch it settle.',
+      },
+      {
+        title: 'Reach the line',
+        body: 'Stack piece on piece to reach the target line and clear the level for more points.',
+      },
+    ],
+    categories: ['Physics', 'Stacking', 'Skill'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Teeter Tower',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Teeter Tower - a physics stacking game | Branch Out Games',
+    seoDescription:
+      'Teeter Tower is a phone-first physics stacking game in insider testing. Spin a googly-eyed ' +
+      'piece, lock its angle, and drop it to build toward the target line across three levels.',
+  },
 };
 
 /** A game's full marketing + display data - the registry basics plus the catalog copy. */
@@ -121,13 +154,16 @@ export interface GameCatalogEntry extends GameMarketing {
   summary: string;
   /** The game's on-theme mark as an inline SVG string (from the registry / brand package). */
   icon: string;
+  /** Whether this game is public (surfaced on marketing pages) or insider-only (spec 0043). */
+  visibility: 'public' | 'insider';
 }
 
 function toEntry(module: GameUiModule): GameCatalogEntry {
   const marketing = MARKETING[module.id];
   if (!marketing) {
     // Fail loudly: a registered game with no marketing copy would otherwise ship a broken feature
-    // page and sitemap entry. Adding a game must add its catalog entry.
+    // page and sitemap entry. Adding a game must add its catalog entry (even an insider game, so the
+    // shape stays complete; PUBLIC_GAME_CATALOG then filters it out of the public surfaces).
     throw new Error(
       `No marketing catalog entry for game "${module.id}" - add one to lib/games/catalog.ts`,
     );
@@ -138,17 +174,34 @@ function toEntry(module: GameUiModule): GameCatalogEntry {
     tagline: module.tagline,
     summary: module.summary,
     icon: module.icon,
+    visibility: module.visibility ?? 'public',
     ...marketing,
   };
 }
 
-/** Every game's catalog entry, in the registry's display order. */
+/**
+ * Every registered game's catalog entry, in display order - including insider games (so the
+ * build-time registry<->catalog completeness check holds). Public marketing surfaces must use
+ * {@link PUBLIC_GAME_CATALOG} instead, which excludes insider-only games.
+ */
 export const GAME_CATALOG: readonly GameCatalogEntry[] = GAME_UI_LIST.map(toEntry);
 
-/** Resolve a catalog entry by slug, or undefined for an unknown game. */
+/**
+ * The public marketing catalog: only games visible to everyone (spec 0043). The /games index, the
+ * feature pages, and the sitemap enumerate THIS list so an insider-only game never appears publicly.
+ */
+export const PUBLIC_GAME_CATALOG: readonly GameCatalogEntry[] =
+  GAME_UI_LIST.filter(isPublicGame).map(toEntry);
+
+/**
+ * Resolve a PUBLIC catalog entry by slug, or undefined for an unknown or insider-only game. Public
+ * surfaces (the feature page, its metadata/JSON-LD) use this so an insider game deep-linked by slug
+ * 404s instead of rendering a public page.
+ */
 export function getCatalogEntry(slug: string | undefined | null): GameCatalogEntry | undefined {
   const module = getGameUi(slug);
-  return module ? toEntry(module) : undefined;
+  if (!module || !isPublicGame(module)) return undefined;
+  return toEntry(module);
 }
 
 /** The feature page path for a game. */

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { TopNav } from '../../components/TopNav';
-import { GAME_CATALOG, featurePath } from '../../lib/games/catalog';
+import { PUBLIC_GAME_CATALOG, featurePath } from '../../lib/games/catalog';
 import { getViewer } from '../../lib/session';
 
 // The games index (spec 0030): an unauthenticated, server-rendered list of every game, each card
@@ -34,7 +34,7 @@ export default async function GamesIndexPage() {
         </header>
 
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2" role="list">
-          {GAME_CATALOG.map((game) => (
+          {PUBLIC_GAME_CATALOG.map((game) => (
             <li key={game.slug}>
               {/* A descriptive accessible name per card - the visible "Learn more" text repeats across
                   cards (an a11y anti-pattern), so the link is labelled by the game it opens. */}
