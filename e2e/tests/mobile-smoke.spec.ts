@@ -62,9 +62,16 @@ test.describe('game feature pages (spec 0030) at 360px', () => {
     await expect(start).toHaveAttribute('href', '/signup?next=%2Frooms%3Fgame%3Dtrivia');
   });
 
-  test('an unknown game slug returns 404', async ({ page }) => {
+  test('an unknown game slug returns 404 with the friendly not-found page', async ({ page }) => {
     const resp = await page.goto('/games/does-not-exist');
     expect(resp?.status()).toBe(404);
+    // The custom 404 renders on-brand copy and a link home (not a bare Next.js default).
+    await expect(
+      page.getByRole('heading', { name: /whoops, looks like you are lost/i }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /let.?s go home/i })).toHaveAttribute('href', '/');
+    // The longer heading + full-width button must still fit a 360px phone.
+    await expectFits(page);
   });
 
   test('a signed-in visitor gets the direct play CTA (skips signup)', async ({ page }) => {
