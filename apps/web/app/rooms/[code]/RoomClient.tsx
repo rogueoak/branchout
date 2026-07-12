@@ -388,7 +388,12 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
                   : 'Choose what to play. You can change it later.'}
               </p>
             </header>
-            <GamePicker selected={game} onSelect={onPickGame} disabled={picking} />
+            <GamePicker
+              selected={game}
+              onSelect={onPickGame}
+              disabled={picking}
+              insider={viewer.insider ?? false}
+            />
             {changing ? (
               <Button
                 type="button"

@@ -6,7 +6,7 @@
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
-import { GAME_CATALOG, featurePath, playHref } from '../lib/games/catalog';
+import { PUBLIC_GAME_CATALOG, featurePath, playHref } from '../lib/games/catalog';
 import type { Viewer } from '../lib/session';
 import { Footer } from './Footer';
 import { TopNav } from './TopNav';
@@ -123,7 +123,7 @@ export function LandingContent({ viewer }: LandingContentProps) {
               "Start a game" CTA into the play path (spec 0030). The whole card is the tap target, and
               the marketing data comes from the shared catalog so the teaser never drifts from the
               feature page or the room picker. */}
-          {GAME_CATALOG.map((game) => (
+          {PUBLIC_GAME_CATALOG.map((game) => (
             // The whole card links to the feature page (learn first). For a signed-in player who
             // already knows the game, a secondary "Play" link below it skips the extra hop straight
             // into the room deep link. Sibling links (not nested) so the markup stays valid.

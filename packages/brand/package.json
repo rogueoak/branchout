@@ -30,6 +30,10 @@
       "types": "./dist/liarliar.d.ts",
       "import": "./dist/liarliar.js"
     },
+    "./teeter-tower": {
+      "types": "./dist/teeter-tower.d.ts",
+      "import": "./dist/teeter-tower.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"

@@ -11,7 +11,7 @@ import { trackRoomCreated } from '../../lib/analytics';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import { defaultMode } from '../../lib/default-mode';
-import { getGameUi } from '../../lib/games/registry';
+import { getGameUi, isPublicGame } from '../../lib/games/registry';
 import { rememberMembership } from '../../lib/membership';
 import { RoomApiError, createRoom, fetchIdentity, selectGame, setMode } from '../../lib/room-api';
 import type { Viewer } from '../../lib/session';
@@ -61,7 +61,12 @@ export function RoomsHome({ initialGame, viewer }: RoomsHomeProps) {
 
       // Deep link (spec 0029): if the "Start a game" CTA named a known game, select it now and skip
       // the pick step, landing the host straight on invite. Otherwise the host picks a game first.
-      const preselected = initialGame ? getGameUi(initialGame) : undefined;
+      // Insider gate (spec 0043): a non-insider deep-linking an insider-only game is ignored (the
+      // pre-select is dropped and they fall back to the picker), so an insider game never starts for
+      // someone without the entitlement.
+      const candidate = initialGame ? getGameUi(initialGame) : undefined;
+      const preselected =
+        candidate && (isPublicGame(candidate) || viewer.insider) ? candidate : undefined;
       let roomToStore = room;
       if (preselected) {
         try {
