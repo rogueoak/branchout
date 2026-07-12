@@ -26,6 +26,12 @@ export interface GameManifest<Config = unknown> {
   /** Validate + normalize the opaque handoff config at the `/sessions` boundary. */
   readonly configSchema: ConfigSchema<Config>;
   readonly capabilities?: GameCapabilities;
+  /**
+   * Catalog visibility. `'public'` (the default when unset) games appear in the normal picker;
+   * `'insider'` games are carried through the engine but are only offered on the insider surface
+   * (spec 0043). The engine merely carries this field; gating lives in the web/room layers.
+   */
+  readonly visibility?: 'public' | 'insider';
 }
 
 /** Reads a game package's own bundled assets, resolved relative to that package's root. */
