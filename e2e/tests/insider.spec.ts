@@ -53,7 +53,11 @@ test.describe('insider surface (spec 0035)', () => {
     grantInsider(account.gamerTag);
     await page.goto(INSIDER_URL);
     await expect(page.getByRole('heading', { name: 'Insider' })).toBeVisible();
-    await expect(page.getByText(/no test games yet/i)).toBeVisible();
+    // Teeter Tower (spec 0043) is now a live insider game, so the surface lists it (the empty state
+    // no longer shows). Each game card links into a solo room on the apex.
+    await expect(
+      page.getByRole('link', { name: /start a room to test teeter tower/i }),
+    ).toBeVisible();
   });
 
   test('a signed-out visitor is sent to the apex login (never the gated host)', async ({
