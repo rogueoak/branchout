@@ -15,6 +15,11 @@ Two compose stacks, one shared external Docker network (`edge`):
   80/443. Terminates TLS (auto-ACME), enforces HSTS, and routes by path:
   `/api/*` -> `control-plane:4000`, `/ws/*` -> `game-engine:4001` (WebSocket upgrade),
   everything else -> `web:3000`. ACME data persists in the `caddy_data` named volume.
+  On the `/api` upstream Caddy **replaces** `X-Forwarded-For` with the real client IP so
+  `control-plane`'s `request.ip` (its rate limiting) cannot be forged (spec 0038). **This assumes
+  Caddy is the direct TLS terminator.** Putting a proxy/load balancer (e.g. a DO load balancer) in
+  front of Caddy makes `{remote_host}` the LB's IP, collapsing every client into one rate-limit
+  bucket - you must reconfigure the trusted hop (and `trustProxy`) at the same time.
 
 - `compose.site.yml` - the **branchout** app stack. The three private GHCR images plus
   `postgres:16-alpine` and `redis:7-alpine`. No host port is published: Caddy reaches

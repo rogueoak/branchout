@@ -29,12 +29,17 @@ client IP a signal we can trust, the **edge** must own it - the app cannot.
 
 In:
 
-- **`deploy/docker/Caddyfile`**: on the upstream that carries auth traffic (the `control-plane` `/api`
-  reverse-proxy in the shared snippet), set `header_up X-Forwarded-For {remote_host}` so Caddy **replaces**
-  the header with the true peer IP instead of appending to a forgeable one. (Caddy is the public edge, so
-  `{remote_host}` is the real client.)
-- **`apps/control-plane/src/app.ts`**: correct the `trustProxy` comment - `request.ip` is now trustworthy
-  because the edge sanitizes `X-Forwarded-For`; keep `trustProxy: true` (it reads the now-clean header).
+- **`deploy/docker/Caddyfile`**: on the `control-plane` `/api` reverse-proxy, set
+  `header_up X-Forwarded-For {remote_host}` so Caddy **replaces** the header with the true peer IP instead
+  of appending to a forgeable one. (Caddy is the public edge, so `{remote_host}` is the real client.)
+  Factor this into a shared `(api)` snippet (splitting `api_ws` into `(ws)` + `(api)`, `api_ws` imports
+  both) so the hardening lives in ONE place and every `/api` front - apex, insiders, and `0037`'s admin -
+  inherits it without a divergent per-block copy.
+- **`apps/control-plane/src/app.ts`** + **`apps/control-plane/src/routes/auth.ts`**: correct the
+  `trustProxy` comment and the login/signup comments - `request.ip` is trustworthy on the edge-fronted
+  path (so the signup cap is real, not best-effort), and the login account-anchor is justified on its own
+  merit (an attacker has many source IPs; the account is the stable dimension), not on XFF forgeability.
+  Keep `trustProxy: true`. Name the dev caveat (dev publishes the port with no Caddy).
 - **`docs/overview/architecture.md`** + **`docs/feedback/0020-rate-limit-key-anchor.md`**: update the
   "best-effort IP / hardening is a follow-up" note to "edge-sanitized, trustworthy", naming the single
   direct-terminator assumption.
