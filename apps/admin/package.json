@@ -12,6 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@branchout/brand": "workspace:*",
     "@branchout/protocol": "workspace:*",
     "@branchout/theme": "workspace:*",
     "@fontsource-variable/figtree": "^5.2.10",

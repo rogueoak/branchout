@@ -1,16 +1,19 @@
 'use client';
 
-import { buttonVariants } from '@rogueoak/canopy';
+import { Badge, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { adminLogout } from '../lib/admin-api';
+import { Wordmark } from './Wordmark';
 
 const linkClass =
   'text-body-sm font-medium text-text-muted underline-offset-4 hover:text-text hover:underline ' +
   'focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
 
-// The console's top bar: an "Admin" marker, section links, the signed-in admin, and log out. Client
-// because log out is interactive (POST + redirect). Rendered on every authed page (spec 0037).
+// The console's top bar: the Branch Out Games wordmark with an "Admin" badge left-aligned beside it
+// (mirrors the "Insider" surface badge in apps/web's TopNav), then the section links, the signed-in
+// admin, and log out. Client because log out is interactive (POST + redirect). Rendered on every
+// authed page (spec 0037).
 export function AdminNav({ email }: { email: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -33,9 +36,16 @@ export function AdminNav({ email }: { email: string }) {
         className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-6"
       >
         <div className="flex min-w-0 items-center gap-3 sm:gap-5">
-          <span className="text-body-sm font-semibold uppercase tracking-wide text-primary">
-            Branch Out Admin
-          </span>
+          <a
+            href="/"
+            aria-label="Branch Out Games admin home"
+            className="rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <Wordmark />
+          </a>
+          <Badge variant="primary" className="uppercase tracking-wide">
+            Admin
+          </Badge>
           <a href="/users" className={linkClass}>
             Users
           </a>
