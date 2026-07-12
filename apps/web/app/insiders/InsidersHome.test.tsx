@@ -26,4 +26,23 @@ describe('InsidersHome (spec 0035)', () => {
     render(<InsidersHome viewer={viewer} />);
     expect(screen.getByRole('button', { name: /account menu for cat/i })).toBeDefined();
   });
+
+  it('crosses the shared chrome links to the apex origin (spec 0035)', () => {
+    // The surface lives on the insiders subdomain; nav/footer links to apex pages must be absolute or
+    // they rewrite into the insiders tree and 404.
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://branchout.games');
+    try {
+      render(<InsidersHome viewer={viewer} />);
+      expect(screen.getByRole('link', { name: 'Games' })).toHaveProperty(
+        'href',
+        'https://branchout.games/games',
+      );
+      expect(screen.getByRole('link', { name: 'Privacy' })).toHaveProperty(
+        'href',
+        'https://branchout.games/privacy',
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });

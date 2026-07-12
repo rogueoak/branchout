@@ -1,10 +1,25 @@
 'use client';
 
 import { V1_PREFIX } from '@branchout/protocol';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
+import { isTrustedHost } from '../../lib/subdomain';
 
 // The control-plane base URL. Overridable per environment; defaults to the local dev port.
 const CONTROL_PLANE_URL = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? 'http://localhost:4000';
+
+/**
+ * A `?next=` return target, kept only if it points at one of our own hosts (open-redirect defence -
+ * the value can come from a subdomain gate, e.g. insiders sends the visitor here to log in and
+ * return). Read on the client from the current URL so the page needs no Suspense boundary.
+ */
+function readTrustedNext(): string | null {
+  try {
+    const next = new URLSearchParams(window.location.search).get('next');
+    return next && isTrustedHost(new URL(next).host) ? next : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Log-in page. Verifies credentials through the control-plane and opens a session. A wrong
@@ -17,6 +32,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  // An origin-validated return target (e.g. the insiders surface that sent a signed-out visitor here).
+  const [next, setNext] = useState<string | null>(null);
+  useEffect(() => {
+    setNext(readTrustedNext());
+  }, []);
+  // On success, return the visitor to where they came from.
+  useEffect(() => {
+    if (done && next) window.location.assign(next);
+  }, [done, next]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,13 +70,23 @@ export default function LoginPage() {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8">
         <h1 className="text-2xl font-bold">Welcome back</h1>
-        <p className="text-gray-600">
-          You are logged in. Head back to{' '}
-          <a className="underline" href="/">
-            Branch out
-          </a>{' '}
-          and start a room.
-        </p>
+        {next ? (
+          <p className="text-gray-600">
+            You are logged in. Taking you back...{' '}
+            <a className="underline" href={next}>
+              Continue
+            </a>
+            .
+          </p>
+        ) : (
+          <p className="text-gray-600">
+            You are logged in. Head back to{' '}
+            <a className="underline" href="/">
+              Branch out
+            </a>{' '}
+            and start a room.
+          </p>
+        )}
       </main>
     );
   }
@@ -60,6 +94,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 p-8">
       <h1 className="text-2xl font-bold">Log in</h1>
+      {next ? <p className="-mt-4 text-sm text-gray-600">Log in to continue.</p> : null}
 
       <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
         <label className="flex flex-col gap-1 text-sm font-medium">

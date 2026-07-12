@@ -17,9 +17,12 @@ interface AccountMenuProps {
   gamerTag: string;
   nickname?: string;
   avatar?: string;
+  // Cross the menu's own links + post-logout nav to another origin (spec 0035): on the insiders
+  // subdomain, `/account` is an apex page, so the surface passes its apex origin. Unset = relative.
+  linkOrigin?: string;
 }
 
-export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
+export function AccountMenu({ gamerTag, nickname, avatar, linkOrigin }: AccountMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -94,6 +97,12 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
     // Clear the analytics identity so a shared device does not attribute the next player to this one.
     resetAnalytics();
     close(false);
+    // On a crossed-origin surface (insiders), leave to the apex home; the Next router is same-origin
+    // only, so a full navigation is needed to cross back.
+    if (linkOrigin) {
+      window.location.assign(`${linkOrigin}/`);
+      return;
+    }
     router.push('/');
     router.refresh();
   }
@@ -131,7 +140,7 @@ export function AccountMenu({ gamerTag, nickname, avatar }: AccountMenuProps) {
             }}
             role="menuitem"
             tabIndex={-1}
-            href="/account"
+            href={linkOrigin ? `${linkOrigin}/account` : '/account'}
             onClick={() => close(false)}
             className="px-3 py-2 text-left text-body-sm text-text hover:bg-surface focus-visible:bg-surface focus-visible:outline-none"
           >

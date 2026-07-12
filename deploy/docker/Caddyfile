@@ -103,17 +103,22 @@
     }
 }
 
+# Cross-cutting settings shared by every first-party host block: compression + HSTS. A new surface
+# (spec 0037's admin) gets the same baseline by importing one snippet, so the blocks cannot drift.
+(site_base) {
+    encode gzip zstd
+
+    # HSTS: tell browsers to always use HTTPS for this domain (2 years).
+    header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+}
+
 # Redirect www to apex (permanent).
 www.branchout.games {
     redir https://branchout.games{uri} permanent
 }
 
 branchout.games {
-    encode gzip zstd
-
-    # HSTS: tell browsers to always use HTTPS for this domain (2 years).
-    header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-
+    import site_base
     import api_ws
     import web
 }
@@ -122,10 +127,7 @@ branchout.games {
 # host-aware middleware in `web` rewrites requests here into the /insiders tree; re-serving /api and
 # /ws same-origin keeps the surface CORS-free. Needs an `insiders` A record -> the droplet.
 insiders.branchout.games {
-    encode gzip zstd
-
-    header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-
+    import site_base
     import api_ws
     import web
 }

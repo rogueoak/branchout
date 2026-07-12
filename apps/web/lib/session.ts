@@ -1,12 +1,13 @@
 import { V1_PREFIX } from '@branchout/protocol';
 import { cookies } from 'next/headers';
+import { SESSION_COOKIE_NAME } from './subdomain';
 
 // Server-side control-plane URL (not exposed to the browser).
 const CONTROL_PLANE_URL = process.env.CONTROL_PLANE_URL ?? 'http://localhost:4000';
 
-// Cookie name must match what the control-plane writes (env SESSION_COOKIE_NAME; default
-// matches control-plane config.ts).
-const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? 'branchout_session';
+// Cookie name shared with the edge middleware (lib/subdomain) so both read ONE default and cannot
+// drift via process.env.SESSION_COOKIE_NAME (which configures the control-plane, not web).
+const SESSION_COOKIE = SESSION_COOKIE_NAME;
 
 /**
  * The signed-in identity the top nav needs (spec 0028), read server-side so the correct nav renders

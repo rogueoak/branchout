@@ -64,7 +64,37 @@ test.describe('insiders surface (spec 0035)', () => {
     try {
       const page = await context.newPage();
       await page.goto(INSIDERS_URL);
-      // Middleware crosses back to the apex login rather than looping through the insiders tree.
+      // Middleware crosses back to the apex login rather than looping through the insiders tree,
+      // carrying an origin-validated return target so login can send the visitor back.
+      await page.waitForURL(/\/login/);
+      const url = new URL(page.url());
+      expect(url.host).toBe(`localhost:${WEB_PORT}`);
+      expect(url.searchParams.get('next')).toBeTruthy();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('a stale/invalid session cookie is rejected by the authoritative layout gate', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext();
+    try {
+      // A cookie that clears middleware's cheap presence check but is not a real session - the
+      // layout's getViewer() must still reject it and send the visitor to login (defence in depth).
+      await context.addCookies([
+        {
+          name: SESSION_COOKIE,
+          value: 'not-a-real-session-id',
+          domain: 'insiders.localhost',
+          path: '/',
+          httpOnly: true,
+          secure: false,
+          sameSite: 'Lax',
+        },
+      ]);
+      const page = await context.newPage();
+      await page.goto(INSIDERS_URL);
       await page.waitForURL(/\/login/);
       expect(new URL(page.url()).host).toBe(`localhost:${WEB_PORT}`);
     } finally {

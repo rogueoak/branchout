@@ -14,12 +14,17 @@ import { TopNav } from '../../components/TopNav';
 const INSIDER_GAMES: { slug: string; name: string; summary: string }[] = [];
 
 export function InsidersHome({ viewer }: { viewer: Viewer }) {
+  // The apex origin. The shared nav/footer link to apex pages (/games, /privacy, ...), but this
+  // surface lives on the insiders subdomain where middleware rewrites every path into the /insiders
+  // tree - so those links must cross back to the apex or they 404. Falls back to relative when the
+  // origin is unset (local dev on one host). (spec 0035)
+  const apexOrigin = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '');
   return (
     // Same shell as the main surfaces (flex column, shared footer pinned via mt-auto) so the
     // insiders app inherits the site look and feel. The "Insiders" badge in the nav marks the
     // surface (spec 0035).
     <div className="flex min-h-screen flex-col bg-bg text-text">
-      <TopNav viewer={viewer} label="Insiders" />
+      <TopNav viewer={viewer} label="Insiders" linkOrigin={apexOrigin} />
 
       <section
         aria-labelledby="insiders-heading"
@@ -59,7 +64,7 @@ export function InsidersHome({ viewer }: { viewer: Viewer }) {
         )}
       </section>
 
-      <Footer />
+      <Footer linkOrigin={apexOrigin} />
     </div>
   );
 }
