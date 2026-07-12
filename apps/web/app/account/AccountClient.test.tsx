@@ -122,4 +122,22 @@ describe('AccountClient', () => {
     render(<AccountClient />);
     expect(await screen.findByRole('link', { name: 'Log in' })).toBeDefined();
   });
+
+  it('shows no insider entry point for a non-insider account (spec 0039)', async () => {
+    api.fetchMe.mockResolvedValue({ kind: 'account', account });
+    render(<AccountClient />);
+    await screen.findByRole('heading', { name: 'Ada' });
+    expect(screen.queryByRole('link', { name: 'Insider game previews' })).toBeNull();
+  });
+
+  it('shows an insider the previews button targeting the insider host (spec 0039)', async () => {
+    // The real `insiderOrigin` runs (only account-api is mocked); with NEXT_PUBLIC_SITE_URL unset in
+    // the test it falls back to window.location.origin, so this exercises that fallback path too.
+    api.fetchMe.mockResolvedValue({ kind: 'account', account: { ...account, insider: true } });
+    render(<AccountClient />);
+    await screen.findByRole('heading', { name: 'Ada' });
+    const link = await screen.findByRole('link', { name: 'Insider game previews' });
+    const href = link.getAttribute('href') ?? '';
+    expect(new URL(href).hostname.startsWith('insider.')).toBe(true);
+  });
 });

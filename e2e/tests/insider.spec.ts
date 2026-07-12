@@ -130,6 +130,29 @@ test.describe('insider surface (spec 0035)', () => {
     expect(new URL(href!).hostname.startsWith('insider.')).toBe(true);
   });
 
+  test('the insider button on /account fits a 360px phone (mobile-first)', async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
+    try {
+      const page = await context.newPage();
+      const account = await signUp(page);
+      grantInsider(account.gamerTag);
+      await page.goto(`${BASE_URL}/account`);
+      // The button renders for the (now) insider account, and the page does not overflow the phone.
+      await expect(page.getByRole('link', { name: 'Insider game previews' })).toBeVisible();
+      const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      // 1px rounding slack; more means the button/section pushes past the phone viewport.
+      expect(
+        scrollWidth,
+        'the account page with the insider button should not scroll horizontally on a phone',
+      ).toBeLessThanOrEqual(clientWidth + 1);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('the insider surface fits a 360px phone (mobile-first)', async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
     try {

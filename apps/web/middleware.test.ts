@@ -36,8 +36,14 @@ describe('subdomain routing helpers (spec 0035)', () => {
     expect(insiderOrigin('http://localhost:3100')).toBe('http://insider.localhost:3100');
     // A trailing slash is ignored.
     expect(insiderOrigin('https://branchout.games/')).toBe('https://insider.branchout.games');
-    // A non-URL input is returned unchanged (caller falls back to a relative link).
+    // Only the origin survives - a stray path/query on the input is dropped (URL.origin).
+    expect(insiderOrigin('https://branchout.games/account?x=1')).toBe(
+      'https://insider.branchout.games',
+    );
+    // A non-URL input is returned unchanged (caller falls back to a relative link) - both the empty
+    // string and a non-empty malformed value hit the catch.
     expect(insiderOrigin('')).toBe('');
+    expect(insiderOrigin('not a url')).toBe('not a url');
   });
 
   it('builds an absolute apex login URL with the given scheme', () => {
