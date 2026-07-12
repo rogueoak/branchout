@@ -3,56 +3,56 @@
     "id": "food-001",
     "category": "Food",
     "prompt": "Which Italian dish consists of flat bread topped with tomato sauce and cheese?",
-    "answers": ["pizza"],
+    "answers": ["Pizza"],
     "difficulty": 1
   },
   {
     "id": "food-002",
     "category": "Food",
     "prompt": "What pasta shape's name means 'little worms' in Italian?",
-    "answers": ["vermicelli"],
+    "answers": ["Vermicelli"],
     "difficulty": 6
   },
   {
     "id": "food-003",
     "category": "Food",
     "prompt": "Which spice, derived from the Crocus sativus flower, is the world's most expensive by weight?",
-    "answers": ["saffron"],
+    "answers": ["Saffron"],
     "difficulty": 4
   },
   {
     "id": "food-004",
     "category": "Food",
     "prompt": "What is the main ingredient in traditional guacamole?",
-    "answers": ["avocado", "avocados"],
+    "answers": ["Avocado", "Avocados"],
     "difficulty": 2
   },
   {
     "id": "food-005",
     "category": "Food",
     "prompt": "Which country is the origin of the dish sushi?",
-    "answers": ["japan"],
+    "answers": ["Japan"],
     "difficulty": 2
   },
   {
     "id": "food-006",
     "category": "Food",
     "prompt": "What French cooking technique involves cooking food slowly in its own fat?",
-    "answers": ["confit"],
+    "answers": ["Confit"],
     "difficulty": 7
   },
   {
     "id": "food-007",
     "category": "Food",
     "prompt": "Which grain is used to make traditional Japanese sake?",
-    "answers": ["rice"],
+    "answers": ["Rice"],
     "difficulty": 3
   },
   {
     "id": "food-008",
     "category": "Food",
     "prompt": "What is the name of the Indian bread cooked in a tandoor oven?",
-    "answers": ["naan", "nan"],
+    "answers": ["Naan", "Nan"],
     "difficulty": 3
   }
 ]

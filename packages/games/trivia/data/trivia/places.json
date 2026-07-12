@@ -3,56 +3,56 @@
     "id": "places-001",
     "category": "Places",
     "prompt": "What is the capital of France?",
-    "answers": ["paris"],
+    "answers": ["Paris"],
     "difficulty": 1
   },
   {
     "id": "places-002",
     "category": "Places",
     "prompt": "What is the capital of Japan?",
-    "answers": ["tokyo"],
+    "answers": ["Tokyo"],
     "difficulty": 2
   },
   {
     "id": "places-003",
     "category": "Places",
     "prompt": "What is the capital of the United States?",
-    "answers": ["washington dc", "washington d.c.", "washington"],
+    "answers": ["Washington DC", "Washington D.C.", "Washington"],
     "difficulty": 1
   },
   {
     "id": "places-004",
     "category": "Places",
     "prompt": "What is the capital of the United Kingdom?",
-    "answers": ["london"],
+    "answers": ["London"],
     "difficulty": 1
   },
   {
     "id": "places-005",
     "category": "Places",
     "prompt": "What is the capital of Germany?",
-    "answers": ["berlin"],
+    "answers": ["Berlin"],
     "difficulty": 2
   },
   {
     "id": "places-006",
     "category": "Places",
     "prompt": "What is the capital of Italy?",
-    "answers": ["rome", "roma"],
+    "answers": ["Rome", "Roma"],
     "difficulty": 2
   },
   {
     "id": "places-007",
     "category": "Places",
     "prompt": "What is the capital of Spain?",
-    "answers": ["madrid"],
+    "answers": ["Madrid"],
     "difficulty": 2
   },
   {
     "id": "places-008",
     "category": "Places",
     "prompt": "What is the capital of China?",
-    "answers": ["beijing", "peking"],
+    "answers": ["Beijing", "Peking"],
     "difficulty": 2
   }
 ]

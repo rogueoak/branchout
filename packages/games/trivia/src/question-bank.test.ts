@@ -86,10 +86,16 @@ describe('validateQuestionBank - structural violations', () => {
     expect(() => validateQuestionBank(bank)).toThrow('invalid id format');
   });
 
-  it('throws when an answer is not lowercase', () => {
+  it('accepts Title-Case answers (casing is not enforced; matching is case-insensitive)', () => {
     const bank = makeValidBank();
-    bank[0] = { ...bank[0]!, answers: ['Valid'] };
-    expect(() => validateQuestionBank(bank)).toThrow('lowercase');
+    bank[0] = { ...bank[0]!, answers: ['Carbon Dioxide', 'CO2'] };
+    expect(() => validateQuestionBank(bank)).not.toThrow();
+  });
+
+  it('throws on a blank answer', () => {
+    const bank = makeValidBank();
+    bank[0] = { ...bank[0]!, answers: [''] };
+    expect(() => validateQuestionBank(bank)).toThrow('blank answer');
   });
 
   it('throws on an out-of-range difficulty value', () => {

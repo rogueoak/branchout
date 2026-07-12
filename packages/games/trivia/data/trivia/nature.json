@@ -3,56 +3,56 @@
     "id": "nature-001",
     "category": "Nature",
     "prompt": "What gas do plants absorb from the air during photosynthesis?",
-    "answers": ["carbon dioxide", "co2"],
+    "answers": ["Carbon Dioxide", "CO2"],
     "difficulty": 2
   },
   {
     "id": "nature-002",
     "category": "Nature",
     "prompt": "What is the largest ocean on Earth?",
-    "answers": ["pacific ocean", "pacific"],
+    "answers": ["Pacific Ocean", "Pacific"],
     "difficulty": 2
   },
   {
     "id": "nature-003",
     "category": "Nature",
     "prompt": "What is the hardest natural mineral on Earth?",
-    "answers": ["diamond"],
+    "answers": ["Diamond"],
     "difficulty": 2
   },
   {
     "id": "nature-004",
     "category": "Nature",
     "prompt": "How many bones are in the adult human body?",
-    "answers": ["206", "two hundred and six"],
+    "answers": ["206", "Two Hundred and Six"],
     "difficulty": 4
   },
   {
     "id": "nature-005",
     "category": "Nature",
     "prompt": "What layer of Earth's atmosphere contains the ozone layer?",
-    "answers": ["stratosphere"],
+    "answers": ["Stratosphere"],
     "difficulty": 4
   },
   {
     "id": "nature-006",
     "category": "Nature",
     "prompt": "What is the most abundant gas in Earth's atmosphere?",
-    "answers": ["nitrogen"],
+    "answers": ["Nitrogen"],
     "difficulty": 5
   },
   {
     "id": "nature-007",
     "category": "Nature",
     "prompt": "What is molten rock called while it remains beneath Earth's surface?",
-    "answers": ["magma"],
+    "answers": ["Magma"],
     "difficulty": 4
   },
   {
     "id": "nature-008",
     "category": "Nature",
     "prompt": "What is the name for molten rock after it erupts onto Earth's surface?",
-    "answers": ["lava"],
+    "answers": ["Lava"],
     "difficulty": 2
   }
 ]

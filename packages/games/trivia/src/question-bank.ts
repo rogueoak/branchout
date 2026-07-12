@@ -22,7 +22,10 @@ export interface TriviaQuestion {
   category: string;
   /** The question text shown to players. */
   prompt: string;
-  /** One or more accepted answers (all lowercase). */
+  /**
+   * One or more accepted answers. Stored in display Title Case (`answers[0]` is the canonical
+   * answer shown on reveal); the matcher lowercases both sides, so matching is case-insensitive.
+   */
   answers: string[];
   /**
    * Difficulty rating: an integer 1 (near-universal knowledge) to 10 (obscure/expert). The host
@@ -89,7 +92,9 @@ export async function loadQuestionBank(assets: AssetLoader): Promise<TriviaQuest
  * Per-item rules enforced:
  * 1. Each `id` is unique across the entire bank.
  * 2. Each `id` matches the pattern `<lowercase-category>-NNN` (3-digit zero-padded suffix).
- * 3. `answers` is non-empty and every answer is a non-empty all-lowercase string.
+ * 3. `answers` is non-empty and every answer is a non-empty string. Answers are stored in display
+ *    Title Case (the matcher lowercases both sides, so matching stays case-insensitive); casing is
+ *    not enforced here.
  * 4. `difficulty` is an integer 1-10.
  * 5. No duplicate `prompt` values within a single category.
  */
@@ -125,11 +130,8 @@ export function validateQuestionBank(questions: TriviaQuestion[]): void {
       if (typeof answer !== 'string' || answer.length === 0) {
         throw new Error(`question-bank validation failed: ${pos} has a blank answer`);
       }
-      if (answer !== answer.toLowerCase()) {
-        throw new Error(
-          `question-bank validation failed: ${pos} answer "${answer}" must be all-lowercase`,
-        );
-      }
+      // Casing is intentionally not enforced: answers are stored in display Title Case and the
+      // matcher normalizes both sides to lowercase (see matching.ts), so matching is unaffected.
     }
 
     // 4. Difficulty is an integer 1-10
