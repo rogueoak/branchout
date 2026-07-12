@@ -44,10 +44,13 @@ export interface AppDeps {
  * anyway). CORS and cookie plugins register at the root, so the `/v1` child context inherits them.
  */
 export function createApp(deps: AppDeps): FastifyInstance {
-  // trustProxy: the control-plane is only reachable through the Caddy edge (no published host port),
-  // so `request.ip` must come from the `X-Forwarded-For` Caddy sets - otherwise every client would
-  // share the proxy's IP and one rate-limit bucket. The per-account login key is the spoof-resistant
-  // anchor (account lockout holds even if XFF is rotated); the per-IP sign-up cap is best-effort.
+  // trustProxy: without it, behind Caddy every client shares the proxy's IP and one rate-limit
+  // bucket, so `request.ip` reads the `X-Forwarded-For` Caddy sets. But that IP is best-effort, NOT a
+  // trustworthy identity: Caddy *appends* to a client-supplied XFF rather than stripping it, and the
+  // dev infra compose even publishes port 4000 to the host - so a caller can forge XFF. Therefore the
+  // login lockout anchors on the ACCOUNT (which cannot be forged), and the per-IP sign-up cap is
+  // explicitly best-effort. Hardening the client IP at the edge (strip/replace XFF, or scope trust to
+  // the proxy hop) is a follow-up that also benefits the admin surface (spec 0037).
   const app = Fastify({ trustProxy: true });
 
   app.register(cors, {

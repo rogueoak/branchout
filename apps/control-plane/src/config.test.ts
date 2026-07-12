@@ -65,4 +65,16 @@ describe('loadConfig rate limiting (spec 0036)', () => {
       signupWindowSeconds: 120,
     });
   });
+
+  it('falls back to the default on a garbage threshold (a NaN limit would lock everyone out)', () => {
+    const { rateLimit } = loadConfig({
+      ...base,
+      LOGIN_MAX_ATTEMPTS: 'abc',
+      SIGNUP_MAX_PER_IP: '0',
+      LOGIN_WINDOW_SECONDS: '-5',
+    });
+    expect(rateLimit.loginMaxAttempts).toBe(5); // not NaN
+    expect(rateLimit.signupMaxPerIp).toBe(10); // zero rejected
+    expect(rateLimit.loginWindowSeconds).toBe(900); // negative rejected
+  });
 });

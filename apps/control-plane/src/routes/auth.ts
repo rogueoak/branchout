@@ -75,7 +75,10 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   };
 
   // Sign up: create the account, then open an account session. Capped per client IP so one source
-  // cannot mass-create accounts; every attempt (valid or not) counts against the cap.
+  // cannot mass-create accounts; every attempt (valid or not) counts against the cap. This cap is
+  // best-effort: there is no account to anchor on yet, and request.ip (X-Forwarded-For) is
+  // client-forgeable behind Caddy, so a determined attacker who rotates XFF can evade it. It still
+  // deters casual abuse; hardening the client IP at the edge (strip/replace XFF) is a follow-up.
   app.post('/auth/signup', async (request, reply) => {
     const limitKey = `signup:${request.ip}`;
     const verdict = await limiter.check(limitKey, rateLimit.signupMaxPerIp);
@@ -111,11 +114,17 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
   // Log in: verify credentials, then open an account session. A wrong email or password both
   // return the same 401 so the response never reveals which field was wrong. Failed attempts lock
-  // per (account, IP) - the account key is the spoof-resistant anchor (an IP alone can be rotated) -
-  // and a successful sign-in clears the counter so earlier typos never punish a legitimate user.
+  // per ACCOUNT (the submitted email), NOT per (account, IP): request.ip comes from a
+  // client-forgeable X-Forwarded-For (Caddy appends rather than strips it), so folding the IP into
+  // the key would let an attacker rotate XFF to a fresh bucket per request and brute-force past the
+  // lockout. The account is the one dimension the attacker cannot rotate, so it is the anchor. A
+  // successful sign-in clears the counter so earlier typos never punish a legitimate user.
+  // Tradeoff: account-only lockout lets someone briefly (one window) lock a targeted account by
+  // failing logins - the standard account-lockout tradeoff, bounded by the short window; softening
+  // it (CAPTCHA / progressive delay) is a future enhancement.
   app.post('/auth/login', async (request, reply) => {
     const email = asString(request.body, 'email');
-    const limitKey = `login:${normalizeEmail(email)}:${request.ip}`;
+    const limitKey = `login:${normalizeEmail(email)}`;
     const verdict = await limiter.check(limitKey, rateLimit.loginMaxAttempts);
     if (verdict.blocked) {
       return tooManyAttempts(reply, verdict.retryAfterSeconds);

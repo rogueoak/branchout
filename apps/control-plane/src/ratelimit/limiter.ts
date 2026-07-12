@@ -1,13 +1,17 @@
 /**
  * A small fixed-window rate limiter for the auth endpoints (spec 0036). Deliberately NOT
  * `@fastify/rate-limit`: login needs a *failure* counter that **resets on a successful sign-in** and
- * is keyed per (account, IP) - semantics a generic request-per-IP limiter does not model. This mirrors
- * the `SessionStore` shape (a Redis impl for prod, a deterministic in-memory impl for tests), and is
- * the reusable unit the admin login (spec 0037) also uses.
+ * is keyed on the actor's uncontrollable dimension (the account) - semantics a generic
+ * request-per-IP limiter does not model. This mirrors the `SessionStore` shape (a Redis impl for
+ * prod, a deterministic in-memory impl for tests), and is the reusable unit the admin login (spec
+ * 0037) also uses.
  *
- * The caller owns the key (e.g. `login:<email>:<ip>` or `signup:<ip>`) and the policy: `check` before
+ * The caller owns the key (e.g. `login:<email>` or `signup:<ip>`) and the policy: `check` before
  * acting, `record` a hit, `reset` when the actor proves legitimate. The window is set on the first
  * `record` for a key and the whole counter expires with it - a fixed window, not a sliding one.
+ * Fixed-window has a known boundary burst: up to `2 x limit` hits can land across a window edge (limit
+ * at the tail of one window, limit at the head of the next). Acceptable for auth lockouts; a consumer
+ * that needs a hard smooth rate (e.g. a future admin surface, spec 0037) may want a sliding window.
  */
 export interface RateVerdict {
   /** True when the key is at or over its limit for the current window. */
@@ -44,10 +48,21 @@ export class RedisRateLimiter implements RateLimiter {
     const full = KEY_PREFIX + key;
     const raw = await this.redis.get(full);
     const count = raw ? Number(raw) : 0;
-    if (count < limit) {
+    // A non-numeric value (should never happen) is treated as no hits rather than NaN, which would
+    // make `count < limit` false and lock everyone out.
+    if (!Number.isFinite(count) || count < limit) {
       return { blocked: false, retryAfterSeconds: 0 };
     }
     const ttl = await this.redis.ttl(full);
+    if (ttl < 0) {
+      // A counter at/over the limit with no expiry (ttl -1) is an anomaly - e.g. a crash between the
+      // INCR and its EXPIRE left the window unset - which would otherwise lock this key forever. Since
+      // `check` runs before `record`, a blocked caller never reaches the code that could re-arm it, so
+      // heal it here: drop the orphaned counter and let the actor start a fresh window. This needs a
+      // failure at exactly the INCR/EXPIRE seam, so it is not attacker-inducible to shed a live lock.
+      await this.redis.del(full);
+      return { blocked: false, retryAfterSeconds: 0 };
+    }
     return { blocked: true, retryAfterSeconds: Math.max(1, ttl) };
   }
 

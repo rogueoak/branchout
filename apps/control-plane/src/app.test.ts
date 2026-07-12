@@ -38,11 +38,12 @@ const defaultRateLimit: RateLimitConfig = {
   signupWindowSeconds: 3600,
 };
 
-function makeApp(rateLimit: RateLimitConfig = defaultRateLimit) {
+function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => number) {
   const repo = new InMemoryAccountRepository();
   const accounts = new AccountService(repo, fakeHasher);
   const sessions = new InMemorySessionStore(3600_000);
-  const limiter = new InMemoryRateLimiter();
+  // `now` lets a test drive the limiter's clock to lapse a window without waiting.
+  const limiter = new InMemoryRateLimiter(now);
   const ledger = new CreditLedger(new InMemoryLedgerRepository(), new FreeTierProvider());
   const engine = new FakeEngineClient();
   const plays = new InMemoryPlaysRepository();
@@ -256,33 +257,71 @@ describe('auth rate limiting (spec 0036)', () => {
     await app.close();
   });
 
-  it('keys the lockout per client IP (one IP locked, another still allowed)', async () => {
+  it('anchors the lockout on the account, not the client IP (a forgeable IP cannot evade it)', async () => {
     const { app } = makeApp();
     await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
 
+    // Lock the account with six wrong passwords, each from a DIFFERENT forged X-Forwarded-For.
     for (let i = 0; i < 6; i++) {
       await app.inject({
         method: 'POST',
         url: '/v1/auth/login',
         payload: wrong,
-        headers: { 'x-forwarded-for': '10.0.0.1' },
+        headers: { 'x-forwarded-for': `10.0.0.${i}` },
       });
     }
-    const lockedIp = await app.inject({
+    // A brand-new forged IP is STILL locked - rotating XFF does not mint a fresh bucket, because the
+    // key is the account, not the account+IP.
+    const rotatedIp = await app.inject({
       method: 'POST',
       url: '/v1/auth/login',
       payload: wrong,
-      headers: { 'x-forwarded-for': '10.0.0.1' },
+      headers: { 'x-forwarded-for': '203.0.113.9' },
     });
-    expect(lockedIp.statusCode).toBe(429);
-    // A different IP, same account, is unaffected - a normal 401.
-    const otherIp = await app.inject({
+    expect(rotatedIp.statusCode).toBe(429);
+    await app.close();
+  });
+
+  it('keys the lockout per account (a different account is unaffected)', async () => {
+    const { app } = makeApp();
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+    await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { email: 'other@example.com', password: 'supersecret', gamerTag: 'Other' },
+    });
+
+    for (let i = 0; i < 6; i++) {
+      await app.inject({ method: 'POST', url: '/v1/auth/login', payload: wrong });
+    }
+    expect(
+      (await app.inject({ method: 'POST', url: '/v1/auth/login', payload: wrong })).statusCode,
+    ).toBe(429);
+    // A different account has its own counter - a normal 401, not locked.
+    const otherAccount = await app.inject({
       method: 'POST',
       url: '/v1/auth/login',
-      payload: wrong,
-      headers: { 'x-forwarded-for': '10.0.0.2' },
+      payload: { email: 'other@example.com', password: 'nope' },
     });
-    expect(otherIp.statusCode).toBe(401);
+    expect(otherAccount.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('releases the lock once the window elapses', async () => {
+    let clock = 1_000_000;
+    const { app } = makeApp(defaultRateLimit, () => clock);
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+
+    for (let i = 0; i < 6; i++) {
+      await app.inject({ method: 'POST', url: '/v1/auth/login', payload: wrong });
+    }
+    expect(
+      (await app.inject({ method: 'POST', url: '/v1/auth/login', payload: creds })).statusCode,
+    ).toBe(429);
+    // Advance past the window: the counter lapses, so the correct password is accepted again.
+    clock += (defaultRateLimit.loginWindowSeconds + 1) * 1000;
+    const afterWindow = await app.inject({ method: 'POST', url: '/v1/auth/login', payload: creds });
+    expect(afterWindow.statusCode).toBe(200);
     await app.close();
   });
 
@@ -302,6 +341,52 @@ describe('auth rate limiting (spec 0036)', () => {
     const capped = await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: at(3) });
     expect(capped.statusCode).toBe(429);
     expect(capped.json().error).toBe('Too many attempts. Please try again later.');
+    await app.close();
+  });
+
+  it('caps sign-ups per IP independently (one IP capped, another still allowed)', async () => {
+    const { app } = makeApp({ ...defaultRateLimit, signupMaxPerIp: 1 });
+    const at = (n: number) => ({
+      email: `p${n}@example.com`,
+      password: 'supersecret',
+      gamerTag: `Player${n}`,
+    });
+    const ip1 = { 'x-forwarded-for': '10.0.0.1' };
+    const ip2 = { 'x-forwarded-for': '10.0.0.2' };
+    expect(
+      (await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: at(1), headers: ip1 }))
+        .statusCode,
+    ).toBe(201);
+    // IP1 is capped...
+    expect(
+      (await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: at(2), headers: ip1 }))
+        .statusCode,
+    ).toBe(429);
+    // ...but IP2 has its own bucket.
+    expect(
+      (await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: at(3), headers: ip2 }))
+        .statusCode,
+    ).toBe(201);
+    await app.close();
+  });
+
+  it('counts a rejected sign-up against the cap (a failed attempt still consumes a slot)', async () => {
+    const { app } = makeApp({ ...defaultRateLimit, signupMaxPerIp: 2 });
+    // First a real account, then a duplicate that 409s - which still counts - so the third is capped.
+    expect(
+      (await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup }))
+        .statusCode,
+    ).toBe(201);
+    expect(
+      (await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup }))
+        .statusCode,
+    ).toBe(409);
+    const third = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { email: 'fresh@example.com', password: 'supersecret', gamerTag: 'Fresh' },
+    });
+    expect(third.statusCode).toBe(429);
     await app.close();
   });
 });

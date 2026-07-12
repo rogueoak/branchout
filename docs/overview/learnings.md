@@ -385,3 +385,18 @@ Capture durable lessons as they emerge.
   relative. And a gate that redirects across hosts must carry an **origin-validated** return target
   (`?next=`) and never build an absolute redirect from the inbound `Host` header - strip-only-the-label
   on an untrusted `Host` is a latent open redirect. (Review `0035`, feedback `0019`.)
+
+## Rate limiting and lockouts
+
+- **A lockout key must anchor on the dimension the actor cannot forge.** The first auth limiter keyed
+  login on `<email>:<ip>`, but `request.ip` comes from `X-Forwarded-For`, which Caddy *appends* to
+  (never strips), so a client controls it - rotating XFF minted a fresh bucket per request and
+  brute-forced past the lock. Mixing an unforgeable dimension (the account) with a forgeable one (the
+  client IP) reduces the key to the forgeable part. Anchor on the account; treat a client IP as a
+  best-effort *secondary* signal only, and say so. Hardening the IP means stripping/replacing XFF at
+  the edge, not trusting it in the app. (Feedback `0020`, spec `0036`.)
+- **A fixed-window counter built from `INCR` + `EXPIRE` must recover a lost TTL.** The window was set
+  only on the first hit; a crash between the two ops left a counter with no expiry and permanently
+  locked a real user (and `check` runs before `record`, so a blocked caller never re-arms it). Make
+  `check` self-heal - a counter at/over the limit with `ttl < 0` is an anomaly to clear, not honor.
+  (Feedback `0020`, spec `0036`.)

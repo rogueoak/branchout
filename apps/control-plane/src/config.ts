@@ -69,6 +69,19 @@ function parseBool(value: string | undefined, fallback: boolean): boolean {
 }
 
 /**
+ * A positive integer from the environment, else the fallback. Guards the rate-limit knobs: a garbage
+ * value would otherwise become `NaN`, and a `NaN` limit makes `count < NaN` false -> everyone is
+ * instantly locked out. Zero/negative are rejected too (a limit must be at least 1).
+ */
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  if (value === undefined) {
+    return fallback;
+  }
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+
+/**
  * Parse the SameSite policy. `lax` is the safe default and works when web and control-plane
  * share a site (e.g. localhost:3000 -> :4000). A cross-site deploy (web and control-plane on
  * different registrable domains) needs `none` + secure for the session cookie to be sent.
@@ -108,10 +121,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     ...(env.INTERNAL_API_TOKEN ? { internalToken: env.INTERNAL_API_TOKEN } : {}),
     membershipTtlSeconds: Number(env.MEMBERSHIP_TTL_SECONDS ?? DEFAULT_MEMBERSHIP_TTL),
     rateLimit: {
-      loginMaxAttempts: Number(env.LOGIN_MAX_ATTEMPTS ?? DEFAULT_LOGIN_MAX_ATTEMPTS),
-      loginWindowSeconds: Number(env.LOGIN_WINDOW_SECONDS ?? DEFAULT_LOGIN_WINDOW),
-      signupMaxPerIp: Number(env.SIGNUP_MAX_PER_IP ?? DEFAULT_SIGNUP_MAX_PER_IP),
-      signupWindowSeconds: Number(env.SIGNUP_WINDOW_SECONDS ?? DEFAULT_SIGNUP_WINDOW),
+      loginMaxAttempts: parsePositiveInt(env.LOGIN_MAX_ATTEMPTS, DEFAULT_LOGIN_MAX_ATTEMPTS),
+      loginWindowSeconds: parsePositiveInt(env.LOGIN_WINDOW_SECONDS, DEFAULT_LOGIN_WINDOW),
+      signupMaxPerIp: parsePositiveInt(env.SIGNUP_MAX_PER_IP, DEFAULT_SIGNUP_MAX_PER_IP),
+      signupWindowSeconds: parsePositiveInt(env.SIGNUP_WINDOW_SECONDS, DEFAULT_SIGNUP_WINDOW),
     },
   };
 }
