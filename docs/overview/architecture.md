@@ -240,8 +240,11 @@ instance + Postgres/Redis + headroom + swap; the caps assume the current droplet
 is a hard OOM-kill ceiling set well above real use (incl. SSR cold start), so it only bounds a runaway,
 never trips a healthy roll. The droplet (1 vCPU / 1.9 GiB) has a **2 GiB swapfile** provisioned
 (`/swapfile`, in `/etc/fstab`, `vm.swappiness=10`) as an OOM backstop, not for steady paging. Caps are
-trimmed to leave room for additional UI services: `web` 320m, `control-plane` 256m, `game-engine` 256m
-(each `--memory-swap` at 2x). CPU is near-idle; RAM is the binding constraint for adding services.
+trimmed so the four app services fit: `web` 320m, `admin` 320m (spec 0037), `control-plane` 256m,
+`game-engine` 256m (each `--memory-swap` at 2x), plus Postgres/Redis (~40m). That is ~1152m of app
+ceilings; steady real use is well under the caps (an operator-only `admin` is light), and a rollout
+adds at most one extra instance (+320m peak) - all backed by the 1.9 GiB RAM + 2 GiB swap. CPU is
+near-idle; RAM is the binding constraint for adding services.
 
 **What "follows the swap" does and does not cover.** Caddy's dynamic upstreams re-resolve the alias
 for the three edge-fronted routes (`/api` -> control-plane, `/ws` -> game-engine, `*` -> web). Two
@@ -350,9 +353,9 @@ features, tests/lint/build green before merge, persona review on PRs.
 ## Admin console (spec 0037)
 
 The operator console is a **separate Next.js service** (`apps/admin`), served by Caddy at
-`admin.branchout.games` - not the `web` process. It is a fourth app service on the droplet; the swap +
-trimmed `mem_limit`s (spec 0034) leave the headroom, and an operator-only surface stays light (its own
-modest `mem_limit`). It reaches control-plane's `/api` **same-origin** (Caddy's admin block imports the
+`admin.branchout.games` - not the `web` process. It is a fourth app service on the droplet with its own
+`mem_limit` of **320m** (see the capacity rule above); the swap + trimmed caps (spec 0034) leave the
+headroom, and an operator-only surface stays light. It reaches control-plane's `/api` **same-origin** (Caddy's admin block imports the
 shared `api` snippet, so it inherits the trusted-client-IP header from spec 0038), and gates
 server-side (a `requireAdmin` layout guard) while control-plane re-checks the admin session on every
 `/v1/admin/*` call - the authoritative boundary.

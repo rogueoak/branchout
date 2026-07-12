@@ -45,10 +45,14 @@ export class InMemoryAdminRepository implements AdminRepository {
     return [...this.admins.values()].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
-  async updatePasswordHash(id: string, passwordHash: string): Promise<AdminAccount | null> {
+  async updateCredentials(
+    id: string,
+    email: string,
+    passwordHash: string,
+  ): Promise<AdminAccount | null> {
     const admin = this.admins.get(id);
     if (!admin) return null;
-    const updated: AdminAccount = { ...admin, passwordHash, updatedAt: new Date() };
+    const updated: AdminAccount = { ...admin, email, passwordHash, updatedAt: new Date() };
     this.admins.set(id, updated);
     return updated;
   }

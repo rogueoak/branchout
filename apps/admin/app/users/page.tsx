@@ -14,6 +14,11 @@ interface UsersPage {
   pageSize: number;
 }
 
+// Mirrors control-plane routes/admin.ts USERS_PAGE_SIZE. Only used as the error-fallback page size
+// (when the API is unreachable the list is empty, so this drives the page-count math, not slicing);
+// kept as a named constant so it does not silently drift from the server's value.
+const FALLBACK_PAGE_SIZE = 20;
+
 const linkClass =
   'text-body-sm font-medium text-primary underline-offset-4 hover:underline ' +
   'focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
@@ -28,7 +33,9 @@ export default async function UsersPage({
   const query = sp.query ?? '';
   const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1);
   const res = await adminFetch(`/admin/users?query=${encodeURIComponent(query)}&page=${page}`);
-  const data: UsersPage = res.ok ? await res.json() : { items: [], total: 0, page, pageSize: 20 };
+  const data: UsersPage = res.ok
+    ? await res.json()
+    : { items: [], total: 0, page, pageSize: FALLBACK_PAGE_SIZE };
   const lastPage = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const pageHref = (p: number) => `/users?query=${encodeURIComponent(query)}&page=${p}`;

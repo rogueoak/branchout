@@ -31,8 +31,9 @@ export interface AdminRepository {
   findById(id: string): Promise<AdminAccount | null>;
   /** All admins, newest first - for the console's admin list. */
   list(): Promise<AdminAccount[]>;
-  /** Set a password on an existing admin (root reconcile on boot). */
-  updatePasswordHash(id: string, passwordHash: string): Promise<AdminAccount | null>;
+  /** Refresh an existing admin's display email + password (the root reconcile on boot, so a casing or
+   * spelling change to ADMIN_ROOT_EMAIL that keeps the same normalized value is not left stale). */
+  updateCredentials(id: string, email: string, passwordHash: string): Promise<AdminAccount | null>;
 }
 
 /** Raised when the unique admin email is violated at the database. */
@@ -112,10 +113,15 @@ export class PostgresAdminRepository implements AdminRepository {
     return result.rows.map(mapRow);
   }
 
-  async updatePasswordHash(id: string, passwordHash: string): Promise<AdminAccount | null> {
+  async updateCredentials(
+    id: string,
+    email: string,
+    passwordHash: string,
+  ): Promise<AdminAccount | null> {
     const result = await this.pool.query<AdminRow>(
-      `UPDATE admin_accounts SET password_hash = $2, updated_at = now() WHERE id = $1 RETURNING *`,
-      [id, passwordHash],
+      `UPDATE admin_accounts SET email = $2, password_hash = $3, updated_at = now()
+       WHERE id = $1 RETURNING *`,
+      [id, email, passwordHash],
     );
     const row = result.rows[0];
     return row ? mapRow(row) : null;

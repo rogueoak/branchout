@@ -1,13 +1,16 @@
-import { type Page, expect, test } from '@playwright/test';
+import { type BrowserContext, type Page, expect, test } from '@playwright/test';
 import { signUp } from '../lib/helpers';
-import { ADMIN_URL } from '../lib/stack';
+import { ADMIN_URL, WEB_PORT } from '../lib/stack';
 
 // End-to-end proof of the admin console (spec 0037). The admin is a SEPARATE app on its own port,
 // with a SEPARATE identity (its own store + host-only cookie). The root admin is seeded from env by
 // the control-plane on boot (see infra/docker-compose.e2e.yml). The risk this guards is authorization:
 // only a valid admin session reaches the console, a player session does not, and an admin can grant a
-// player the insider role. The seeded root's credentials match the e2e overlay.
+// player the insider role (proven through to the insiders surface). The seeded root's credentials
+// match the e2e overlay.
 const ROOT = { email: 'root@branchout.test', password: 'e2e-root-admin-password' };
+const PLAYER_COOKIE = 'branchout_session';
+const INSIDERS_URL = `http://insiders.localhost:${WEB_PORT}`;
 
 async function adminLogin(page: Page, email: string, password: string): Promise<void> {
   await page.goto(`${ADMIN_URL}/login`);
@@ -17,8 +20,26 @@ async function adminLogin(page: Page, email: string, password: string): Promise<
   await page.waitForURL(`${ADMIN_URL}/users`);
 }
 
+/** Copy the player session cookie onto the insiders host - the local stand-in for prod's parent-domain
+ * cookie (see insiders.spec), so the same player session reaches `insiders.localhost`. */
+async function spanPlayerSessionToInsiders(context: BrowserContext): Promise<void> {
+  const session = (await context.cookies()).find((c) => c.name === PLAYER_COOKIE);
+  if (!session) throw new Error('no player session cookie - signUp did not set one');
+  await context.addCookies([
+    {
+      name: PLAYER_COOKIE,
+      value: session.value,
+      domain: 'insiders.localhost',
+      path: '/',
+      httpOnly: true,
+      secure: false,
+      sameSite: 'Lax',
+    },
+  ]);
+}
+
 test.describe('admin console (spec 0037)', () => {
-  test('root admin signs in, grants a player insider, and creates another admin', async ({
+  test('root admin signs in, grants a player insider (who then reaches insiders), and creates another admin', async ({
     page,
     browser,
   }) => {
@@ -32,9 +53,21 @@ test.describe('admin console (spec 0037)', () => {
     await page.getByRole('link', { name: account.gamerTag }).click();
     await page.waitForURL(new RegExp(`${ADMIN_URL}/users/`));
 
-    // Grant insider - the button flips to "Revoke insider", proving the toggle took.
+    // Grant insider - the button flips to "Revoke insider" (optimistic re-render).
     await page.getByRole('button', { name: /grant insider/i }).click();
     await expect(page.getByRole('button', { name: /revoke insider/i })).toBeVisible();
+
+    // Prove the write actually took (the button would flip even if it were dropped): the player now
+    // reaches the insiders surface. The player session is still in this context (from signUp); span it
+    // to the insiders host and load it in a fresh page.
+    await spanPlayerSessionToInsiders(page.context());
+    const insiders = await page.context().newPage();
+    try {
+      await insiders.goto(INSIDERS_URL);
+      await expect(insiders.getByRole('heading', { name: 'Insiders' })).toBeVisible();
+    } finally {
+      await insiders.close();
+    }
 
     // Create another admin.
     await page.goto(`${ADMIN_URL}/admins`);
@@ -75,9 +108,32 @@ test.describe('admin console (spec 0037)', () => {
     }
   });
 
+  test('a signed-in player gets no admin access - SSR gate and API both reject it', async ({
+    browser,
+  }) => {
+    // This is the spec's headline boundary: a real PLAYER session (not just an anonymous visitor) must
+    // not satisfy the admin gate. A cookie-name / namespace mistake would slip through here.
+    const context = await browser.newContext();
+    try {
+      const page = await context.newPage();
+      await signUp(page); // sets the player cookie (branchout_session)
+
+      // SSR gate: the admin app reads the admin cookie, not the player one -> redirect to admin login.
+      await page.goto(`${ADMIN_URL}/users`);
+      await page.waitForURL(`${ADMIN_URL}/login`);
+
+      // API: the request carries the player cookie (shared context jar), which is NOT an admin session
+      // -> control-plane's authoritative gate returns 401.
+      const res = await context.request.get(`${ADMIN_URL}/api/v1/admin/users`);
+      expect(res.status()).toBe(401);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('the admin API rejects an unauthenticated request', async ({ request }) => {
     // No admin cookie -> control-plane's authoritative gate returns 401 (proxied same-origin via /api).
-    const res = await request.get(`${ADMIN_URL}/api/admin/users`);
+    const res = await request.get(`${ADMIN_URL}/api/v1/admin/users`);
     expect(res.status()).toBe(401);
   });
 });

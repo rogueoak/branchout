@@ -120,7 +120,9 @@ export class AdminService {
     const passwordHash = await this.hasher.hash(rawPassword);
     const existing = await this.repo.findByEmailNormalized(email.normalized!);
     if (existing) {
-      await this.repo.updatePasswordHash(existing.id, passwordHash);
+      // Refresh both the display email and the password so a casing/spelling change to the env value
+      // (same normalized email) is not left stale.
+      await this.repo.updateCredentials(existing.id, rawEmail.trim(), passwordHash);
       return;
     }
     await this.repo.create({
