@@ -17,7 +17,7 @@
     "id": "history-003",
     "category": "History",
     "prompt": "Who was the first President of the United States?",
-    "answers": ["george washington"],
+    "answers": ["George Washington"],
     "difficulty": 1
   },
   {
@@ -52,7 +52,7 @@
     "id": "history-008",
     "category": "History",
     "prompt": "Which ancient Egyptian queen formed a political alliance with Julius Caesar?",
-    "answers": ["cleopatra", "cleopatra vii"],
+    "answers": ["Cleopatra", "Cleopatra VII"],
     "difficulty": 2
   }
 ]

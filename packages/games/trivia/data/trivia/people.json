@@ -3,56 +3,56 @@
     "id": "people-001",
     "category": "People",
     "prompt": "Who painted the Mona Lisa?",
-    "answers": ["leonardo da vinci", "da vinci", "leonardo"],
+    "answers": ["Leonardo da Vinci", "Da Vinci", "Leonardo"],
     "difficulty": 1
   },
   {
     "id": "people-002",
     "category": "People",
     "prompt": "Who developed the theory of relativity?",
-    "answers": ["albert einstein", "einstein"],
+    "answers": ["Albert Einstein", "Einstein"],
     "difficulty": 1
   },
   {
     "id": "people-003",
     "category": "People",
     "prompt": "Who formulated the law of universal gravitation?",
-    "answers": ["isaac newton", "newton"],
+    "answers": ["Isaac Newton", "Newton"],
     "difficulty": 2
   },
   {
     "id": "people-004",
     "category": "People",
     "prompt": "Who wrote the play Hamlet?",
-    "answers": ["william shakespeare", "shakespeare"],
+    "answers": ["William Shakespeare", "Shakespeare"],
     "difficulty": 1
   },
   {
     "id": "people-005",
     "category": "People",
     "prompt": "Which French emperor was defeated at the Battle of Waterloo in 1815?",
-    "answers": ["napoleon bonaparte", "napoleon", "bonaparte"],
+    "answers": ["Napoleon Bonaparte", "Napoleon", "Bonaparte"],
     "difficulty": 2
   },
   {
     "id": "people-006",
     "category": "People",
     "prompt": "Who was the 16th President of the United States?",
-    "answers": ["abraham lincoln", "lincoln"],
+    "answers": ["Abraham Lincoln", "Lincoln"],
     "difficulty": 2
   },
   {
     "id": "people-007",
     "category": "People",
     "prompt": "Which European explorer is credited with reaching the Americas in 1492?",
-    "answers": ["christopher columbus", "columbus"],
+    "answers": ["Christopher Columbus", "Columbus"],
     "difficulty": 1
   },
   {
     "id": "people-008",
     "category": "People",
     "prompt": "Who was the first person to walk on the Moon?",
-    "answers": ["neil armstrong", "armstrong"],
+    "answers": ["Neil Armstrong", "Armstrong"],
     "difficulty": 1
   }
 ]

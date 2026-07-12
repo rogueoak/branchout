@@ -3,56 +3,56 @@
     "id": "science-001",
     "category": "Science",
     "prompt": "What force attracts all objects with mass toward each other?",
-    "answers": ["gravity", "gravitational force", "gravitation"],
+    "answers": ["Gravity", "Gravitational Force", "Gravitation"],
     "difficulty": 1
   },
   {
     "id": "science-002",
     "category": "Science",
     "prompt": "What is the SI unit of force?",
-    "answers": ["newton", "newtons"],
+    "answers": ["Newton", "Newtons"],
     "difficulty": 4
   },
   {
     "id": "science-003",
     "category": "Science",
     "prompt": "What is the boiling point of water at standard atmospheric pressure in degrees Celsius?",
-    "answers": ["100", "100 degrees celsius", "100 degrees", "100c"],
+    "answers": ["100", "100 Degrees Celsius", "100 Degrees", "100C"],
     "difficulty": 1
   },
   {
     "id": "science-004",
     "category": "Science",
     "prompt": "What type of energy does a moving object possess?",
-    "answers": ["kinetic energy", "kinetic"],
+    "answers": ["Kinetic Energy", "Kinetic"],
     "difficulty": 4
   },
   {
     "id": "science-005",
     "category": "Science",
     "prompt": "What is the freezing point of water in degrees Celsius at standard pressure?",
-    "answers": ["0", "zero", "0 degrees celsius", "zero degrees celsius"],
+    "answers": ["0", "Zero", "0 Degrees Celsius", "Zero Degrees Celsius"],
     "difficulty": 1
   },
   {
     "id": "science-006",
     "category": "Science",
     "prompt": "What is the SI unit of electric current?",
-    "answers": ["ampere", "amp", "amperes", "amps"],
+    "answers": ["Ampere", "Amp", "Amperes", "Amps"],
     "difficulty": 4
   },
   {
     "id": "science-007",
     "category": "Science",
     "prompt": "What color of visible light has the longest wavelength?",
-    "answers": ["red"],
+    "answers": ["Red"],
     "difficulty": 4
   },
   {
     "id": "science-008",
     "category": "Science",
     "prompt": "What is the SI unit of electrical resistance?",
-    "answers": ["ohm", "ohms"],
+    "answers": ["Ohm", "Ohms"],
     "difficulty": 5
   }
 ]

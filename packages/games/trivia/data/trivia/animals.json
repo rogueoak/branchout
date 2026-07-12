@@ -3,56 +3,56 @@
     "id": "animals-001",
     "category": "Animals",
     "prompt": "What is the largest land animal on Earth?",
-    "answers": ["african elephant", "elephant"],
+    "answers": ["African Elephant", "Elephant"],
     "difficulty": 1
   },
   {
     "id": "animals-002",
     "category": "Animals",
     "prompt": "What is the fastest land animal?",
-    "answers": ["cheetah"],
+    "answers": ["Cheetah"],
     "difficulty": 2
   },
   {
     "id": "animals-003",
     "category": "Animals",
     "prompt": "What is the tallest living animal?",
-    "answers": ["giraffe"],
+    "answers": ["Giraffe"],
     "difficulty": 1
   },
   {
     "id": "animals-004",
     "category": "Animals",
     "prompt": "What is the largest animal on Earth?",
-    "answers": ["blue whale"],
+    "answers": ["Blue Whale"],
     "difficulty": 2
   },
   {
     "id": "animals-005",
     "category": "Animals",
     "prompt": "What is the largest flightless bird?",
-    "answers": ["ostrich"],
+    "answers": ["Ostrich"],
     "difficulty": 2
   },
   {
     "id": "animals-006",
     "category": "Animals",
     "prompt": "What insect is famous for producing honey?",
-    "answers": ["bee", "honeybee", "honey bee"],
+    "answers": ["Bee", "Honeybee", "Honey Bee"],
     "difficulty": 1
   },
   {
     "id": "animals-007",
     "category": "Animals",
     "prompt": "What marsupial carries its young in a pouch?",
-    "answers": ["kangaroo"],
+    "answers": ["Kangaroo"],
     "difficulty": 2
   },
   {
     "id": "animals-008",
     "category": "Animals",
     "prompt": "What tall pink bird is famous for standing on one leg?",
-    "answers": ["flamingo"],
+    "answers": ["Flamingo"],
     "difficulty": 2
   }
 ]

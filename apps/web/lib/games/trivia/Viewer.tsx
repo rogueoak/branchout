@@ -10,7 +10,6 @@ import { Badge } from '@rogueoak/canopy';
 import type { GameState } from '../../game-state';
 import { asTriviaPrompt, pickTriviaRoundReveal, pickTriviaDisputeReveal } from './protocol';
 import { difficultyBand } from './config';
-import { toDisplayAnswer } from '../../title-case';
 import { useAnswerCountdown } from '../../use-answer-countdown';
 import { FinalResults } from '../../../components/game/FinalResults';
 import { Leaderboard } from '../../../components/game/Leaderboard';
@@ -69,11 +68,11 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
             <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">
               <p className="text-body-sm text-text-muted">Answer</p>
               <p className="text-h4 text-text" data-testid="reveal-answer">
-                {reveal.answers[0] ? toDisplayAnswer(reveal.answers[0]) : 'No answer'}
+                {reveal.answers[0] ? reveal.answers[0] : 'No answer'}
               </p>
               {reveal.answers.length > 1 ? (
                 <p className="text-body-sm text-text-muted">
-                  Also accepted: {reveal.answers.slice(1).map(toDisplayAnswer).join(', ')}
+                  Also accepted: {reveal.answers.slice(1).join(', ')}
                 </p>
               ) : null}
               <p className="text-body-sm text-success">
@@ -98,7 +97,7 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
                           s.correct ? 'correct' : 'wrong'
                         }`}
                       >
-                        {s.correct ? '✓' : '✗'} {toDisplayAnswer(s.answer)}
+                        {s.correct ? '✓' : '✗'} {s.answer}
                       </span>
                     </li>
                   ))}

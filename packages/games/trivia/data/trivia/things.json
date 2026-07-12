@@ -3,56 +3,56 @@
     "id": "things-001",
     "category": "Things",
     "prompt": "What device tells you which direction is north using a magnetic needle?",
-    "answers": ["compass", "a compass", "magnetic compass"],
+    "answers": ["Compass", "A Compass", "Magnetic Compass"],
     "difficulty": 1
   },
   {
     "id": "things-002",
     "category": "Things",
     "prompt": "What instrument measures the temperature of its surroundings using mercury or a digital sensor?",
-    "answers": ["thermometer", "a thermometer"],
+    "answers": ["Thermometer", "A Thermometer"],
     "difficulty": 1
   },
   {
     "id": "things-003",
     "category": "Things",
     "prompt": "What cutting tool has two metal blades joined at a central pivot and is used to cut paper and fabric?",
-    "answers": ["scissors", "a pair of scissors", "shears"],
+    "answers": ["Scissors", "A Pair of Scissors", "Shears"],
     "difficulty": 1
   },
   {
     "id": "things-004",
     "category": "Things",
     "prompt": "What handheld optical lens in a frame makes objects appear larger when held close to them?",
-    "answers": ["magnifying glass", "a magnifying glass", "loupe", "hand lens"],
+    "answers": ["Magnifying Glass", "A Magnifying Glass", "Loupe", "Hand Lens"],
     "difficulty": 2
   },
   {
     "id": "things-005",
     "category": "Things",
     "prompt": "What wall-mounted or tabletop device displays the current time using hands or a digital display?",
-    "answers": ["clock", "a clock"],
+    "answers": ["Clock", "A Clock"],
     "difficulty": 1
   },
   {
     "id": "things-006",
     "category": "Things",
     "prompt": "What communication device converts voice into electrical signals to transmit speech over long distances?",
-    "answers": ["telephone", "a telephone", "phone", "a phone"],
+    "answers": ["Telephone", "A Telephone", "Phone", "A Phone"],
     "difficulty": 1
   },
   {
     "id": "things-007",
     "category": "Things",
     "prompt": "What glass envelope containing a filament or gas produces light when electricity is passed through it?",
-    "answers": ["light bulb", "a light bulb", "lightbulb", "bulb", "electric bulb"],
+    "answers": ["Light Bulb", "A Light Bulb", "Lightbulb", "Bulb", "Electric Bulb"],
     "difficulty": 1
   },
   {
     "id": "things-008",
     "category": "Things",
     "prompt": "What two-wheeled, pedal-powered vehicle is steered with handlebars and ridden for transportation or sport?",
-    "answers": ["bicycle", "a bicycle", "bike", "a bike"],
+    "answers": ["Bicycle", "A Bicycle", "Bike", "A Bike"],
     "difficulty": 1
   }
 ]

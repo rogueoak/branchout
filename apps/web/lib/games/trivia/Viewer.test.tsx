@@ -20,7 +20,7 @@ function build(overrides: Partial<GameState>): GameState {
 }
 
 describe('ViewerPane answer display', () => {
-  it('title-cases the revealed answers (stored lowercase, shown with caps)', () => {
+  it('shows the revealed answers verbatim (stored in Title Case)', () => {
     const state = build({
       phase: 'disputing',
       prompt: {
@@ -33,12 +33,12 @@ describe('ViewerPane answer display', () => {
         {
           round: 1,
           question: 'Who developed relativity?',
-          answers: ['albert einstein', 'einstein'],
+          answers: ['Albert Einstein', 'Einstein'],
           correct: ['p1'],
           wrong: ['p2'],
           submissions: [
-            { player: 'p1', answer: 'albert einstein', correct: true },
-            { player: 'p2', answer: 'isaac newton', correct: false },
+            { player: 'p1', answer: 'Albert Einstein', correct: true },
+            { player: 'p2', answer: 'Isaac Newton', correct: false },
           ],
         },
       ],
@@ -46,10 +46,10 @@ describe('ViewerPane answer display', () => {
     render(<ViewerPane state={state} me="p1" />);
     // The difficulty badge shows the plain-language band, not a raw number (rating 5 -> Medium).
     expect(screen.getByText('Medium')).toBeDefined();
-    // The canonical answer is displayed title-cased, not verbatim-lowercase.
+    // The canonical answer is shown exactly as stored - Title Case lives in the data, not applied on
+    // the fly at display time.
     expect(screen.getByText('Albert Einstein')).toBeDefined();
-    expect(screen.queryByText('albert einstein')).toBeNull();
-    // Alternates are title-cased too.
+    // Alternates are shown as stored too.
     expect(screen.getByText(/Also accepted: Einstein/)).toBeDefined();
   });
 
@@ -66,7 +66,7 @@ describe('ViewerPane answer display', () => {
         {
           round: 1,
           question: 'Who developed relativity?',
-          answers: ['albert einstein'],
+          answers: ['Albert Einstein'],
           correct: ['p1'],
           wrong: ['p2'],
           submissions: [
@@ -78,9 +78,9 @@ describe('ViewerPane answer display', () => {
     });
     render(<ViewerPane state={state} me="p1" />);
     const list = screen.getByRole('list', { name: "Everyone's answers" });
-    // Bo's wrong answer is shown to the whole table (title-cased), not just who was right.
+    // Bo's wrong answer is shown to the whole table exactly as they typed it (verbatim, not recased).
     expect(screen.getByLabelText(/Bo answered isaac newton, wrong/)).toBeDefined();
-    expect(list.textContent).toContain('Isaac Newton');
+    expect(list.textContent).toContain('isaac newton');
   });
 
   it('shows the answer countdown while collecting', () => {
