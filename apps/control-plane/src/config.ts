@@ -9,7 +9,7 @@ export interface SessionCookieConfig {
   sameSite: 'lax' | 'strict' | 'none';
   /**
    * Cookie Domain attribute. Unset (the default) makes the cookie host-only. Set to a parent domain
-   * (e.g. `.branchout.games`) so one session spans the apex and its subdomains - the insiders surface
+   * (e.g. `.branchout.games`) so one session spans the apex and its subdomains - the insider surface
    * needs this (spec 0035). Left unset in local/dev where every surface shares one host.
    */
   domain?: string;
@@ -32,6 +32,18 @@ export interface RateLimitConfig {
   signupWindowSeconds: number;
 }
 
+/**
+ * The admin session cookie (spec 0037). Deliberately its OWN cookie, distinct from the player
+ * `SessionCookieConfig`: a different name and - critically - NO `domain`, so the admin session is
+ * host-only to `admin.branchout.games` and never spans the apex/subdomains the player cookie does.
+ */
+export interface AdminCookieConfig {
+  name: string;
+  secure: boolean;
+  sameSite: 'lax' | 'strict' | 'none';
+  ttlSeconds: number;
+}
+
 export interface ServiceConfig {
   port: number;
   databaseUrl: string;
@@ -39,6 +51,11 @@ export interface ServiceConfig {
   /** Browser origins allowed to call the API with credentials (the web app). */
   webOrigins: string[];
   cookie: SessionCookieConfig;
+  /** The host-only admin session cookie (spec 0037). */
+  adminCookie: AdminCookieConfig;
+  /** Env-seeded root admin, reconciled on boot; the console has no public admin signup (spec 0037). */
+  adminRootEmail?: string;
+  adminRootPassword?: string;
   /** Base URL of the game engine's internal REST API for the start handoff + host controls. */
   engineUrl: string;
   /** Shared secret the engine presents on the report intake; unset only in trusted dev. */
@@ -54,6 +71,9 @@ const DEFAULT_SESSION_TTL = 60 * 60 * 24 * 7;
 
 /** Twelve hours - the default lifetime for a room's idle live membership in Redis. */
 const DEFAULT_MEMBERSHIP_TTL = 60 * 60 * 12;
+
+/** Eight hours - the default admin session lifetime (shorter than a player's week; operator sessions). */
+const DEFAULT_ADMIN_SESSION_TTL = 60 * 60 * 8;
 
 /** Auth rate-limit defaults: 5 sign-in tries / 15 min; 10 sign-ups / hour per IP. */
 const DEFAULT_LOGIN_MAX_ATTEMPTS = 5;
@@ -117,6 +137,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
       ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
       ttlSeconds: Number(env.SESSION_TTL_SECONDS ?? DEFAULT_SESSION_TTL),
     },
+    adminCookie: {
+      name: env.ADMIN_SESSION_COOKIE_NAME ?? 'branchout_admin_session',
+      secure: parseBool(env.COOKIE_SECURE, true),
+      sameSite: parseSameSite(env.ADMIN_COOKIE_SAMESITE),
+      // Deliberately NO domain - the admin cookie is always host-only to admin.branchout.games.
+      ttlSeconds: Number(env.ADMIN_SESSION_TTL_SECONDS ?? DEFAULT_ADMIN_SESSION_TTL),
+    },
+    ...(env.ADMIN_ROOT_EMAIL ? { adminRootEmail: env.ADMIN_ROOT_EMAIL } : {}),
+    ...(env.ADMIN_ROOT_PASSWORD ? { adminRootPassword: env.ADMIN_ROOT_PASSWORD } : {}),
     engineUrl: env.ENGINE_URL ?? 'http://localhost:4001',
     ...(env.INTERNAL_API_TOKEN ? { internalToken: env.INTERNAL_API_TOKEN } : {}),
     membershipTtlSeconds: Number(env.MEMBERSHIP_TTL_SECONDS ?? DEFAULT_MEMBERSHIP_TTL),

@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+
+/* Fonts: roots ships the family names only; the fontsource packages provide the faces. */
+@import '@fontsource-variable/figtree';
+@import '@fontsource-variable/geist-mono';
+
+/* Canopy's design tokens + Tailwind v4 preset, then the Branch out Confetti brand LAST so its
+   :root / .dark blocks win by cascade and re-point every semantic role. */
+@import '@rogueoak/roots/tokens.css';
+@import '@rogueoak/roots/tailwind-preset.css';
+@import '@branchout/theme/brand.css';
+
+/* Scan canopy's compiled components so Tailwind emits the utilities their cva recipes reference
+   (the class strings are full literals in the shipped dist). */
+@source '../node_modules/@rogueoak/canopy/dist';
+
+/* Enable the rare explicit `dark:` utility. Dark is the default theme (set via `.dark` on <html>
+   in layout.tsx); the token layers are class-toggled, so there is no prefers-color-scheme flip. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* App-wide base surface so every route is dark by default, even ones that do not set `bg-bg`
+   themselves. `color-scheme: dark` keeps native controls (scrollbars, form widgets) in step. */
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* iOS Safari auto-zooms a focused form control whose font-size is under 16px, and canopy's inputs
+   render `text-sm` (14px). On touch devices bump form controls to 16px so focusing them never
+   zooms the page - without disabling pinch-zoom (no `maximum-scale`/`user-scalable=no`), which
+   would break zoom for low-vision users. `:not([hidden])` lifts the selector's specificity to
+   0,1,1 so it beats the `text-sm` utility (0,1,0); a bare `input {}` (0,0,1) would lose (fb 0016). */
+@media (pointer: coarse) {
+  input:not([hidden]),
+  textarea:not([hidden]),
+  select:not([hidden]) {
+    font-size: 16px;
+  }
+}

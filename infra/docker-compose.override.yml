@@ -27,6 +27,19 @@ services:
       - /repo/apps/web/node_modules
       - /repo/apps/web/.next
 
+  admin:
+    command: pnpm --filter @branchout/admin dev
+    # The admin browser calls same-origin /api, which `next dev` proxies to control-plane via the
+    # next.config rewrite; CONTROL_PLANE_URL (read at rewrite build + by SSR getAdmin) points at the
+    # service by name. No NEXT_PUBLIC_* needed (relative /api).
+    environment:
+      CONTROL_PLANE_URL: http://control-plane:4000
+    volumes:
+      - ..:/repo
+      - /repo/node_modules
+      - /repo/apps/admin/node_modules
+      - /repo/apps/admin/.next
+
   control-plane:
     command: pnpm --filter @branchout/control-plane dev
     # Allow the browser origin(s) and relax the session cookie for plain-http dev. WEB_ORIGIN is

@@ -1,7 +1,7 @@
 # Deploy
 
-Branch out runs as three containers (`web`, `control-plane`, `game-engine`) plus Postgres and
-Redis on a DigitalOcean droplet at `branchout.games`, behind a Caddy edge proxy that terminates
+Branch out runs as four app containers (`web`, `control-plane`, `game-engine`, `admin`) plus Postgres
+and Redis on a DigitalOcean droplet at `branchout.games`, behind a Caddy edge proxy that terminates
 TLS. Deploys are automatic: every push to `main` runs `.github/workflows/release.yml`
 (verify -> build -> deploy), which SSHes into the droplet and rolls the site forward to the
 private GHCR images built for that commit (`ghcr.io/rogueoak/branchout/<app>:sha-<commit>`),
@@ -21,7 +21,7 @@ Two compose stacks, one shared external Docker network (`edge`):
   front of Caddy makes `{remote_host}` the LB's IP, collapsing every client into one rate-limit
   bucket - you must reconfigure the trusted hop (and `trustProxy`) at the same time.
 
-- `compose.site.yml` - the **branchout** app stack. The three private GHCR images plus
+- `compose.site.yml` - the **branchout** app stack. The four private GHCR images plus
   `postgres:16-alpine` and `redis:7-alpine`. No host port is published: Caddy reaches
   the app services over the external `edge` network. Postgres and Redis are on an
   internal-only `db` network; they are not reachable from the host or from Caddy.
@@ -109,11 +109,20 @@ A fresh droplet needs:
 
 5. **DNS**: `A` records for `branchout.games` and `www.branchout.games` pointing at the
    droplet IP. Caddy needs this to issue TLS certificates via ACME (Let's Encrypt).
-   Add an `insiders.branchout.games` `A` record too (spec 0035): its Caddyfile block reuses the
+   Add an `insider.branchout.games` `A` record too (spec 0035): its Caddyfile block reuses the
    shared `api_ws` + `web` snippets and is served by the same `web` process, but Caddy still issues a
    per-host TLS cert, so the record must resolve to the droplet. For one login to span the apex and
-   the insiders subdomain, the session cookie must be scoped to the parent domain: set
+   the insider subdomain, the session cookie must be scoped to the parent domain: set
    `COOKIE_DOMAIN=.branchout.games` in `deploy/docker/.env.prod` (unset elsewhere keeps it host-only).
+   Add an `admin.branchout.games` `A` record too (spec 0037): its Caddyfile block imports the shared
+   `api` snippet and proxies the rest to the separate `admin` Next.js service. The admin session is a
+   distinct, host-only cookie, so it never leaves this origin.
+
+   **Root admin (spec 0037).** The admin console has no public signup; the first admin is seeded from
+   env on control-plane boot. Set the `ADMIN_ROOT_EMAIL` / `ADMIN_ROOT_PASSWORD` repo secrets (below);
+   the deploy writes them into `.env.prod` and the boot reconcile upserts that admin's password (env is
+   the source of truth - a break-glass recovery). Leave them unset and the console simply has no admin
+   yet. Further admins are created from within the console. Never commit the values.
 
 6. **GHCR packages set to private**: after the first build pushes the images, go to
    `https://github.com/orgs/rogueoak/packages` and set each of `branchout/web`,
@@ -152,14 +161,16 @@ brings up Caddy and the full site.
 
 Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branchout repo:
 
-| Secret               | Value                                                                                                        |
-| -------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `DEPLOY_SSH_KEY`     | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet) |
-| `DEPLOY_KNOWN_HOSTS` | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                         |
-| `DEPLOY_HOST`        | Droplet IP address or hostname                                                                               |
-| `DEPLOY_USER`        | `deploy`                                                                                                     |
-| `POSTGRES_PASSWORD`  | Strong random password for the Postgres `branchout` user                                                     |
-| `SESSION_SECRET`     | Strong random secret for session signing (spec 0004)                                                         |
+| Secret                | Value                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet) |
+| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                         |
+| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                               |
+| `DEPLOY_USER`         | `deploy`                                                                                                     |
+| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                     |
+| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                         |
+| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                              |
+| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)         |
 
 Generate strong values with:
 

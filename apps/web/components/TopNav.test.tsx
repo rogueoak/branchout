@@ -56,17 +56,17 @@ describe('TopNav', () => {
     );
   });
 
-  it('renders a surface label pill when given one (the insiders marker, spec 0035)', () => {
+  it('renders a surface label pill when given one (the insider marker, spec 0035)', () => {
     render(
-      <TopNav viewer={{ signedIn: true, gamerTag: 'CoolCat', nickname: 'Cat' }} label="Insiders" />,
+      <TopNav viewer={{ signedIn: true, gamerTag: 'CoolCat', nickname: 'Cat' }} label="Insider" />,
     );
-    expect(screen.getByText('Insiders')).toBeDefined();
+    expect(screen.getByText('Insider')).toBeDefined();
     // The account menu still renders alongside the label.
     expect(screen.getByRole('button', { name: /account menu for cat/i })).toBeDefined();
   });
 
   it('renders no surface label by default', () => {
     render(<TopNav viewer={{ signedIn: false }} />);
-    expect(screen.queryByText('Insiders')).toBeNull();
+    expect(screen.queryByText('Insider')).toBeNull();
   });
 });

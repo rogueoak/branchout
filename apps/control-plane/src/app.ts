@@ -3,8 +3,11 @@ import cors from '@fastify/cors';
 import { V1_PREFIX } from '@branchout/protocol';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { AccountService } from './accounts/service';
-import type { RateLimitConfig, SessionCookieConfig } from './config';
+import type { AdminService } from './admin/service';
+import type { AdminSessionStore } from './admin/session';
+import type { AdminCookieConfig, RateLimitConfig, SessionCookieConfig } from './config';
 import type { RateLimiter } from './ratelimit/limiter';
+import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
 import { registerEngineRoutes } from './routes/engine';
 import { registerProfileRoutes } from './routes/profiles';
@@ -26,6 +29,10 @@ export interface AppDeps {
   sessions: SessionStore;
   rooms: RoomService;
   cookie: SessionCookieConfig;
+  /** Separate admin identity (spec 0037): its own service, session store, and host-only cookie. */
+  admins: AdminService;
+  adminSessions: AdminSessionStore;
+  adminCookie: AdminCookieConfig;
   /** Browser origins allowed to call the API with credentials. */
   webOrigins: string[];
   /** Shared secret the engine presents on the report intake; left unset only in trusted dev. */
@@ -96,6 +103,15 @@ export function createApp(deps: AppDeps): FastifyInstance {
       });
 
       registerProfileRoutes(v1, { profiles: deps.profiles });
+
+      registerAdminRoutes(v1, {
+        admins: deps.admins,
+        adminSessions: deps.adminSessions,
+        adminCookie: deps.adminCookie,
+        accounts: deps.accounts,
+        limiter: deps.limiter,
+        rateLimit: deps.rateLimit,
+      });
 
       registerEngineRoutes(v1, {
         rooms: deps.rooms,

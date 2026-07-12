@@ -8,7 +8,7 @@ const linkClass =
   'focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
 
 // `linkOrigin` crosses the legal links to another origin (spec 0035): on a subdomain surface
-// (insiders) whose middleware rewrites every path into its tree, apex-relative `/privacy` would 404,
+// (insider) whose middleware rewrites every path into its tree, apex-relative `/privacy` would 404,
 // so the surface passes its apex origin. Unset = relative (the default on the apex itself).
 export function Footer({ linkOrigin }: { linkOrigin?: string }) {
   const to = (path: string) => (linkOrigin ? `${linkOrigin}${path}` : path);

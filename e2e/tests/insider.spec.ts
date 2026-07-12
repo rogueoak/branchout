@@ -2,32 +2,32 @@ import { type BrowserContext, expect, test } from '@playwright/test';
 import { signUp } from '../lib/helpers';
 import { BASE_URL, WEB_PORT, grantInsider } from '../lib/stack';
 
-// End-to-end proof of the insiders surface (spec 0035). The surface lives on the `insiders`
+// End-to-end proof of the insider surface (spec 0035). The surface lives on the `insider`
 // subdomain, served by the same `web` process via host-aware middleware; `*.localhost` resolves to
-// 127.0.0.1, so `insiders.localhost` reaches the same web app. The risk this guards is
+// 127.0.0.1, so `insider.localhost` reaches the same web app. The risk this guards is
 // authorization, so it exercises the gate from every side: insider in, non-insider out (403),
 // anonymous out (apex login), and no apex path leak.
 //
-// Cross-subdomain session: in prod one login spans the apex + `insiders.` because the cookie is
+// Cross-subdomain session: in prod one login spans the apex + `insider.` because the cookie is
 // scoped `Domain=.branchout.games`. That Domain-spanning is browser behaviour on a real registrable
 // domain and is NOT reproducible on `localhost` (Chromium does not span a `Domain=localhost` cookie
 // across `*.localhost`), and the dev/e2e stack has no same-origin proxy to even set it. So the test
-// plants the just-created session cookie onto the insiders host directly - a faithful stand-in that
+// plants the just-created session cookie onto the insider host directly - a faithful stand-in that
 // exercises OUR middleware + layout + role gate. The Domain-setting itself is unit-tested in the
 // control-plane config/auth suites.
 const SESSION_COOKIE = 'branchout_session';
-const INSIDERS_URL = `http://insiders.localhost:${WEB_PORT}`;
+const INSIDER_URL = `http://insider.localhost:${WEB_PORT}`;
 
-/** Copy the signed-in session cookie (set on localhost by signUp) onto the insiders host, standing
- * in for prod's parent-domain cookie so the same session reaches `insiders.localhost`. */
-async function spanSessionToInsiders(context: BrowserContext): Promise<void> {
+/** Copy the signed-in session cookie (set on localhost by signUp) onto the insider host, standing
+ * in for prod's parent-domain cookie so the same session reaches `insider.localhost`. */
+async function spanSessionToInsider(context: BrowserContext): Promise<void> {
   const session = (await context.cookies()).find((c) => c.name === SESSION_COOKIE);
   if (!session) throw new Error('no session cookie after signup - login did not set one');
   await context.addCookies([
     {
       name: SESSION_COOKIE,
       value: session.value,
-      domain: 'insiders.localhost',
+      domain: 'insider.localhost',
       path: '/',
       httpOnly: true,
       secure: false, // e2e serves plain http (COOKIE_SECURE=false)
@@ -36,23 +36,23 @@ async function spanSessionToInsiders(context: BrowserContext): Promise<void> {
   ]);
 }
 
-test.describe('insiders surface (spec 0035)', () => {
+test.describe('insider surface (spec 0035)', () => {
   test('a non-insider is forbidden; the same account sees the surface once granted', async ({
     page,
   }) => {
-    // A normal signed-up account, its session then spanned to the insiders host.
+    // A normal signed-up account, its session then spanned to the insider host.
     const account = await signUp(page);
-    await spanSessionToInsiders(page.context());
+    await spanSessionToInsider(page.context());
 
     // Signed in but not an insider -> a real 403 rendered by the forbidden boundary.
-    const denied = await page.goto(INSIDERS_URL);
+    const denied = await page.goto(INSIDER_URL);
     expect(denied?.status()).toBe(403);
-    await expect(page.getByRole('heading', { name: /insiders only/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /insider only/i })).toBeVisible();
 
     // Grant the role out-of-band (the documented manual DB update), then the same session is let in.
     grantInsider(account.gamerTag);
-    await page.goto(INSIDERS_URL);
-    await expect(page.getByRole('heading', { name: 'Insiders' })).toBeVisible();
+    await page.goto(INSIDER_URL);
+    await expect(page.getByRole('heading', { name: 'Insider' })).toBeVisible();
     await expect(page.getByText(/no test games yet/i)).toBeVisible();
   });
 
@@ -63,8 +63,8 @@ test.describe('insiders surface (spec 0035)', () => {
     const context = await browser.newContext();
     try {
       const page = await context.newPage();
-      await page.goto(INSIDERS_URL);
-      // Middleware crosses back to the apex login rather than looping through the insiders tree,
+      await page.goto(INSIDER_URL);
+      // Middleware crosses back to the apex login rather than looping through the insider tree,
       // carrying an origin-validated return target so login can send the visitor back.
       await page.waitForURL(/\/login/);
       const url = new URL(page.url());
@@ -86,7 +86,7 @@ test.describe('insiders surface (spec 0035)', () => {
         {
           name: SESSION_COOKIE,
           value: 'not-a-real-session-id',
-          domain: 'insiders.localhost',
+          domain: 'insider.localhost',
           path: '/',
           httpOnly: true,
           secure: false,
@@ -94,7 +94,7 @@ test.describe('insiders surface (spec 0035)', () => {
         },
       ]);
       const page = await context.newPage();
-      await page.goto(INSIDERS_URL);
+      await page.goto(INSIDER_URL);
       await page.waitForURL(/\/login/);
       expect(new URL(page.url()).host).toBe(`localhost:${WEB_PORT}`);
     } finally {
@@ -102,20 +102,20 @@ test.describe('insiders surface (spec 0035)', () => {
     }
   });
 
-  test('the apex cannot reach the insiders tree by typing its path', async ({ page }) => {
-    const res = await page.goto(`${BASE_URL}/insiders`);
+  test('the apex cannot reach the insider tree by typing its path', async ({ page }) => {
+    const res = await page.goto(`${BASE_URL}/insider`);
     expect(res?.status()).toBe(404);
   });
 
-  test('the insiders surface fits a 360px phone (mobile-first)', async ({ browser }) => {
+  test('the insider surface fits a 360px phone (mobile-first)', async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
     try {
       const page = await context.newPage();
       const account = await signUp(page);
-      await spanSessionToInsiders(context);
+      await spanSessionToInsider(context);
       grantInsider(account.gamerTag);
-      await page.goto(INSIDERS_URL);
-      await expect(page.getByRole('heading', { name: 'Insiders' })).toBeVisible();
+      await page.goto(INSIDER_URL);
+      await expect(page.getByRole('heading', { name: 'Insider' })).toBeVisible();
       const { scrollWidth, clientWidth } = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,
@@ -123,7 +123,7 @@ test.describe('insiders surface (spec 0035)', () => {
       // 1px rounding slack; more means content pushes past the phone viewport.
       expect(
         scrollWidth,
-        'insiders surface should not scroll horizontally on a phone',
+        'insider surface should not scroll horizontally on a phone',
       ).toBeLessThanOrEqual(clientWidth + 1);
     } finally {
       await context.close();

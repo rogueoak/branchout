@@ -41,7 +41,7 @@ export const accountMigrations: Migration[] = [
     `,
   },
   {
-    // Spec 0035: the insiders surface gates on a per-account beta-tester flag. Added with a safe
+    // Spec 0035: the insider surface gates on a per-account beta-tester flag. Added with a safe
     // constant default so every existing row stays valid (the versioned-envelope learning); it is
     // granted out-of-band (a DB update) until the admin console (spec 0037) ships a toggle.
     id: 6,

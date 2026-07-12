@@ -3,8 +3,11 @@ import { ENGINE_ROUNDS_SUBPATH, V1_PREFIX } from '@branchout/protocol';
 import type { PasswordHasher } from './accounts/hasher';
 import { InMemoryAccountRepository } from './accounts/repository.memory';
 import { AccountService } from './accounts/service';
+import { InMemoryAdminRepository } from './admin/repository.memory';
+import { AdminService } from './admin/service';
+import { InMemoryAdminSessionStore } from './admin/session.store.memory';
 import { createApp } from './app';
-import type { SessionCookieConfig } from './config';
+import type { AdminCookieConfig, SessionCookieConfig } from './config';
 import { CreditLedger } from './credits/ledger';
 import { InMemoryLedgerRepository } from './credits/repository.memory';
 import { FreeTierProvider } from './credits/tiers';
@@ -25,6 +28,13 @@ const fakeHasher: PasswordHasher = {
 
 const cookieConfig: SessionCookieConfig = {
   name: 'branchout_session',
+  secure: true,
+  sameSite: 'lax',
+  ttlSeconds: 3600,
+};
+
+const adminCookieConfig: AdminCookieConfig = {
+  name: 'branchout_admin_session',
   secure: true,
   sameSite: 'lax',
   ttlSeconds: 3600,
@@ -55,6 +65,9 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
     plays,
   );
   const profiles = new ProfileService(accounts, plays);
+  const adminRepo = new InMemoryAdminRepository();
+  const admins = new AdminService(adminRepo, fakeHasher);
+  const adminSessions = new InMemoryAdminSessionStore(3600_000);
   const app = createApp({
     checks: { checkPostgres: async () => true, checkRedis: async () => true },
     accounts,
@@ -62,11 +75,25 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
     sessions,
     rooms,
     cookie: cookieConfig,
+    admins,
+    adminSessions,
+    adminCookie: adminCookieConfig,
     webOrigins: ['http://localhost:3000'],
     limiter,
     rateLimit,
   });
-  return { app, accounts, sessions, repo, engine, plays, limiter };
+  return {
+    app,
+    accounts,
+    sessions,
+    repo,
+    engine,
+    plays,
+    limiter,
+    admins,
+    adminSessions,
+    adminRepo,
+  };
 }
 
 /** Pull the session cookie value out of a response's set-cookie header. */
@@ -861,6 +888,9 @@ function makeAppWithToken(token: string) {
     sessions,
     rooms,
     cookie: cookieConfig,
+    admins: new AdminService(new InMemoryAdminRepository(), fakeHasher),
+    adminSessions: new InMemoryAdminSessionStore(3600_000),
+    adminCookie: adminCookieConfig,
     webOrigins: ['http://localhost:3000'],
     internalToken: token,
     limiter: new InMemoryRateLimiter(),
@@ -980,5 +1010,310 @@ describe('profile endpoints (spec 0027)', () => {
       restricted: true,
     });
     await app.close();
+  });
+});
+
+/** Pull the admin session cookie value out of a response's set-cookie header. */
+function adminCookie(res: { headers: Record<string, unknown> }): string {
+  const raw = res.headers['set-cookie'];
+  const header = Array.isArray(raw) ? raw.join(';') : String(raw ?? '');
+  const match = header.match(/branchout_admin_session=([^;]+)/);
+  return match ? `branchout_admin_session=${match[1]}` : '';
+}
+
+const rootAdmin = { email: 'root@rogueoak.com', password: 'super-strong-admin-pw' };
+
+describe('admin console API (spec 0037)', () => {
+  /** Seed the root admin and return an authenticated admin cookie. */
+  async function asRootAdmin(t: ReturnType<typeof makeApp>) {
+    await t.admins.ensureRootAdmin(rootAdmin.email, rootAdmin.password);
+    const res = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/auth/login',
+      payload: rootAdmin,
+    });
+    expect(res.statusCode).toBe(200);
+    return adminCookie(res);
+  }
+
+  it('logs a seeded root admin in and sets a host-only admin cookie', async () => {
+    const t = makeApp();
+    await t.admins.ensureRootAdmin(rootAdmin.email, rootAdmin.password);
+    const res = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/auth/login',
+      payload: rootAdmin,
+    });
+    expect(res.statusCode).toBe(200);
+    const setCookie = String(res.headers['set-cookie']);
+    expect(setCookie).toContain('branchout_admin_session=');
+    expect(setCookie).toContain('HttpOnly');
+    // Host-only: the admin cookie must never carry a Domain (never spans the apex/subdomains).
+    expect(setCookie.toLowerCase()).not.toContain('domain=');
+    await t.app.close();
+  });
+
+  it('rejects a wrong admin password and locks after the limit', async () => {
+    const t = makeApp({ ...defaultRateLimit, loginMaxAttempts: 3 });
+    await t.admins.ensureRootAdmin(rootAdmin.email, rootAdmin.password);
+    for (let i = 0; i < 3; i++) {
+      const bad = await t.app.inject({
+        method: 'POST',
+        url: '/v1/admin/auth/login',
+        payload: { email: rootAdmin.email, password: 'wrong' },
+      });
+      expect(bad.statusCode).toBe(401);
+    }
+    const locked = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/auth/login',
+      payload: { email: rootAdmin.email, password: 'wrong' },
+    });
+    expect(locked.statusCode).toBe(429);
+    await t.app.close();
+  });
+
+  it('refuses admin routes without a valid admin session', async () => {
+    const t = makeApp();
+    const res = await t.app.inject({ method: 'GET', url: '/v1/admin/users' });
+    expect(res.statusCode).toBe(401);
+    await t.app.close();
+  });
+
+  it('a player session grants no admin access', async () => {
+    const t = makeApp();
+    const signup = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
+    const playerCookie = sessionCookie(signup);
+    // The player cookie is a different cookie name; the admin gate ignores it -> 401.
+    const res = await t.app.inject({
+      method: 'GET',
+      url: '/v1/admin/users',
+      headers: { cookie: playerCookie },
+    });
+    expect(res.statusCode).toBe(401);
+    await t.app.close();
+  });
+
+  it('an admin creates another admin who can then log in', async () => {
+    const t = makeApp();
+    const cookie = await asRootAdmin(t);
+    const created = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/admins',
+      headers: { cookie },
+      payload: { email: 'ops@rogueoak.com', password: 'another-strong-admin-pw' },
+    });
+    expect(created.statusCode).toBe(201);
+    const login = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/auth/login',
+      payload: { email: 'ops@rogueoak.com', password: 'another-strong-admin-pw' },
+    });
+    expect(login.statusCode).toBe(200);
+    await t.app.close();
+  });
+
+  it('lists players by gamer tag and toggles a user insider', async () => {
+    const t = makeApp();
+    const cookie = await asRootAdmin(t);
+    // Create a player to manage.
+    await t.app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+
+    const list = await t.app.inject({
+      method: 'GET',
+      url: '/v1/admin/users?query=cool',
+      headers: { cookie },
+    });
+    expect(list.statusCode).toBe(200);
+    const body = list.json() as {
+      items: Array<{ id: string; gamerTag: string; insider: boolean }>;
+    };
+    const player = body.items.find((u) => u.gamerTag === 'CoolCat');
+    expect(player).toBeTruthy();
+    expect(player!.insider).toBe(false);
+
+    const grant = await t.app.inject({
+      method: 'POST',
+      url: `/v1/admin/users/${player!.id}/insider`,
+      headers: { cookie },
+      payload: { insider: true },
+    });
+    expect(grant.statusCode).toBe(200);
+    expect((grant.json() as { account: { insider: boolean } }).account.insider).toBe(true);
+    await t.app.close();
+  });
+
+  it('gates every admin route against no session AND against a player session', async () => {
+    const t = makeApp();
+    const signup = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
+    const playerCookie = sessionCookie(signup);
+    const routes: Array<{ method: 'GET' | 'POST'; url: string }> = [
+      { method: 'POST', url: '/v1/admin/admins' },
+      { method: 'GET', url: '/v1/admin/admins' },
+      { method: 'GET', url: '/v1/admin/users' },
+      { method: 'GET', url: '/v1/admin/users/some-id' },
+      { method: 'POST', url: '/v1/admin/users/some-id/insider' },
+    ];
+    for (const r of routes) {
+      const anon = await t.app.inject({ method: r.method, url: r.url });
+      expect(anon.statusCode, `${r.method} ${r.url} anon`).toBe(401);
+      const player = await t.app.inject({
+        method: r.method,
+        url: r.url,
+        headers: { cookie: playerCookie },
+      });
+      expect(player.statusCode, `${r.method} ${r.url} player`).toBe(401);
+    }
+    await t.app.close();
+  });
+
+  it('rejects a duplicate admin email with 409 and attributes createdBy', async () => {
+    const t = makeApp();
+    const cookie = await asRootAdmin(t);
+    const me = await t.app.inject({ method: 'GET', url: '/v1/admin/auth/me', headers: { cookie } });
+    const rootId = (me.json() as { admin: { id: string } }).admin.id;
+    const payload = { email: 'ops@rogueoak.com', password: 'another-strong-admin-pw' };
+    const first = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/admins',
+      headers: { cookie },
+      payload,
+    });
+    expect(first.statusCode).toBe(201);
+    expect((first.json() as { admin: { createdBy: string } }).admin.createdBy).toBe(rootId);
+    const dup = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/admins',
+      headers: { cookie },
+      payload: { ...payload, email: 'OPS@rogueoak.com' },
+    });
+    expect(dup.statusCode).toBe(409);
+    expect((dup.json() as { field: string }).field).toBe('email');
+    await t.app.close();
+  });
+
+  it('returns pagination metadata and clamps a bad page to 1', async () => {
+    const t = makeApp();
+    const cookie = await asRootAdmin(t);
+    await t.app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+    const res = await t.app.inject({
+      method: 'GET',
+      url: '/v1/admin/users?page=0',
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { page: number; pageSize: number; total: number };
+    expect(body.page).toBe(1); // page=0 clamped to 1
+    expect(body.pageSize).toBe(20);
+    expect(body.total).toBeGreaterThanOrEqual(1);
+    await t.app.close();
+  });
+
+  it('reflects an insider grant in the player /auth/me and revokes it', async () => {
+    const t = makeApp();
+    const cookie = await asRootAdmin(t);
+    const signup = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: validSignup,
+    });
+    const playerCookie = sessionCookie(signup);
+    const list = await t.app.inject({
+      method: 'GET',
+      url: '/v1/admin/users?query=cool',
+      headers: { cookie },
+    });
+    const player = (list.json() as { items: Array<{ id: string; gamerTag: string }> }).items.find(
+      (u) => u.gamerTag === 'CoolCat',
+    )!;
+
+    await t.app.inject({
+      method: 'POST',
+      url: `/v1/admin/users/${player.id}/insider`,
+      headers: { cookie },
+      payload: { insider: true },
+    });
+    const afterGrant = await t.app.inject({
+      method: 'GET',
+      url: '/v1/auth/me',
+      headers: { cookie: playerCookie },
+    });
+    expect((afterGrant.json() as { account: { insider: boolean } }).account.insider).toBe(true);
+
+    const revoke = await t.app.inject({
+      method: 'POST',
+      url: `/v1/admin/users/${player.id}/insider`,
+      headers: { cookie },
+      payload: { insider: false },
+    });
+    expect(revoke.statusCode).toBe(200);
+    const afterRevoke = await t.app.inject({
+      method: 'GET',
+      url: '/v1/auth/me',
+      headers: { cookie: playerCookie },
+    });
+    expect((afterRevoke.json() as { account: { insider: boolean } }).account.insider).toBe(false);
+    await t.app.close();
+  });
+
+  it('rejects an insider toggle on a missing user (404) and a non-boolean body (400)', async () => {
+    const t = makeApp();
+    const cookie = await asRootAdmin(t);
+    const missing = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/users/00000000-0000-0000-0000-000000000000/insider',
+      headers: { cookie },
+      payload: { insider: true },
+    });
+    expect(missing.statusCode).toBe(404);
+
+    await t.app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+    const list = await t.app.inject({
+      method: 'GET',
+      url: '/v1/admin/users?query=cool',
+      headers: { cookie },
+    });
+    const player = (list.json() as { items: Array<{ id: string; gamerTag: string }> }).items.find(
+      (u) => u.gamerTag === 'CoolCat',
+    )!;
+    const bad = await t.app.inject({
+      method: 'POST',
+      url: `/v1/admin/users/${player.id}/insider`,
+      headers: { cookie },
+      payload: { insider: 'yes' },
+    });
+    expect(bad.statusCode).toBe(400);
+    await t.app.close();
+  });
+
+  it('anchors the admin lockout on the account, not the IP (rotating XFF does not reset it)', async () => {
+    const t = makeApp({ ...defaultRateLimit, loginMaxAttempts: 3 });
+    await t.admins.ensureRootAdmin(rootAdmin.email, rootAdmin.password);
+    for (let i = 0; i < 3; i++) {
+      const bad = await t.app.inject({
+        method: 'POST',
+        url: '/v1/admin/auth/login',
+        headers: { 'x-forwarded-for': `10.0.0.${i}` },
+        payload: { email: rootAdmin.email, password: 'wrong' },
+      });
+      expect(bad.statusCode).toBe(401);
+    }
+    // A brand-new source IP does NOT get a fresh bucket - the lock is keyed on the admin account.
+    const locked = await t.app.inject({
+      method: 'POST',
+      url: '/v1/admin/auth/login',
+      headers: { 'x-forwarded-for': '203.0.113.9' },
+      payload: { email: rootAdmin.email, password: 'wrong' },
+    });
+    expect(locked.statusCode).toBe(429);
+    await t.app.close();
   });
 });

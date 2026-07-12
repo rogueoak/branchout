@@ -13,9 +13,18 @@ services:
       WEB_ORIGIN: http://localhost:${WEB_PORT}
       # The session cookie stays host-only here (as in dev). A `Domain=localhost` cookie is NOT
       # spanned across `*.localhost` by Chromium, so it cannot stand in for prod's
-      # `.branchout.games`. The insiders spec instead plants the session cookie on the insiders host
-      # directly (see e2e/tests/insiders.spec.ts), which exercises the same middleware + layout +
+      # `.branchout.games`. The insider spec instead plants the session cookie on the insider host
+      # directly (see e2e/tests/insider.spec.ts), which exercises the same middleware + layout +
       # role gate; the Domain-setting itself is covered by the control-plane config/auth unit tests.
+      # Seed a known root admin so the admin e2e (spec 0037) can log in.
+      ADMIN_ROOT_EMAIL: root@branchout.test
+      ADMIN_ROOT_PASSWORD: e2e-root-admin-password
+      # The signup rate limit (spec 0036) is per client IP, and the whole Playwright suite signs up
+      # from one IP (the browser, as control-plane sees it) - dozens of accounts across specs, far past
+      # the prod default of 10, so a late test (mobile-smoke runs last) would hit a 429. Raise the cap
+      # here so the prod security control does not fight the test harness. Login stays per-email (each
+      # test uses a unique email), so it does not accumulate and needs no override.
+      SIGNUP_MAX_PER_IP: '100000'
 
   postgres:
     # !reset clears the list inherited from the base compose (Compose spec merge override).

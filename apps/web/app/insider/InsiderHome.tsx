@@ -8,30 +8,30 @@ import type { Viewer } from '../../lib/session';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 
-// The games available to try on the insiders surface. Empty for now: test games are added here by
+// The games available to try on the insider surface. Empty for now: test games are added here by
 // later specs. Kept as a named list so the page renders the same grid the main site uses once it
 // fills in.
 const INSIDER_GAMES: { slug: string; name: string; summary: string }[] = [];
 
-export function InsidersHome({ viewer }: { viewer: Viewer }) {
+export function InsiderHome({ viewer }: { viewer: Viewer }) {
   // The apex origin. The shared nav/footer link to apex pages (/games, /privacy, ...), but this
-  // surface lives on the insiders subdomain where middleware rewrites every path into the /insiders
+  // surface lives on the insider subdomain where middleware rewrites every path into the /insider
   // tree - so those links must cross back to the apex or they 404. Falls back to relative when the
   // origin is unset (local dev on one host). (spec 0035)
   const apexOrigin = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '');
   return (
     // Same shell as the main surfaces (flex column, shared footer pinned via mt-auto) so the
-    // insiders app inherits the site look and feel. The "Insiders" badge in the nav marks the
+    // insider app inherits the site look and feel. The "Insider" badge in the nav marks the
     // surface (spec 0035).
     <div className="flex min-h-screen flex-col bg-bg text-text">
-      <TopNav viewer={viewer} label="Insiders" linkOrigin={apexOrigin} />
+      <TopNav viewer={viewer} label="Insider" linkOrigin={apexOrigin} />
 
       <section
-        aria-labelledby="insiders-heading"
+        aria-labelledby="insider-heading"
         className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 sm:py-16"
       >
-        <h1 id="insiders-heading" className="text-h2 text-text">
-          Insiders
+        <h1 id="insider-heading" className="text-h2 text-text">
+          Insider
         </h1>
         <p className="text-body text-text-muted mt-2 max-w-xl">
           Early access to games we are still building. Try them out and tell us what breaks - your

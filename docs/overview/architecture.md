@@ -148,27 +148,27 @@ key yields an analytics-off bundle. The privacy policy (spec `0031`) describes e
 
 ## Subdomain surfaces and the insider role (spec 0035)
 
-The insiders surface lives at `insiders.branchout.games` but is served by the **same `web` process** -
+The insider surface lives at `insider.branchout.games` but is served by the **same `web` process** -
 no extra container on the RAM-bound droplet. `apps/web/middleware.ts` is host-aware: a request whose
-`Host` starts with `insiders.` is invisibly **rewritten** into the `/insiders` route tree (Caddy
+`Host` starts with `insider.` is invisibly **rewritten** into the `/insider` route tree (Caddy
 preserves the upstream `Host`, so `web` sees the subdomain); everything else is the main site. The
-detection is a bare-label check (`host.startsWith('insiders.')` in `lib/subdomain.ts`), so it works in
+detection is a bare-label check (`host.startsWith('insider.')` in `lib/subdomain.ts`), so it works in
 prod and in local/e2e where `*.localhost` resolves to 127.0.0.1. The routing logic is pure and
 unit-tested; the middleware is a thin adapter.
 
 **Routing is not authorization.** Middleware only routes (plus a cheap signed-out shortcut to the
 **apex** login - crossing off the gated host so it never loops the login page back through the tree).
-The `app/insiders/layout.tsx` is the authoritative gate, run server-side on every insiders page: not
+The `app/insider/layout.tsx` is the authoritative gate, run server-side on every insider page: not
 signed in -> apex login; signed in but not an insider -> `forbidden()` (a real 403 via Next 15.1
 `authInterrupts` + `app/forbidden.tsx`). The apex cannot reach the tree by path - middleware 404s any
-`/insiders*` request that is not on the insiders host.
+`/insider*` request that is not on the insider host.
 
 The gate reads an account-level **`insider`** flag: a boolean column on `accounts` (migration 6),
 carried on `PublicAccount` -> `GET /auth/me` -> the web `Viewer`. It is granted out-of-band (a DB
-update) until the admin console (spec `0037`) ships a toggle. Because insiders are ordinary players who
+update) until the admin console (spec `0037`) ships a toggle. Because insider are ordinary players who
 want one login across the game and the subdomain, the session cookie is scoped to a parent **domain**
 (`COOKIE_DOMAIN`, `.branchout.games` in prod; host-only in dev, `localhost` in e2e so the flow is
-testable across `*.localhost`). Caddy's `insiders.branchout.games` block reuses the shared `api_ws` +
+testable across `*.localhost`). Caddy's `insider.branchout.games` block reuses the shared `api_ws` +
 `web` snippets, so `/api` and `/ws` stay same-origin per subdomain (no CORS). Admin (spec `0037`) is a
 separate static app with its own block; it never reaches this Next middleware.
 
@@ -240,8 +240,11 @@ instance + Postgres/Redis + headroom + swap; the caps assume the current droplet
 is a hard OOM-kill ceiling set well above real use (incl. SSR cold start), so it only bounds a runaway,
 never trips a healthy roll. The droplet (1 vCPU / 1.9 GiB) has a **2 GiB swapfile** provisioned
 (`/swapfile`, in `/etc/fstab`, `vm.swappiness=10`) as an OOM backstop, not for steady paging. Caps are
-trimmed to leave room for additional UI services: `web` 320m, `control-plane` 256m, `game-engine` 256m
-(each `--memory-swap` at 2x). CPU is near-idle; RAM is the binding constraint for adding services.
+trimmed so the four app services fit: `web` 320m, `admin` 320m (spec 0037), `control-plane` 256m,
+`game-engine` 256m (each `--memory-swap` at 2x), plus Postgres/Redis (~40m). That is ~1152m of app
+ceilings; steady real use is well under the caps (an operator-only `admin` is light), and a rollout
+adds at most one extra instance (+320m peak) - all backed by the 1.9 GiB RAM + 2 GiB swap. CPU is
+near-idle; RAM is the binding constraint for adding services.
 
 **What "follows the swap" does and does not cover.** Caddy's dynamic upstreams re-resolve the alias
 for the three edge-fronted routes (`/api` -> control-plane, `/ws` -> game-engine, `*` -> web). Two
@@ -346,3 +349,23 @@ the *public* identity a UI needs, never the secret that authenticates the caller
 
 Trellis (`docs/rules/`) and Spectra (`docs/spectra/`) govern how changes ship: specs before
 features, tests/lint/build green before merge, persona review on PRs.
+
+## Admin console (spec 0037)
+
+The operator console is a **separate Next.js service** (`apps/admin`), served by Caddy at
+`admin.branchout.games` - not the `web` process. It is a fourth app service on the droplet with its own
+`mem_limit` of **320m** (see the capacity rule above); the swap + trimmed caps (spec 0034) leave the
+headroom, and an operator-only surface stays light. It reaches control-plane's `/api` **same-origin** (Caddy's admin block imports the
+shared `api` snippet, so it inherits the trusted-client-IP header from spec 0038), and gates
+server-side (a `requireAdmin` layout guard) while control-plane re-checks the admin session on every
+`/v1/admin/*` call - the authoritative boundary.
+
+Admin is a **separate identity** from players, deliberately: its own `admin_accounts` table (never the
+player `accounts`), its own Redis session namespace (`admin_session:`), and a **host-only** cookie
+(`branchout_admin_session`, no `Domain`) - so a player/insider session can never satisfy the admin gate
+and an admin session never appears on the public site. There is **no public admin signup**: the first
+admin is reconciled from `ADMIN_ROOT_EMAIL`/`ADMIN_ROOT_PASSWORD` on boot (env is the source of truth -
+break-glass recovery), and further admins are created from within the console. The admin login reuses
+the spec 0036 limiter, anchored on the admin account. The console lists players by gamer tag, opens a
+profile, and grants/revokes the `insider` role (spec 0035). MFA is a documented follow-up; rate
+limiting is the v1 control. `admin` rolls after `web` in the zero-downtime deploy.

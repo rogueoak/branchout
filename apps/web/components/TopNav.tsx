@@ -19,10 +19,10 @@ import { Wordmark } from './Wordmark';
 // `signupVariant` lets a surface de-emphasize the nav's Sign up CTA. On a page whose body already
 // carries the primary signup action (the home hero's "Sign up free"), pass `outline` so there is one
 // primary per view; elsewhere (/rooms, /join, the lobby) the nav CTA is the page's primary.
-// `label` renders a small pill on the right (spec 0035): a surface marker like "Insiders" so a
+// `label` renders a small pill on the right (spec 0035): a surface marker like "Insider" so a
 // tester always knows which surface they are on. Omitted on the main site.
 // `linkOrigin` crosses the nav's own links to another origin (spec 0035): on a subdomain surface
-// (insiders) whose middleware rewrites every path into its tree, an apex-relative `/games` would
+// (insider) whose middleware rewrites every path into its tree, an apex-relative `/games` would
 // 404, so the surface passes its apex origin and the chrome links absolute to the apex. Unset =
 // relative (the default on the apex itself).
 export function TopNav({

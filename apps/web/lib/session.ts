@@ -19,7 +19,7 @@ export interface Viewer {
   gamerTag?: string;
   nickname?: string;
   avatar?: string;
-  /** Beta-tester entitlement (spec 0035): whether this account may see the insiders surface. */
+  /** Beta-tester entitlement (spec 0035): whether this account may see the insider surface. */
   insider?: boolean;
 }
 

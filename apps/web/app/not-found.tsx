@@ -1,5 +1,5 @@
-// The global 404 boundary. Rendered for any unmatched route and, deliberately, when the insiders
-// layout host-guards a direct apex `/insiders` request via `notFound()` (spec 0035) - so that path
+// The global 404 boundary. Rendered for any unmatched route and, deliberately, when the insider
+// layout host-guards a direct apex `/insider` request via `notFound()` (spec 0035) - so that path
 // gets a real 404 status in the site look and feel, not a bare string.
 export default function NotFound() {
   return (

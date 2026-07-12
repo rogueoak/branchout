@@ -1,7 +1,9 @@
 import {
   type Account,
+  type AccountPage,
   type AccountRepository,
   DuplicateAccountError,
+  type ListAccountsOptions,
   type NewAccount,
   type ProfileVisibility,
 } from './repository';
@@ -93,6 +95,27 @@ export class InMemoryAccountRepository implements AccountRepository {
     account.visibility = visibility;
     account.updatedAt = new Date();
     return { ...account };
+  }
+
+  async updateInsider(id: string, insider: boolean): Promise<Account | null> {
+    const account = this.byId.get(id);
+    if (!account) {
+      return null;
+    }
+    account.insider = insider;
+    account.updatedAt = new Date();
+    return { ...account };
+  }
+
+  async listAccounts(opts: ListAccountsOptions): Promise<AccountPage> {
+    const query = (opts.query ?? '').trim().toLowerCase();
+    const all = [...this.byId.values()]
+      .filter((a) => (query ? a.gamerTagNormalized.includes(query) : true))
+      .sort((a, b) => a.gamerTagNormalized.localeCompare(b.gamerTagNormalized));
+    return {
+      items: all.slice(opts.offset, opts.offset + opts.limit).map((a) => ({ ...a })),
+      total: all.length,
+    };
   }
 
   /** Test-only helper: drop an account, to simulate a session whose row is gone. */
