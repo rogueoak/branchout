@@ -16,7 +16,7 @@ function build(overrides: Partial<GameState>): GameState {
 function noop() {}
 
 function renderRemote(state: GameState) {
-  return render(<RemotePane state={state} me="p1" onAnswer={noop} onVote={noop} />);
+  return render(<RemotePane state={state} me="p1" onMove={noop} onVote={noop} />);
 }
 
 // The local player (p1) was marked wrong, so the only variable is whether another connected player
@@ -68,11 +68,11 @@ describe('RemotePane dispute button', () => {
 describe('RemotePane answer countdown', () => {
   afterEach(() => vi.useRealTimers());
 
-  const collecting = (answerMsRemaining: number | null): GameState =>
+  const collecting = (moveMsRemaining: number | null): GameState =>
     build({
       phase: 'collecting',
       players: [{ player: 'p1', nickname: 'Ada', connected: true }],
-      answerMsRemaining,
+      moveMsRemaining,
       prompt: { round: 1, category: 'People', difficulty: 5, question: 'Q?' },
     });
 
@@ -84,35 +84,35 @@ describe('RemotePane answer countdown', () => {
 
   it('auto-submits the typed draft when the countdown reaches zero', () => {
     vi.useFakeTimers();
-    const onAnswer = vi.fn();
-    render(<RemotePane state={collecting(1_000)} me="p1" onAnswer={onAnswer} onVote={noop} />);
+    const onMove = vi.fn();
+    render(<RemotePane state={collecting(1_000)} me="p1" onMove={onMove} onVote={noop} />);
     fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'water' } });
     act(() => vi.advanceTimersByTime(1_000));
-    expect(onAnswer).toHaveBeenCalledWith(1, 'water');
+    expect(onMove).toHaveBeenCalledWith(1, 'water');
   });
 
   it('does not auto-submit a whitespace-only draft at zero', () => {
     vi.useFakeTimers();
-    const onAnswer = vi.fn();
-    render(<RemotePane state={collecting(1_000)} me="p1" onAnswer={onAnswer} onVote={noop} />);
+    const onMove = vi.fn();
+    render(<RemotePane state={collecting(1_000)} me="p1" onMove={onMove} onVote={noop} />);
     fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: '   ' } });
     act(() => vi.advanceTimersByTime(1_000));
-    expect(onAnswer).not.toHaveBeenCalled();
+    expect(onMove).not.toHaveBeenCalled();
   });
 
   it('does not auto-submit while paused at expiry (the engine would drop it)', () => {
-    const onAnswer = vi.fn();
+    const onMove = vi.fn();
     // Paused with 0 remaining: the countdown reads 0 but the round is held, so nothing should send.
     const state = build({
       phase: 'collecting',
       paused: true,
       players: [{ player: 'p1', nickname: 'Ada', connected: true }],
-      answerMsRemaining: 0,
+      moveMsRemaining: 0,
       prompt: { round: 1, category: 'People', difficulty: 5, question: 'Q?' },
     });
-    render(<RemotePane state={state} me="p1" onAnswer={onAnswer} onVote={noop} />);
+    render(<RemotePane state={state} me="p1" onMove={onMove} onVote={noop} />);
     fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'water' } });
-    expect(onAnswer).not.toHaveBeenCalled();
+    expect(onMove).not.toHaveBeenCalled();
     expect(screen.getByText('Paused')).toBeDefined();
   });
 });

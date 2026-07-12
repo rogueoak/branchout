@@ -9,7 +9,7 @@
 import type { PlayerView } from '@branchout/protocol';
 import { Badge } from '@rogueoak/canopy';
 import type { GameViewProps } from '../registry';
-import { useAnswerCountdown } from '../../use-answer-countdown';
+import { useMoveCountdown } from '../../use-move-countdown';
 import { FinalResults } from '../../../components/game/FinalResults';
 import { Leaderboard } from '../../../components/game/Leaderboard';
 import { asLiarLiarPrompt, pickOptions, pickResult } from './protocol';
@@ -27,7 +27,7 @@ export function LiarLiarViewer({ state, me }: GameViewProps) {
   const prompt = asLiarLiarPrompt(state.prompt);
   const options = pickOptions(state.reveals);
   const result = pickResult(state.reveals);
-  const secondsLeft = useAnswerCountdown(state.answerMsRemaining, state.round, state.paused);
+  const secondsLeft = useMoveCountdown(state.moveMsRemaining, state.round, state.paused);
 
   if (phase === 'complete') {
     return (

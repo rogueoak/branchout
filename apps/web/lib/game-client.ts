@@ -1,5 +1,5 @@
 // The player <-> engine WebSocket client, typed end to end against @branchout/protocol (spec
-// 0007). It sends join/answer/vote out and folds prompt/reveal/leaderboard/state in through the
+// 0007). It sends join/move/vote out and folds prompt/reveal/leaderboard/state in through the
 // pure reducer (game-state.ts), so the only thing this file owns beyond the reducer is the socket
 // lifecycle: connect, (re)join, reconnect with a backoff, and a subscribe surface for React.
 //
@@ -79,7 +79,7 @@ function asServerFrame(value: unknown): ServerMessage | { type: 'error'; message
     type === 'reveal' ||
     type === 'leaderboard' ||
     type === 'state' ||
-    type === 'answer_rejected'
+    type === 'move_rejected'
   ) {
     return value as ServerMessage;
   }
@@ -164,16 +164,16 @@ export class GameClient {
     this.socket = null;
   }
 
-  /** Submit this player's free-text answer for a round. */
-  submitAnswer(round: number, answer: string): void {
+  /** Submit this player's free-text move for a round. */
+  submitMove(round: number, move: string): void {
     this.send({
       v: PROTOCOL_VERSION,
-      type: 'answer',
+      type: 'move',
       room: this.options.room,
       game: this.options.game,
       player: this.options.player,
       round,
-      answer,
+      move,
     });
   }
 

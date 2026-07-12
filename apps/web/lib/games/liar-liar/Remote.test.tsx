@@ -22,28 +22,28 @@ function noop() {}
 
 describe('LiarLiarRemote', () => {
   it('submits a lie', () => {
-    const onAnswer = vi.fn();
+    const onMove = vi.fn();
     render(
       <LiarLiarRemote
         state={state({ phase: 'collecting', prompt })}
         me="p1"
-        onAnswer={onAnswer}
+        onMove={onMove}
         onVote={noop}
       />,
     );
     fireEvent.change(screen.getByLabelText(/write your lie/i), { target: { value: 'buttons' } });
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
-    expect(onAnswer).toHaveBeenCalledWith(1, 'buttons');
+    expect(onMove).toHaveBeenCalledWith(1, 'buttons');
     expect(screen.getByText(/Lie submitted/i)).toBeDefined();
   });
 
   it('shows the vague rejection and lets the player retype', () => {
-    const onAnswer = vi.fn();
+    const onMove = vi.fn();
     const { rerender } = render(
       <LiarLiarRemote
         state={state({ phase: 'collecting', prompt })}
         me="p1"
-        onAnswer={onAnswer}
+        onMove={onMove}
         onVote={noop}
       />,
     );
@@ -54,7 +54,7 @@ describe('LiarLiarRemote', () => {
       <LiarLiarRemote
         state={state({ phase: 'collecting', prompt, rejected: 'someone already submitted that' })}
         me="p1"
-        onAnswer={onAnswer}
+        onMove={onMove}
         onVote={noop}
       />,
     );
@@ -64,7 +64,7 @@ describe('LiarLiarRemote', () => {
     expect(screen.queryByRole('alert')).toBeNull();
     // Re-submitting sends the retyped lie - the recovery path that actually matters.
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
-    expect(onAnswer).toHaveBeenLastCalledWith(1, 'radishes');
+    expect(onMove).toHaveBeenLastCalledWith(1, 'radishes');
   });
 
   it('does not hide an option when the player own lie was rejected and abandoned', () => {
@@ -75,7 +75,7 @@ describe('LiarLiarRemote', () => {
       <LiarLiarRemote
         state={state({ phase: 'collecting', prompt })}
         me="p1"
-        onAnswer={noop}
+        onMove={noop}
         onVote={onVote}
       />,
     );
@@ -90,7 +90,7 @@ describe('LiarLiarRemote', () => {
           rejected: 'someone already submitted that',
         })}
         me="p1"
-        onAnswer={noop}
+        onMove={noop}
         onVote={onVote}
       />,
     );
@@ -104,7 +104,7 @@ describe('LiarLiarRemote', () => {
       <LiarLiarRemote
         state={state({ phase: 'collecting', prompt })}
         me="p1"
-        onAnswer={noop}
+        onMove={noop}
         onVote={onVote}
       />,
     );
@@ -115,7 +115,7 @@ describe('LiarLiarRemote', () => {
       <LiarLiarRemote
         state={state({ phase: 'guessing', prompt, reveals: [optionsReveal] })}
         me="p1"
-        onAnswer={noop}
+        onMove={noop}
         onVote={onVote}
       />,
     );

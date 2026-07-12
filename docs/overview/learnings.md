@@ -271,12 +271,12 @@ Capture durable lessons as they emerge.
 - **A phase that can end by consensus needs a consensus signal, not just a host tap or a timer.**
   The engine advanced the answer round on a host tap or the dispute-window timer, but had no read
   for "everyone has answered", so a finished table sat in `collecting`. Give the module a way to
-  report the natural completion condition (`collectAnswer` -> `allAnswered` over *connected*
+  report the natural completion condition (`collectMove` -> `allSubmitted` over *connected*
   players) and let the engine close the phase after a short grace timer; count only connected
   players so a dropped device never holds the round open, and re-check phase/round/pause at fire
   time so a host advance, pause, or new round cancels a stale timer harmlessly. (Feedback `0015`.)
 - **Arm a completion-triggered action at *every* event that can satisfy the condition, not just the
-  obvious one.** The auto-advance was armed only on `submitAnswer`, but a *disconnect* also completes
+  obvious one.** The auto-advance was armed only on `submitMove`, but a *disconnect* also completes
   the round (the leaver was the last one it waited on) - so a drop-instead-of-answer left the round
   hanging. When "everyone is done" drives an action, evaluate the predicate on every state change
   that can flip it (answer *and* disconnect), and make the fire-time guard include `runId` so a

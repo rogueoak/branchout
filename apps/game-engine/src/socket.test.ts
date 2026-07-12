@@ -128,12 +128,12 @@ describe('game-engine websocket', () => {
     socket.send(
       JSON.stringify({
         v: PROTOCOL_VERSION,
-        type: 'answer',
+        type: 'move',
         room: 'r2',
         game: STUB_GAME_ID,
         player: 'p1',
         round: 1,
-        answer: 'blue',
+        move: 'blue',
       }),
     );
 
@@ -250,12 +250,12 @@ describe('game-engine websocket', () => {
       socket.send(
         JSON.stringify({
           v: PROTOCOL_VERSION,
-          type: 'answer',
+          type: 'move',
           room: 'r1',
           game: STUB_GAME_ID,
           player: 'p1',
           round: 1,
-          answer: 'blue',
+          move: 'blue',
           ...over,
         }),
       );

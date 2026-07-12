@@ -42,7 +42,7 @@ function renderStage(props: Partial<Parameters<typeof GameStage>[0]>) {
       role="player"
       mode="interactive"
       isHost={false}
-      onAnswer={noop}
+      onMove={noop}
       onVote={noop}
       onControl={noop}
       {...props}
@@ -88,18 +88,18 @@ describe('GameStage layout by mode and role', () => {
 
 describe('GameStage per-phase rendering', () => {
   it('collecting shows the prompt on the viewer and a free-text answer on the remote', () => {
-    const onAnswer = vi.fn();
-    renderStage({ onAnswer });
+    const onMove = vi.fn();
+    renderStage({ onMove });
     expect(screen.getByText('What is H2O?')).toBeDefined();
     const input = screen.getByLabelText('Your answer') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'water' } });
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    expect(onAnswer).toHaveBeenCalledWith(1, 'water');
+    expect(onMove).toHaveBeenCalledWith(1, 'water');
   });
 
   it('lets a player resubmit their answer until the round closes', () => {
-    const onAnswer = vi.fn();
-    renderStage({ onAnswer });
+    const onMove = vi.fn();
+    renderStage({ onMove });
     const input = screen.getByLabelText('Your answer') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'ice' } });
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
@@ -107,7 +107,7 @@ describe('GameStage per-phase rendering', () => {
     // The button now offers a resubmit and a second answer is sent.
     fireEvent.change(input, { target: { value: 'water' } });
     fireEvent.click(screen.getByRole('button', { name: 'Resubmit' }));
-    expect(onAnswer).toHaveBeenLastCalledWith(1, 'water');
+    expect(onMove).toHaveBeenLastCalledWith(1, 'water');
   });
 
   it('disputing offers the dispute button to a player marked wrong', () => {
@@ -366,7 +366,7 @@ describe('GameStage scroll-to-question', () => {
         role="player"
         mode="remote"
         isHost={false}
-        onAnswer={noop}
+        onMove={noop}
         onVote={noop}
         onControl={noop}
         {...over}

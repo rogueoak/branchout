@@ -36,7 +36,7 @@ describe('parseStartHandoff', () => {
   });
 
   it('rejects a bad version', () => {
-    expect(() => parseStartHandoff({ v: 2, room: 'r', game: 'g', players: [] })).toThrow(
+    expect(() => parseStartHandoff({ v: 999, room: 'r', game: 'g', players: [] })).toThrow(
       ProtocolError,
     );
   });

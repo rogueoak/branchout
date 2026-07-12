@@ -122,9 +122,9 @@ describe('reduceGameState', () => {
     expect(next.reveals).toEqual([roundReveal.reveal, disputeReveal.reveal]);
   });
 
-  it('records a targeted answer_rejected reason, and a new prompt clears it', () => {
+  it('records a targeted move_rejected reason, and a new prompt clears it', () => {
     let next = reduceGameState(initialGameState(), {
-      type: 'answer_rejected',
+      type: 'move_rejected',
       round: 1,
       reason: 'someone already submitted that',
     });
@@ -135,7 +135,7 @@ describe('reduceGameState', () => {
 
   it('clearRejected drops a stale rejection locally', () => {
     const seeded = reduceGameState(initialGameState(), {
-      type: 'answer_rejected',
+      type: 'move_rejected',
       round: 1,
       reason: 'nope',
     });

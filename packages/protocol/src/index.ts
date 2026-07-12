@@ -17,8 +17,8 @@ export {
 export {
   parseMessage,
   serializeMessage,
-  type AnswerMessage,
-  type AnswerRejectedMessage,
+  type MoveMessage,
+  type MoveRejectedMessage,
   type ClientMessage,
   type EchoMessage,
   type ErrorMessage,

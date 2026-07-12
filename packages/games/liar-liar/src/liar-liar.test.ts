@@ -152,42 +152,42 @@ describe('createLiarLiarGame - a round', () => {
     const truth = peek(scratch).clue!.answer;
     // The truth is rejected, privately, with a vague reason, and nothing is written.
     const before = JSON.stringify(scratch);
-    const rej = game.collectAnswer(ctx(), 'p1', truth);
+    const rej = game.collectMove(ctx(), 'p1', truth);
     expect(rej.rejected?.reason).toBe('someone already submitted that');
     expect(JSON.stringify(rej.scratch)).toBe(before);
 
     // A distinct fake is accepted.
-    scratch = game.collectAnswer(ctx(), 'p1', 'Napoleon').scratch;
+    scratch = game.collectMove(ctx(), 'p1', 'Napoleon').scratch;
     expect(peek(scratch).submissions.p1).toBe('Napoleon');
 
     // Another player submitting the same fake (normalized) is rejected.
-    const dup = game.collectAnswer(ctx(), 'p2', 'napoleon!');
+    const dup = game.collectMove(ctx(), 'p2', 'napoleon!');
     expect(dup.rejected?.reason).toBe('someone already submitted that');
     expect(peek(dup.scratch).submissions.p2).toBeUndefined();
 
     // A player may change their own fake freely.
-    scratch = game.collectAnswer(ctx(), 'p1', 'Cleopatra').scratch;
+    scratch = game.collectMove(ctx(), 'p1', 'Cleopatra').scratch;
     expect(peek(scratch).submissions.p1).toBe('Cleopatra');
   });
 
   it('rejects the alias spelling of the truth', () => {
-    const rej = game.collectAnswer(ctx(), 'p1', 'person one'); // alias of "Person 1"
+    const rej = game.collectMove(ctx(), 'p1', 'person one'); // alias of "Person 1"
     expect(rej.rejected?.reason).toBe('someone already submitted that');
   });
 
   it('rejects a fake that normalizes to nothing (blank or punctuation-only), writing no scratch', () => {
     const before = JSON.stringify(scratch);
     for (const junk of ['', '   ', '!!!']) {
-      const rej = game.collectAnswer(ctx(), 'p1', junk);
+      const rej = game.collectMove(ctx(), 'p1', junk);
       expect(rej.rejected?.reason).toBe('enter an answer');
       expect(JSON.stringify(rej.scratch)).toBe(before);
     }
   });
 
   it('reveals the truth plus every fake as shuffled options without naming the truth', () => {
-    scratch = game.collectAnswer(ctx(), 'p1', 'Napoleon').scratch;
-    scratch = game.collectAnswer(ctx(), 'p2', 'Cleopatra').scratch;
-    scratch = game.collectAnswer(ctx(), 'p3', 'Gandhi').scratch;
+    scratch = game.collectMove(ctx(), 'p1', 'Napoleon').scratch;
+    scratch = game.collectMove(ctx(), 'p2', 'Cleopatra').scratch;
+    scratch = game.collectMove(ctx(), 'p3', 'Gandhi').scratch;
 
     const result = game.reveal(ctx());
     scratch = result.scratch;
@@ -204,9 +204,9 @@ describe('createLiarLiarGame - a round', () => {
   });
 
   it('scores 100 for the truth and 50 per fooled player to a fake author', () => {
-    scratch = game.collectAnswer(ctx(), 'p1', 'Napoleon').scratch;
-    scratch = game.collectAnswer(ctx(), 'p2', 'Cleopatra').scratch;
-    scratch = game.collectAnswer(ctx(), 'p3', 'Gandhi').scratch;
+    scratch = game.collectMove(ctx(), 'p1', 'Napoleon').scratch;
+    scratch = game.collectMove(ctx(), 'p2', 'Cleopatra').scratch;
+    scratch = game.collectMove(ctx(), 'p3', 'Gandhi').scratch;
     scratch = game.reveal(ctx()).scratch;
 
     const { truthId, fakeOf } = introspect(scratch);
@@ -249,8 +249,8 @@ describe('createLiarLiarGame - a round', () => {
   });
 
   it('ignores a player guessing their own fake', () => {
-    scratch = game.collectAnswer(ctx(), 'p1', 'Napoleon').scratch;
-    scratch = game.collectAnswer(ctx(), 'p2', 'Cleopatra').scratch;
+    scratch = game.collectMove(ctx(), 'p1', 'Napoleon').scratch;
+    scratch = game.collectMove(ctx(), 'p2', 'Cleopatra').scratch;
     scratch = game.reveal(ctx()).scratch;
     const { fakeOf } = introspect(scratch);
 
@@ -267,8 +267,8 @@ describe('createLiarLiarGame - a round', () => {
 
   it('a player who submitted no fake earns nothing and fools no one', () => {
     // Only p1 and p2 submit; p3 stays silent.
-    scratch = game.collectAnswer(ctx(), 'p1', 'Napoleon').scratch;
-    scratch = game.collectAnswer(ctx(), 'p2', 'Cleopatra').scratch;
+    scratch = game.collectMove(ctx(), 'p1', 'Napoleon').scratch;
+    scratch = game.collectMove(ctx(), 'p2', 'Cleopatra').scratch;
     scratch = game.reveal(ctx()).scratch;
     const { truthId, fakeOf } = introspect(scratch);
     expect(fakeOf.p3).toBeUndefined(); // no option attributed to p3

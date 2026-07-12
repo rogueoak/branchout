@@ -54,7 +54,7 @@ vi.mock('../../../lib/membership', async (importOriginal) => {
 vi.mock('../../../lib/use-game-client', () => ({
   useGameClient: () => ({
     state: hoisted.gameState,
-    submitAnswer: vi.fn(),
+    submitMove: vi.fn(),
     submitVote: vi.fn(),
   }),
 }));

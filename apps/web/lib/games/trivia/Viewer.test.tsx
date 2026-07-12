@@ -86,7 +86,7 @@ describe('ViewerPane answer display', () => {
   it('shows the answer countdown while collecting', () => {
     const state = build({
       phase: 'collecting',
-      answerMsRemaining: 42_000,
+      moveMsRemaining: 42_000,
       prompt: {
         round: 1,
         category: 'People',

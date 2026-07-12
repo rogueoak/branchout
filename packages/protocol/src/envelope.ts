@@ -7,7 +7,7 @@
  * without breaking older peers: a reader checks the version before trusting the rest. Bump this
  * when a breaking change lands and teach the parsers to accept both for a transition window.
  */
-export const PROTOCOL_VERSION = 1 as const;
+export const PROTOCOL_VERSION = 2 as const;
 
 /**
  * The generic round lifecycle phases the engine sequences. A game module fills in what each

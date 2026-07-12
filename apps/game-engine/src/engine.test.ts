@@ -114,8 +114,8 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
 
     // Round 1: p1 correct, p2 wrong.
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'wrong');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'wrong');
     await playRoundNoDispute(h.engine, 'r1');
 
     let state = await h.engine.getState('r1', STUB_GAME_ID);
@@ -129,8 +129,8 @@ describe('GameEngine lifecycle', () => {
     expect(state?.phase).toBe('collecting');
 
     // Round 2: both correct.
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 2, 'green');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 2, 'green');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 2, 'green');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 2, 'green');
     await playRoundNoDispute(h.engine, 'r1');
 
     // Last round's leaderboard advance ends the game.
@@ -160,9 +160,9 @@ describe('GameEngine lifecycle', () => {
       }),
     );
 
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // correct
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'bleu'); // wrong, will dispute
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p3', 1, 'red'); // wrong
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // correct
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'bleu'); // wrong, will dispute
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p3', 1, 'red'); // wrong
 
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // reveal -> disputing
     await h.engine.submitVote('r1', STUB_GAME_ID, 'p2', 1, 'p2', false); // p2 raises a dispute
@@ -200,9 +200,9 @@ describe('GameEngine lifecycle', () => {
     expect(joined.players.find((p) => p.player === 'kQ9m-tokenA')?.connected).toBe(true);
 
     // Round 1: host correct, guest wrong (will dispute), other wrong.
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p_host', 1, 'blue');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'kQ9m-tokenA', 1, 'bleu');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'Zr3x-tokenB', 1, 'red');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p_host', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'kQ9m-tokenA', 1, 'bleu');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'Zr3x-tokenB', 1, 'red');
 
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // collecting -> disputing (reveal)
     // The non-host raises a dispute from its own device.
@@ -238,9 +238,9 @@ describe('GameEngine lifecycle', () => {
         config: { rounds: 2, secrets: ['blue', 'green'] },
       }),
     );
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // correct
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'bleu'); // wrong, disputes
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p3', 1, 'red'); // wrong, does not dispute
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // correct
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'bleu'); // wrong, disputes
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p3', 1, 'red'); // wrong, does not dispute
 
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // reveal -> disputing
     // Only p2 raises a dispute; p3 was also wrong but stays silent.
@@ -275,9 +275,9 @@ describe('GameEngine lifecycle', () => {
         config: { rounds: 1, secrets: ['blue'] },
       }),
     );
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'bleu');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p3', 1, 'red');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'bleu');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p3', 1, 'red');
 
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // reveal -> disputing
     await h.engine.submitVote('r1', STUB_GAME_ID, 'p2', 1, 'p2', false);
@@ -295,7 +295,7 @@ describe('GameEngine lifecycle', () => {
 
   it('skips the voting phase when nobody disputes', async () => {
     await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // reveal -> disputing
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // disputing -> leaderboard (no disputes)
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
@@ -308,12 +308,12 @@ describe('GameEngine lifecycle', () => {
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
     await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
 
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     // One of two answered: nothing scheduled, still collecting.
     expect(h.scheduler.pending).toBe(0);
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
 
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'green');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'green');
     // Everyone has answered now: the grace timer is armed but has not fired yet.
     expect(h.scheduler.pending).toBe(1);
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
@@ -328,8 +328,8 @@ describe('GameEngine lifecycle', () => {
     await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
     await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'green');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'green');
     expect(h.scheduler.pending).toBe(1); // grace timer armed
 
     // The host does not wait for the 2s grace - it advances now.
@@ -347,7 +347,7 @@ describe('GameEngine lifecycle', () => {
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
     await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
 
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     // p2 is present and has not answered: the round stays open with nothing scheduled.
     expect(h.scheduler.pending).toBe(0);
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
@@ -357,7 +357,7 @@ describe('GameEngine lifecycle', () => {
     await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
     await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     expect(h.scheduler.pending).toBe(0); // p2 still silent
 
     // p2 drops. Nobody resubmits: the disconnect alone completes the round for the remaining
@@ -380,7 +380,7 @@ describe('GameEngine lifecycle', () => {
     );
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'); // host
     await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'green');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'green');
     expect(h.scheduler.pending).toBe(0); // host p1 still silent
 
     // The host drops: that pauses the game (spec 0014), so even though the only remaining connected
@@ -394,7 +394,7 @@ describe('GameEngine lifecycle', () => {
 
   it('force-closes the answer round when the 60s window expires, even with no answers', async () => {
     await h.engine.start(
-      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+      handoff({ config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000 } }),
     );
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
 
@@ -403,17 +403,17 @@ describe('GameEngine lifecycle', () => {
     h.scheduler.flush();
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
     // The window is over: the reveal-phase state frame carries no stale countdown.
-    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBeUndefined();
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBeUndefined();
   });
 
   it('re-arms the all-answered 2s grace on resume (a finished table closes promptly)', async () => {
     await h.engine.start(
-      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+      handoff({ config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000 } }),
     );
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
     await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p2', 1, 'green'); // everyone answered -> grace armed
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'green'); // everyone answered -> grace armed
 
     // Pause for longer than the 2s grace, then resume: the grace must be re-armed, not lost.
     await h.engine.control('r1', STUB_GAME_ID, 'pause');
@@ -429,7 +429,7 @@ describe('GameEngine lifecycle', () => {
   it('self-heals the answer-window timer after a restart when a player submits', async () => {
     // Simulate an engine restart: a second engine over the same store has no in-memory timers.
     await h.engine.start(
-      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+      handoff({ config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000 } }),
     );
     const scheduler2 = new ManualScheduler();
     const engine2 = new GameEngine({
@@ -443,7 +443,7 @@ describe('GameEngine lifecycle', () => {
     });
 
     // No timer is armed on engine2. A late answer re-arms the window from the persisted deadline.
-    await engine2.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'late');
+    await engine2.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'late');
     h.clock.advance(60_000);
     scheduler2.flush();
     expect((await engine2.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
@@ -451,33 +451,33 @@ describe('GameEngine lifecycle', () => {
 
   it('projects the answer time left on the state frame, ticking down with the clock', async () => {
     await h.engine.start(
-      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+      handoff({ config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000 } }),
     );
-    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBe(60_000);
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(60_000);
     h.clock.advance(15_000);
-    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBe(45_000);
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(45_000);
   });
 
   it('holds the answer countdown while paused and continues from the time left on resume', async () => {
     await h.engine.start(
-      handoff({ config: { rounds: 1, secrets: ['blue'], answerWindowMs: 60_000 } }),
+      handoff({ config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000 } }),
     );
     h.clock.advance(20_000); // 40s left
 
     await h.engine.control('r1', STUB_GAME_ID, 'pause');
     const snap = await h.engine.getSnapshot('r1', STUB_GAME_ID);
     expect(snap?.paused).toBe(true);
-    expect(snap?.answerMsRemaining).toBe(40_000); // frozen
+    expect(snap?.moveMsRemaining).toBe(40_000); // frozen
 
     // Time passes while paused: the countdown does not move and the round does not close.
     h.clock.advance(100_000);
     h.scheduler.flush(); // the pre-pause timer fires but no-ops while paused
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
-    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBe(40_000);
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(40_000);
 
     // Resume: the deadline continues from the 40s that were left, not a fresh 60s.
     await h.engine.control('r1', STUB_GAME_ID, 'pause');
-    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.answerMsRemaining).toBe(40_000);
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(40_000);
     h.clock.advance(39_999);
     h.scheduler.flush();
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting'); // 1ms left
@@ -490,7 +490,7 @@ describe('GameEngine lifecycle', () => {
     await h.engine.start(
       handoff({ config: { rounds: 1, secrets: ['blue'], disputeWindowMs: 10000 } }),
     );
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // reveal -> disputing, arms timer
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
 
@@ -501,7 +501,7 @@ describe('GameEngine lifecycle', () => {
 
   it('is idempotent: a duplicate handoff does not restart a running session', async () => {
     await h.engine.start(handoff());
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     const second = await h.engine.start(handoff());
     expect(second.status).toBe('running');
     // The submitted answer survived (session was not reset).
@@ -511,10 +511,10 @@ describe('GameEngine lifecycle', () => {
 
   it('reports each round exactly once with a stable idempotency id across a full game', async () => {
     await h.engine.start(handoff()); // 2 rounds
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await playRoundNoDispute(h.engine, 'r1');
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> round 2
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 2, 'green');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 2, 'green');
     await playRoundNoDispute(h.engine, 'r1');
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // end
 
@@ -525,7 +525,7 @@ describe('GameEngine lifecycle', () => {
 
   it('retries a failed round report via the outbox and delivers it exactly once', async () => {
     await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     h.reporter.failRoundOnce = true; // the first delivery attempt fails
 
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // reveal -> disputing
@@ -546,7 +546,7 @@ describe('GameEngine lifecycle', () => {
 
   it('lets a completed game be started again (0006 can re-hand-off the room)', async () => {
     await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await playRoundNoDispute(h.engine, 'r1');
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // complete
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('complete');
@@ -560,7 +560,7 @@ describe('GameEngine lifecycle', () => {
 
   it('recovers session state on reconnect (join returns the live snapshot)', async () => {
     await h.engine.start(handoff());
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await playRoundNoDispute(h.engine, 'r1');
 
     const snapshot = stateFrame(await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'));
@@ -578,12 +578,12 @@ describe('GameEngine lifecycle', () => {
     await h.engine.control('r1', STUB_GAME_ID, 'pause');
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.paused).toBe(true);
 
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // ignored while paused
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue'); // ignored while paused
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // ignored while paused
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
 
     await h.engine.control('r1', STUB_GAME_ID, 'pause'); // toggle back on
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await playRoundNoDispute(h.engine, 'r1');
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.scores.p1).toBe(100);
   });
@@ -592,7 +592,7 @@ describe('GameEngine lifecycle', () => {
     await h.engine.start(
       handoff({ config: { rounds: 1, secrets: ['blue'], disputeWindowMs: 10000 } }),
     );
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> disputing, arms window
     await h.engine.control('r1', STUB_GAME_ID, 'pause'); // pause: cancels the window
     h.scheduler.flush(); // the original timer no-ops while paused
@@ -648,7 +648,7 @@ describe('join catch-up', () => {
 
   it('replays reveal and standings when a device joins after the round closes', async () => {
     await h.engine.start(handoff({ config: { rounds: 2, secrets: ['blue', 'green'] } }));
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await playRoundNoDispute(h.engine, 'r1'); // -> leaderboard
     const frames = await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
     expect(frames.some((f) => f.type === 'reveal')).toBe(true);
@@ -658,7 +658,7 @@ describe('join catch-up', () => {
 
   it('drops the stale reveal from catch-up once the next round opens', async () => {
     await h.engine.start(handoff({ config: { rounds: 2, secrets: ['blue', 'green'] } }));
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await playRoundNoDispute(h.engine, 'r1'); // round 1 -> leaderboard
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> round 2 collecting
     const frames = await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
@@ -722,7 +722,7 @@ describe('host-disconnect auto-pause (spec 0014)', () => {
       }),
     );
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'); // host connects (so disconnect fires)
-    await h.engine.submitAnswer('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
     await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> disputing, arms the window
 
     await h.engine.disconnect('r1', STUB_GAME_ID, 'p1'); // host drops: auto-pause
@@ -807,9 +807,9 @@ describe('decision/guess phase (spec 0020)', () => {
   async function startJoinSubmit(engine: GameEngine): Promise<void> {
     await engine.start(deciderHandoff());
     for (const p of roster) await engine.join('r1', DECIDER_GAME_ID, p.player, p.nickname);
-    await engine.submitAnswer('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
-    await engine.submitAnswer('r1', DECIDER_GAME_ID, 'p2', 1, 'green');
-    await engine.submitAnswer('r1', DECIDER_GAME_ID, 'p3', 1, 'yellow');
+    await engine.submitMove('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
+    await engine.submitMove('r1', DECIDER_GAME_ID, 'p2', 1, 'green');
+    await engine.submitMove('r1', DECIDER_GAME_ID, 'p3', 1, 'yellow');
   }
 
   it('enters guessing after reveal and scores on resolve (all-decided early close)', async () => {
@@ -868,18 +868,18 @@ describe('decision/guess phase (spec 0020)', () => {
       seen.push(f as ServerMessage),
     );
 
-    const ok = await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
+    const ok = await h.engine.submitMove('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
     expect(ok.reject).toBeUndefined();
     const before = JSON.stringify((await h.engine.getState('r1', DECIDER_GAME_ID))?.scratch);
 
-    const dup = await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p2', 1, 'RED'); // duplicate
-    expect(dup.reject?.type).toBe('answer_rejected');
+    const dup = await h.engine.submitMove('r1', DECIDER_GAME_ID, 'p2', 1, 'RED'); // duplicate
+    expect(dup.reject?.type).toBe('move_rejected');
     expect(dup.reject?.reason).toBe('taken');
     expect(dup.reject?.round).toBe(1);
     // No scratch was written: p2's fake never landed, the round is exactly as it was.
     const after = JSON.stringify((await h.engine.getState('r1', DECIDER_GAME_ID))?.scratch);
     expect(after).toBe(before);
-    // The reject was a targeted reply, not a broadcast: no frame (least of all answer_rejected)
+    // The reject was a targeted reply, not a broadcast: no frame (least of all move_rejected)
     // reached the room stream, so other devices never learn a fake was rejected.
     expect(seen).toHaveLength(0);
   });
@@ -893,9 +893,9 @@ describe('decision/guess phase (spec 0020)', () => {
     ];
     await h.engine.start(deciderHandoff({ players }));
     for (const p of players) await h.engine.join('r1', DECIDER_GAME_ID, p.player, p.nickname);
-    await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
-    await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p2', 1, 'green');
-    await h.engine.submitAnswer('r1', DECIDER_GAME_ID, 'p3', 1, 'yellow');
+    await h.engine.submitMove('r1', DECIDER_GAME_ID, 'p1', 1, 'red');
+    await h.engine.submitMove('r1', DECIDER_GAME_ID, 'p2', 1, 'green');
+    await h.engine.submitMove('r1', DECIDER_GAME_ID, 'p3', 1, 'yellow');
     await h.engine.control('r1', DECIDER_GAME_ID, 'advance'); // -> guessing
     expect((await h.engine.getState('r1', DECIDER_GAME_ID))?.phase).toBe('guessing');
 
@@ -934,7 +934,7 @@ describe('decision/guess phase (spec 0020)', () => {
       id: 'bad-decider',
       configure: () => ({ scratch: {}, rounds: 1 }),
       startRound: () => ({ scratch: {}, prompt: {} }),
-      collectAnswer: (ctx) => scratch(ctx),
+      collectMove: (ctx) => scratch(ctx),
       reveal: (ctx) => ({ ...scratch(ctx), reveal: {}, scores: [], decision: { windowMs: 1000 } }),
       collectVote: (ctx) => scratch(ctx),
       disputeWindow: (ctx) => ({ ...scratch(ctx), disputes: [] }),
