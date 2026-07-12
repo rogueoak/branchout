@@ -22,8 +22,8 @@ export interface GameRemoteProps {
   showResults?: boolean;
   /** True when the controller belongs to the host (self-aware between-round copy). */
   isHost?: boolean;
-  /** Submit this player's free-text answer for the round (Trivia answer / Liar Liar fake). */
-  onAnswer: (round: number, answer: string) => void;
+  /** Submit this player's free-text move for the round (Trivia answer / Liar Liar fake). */
+  onMove: (round: number, move: string) => void;
   /** Cast a vote: Trivia dispute (target = self) / ballot (target = disputer); Liar Liar guess
    * (target = chosen option id). The engine reads it by phase. */
   onVote: (round: number, target: string, agree: boolean) => void;

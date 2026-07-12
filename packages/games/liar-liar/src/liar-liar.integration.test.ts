@@ -1,5 +1,5 @@
 // Full-lifecycle integration for Liar Liar (spec 0021). This drives the module by hand through the
-// exact sequence the engine drives - configure -> startRound -> collectAnswer(+reject) -> allAnswered
+// exact sequence the engine drives - configure -> startRound -> collectMove(+reject) -> allSubmitted
 // -> reveal -> collectVote -> allDecided -> resolveDecision -> leaderboard -> advance - across two
 // rounds with three players and a seeded rng, and builds the module via `liarLiarPlugin.create` so the
 // injected asset loader (not disk) supplies the clues. The engine-level integration (registering the
@@ -78,25 +78,25 @@ describe('Liar Liar full game', () => {
       scratch = game.startRound(ctx(round, 'collecting', scratch)).scratch;
 
       // Every player submits a distinct fake; a duplicate is rejected and writes nothing.
-      scratch = game.collectAnswer(
+      scratch = game.collectMove(
         ctx(round, 'collecting', scratch),
         'p1',
         `Fake1-${round}`,
       ).scratch;
-      scratch = game.collectAnswer(
+      scratch = game.collectMove(
         ctx(round, 'collecting', scratch),
         'p2',
         `Fake2-${round}`,
       ).scratch;
-      const dup = game.collectAnswer(ctx(round, 'collecting', scratch), 'p3', `fake1-${round}`);
+      const dup = game.collectMove(ctx(round, 'collecting', scratch), 'p3', `fake1-${round}`);
       expect(dup.rejected?.reason).toBe('someone already submitted that');
-      scratch = game.collectAnswer(
+      scratch = game.collectMove(
         ctx(round, 'collecting', scratch),
         'p3',
         `Fake3-${round}`,
       ).scratch;
 
-      expect(game.allAnswered?.(ctx(round, 'collecting', scratch))).toBe(true);
+      expect(game.allSubmitted?.(ctx(round, 'collecting', scratch))).toBe(true);
 
       const revealed = game.reveal(ctx(round, 'collecting', scratch));
       scratch = revealed.scratch;

@@ -1,18 +1,18 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAnswerCountdown } from './use-answer-countdown';
+import { useMoveCountdown } from './use-move-countdown';
 
-describe('useAnswerCountdown', () => {
+describe('useMoveCountdown', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   it('returns null when there is no answer timer', () => {
-    const { result } = renderHook(() => useAnswerCountdown(null, 1, false));
+    const { result } = renderHook(() => useMoveCountdown(null, 1, false));
     expect(result.current).toBeNull();
   });
 
   it('counts down whole seconds from the remaining time', () => {
-    const { result } = renderHook(({ ms, r, p }) => useAnswerCountdown(ms, r, p), {
+    const { result } = renderHook(({ ms, r, p }) => useMoveCountdown(ms, r, p), {
       initialProps: { ms: 60_000, r: 1, p: false },
     });
     expect(result.current).toBe(60);
@@ -23,7 +23,7 @@ describe('useAnswerCountdown', () => {
   });
 
   it('holds the count while paused and does not tick', () => {
-    const { result, rerender } = renderHook(({ ms, r, p }) => useAnswerCountdown(ms, r, p), {
+    const { result, rerender } = renderHook(({ ms, r, p }) => useMoveCountdown(ms, r, p), {
       initialProps: { ms: 60_000, r: 1, p: false },
     });
     act(() => vi.advanceTimersByTime(20_000));
@@ -41,7 +41,7 @@ describe('useAnswerCountdown', () => {
   });
 
   it('re-anchors on a new round even when the remaining value is unchanged', () => {
-    const { result, rerender } = renderHook(({ ms, r, p }) => useAnswerCountdown(ms, r, p), {
+    const { result, rerender } = renderHook(({ ms, r, p }) => useMoveCountdown(ms, r, p), {
       initialProps: { ms: 60_000, r: 1, p: false },
     });
     act(() => vi.advanceTimersByTime(50_000));

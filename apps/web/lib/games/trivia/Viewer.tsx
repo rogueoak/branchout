@@ -10,7 +10,7 @@ import { Badge } from '@rogueoak/canopy';
 import type { GameState } from '../../game-state';
 import { asTriviaPrompt, pickTriviaRoundReveal, pickTriviaDisputeReveal } from './protocol';
 import { difficultyBand } from './config';
-import { useAnswerCountdown } from '../../use-answer-countdown';
+import { useMoveCountdown } from '../../use-move-countdown';
 import { FinalResults } from '../../../components/game/FinalResults';
 import { Leaderboard } from '../../../components/game/Leaderboard';
 
@@ -31,7 +31,7 @@ export function ViewerPane({ state, me }: ViewerPaneProps) {
   const prompt = asTriviaPrompt(state.prompt);
   const reveal = pickTriviaRoundReveal(state.reveals);
   const disputeResult = pickTriviaDisputeReveal(state.reveals);
-  const secondsLeft = useAnswerCountdown(state.answerMsRemaining, state.round, state.paused);
+  const secondsLeft = useMoveCountdown(state.moveMsRemaining, state.round, state.paused);
 
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-5">

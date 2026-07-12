@@ -6,7 +6,7 @@
 import {
   PROTOCOL_VERSION,
   rankStandings,
-  type AnswerRejectedMessage,
+  type MoveRejectedMessage,
   type GameCompleteReport,
   type LeaderboardMessage,
   type PromptMessage,
@@ -144,7 +144,7 @@ export class GameEngine {
         rounds: cfg.rounds,
         disputeWindowMs: cfg.disputeWindowMs ?? 0,
         decisionWindowMs: 0,
-        answerWindowMs: cfg.answerWindowMs ?? 0,
+        moveWindowMs: cfg.moveWindowMs ?? 0,
         players,
         scores: Object.fromEntries(players.map((p) => [p.player, 0])),
         roundScores: [],
@@ -200,7 +200,7 @@ export class GameEngine {
           this.armWindow(state, module, state.phase);
         } else {
           // Continue the answer countdown from where the host's drop froze it (spec 0017).
-          this.resumeAnswerWindow(state, module);
+          this.resumeMoveWindow(state, module);
         }
       }
       await this.store.save(state);
@@ -239,7 +239,7 @@ export class GameEngine {
         state.hostPaused = true;
         // The auto-pause must also hold the answer countdown, or it keeps ticking (and could
         // force-close the round) while the host is away (spec 0017).
-        this.freezeAnswerWindow(state);
+        this.freezeMoveWindow(state);
       }
       await this.store.save(state);
       await this.publish(state, this.stateMessage(state));
@@ -248,24 +248,24 @@ export class GameEngine {
       // until a host tap (feedback 0015). Skipped when the disconnect paused the game (host drop).
       if (state.phase === 'collecting' && !state.paused) {
         const module = this.registry.resolve(state.game);
-        if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
+        if (module.allSubmitted?.(this.context(state))) this.armAutoAdvance(state, module);
       }
     });
   }
 
   /**
-   * Record a player's answer. Returns a targeted `answer_rejected` frame when the module refuses the
+   * Record a player's move. Returns a targeted `move_rejected` frame when the module refuses the
    * submission (e.g. a duplicate or the correct answer in a bluffing game) so the socket can reply to
    * that one device; a rejected submission writes no scratch and is never broadcast. Returns an empty
    * object otherwise (including a stale/out-of-phase submission, which is silently ignored).
    */
-  async submitAnswer(
+  async submitMove(
     room: string,
     game: string,
     player: string,
     round: number,
-    answer: string,
-  ): Promise<{ reject?: AnswerRejectedMessage }> {
+    move: string,
+  ): Promise<{ reject?: MoveRejectedMessage }> {
     const key = sessionKey(room, game);
     return this.run(key, async () => {
       const state = await this.store.load(room, game);
@@ -273,21 +273,21 @@ export class GameEngine {
         return {}; // stale or out-of-phase submission: ignore
       }
       const module = this.registry.resolve(state.game);
-      const result = module.collectAnswer(this.context(state), player, answer);
+      const result = module.collectMove(this.context(state), player, move);
       // A rejected submission is refused wholesale: no scratch write, no timer re-arm, no broadcast -
       // just a private reply to the sender. The round state is exactly as it was before the attempt.
       if (result.rejected) {
-        return { reject: this.answerRejectedMessage(state, result.rejected.reason) };
+        return { reject: this.moveRejectedMessage(state, result.rejected.reason) };
       }
       state.scratch = result.scratch;
       await this.store.save(state);
       // Self-heal the answer-window timer: it lives in memory, so an engine restart mid-round leaves
       // the persisted deadline with nothing to fire it. Re-arming on a submit (a duplicate the
       // deadline self-correction neutralizes) makes a live round close on time again after a restart.
-      if (state.answerDeadline !== undefined) {
-        this.armAnswerWindow(state, module, state.answerDeadline - this.clock());
+      if (state.moveDeadline !== undefined) {
+        this.armMoveWindow(state, module, state.moveDeadline - this.clock());
       }
-      if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
+      if (module.allSubmitted?.(this.context(state))) this.armAutoAdvance(state, module);
       return {};
     });
   }
@@ -331,8 +331,8 @@ export class GameEngine {
           state.paused = !state.paused;
           // Hold or continue the answer countdown across the pause so it never ticks while stopped
           // and a resume continues from the time left, not a fresh window (spec 0017).
-          if (state.paused) this.freezeAnswerWindow(state);
-          else this.resumeAnswerWindow(state, module);
+          if (state.paused) this.freezeMoveWindow(state);
+          else this.resumeMoveWindow(state, module);
           await this.store.save(state);
           await this.publish(state, this.stateMessage(state));
           // Resuming inside a timed dispute/vote/guess window re-arms it, so a paused window does not
@@ -413,13 +413,13 @@ export class GameEngine {
     state.standings = undefined;
     // Open the answer window: a fresh deadline the state frame projects as remaining ms, and a
     // timer that force-closes the round if it expires before everyone answers (spec 0017).
-    state.answerRemainingMs = undefined;
-    state.answerDeadline =
-      state.answerWindowMs > 0 ? this.clock() + state.answerWindowMs : undefined;
+    state.moveRemainingMs = undefined;
+    state.moveDeadline =
+      state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
     await this.publish(state, this.stateMessage(state));
-    if (state.answerDeadline !== undefined)
-      this.armAnswerWindow(state, module, state.answerWindowMs);
+    if (state.moveDeadline !== undefined)
+      this.armMoveWindow(state, module, state.moveWindowMs);
   }
 
   /** One phase transition. Saves once at the end and (re)arms the dispute-window timer. */
@@ -436,8 +436,8 @@ export class GameEngine {
         state.reveal = result.reveal;
         // The answer window is over; drop the deadline so the reveal-phase state frame carries no
         // stale countdown.
-        state.answerDeadline = undefined;
-        state.answerRemainingMs = undefined;
+        state.moveDeadline = undefined;
+        state.moveRemainingMs = undefined;
         if (result.decision) {
           // A guess game (spec 0020): stream the options and open a guess window instead of the
           // dispute path. Trivia and every dispute game omit `decision` and fall through below.
@@ -589,7 +589,7 @@ export class GameEngine {
     state.rounds = cfg.rounds;
     state.disputeWindowMs = cfg.disputeWindowMs ?? 0;
     state.decisionWindowMs = 0;
-    state.answerWindowMs = cfg.answerWindowMs ?? 0;
+    state.moveWindowMs = cfg.moveWindowMs ?? 0;
     state.paused = false;
     state.hostPaused = false;
     state.scratch = cfg.scratch;
@@ -652,8 +652,8 @@ export class GameEngine {
    * (everyone answered), a host advance, a pause, or a new round all cancel it harmlessly. No-op
    * while paused or when there is no timer.
    */
-  private armAnswerWindow(state: SessionState, module: GameModule, delayMs: number): void {
-    if (state.paused || state.answerWindowMs <= 0) return;
+  private armMoveWindow(state: SessionState, module: GameModule, delayMs: number): void {
+    if (state.paused || state.moveWindowMs <= 0) return;
     const { room, game, round, runId } = state;
     this.scheduler.schedule(Math.max(0, delayMs), () => {
       void this.run(sessionKey(room, game), async () => {
@@ -664,16 +664,16 @@ export class GameEngine {
           current.phase !== 'collecting' ||
           current.round !== round ||
           current.runId !== runId ||
-          current.answerDeadline === undefined
+          current.moveDeadline === undefined
         ) {
           return;
         }
         // Honor the current deadline, not this timer's original delay: a pause/resume pushes the
         // deadline out, so a timer armed before the pause must re-arm for the time left rather than
         // close the round early. Only when the deadline has truly passed do we advance.
-        const remaining = current.answerDeadline - this.clock();
+        const remaining = current.moveDeadline - this.clock();
         if (remaining > 0) {
-          this.armAnswerWindow(current, module, remaining);
+          this.armMoveWindow(current, module, remaining);
           return;
         }
         await this.advanceLocked(current, module);
@@ -682,31 +682,31 @@ export class GameEngine {
   }
 
   /** Freeze the answer countdown when the game pauses mid-`collecting` so it does not tick away. */
-  private freezeAnswerWindow(state: SessionState): void {
-    if (state.phase !== 'collecting' || state.answerDeadline === undefined) return;
-    state.answerRemainingMs = Math.max(0, state.answerDeadline - this.clock());
-    state.answerDeadline = undefined;
+  private freezeMoveWindow(state: SessionState): void {
+    if (state.phase !== 'collecting' || state.moveDeadline === undefined) return;
+    state.moveRemainingMs = Math.max(0, state.moveDeadline - this.clock());
+    state.moveDeadline = undefined;
   }
 
   /** Continue a frozen answer countdown from the time left and re-arm the force-close timer. */
-  private resumeAnswerWindow(state: SessionState, module: GameModule): void {
+  private resumeMoveWindow(state: SessionState, module: GameModule): void {
     if (state.phase !== 'collecting' || state.paused) return;
-    if (state.answerWindowMs > 0) {
-      const remaining = state.answerRemainingMs ?? state.answerWindowMs;
-      state.answerDeadline = this.clock() + remaining;
-      state.answerRemainingMs = undefined;
-      this.armAnswerWindow(state, module, remaining);
+    if (state.moveWindowMs > 0) {
+      const remaining = state.moveRemainingMs ?? state.moveWindowMs;
+      state.moveDeadline = this.clock() + remaining;
+      state.moveRemainingMs = undefined;
+      this.armMoveWindow(state, module, remaining);
     }
     // The pause also cancelled the all-answered 2s grace, so if the table had already finished, the
     // round would otherwise wait out the full window on resume. Re-arm it (feedback 0015).
-    if (module.allAnswered?.(this.context(state))) this.armAutoAdvance(state, module);
+    if (module.allSubmitted?.(this.context(state))) this.armAutoAdvance(state, module);
   }
 
   /**
    * Resume the guess window after a pause or host-reconnect: re-arm the force-close timer and, if
    * every connected player already guessed while the game was paused, re-arm the all-decided grace
    * close too. The pause cancelled the in-flight grace timer, so without this an all-guessed round
-   * would strand until a manual advance - the `guessing` analogue of {@link resumeAnswerWindow}'s
+   * would strand until a manual advance - the `guessing` analogue of {@link resumeMoveWindow}'s
    * all-answered re-arm (feedback 0015).
    */
   private resumeDecisionWindow(state: SessionState, module: GameModule): void {
@@ -774,10 +774,10 @@ export class GameEngine {
       // the frame time-dependent (`this.clock()`), so two `stateMessage` calls are not byte-equal -
       // intended, since a joiner must see the *current* remaining, and persistence stores the
       // absolute deadline, not this projection.
-      answerMsRemaining:
-        state.answerDeadline !== undefined
-          ? Math.max(0, state.answerDeadline - this.clock())
-          : state.answerRemainingMs,
+      moveMsRemaining:
+        state.moveDeadline !== undefined
+          ? Math.max(0, state.moveDeadline - this.clock())
+          : state.moveRemainingMs,
     };
   }
 
@@ -815,10 +815,10 @@ export class GameEngine {
   }
 
   /** A targeted refusal of one submission, sent by the socket to the submitting device only. */
-  private answerRejectedMessage(state: SessionState, reason: string): AnswerRejectedMessage {
+  private moveRejectedMessage(state: SessionState, reason: string): MoveRejectedMessage {
     return {
       v: PROTOCOL_VERSION,
-      type: 'answer_rejected',
+      type: 'move_rejected',
       room: state.room,
       game: state.game,
       round: state.round,

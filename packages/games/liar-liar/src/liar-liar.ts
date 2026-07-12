@@ -8,8 +8,8 @@
 // Lifecycle mapping onto spec 0020's hooks:
 //   configure     -> answer window = 90s
 //   startRound    -> draw an unused clue; the viewer shows it
-//   collectAnswer -> record a fake, or `rejected` a duplicate / the truth (a private reply)
-//   allAnswered   -> every connected player submitted a fake (early-close the submit window)
+//   collectMove -> record a fake, or `rejected` a duplicate / the truth (a private reply)
+//   allSubmitted   -> every connected player submitted a fake (early-close the submit window)
 //   reveal        -> options = all fakes + the truth (shuffled), returns `decision` (30s guess)
 //   collectVote   -> a guess (an option id) during the `guessing` phase
 //   allDecided    -> every connected player guessed (early-close the guess window)
@@ -160,7 +160,7 @@ export function createLiarLiarGame(
         attribution: {},
         guesses: {},
       };
-      return { scratch: toRecord(scratch), rounds: cfg.rounds, answerWindowMs: SUBMIT_WINDOW_MS };
+      return { scratch: toRecord(scratch), rounds: cfg.rounds, moveWindowMs: SUBMIT_WINDOW_MS };
     },
 
     startRound(ctx: RoundContext): StartRoundResult {
@@ -189,7 +189,7 @@ export function createLiarLiarGame(
       };
     },
 
-    collectAnswer(ctx: RoundContext, player: string, answer: string): ScratchResult {
+    collectMove(ctx: RoundContext, player: string, answer: string): ScratchResult {
       const current = asScratch(ctx.scratch);
       const unchanged = ctx.scratch as Record<string, unknown>;
       const trimmed = answer.trim();
@@ -216,7 +216,7 @@ export function createLiarLiarGame(
       return { scratch: toRecord(scratch) };
     },
 
-    allAnswered(ctx: RoundContext): boolean {
+    allSubmitted(ctx: RoundContext): boolean {
       const scratch = asScratch(ctx.scratch);
       const connected = ctx.players.filter((p) => p.connected);
       return (
@@ -228,7 +228,7 @@ export function createLiarLiarGame(
       const scratch = clone(asScratch(ctx.scratch));
       const clue = scratch.clue;
       if (!clue) throw new Error('liar-liar: reveal with no active clue');
-      // Options = the truth + every submitted fake; a duplicate fake is impossible (collectAnswer
+      // Options = the truth + every submitted fake; a duplicate fake is impossible (collectMove
       // rejected it), so every entry is distinct. Shuffle so the truth's position carries no tell.
       const entries: { text: string; attr: Attribution }[] = [
         { text: clue.answer, attr: { kind: 'truth' } },

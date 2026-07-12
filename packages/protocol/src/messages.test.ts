@@ -3,7 +3,7 @@ import { PROTOCOL_VERSION, ProtocolError } from './envelope';
 import {
   parseMessage,
   serializeMessage,
-  type AnswerMessage,
+  type MoveMessage,
   type JoinMessage,
   type ProtocolMessage,
   type VoteMessage,
@@ -56,17 +56,17 @@ describe('client game frames', () => {
     expect(parsed).toEqual(raw);
   });
 
-  it('parses an answer', () => {
+  it('parses a move', () => {
     const raw = {
       v: PROTOCOL_VERSION,
-      type: 'answer',
+      type: 'move',
       room: 'r1',
       game: 'stub',
       player: 'p1',
       round: 2,
-      answer: 'blue',
+      move: 'blue',
     };
-    const parsed = parseMessage(JSON.stringify(raw)) as AnswerMessage;
+    const parsed = parseMessage(JSON.stringify(raw)) as MoveMessage;
     expect(parsed).toEqual(raw);
   });
 
@@ -103,17 +103,17 @@ describe('client game frames', () => {
     ).toThrow(ProtocolError);
   });
 
-  it('rejects an answer with a non-integer round', () => {
+  it('rejects a move with a non-integer round', () => {
     expect(() =>
       parseMessage(
         JSON.stringify({
           v: PROTOCOL_VERSION,
-          type: 'answer',
+          type: 'move',
           room: 'r',
           game: 'g',
           player: 'p',
           round: 1.5,
-          answer: 'x',
+          move: 'x',
         }),
       ),
     ).toThrow(ProtocolError);

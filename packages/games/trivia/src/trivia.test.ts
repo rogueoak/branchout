@@ -137,7 +137,7 @@ describe('configure', () => {
     expect(DISPUTE_WINDOW_MS).toBe(10_000);
     expect(result.disputeWindowMs).toBe(10_000);
     expect(ANSWER_WINDOW_MS).toBe(60_000);
-    expect(result.answerWindowMs).toBe(60_000);
+    expect(result.moveWindowMs).toBe(60_000);
   });
 
   it('throws on invalid config so the engine rejects the start', () => {
@@ -175,9 +175,9 @@ describe('reveal scoring', () => {
     scratch = started.scratch;
     const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
 
-    scratch = game.collectAnswer(ctx(scratch), 'p1', answer).scratch; // exact
-    scratch = game.collectAnswer(ctx(scratch), 'p2', answer.slice(0, -1)).scratch; // 1-edit typo
-    scratch = game.collectAnswer(ctx(scratch), 'p3', 'totally wrong').scratch;
+    scratch = game.collectMove(ctx(scratch), 'p1', answer).scratch; // exact
+    scratch = game.collectMove(ctx(scratch), 'p2', answer.slice(0, -1)).scratch; // 1-edit typo
+    scratch = game.collectMove(ctx(scratch), 'p3', 'totally wrong').scratch;
 
     const revealed = game.reveal(ctx(scratch));
     const scored = new Set(revealed.scores.map((s) => s.player));
@@ -204,8 +204,8 @@ describe('reveal scoring', () => {
     scratch = started.scratch;
     const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
 
-    scratch = game.collectAnswer(ctx(scratch), 'p1', answer).scratch; // correct
-    scratch = game.collectAnswer(ctx(scratch), 'p2', '   ').scratch; // blank -> wrong
+    scratch = game.collectMove(ctx(scratch), 'p1', answer).scratch; // correct
+    scratch = game.collectMove(ctx(scratch), 'p2', '   ').scratch; // blank -> wrong
     // p3 never submits.
 
     const revealed = game.reveal(ctx(scratch));
@@ -224,9 +224,9 @@ describe('dispute resolution', () => {
     const scratch = game.configure({ category: 'Nature' }, players).scratch;
     let s = game.startRound(ctx(scratch)).scratch;
     const answer = `${questionAt(s, 1).id}-answer`;
-    s = game.collectAnswer(ctx(s), 'p1', answer).scratch;
-    s = game.collectAnswer(ctx(s), 'p2', 'wrong-a').scratch;
-    s = game.collectAnswer(ctx(s), 'p3', 'wrong-b').scratch;
+    s = game.collectMove(ctx(s), 'p1', answer).scratch;
+    s = game.collectMove(ctx(s), 'p2', 'wrong-a').scratch;
+    s = game.collectMove(ctx(s), 'p3', 'wrong-b').scratch;
     return game.reveal(ctx(s)).scratch;
   }
 
@@ -337,8 +337,8 @@ describe('dispute majority denominator (larger rosters)', () => {
     let s = game.configure({ category: 'Nature' }, seats).scratch;
     s = game.startRound(c(s)).scratch;
     const answer = `${questionAt(s, 1).id}-answer`;
-    s = game.collectAnswer(c(s), 'p1', answer).scratch;
-    for (const p of seats.slice(1)) s = game.collectAnswer(c(s), p.player, 'nope').scratch;
+    s = game.collectMove(c(s), 'p1', answer).scratch;
+    for (const p of seats.slice(1)) s = game.collectMove(c(s), p.player, 'nope').scratch;
     return game.reveal(c(s)).scratch;
   }
 

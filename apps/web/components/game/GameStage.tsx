@@ -25,7 +25,7 @@ interface GameStageProps {
   /** The player's chosen mode (the host is a player, so it has one too); absent for observers. */
   mode?: Mode;
   isHost: boolean;
-  onAnswer: (round: number, answer: string) => void;
+  onMove: (round: number, answer: string) => void;
   /** The generic vote action (Trivia dispute/ballot, Liar Liar guess); the game module maps it. */
   onVote: (round: number, target: string, agree: boolean) => void;
   onControl: (action: HostControl) => void;
@@ -90,7 +90,7 @@ export function GameStage({
   role,
   mode,
   isHost,
-  onAnswer,
+  onMove,
   onVote,
   onControl,
 }: GameStageProps) {
@@ -158,7 +158,7 @@ export function GameStage({
               // between-round leaderboard and the final results.
               showResults={!viewerVisible}
               isHost={isHost}
-              onAnswer={onAnswer}
+              onMove={onMove}
               onVote={onVote}
             />
           </div>

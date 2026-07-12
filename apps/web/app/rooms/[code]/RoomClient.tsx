@@ -166,7 +166,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
         }
       : null;
 
-  const { state, submitAnswer, submitVote } = useGameClient(gameOptions);
+  const { state, submitMove, submitVote } = useGameClient(gameOptions);
 
   // Analytics (spec 0032): "game completed" should be ONE event per finished game. Fire only on a real
   // transition INTO `complete` from a prior non-complete phase (a ref tracks the previous phase) - so a
@@ -359,7 +359,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
                 role={membership.role}
                 mode={membership.mode}
                 isHost={isHost}
-                onAnswer={submitAnswer}
+                onMove={submitMove}
                 onVote={submitVote}
                 onControl={onControl}
               />

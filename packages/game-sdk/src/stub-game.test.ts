@@ -37,8 +37,8 @@ describe('stubGame.configure', () => {
 describe('stubGame reveal scoring', () => {
   it('awards 100 for a normalized-correct answer and nothing otherwise', () => {
     const scratch = stubGame.configure({ secrets: ['Blue'] }, players).scratch;
-    let s = stubGame.collectAnswer(ctx({ scratch }), 'p1', '  BLUE ').scratch;
-    s = stubGame.collectAnswer(ctx({ scratch: s }), 'p2', 'red').scratch;
+    let s = stubGame.collectMove(ctx({ scratch }), 'p1', '  BLUE ').scratch;
+    s = stubGame.collectMove(ctx({ scratch: s }), 'p2', 'red').scratch;
     const reveal = stubGame.reveal(ctx({ scratch: s }));
     expect(reveal.scores).toEqual([{ player: 'p1', points: 100, reason: 'correct answer' }]);
   });

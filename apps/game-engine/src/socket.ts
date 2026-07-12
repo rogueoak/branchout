@@ -20,7 +20,7 @@ interface Bound {
 /**
  * Attach the realtime endpoint and route player frames to the engine. A device connects, sends a
  * `join`, and is bound to a room/game/player; the engine's streamed frames for that session are
- * forwarded to it via pub/sub. `answer` and `vote` frames are accepted only for the session the
+ * forwarded to it via pub/sub. `move` and `vote` frames are accepted only for the session the
  * device joined, so one socket cannot act on another room's game.
  *
  * `echo` still round-trips as a transport health check.
@@ -76,24 +76,24 @@ export function attachGameSocket(
       return;
     }
     const bound = bindings.get(connection);
-    // answer/vote require a prior join to the same session.
+    // move/vote require a prior join to the same session.
     if (!bound || bound.room !== message.room || bound.game !== message.game) {
-      fail(connection, 'join a session before sending answers or votes');
+      fail(connection, 'join a session before sending moves or votes');
       return;
     }
     if (message.player !== bound.player) {
       fail(connection, 'cannot act on behalf of another player');
       return;
     }
-    if (message.type === 'answer') {
+    if (message.type === 'move') {
       // The engine may refuse this one submission (a duplicate or the correct answer in a bluffing
       // game); if so it hands back a targeted frame we send to this device alone - never a broadcast.
-      const result = await engine.submitAnswer(
+      const result = await engine.submitMove(
         bound.room,
         bound.game,
         bound.player,
         message.round,
-        message.answer,
+        message.move,
       );
       if (result.reject) connection.send(result.reject);
     } else {

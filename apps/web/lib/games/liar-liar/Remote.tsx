@@ -22,7 +22,7 @@ export function LiarLiarRemote({
   me,
   showResults = false,
   isHost = false,
-  onAnswer,
+  onMove,
   onVote,
 }: GameRemoteProps) {
   const { phase, round } = state;
@@ -44,14 +44,14 @@ export function LiarLiarRemote({
   const trimmed = draft.trim();
   const submittedThisDraft = submittedRound === round && trimmed.length > 0 && trimmed === myLie;
   // The engine rejects a lie (a duplicate or the truth) only for the submitter, via the
-  // answer_rejected frame the reducer stored in `state.rejected`. Show it while the draft still
+  // move_rejected frame the reducer stored in `state.rejected`. Show it while the draft still
   // matches the rejected submission; editing the draft dismisses it so a retype reads clean.
   const rejectedThisDraft =
     state.rejected !== null && submittedRound === round && trimmed === myLie;
 
   function submit() {
     if (!trimmed) return;
-    onAnswer(round, trimmed);
+    onMove(round, trimmed);
     setMyLie(trimmed);
     setSubmittedRound(round);
   }

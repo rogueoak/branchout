@@ -1,5 +1,5 @@
 // The in-game state machine, as a pure reducer over the server frames (spec 0007's
-// prompt/reveal/leaderboard/state, plus 0020's answer_rejected). The client is a view over engine
+// prompt/reveal/leaderboard/state, plus 0020's move_rejected). The client is a view over engine
 // state: it never runs a timer or tallies a vote - it folds each frame the engine reports into one
 // snapshot the UI renders by phase. Keeping this pure (no sockets, no React) makes the whole phase
 // machine unit-testable against a list of frames.
@@ -27,11 +27,11 @@ export interface GameState {
   /** The playerIds under dispute this round - the exact set the vote UI offers a ballot on. */
   disputes: string[];
   /**
-   * Milliseconds left in the answer window as of the last `state` frame, or null when there is no
+   * Milliseconds left in the move window as of the last `state` frame, or null when there is no
    * timer (spec 0017). A countdown hook anchors this to the local clock; while paused it is the
    * frozen remaining.
    */
-  answerMsRemaining: number | null;
+  moveMsRemaining: number | null;
   /** The current round's opaque prompt payload, or null before the first prompt / between rounds. */
   prompt: unknown;
   /**
@@ -44,7 +44,7 @@ export interface GameState {
   /** The latest standings - the between-round leaderboard and the final results. */
   standings: Standing[];
   /**
-   * The reason the engine rejected this device's last submission (spec 0020's `answer_rejected`), or
+   * The reason the engine rejected this device's last submission (spec 0020's `move_rejected`), or
    * null. Set on the targeted reject frame, cleared on the next prompt. The remote clears it too on a
    * fresh submit; a game that never rejects leaves it null.
    */
@@ -63,7 +63,7 @@ export function initialGameState(): GameState {
     players: [],
     scores: {},
     disputes: [],
-    answerMsRemaining: null,
+    moveMsRemaining: null,
     prompt: null,
     reveals: [],
     standings: [],
@@ -77,8 +77,8 @@ interface ErrorFrame {
   type: 'error';
   message: string;
 }
-interface AnswerRejectedFrame {
-  type: 'answer_rejected';
+interface MoveRejectedFrame {
+  type: 'move_rejected';
   round: number;
   reason: string;
 }
@@ -86,7 +86,7 @@ interface AnswerRejectedFrame {
 /** Fold one server frame into the state. Returns a new object; never mutates the input. */
 export function reduceGameState(
   state: GameState,
-  frame: ServerMessage | ErrorFrame | AnswerRejectedFrame,
+  frame: ServerMessage | ErrorFrame | MoveRejectedFrame,
 ): GameState {
   switch (frame.type) {
     case 'state':
@@ -101,8 +101,8 @@ export function reduceGameState(
         // Default at the boundary: a `state` frame from a peer predating the `disputes` field
         // (same PROTOCOL_VERSION, additive change) omits it, and "absent" means "no disputers".
         disputes: frame.disputes ?? [],
-        // Absent when there is no answer timer (or a pre-0017 peer); null means "no countdown".
-        answerMsRemaining: frame.answerMsRemaining ?? null,
+        // Absent when there is no move timer (or a pre-0017 peer); null means "no countdown".
+        moveMsRemaining: frame.moveMsRemaining ?? null,
         error: null,
       };
 
@@ -127,7 +127,7 @@ export function reduceGameState(
     case 'leaderboard':
       return { ...state, standings: frame.standings };
 
-    case 'answer_rejected':
+    case 'move_rejected':
       return { ...state, rejected: frame.reason };
 
     case 'error':

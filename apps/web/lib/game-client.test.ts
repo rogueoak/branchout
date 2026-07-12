@@ -102,19 +102,19 @@ describe('GameClient', () => {
     expect(client.getState().joined).toBe(false);
   });
 
-  it('sends answer and generic vote frames', () => {
+  it('sends move and generic vote frames', () => {
     const { client, sockets } = makeClient();
     client.connect();
     sockets[0]!.onopen?.();
 
-    client.submitAnswer(2, 'water');
+    client.submitMove(2, 'water');
     // The one generic vote action carries every game's vote: a Trivia dispute (target = self) or
     // ballot, or a Liar Liar guess (target = the chosen option id).
     client.submitVote(2, 'p1', true);
     client.submitVote(2, 'p3', true);
 
     const frames = sockets[0]!.frames().slice(1); // drop the join
-    expect(frames[0]).toMatchObject({ type: 'answer', round: 2, answer: 'water', player: 'p1' });
+    expect(frames[0]).toMatchObject({ type: 'move', round: 2, move: 'water', player: 'p1' });
     expect(frames[1]).toMatchObject({ type: 'vote', round: 2, target: 'p1', agree: true });
     expect(frames[2]).toMatchObject({ type: 'vote', round: 2, target: 'p3', agree: true });
   });

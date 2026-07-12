@@ -94,25 +94,25 @@ export const deciderGame: GameModule = {
     };
   },
 
-  collectAnswer(ctx: RoundContext, player: string, answer: string): ScratchResult {
+  collectMove(ctx: RoundContext, player: string, move: string): ScratchResult {
     const scratch = clone(asScratch(ctx.scratch));
     const key = String(ctx.round);
     const round = (scratch.submitted[key] ??= {});
     const truth = truthFor(scratch, ctx.round);
     // Reject the truth or a fake another player already claimed - with a deliberately vague reason.
-    if (norm(answer) === norm(truth)) {
+    if (norm(move) === norm(truth)) {
       return { scratch: ctx.scratch as Record<string, unknown>, rejected: { reason: 'taken' } };
     }
     for (const [other, fake] of Object.entries(round)) {
-      if (other !== player && norm(fake) === norm(answer)) {
+      if (other !== player && norm(fake) === norm(move)) {
         return { scratch: ctx.scratch as Record<string, unknown>, rejected: { reason: 'taken' } };
       }
     }
-    round[player] = answer;
+    round[player] = move;
     return { scratch: toRecord(scratch) };
   },
 
-  allAnswered(ctx: RoundContext): boolean {
+  allSubmitted(ctx: RoundContext): boolean {
     const scratch = asScratch(ctx.scratch);
     const round = scratch.submitted[String(ctx.round)] ?? {};
     const connected = ctx.players.filter((p) => p.connected);

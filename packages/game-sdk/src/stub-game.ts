@@ -27,7 +27,7 @@ export const STUB_GAME_ID = 'stub';
 export interface StubConfig {
   rounds?: number;
   disputeWindowMs?: number;
-  answerWindowMs?: number;
+  moveWindowMs?: number;
   /** The correct answer for each round; the last entry repeats if there are more rounds. */
   secrets?: string[];
 }
@@ -86,7 +86,7 @@ export const stubGame: GameModule = {
       scratch: scratch as unknown as Record<string, unknown>,
       rounds,
       disputeWindowMs: cfg.disputeWindowMs ?? 0,
-      answerWindowMs: cfg.answerWindowMs ?? 0,
+      moveWindowMs: cfg.moveWindowMs ?? 0,
     };
   },
 
@@ -100,17 +100,17 @@ export const stubGame: GameModule = {
     };
   },
 
-  collectAnswer(ctx: RoundContext, player: string, answer: string): ScratchResult {
+  collectMove(ctx: RoundContext, player: string, move: string): ScratchResult {
     const scratch = clone(asScratch(ctx.scratch));
     const key = String(ctx.round);
     const round = (scratch.submitted[key] ??= {});
-    round[player] = answer;
+    round[player] = move;
     return { scratch: scratch as unknown as Record<string, unknown> };
   },
 
-  // Mirror the generic "everyone answered" predicate the engine auto-advances on (feedback 0015):
+  // Mirror the generic "everyone submitted" predicate the engine auto-advances on (feedback 0015):
   // true once every connected player has submitted this round.
-  allAnswered(ctx: RoundContext): boolean {
+  allSubmitted(ctx: RoundContext): boolean {
     const scratch = asScratch(ctx.scratch);
     const round = scratch.submitted[String(ctx.round)] ?? {};
     const connected = ctx.players.filter((p) => p.connected);

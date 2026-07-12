@@ -4,7 +4,7 @@
 // attach.
 //
 // The generic round lifecycle the engine drives:
-//   configure -> startRound -> collectAnswers -> reveal/score -> disputeWindow -> disputeVote ->
+//   configure -> startRound -> collectMove -> reveal/score -> disputeWindow -> disputeVote ->
 //   leaderboard -> advance   (repeat per round), plus endGame.
 //
 // A module is a set of pure callbacks over a `RoundContext`: it reads the session and returns the
@@ -46,10 +46,10 @@ export interface ConfigureResult {
   /** Dispute-window duration in ms. 0 (default) means the host advances it manually. */
   disputeWindowMs?: number;
   /**
-   * Answer-window duration in ms: the engine force-closes the answer round to reveal when it
-   * expires (spec 0017). 0 (default) means no timer - the round waits on all-answered or the host.
+   * Move-window duration in ms: the engine force-closes the move round to reveal when it
+   * expires (spec 0017). 0 (default) means no timer - the round waits on all-submitted or the host.
    */
-  answerWindowMs?: number;
+  moveWindowMs?: number;
 }
 
 export interface StartRoundResult {
@@ -103,8 +103,8 @@ export interface DecisionResult {
 }
 
 /**
- * A callback that only mutates the module's scratch (collecting answers and votes). `rejected`, when
- * set by {@link GameModule.collectAnswer}, tells the engine to refuse this one submission: it writes
+ * A callback that only mutates the module's scratch (collecting moves and votes). `rejected`, when
+ * set by {@link GameModule.collectMove}, tells the engine to refuse this one submission: it writes
  * no scratch and replies to the submitting device alone with the reason (never a broadcast).
  */
 export interface ScratchResult {
@@ -122,16 +122,16 @@ export interface GameModule {
   /** Produce the prompt for a round. */
   startRound(ctx: RoundContext): StartRoundResult;
 
-  /** Record one player's answer for the current round. */
-  collectAnswer(ctx: RoundContext, player: string, answer: string): ScratchResult;
+  /** Record one player's move for the current round. */
+  collectMove(ctx: RoundContext, player: string, move: string): ScratchResult;
 
   /**
-   * True when the current answer round is complete - every connected player has submitted - so the
+   * True when the current move round is complete - every connected player has submitted - so the
    * engine can auto-close it after a short grace period instead of waiting on a host tap. The engine
-   * asks after each answer *and* when a player disconnects (a drop can complete the round for the
+   * asks after each move *and* when a player disconnects (a drop can complete the round for the
    * remaining players). Optional: a game that omits it never auto-advances and relies on the host.
    */
-  allAnswered?(ctx: RoundContext): boolean;
+  allSubmitted?(ctx: RoundContext): boolean;
 
   /** Score the round and produce the reveal payload. */
   reveal(ctx: RoundContext): RevealResult;
@@ -141,7 +141,7 @@ export interface GameModule {
 
   /**
    * True when the guess phase is complete - every connected player has guessed - so the engine can
-   * auto-close it, mirroring {@link allAnswered}. Only consulted while `guessing`; optional, so a
+   * auto-close it, mirroring {@link allSubmitted}. Only consulted while `guessing`; optional, so a
    * game without a guess phase never implements it.
    */
   allDecided?(ctx: RoundContext): boolean;

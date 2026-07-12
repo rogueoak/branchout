@@ -30,26 +30,26 @@ describe('deciderGame', () => {
     let s = deciderGame.configure({ truths: ['blue'] }, players).scratch;
     s = deciderGame.startRound(ctx('collecting', s)).scratch;
 
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p1', 'red').scratch;
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p2', 'green').scratch;
+    s = deciderGame.collectMove(ctx('collecting', s), 'p1', 'red').scratch;
+    s = deciderGame.collectMove(ctx('collecting', s), 'p2', 'green').scratch;
 
     // The truth is refused.
-    const truth = deciderGame.collectAnswer(ctx('collecting', s), 'p3', 'Blue');
+    const truth = deciderGame.collectMove(ctx('collecting', s), 'p3', 'Blue');
     expect(truth.rejected?.reason).toBe('taken');
     // A duplicate of p1's fake is refused (and nothing was recorded for p3).
-    const dup = deciderGame.collectAnswer(ctx('collecting', s), 'p3', 'RED');
+    const dup = deciderGame.collectMove(ctx('collecting', s), 'p3', 'RED');
     expect(dup.rejected?.reason).toBe('taken');
 
     // A fresh fake is accepted.
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p3', 'yellow').scratch;
-    expect(deciderGame.allAnswered?.(ctx('collecting', s))).toBe(true);
+    s = deciderGame.collectMove(ctx('collecting', s), 'p3', 'yellow').scratch;
+    expect(deciderGame.allSubmitted?.(ctx('collecting', s))).toBe(true);
   });
 
   it('reveals the options and requests a guess window', () => {
     let s = deciderGame.configure({ truths: ['blue'], windowMs: 15000 }, players).scratch;
     s = deciderGame.startRound(ctx('collecting', s)).scratch;
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p1', 'red').scratch;
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p2', 'green').scratch;
+    s = deciderGame.collectMove(ctx('collecting', s), 'p1', 'red').scratch;
+    s = deciderGame.collectMove(ctx('collecting', s), 'p2', 'green').scratch;
 
     const revealed = deciderGame.reveal(ctx('collecting', s));
     expect(revealed.decision).toEqual({ windowMs: 15000 });
@@ -62,9 +62,9 @@ describe('deciderGame', () => {
   it('scores a correct guess 100 and a fooled author 50 per guesser', () => {
     let s = deciderGame.configure({ truths: ['blue'] }, players).scratch;
     s = deciderGame.startRound(ctx('collecting', s)).scratch;
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p1', 'red').scratch;
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p2', 'green').scratch;
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p3', 'yellow').scratch;
+    s = deciderGame.collectMove(ctx('collecting', s), 'p1', 'red').scratch;
+    s = deciderGame.collectMove(ctx('collecting', s), 'p2', 'green').scratch;
+    s = deciderGame.collectMove(ctx('collecting', s), 'p3', 'yellow').scratch;
     s = deciderGame.reveal(ctx('collecting', s)).scratch;
 
     // p1 guesses the truth; p2 picks p1's fake; p3 picks p2's fake.
@@ -96,7 +96,7 @@ describe('deciderGame', () => {
   it('ignores a guess a player makes for their own fake', () => {
     let s = deciderGame.configure({ truths: ['blue'] }, players).scratch;
     s = deciderGame.startRound(ctx('collecting', s)).scratch;
-    s = deciderGame.collectAnswer(ctx('collecting', s), 'p1', 'red').scratch;
+    s = deciderGame.collectMove(ctx('collecting', s), 'p1', 'red').scratch;
     // p1 tries to guess its own fake -> not recorded.
     s = deciderGame.collectVote(ctx('guessing', s), {
       player: 'p1',

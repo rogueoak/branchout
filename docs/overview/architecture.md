@@ -315,7 +315,7 @@ as its own CI job so the normal test loop never needs Docker.
 `packages/protocol` is the source of truth for two channels, each a versioned envelope (`v`)
 so a shape can change without breaking older peers:
 
-- **Player <-> engine (WebSocket).** Client frames `join`, `answer`, `vote`; server frames
+- **Player <-> engine (WebSocket).** Client frames `join`, `move`, `vote`; server frames
   `prompt`, `reveal`, `leaderboard`, `state`. Each game frame is keyed by room + game (client
   frames also by player). `parseMessage` validates ingress; the engine constructs egress. The
   `state` frame carries the round's `disputes` (playerIds) so a client can render the voting phase.
@@ -342,7 +342,7 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   `GamePlugin`: a manifest (id, name, version, a config schema, capabilities) plus a
   `create(services)` factory the harness calls with injected dependencies (an rng, a logger, a
   per-package asset loader), returning the pure `GameModule` that implements the generic round
-  lifecycle (`configure -> startRound -> collectAnswers -> reveal -> disputeWindow -> disputeVote
+  lifecycle (`configure -> startRound -> collectMove -> reveal -> disputeWindow -> disputeVote
   -> leaderboard -> advance`, plus `endGame`). The engine's composition root builds the services,
   `registerPlugins` instantiates each plugin into the registry and collects its config schema, and
   `/sessions` validates the handoff config against that schema before configuring; the engine still
@@ -352,8 +352,8 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   two opt-in post-reveal shapes (spec `0020`): the `disputing -> voting` dispute path (Trivia), or a
   generic **guess** phase - `reveal` returns a `decision`, the engine opens a `guessing` window,
   collects choices via the `vote` frame, then calls `resolveDecision` to score (the shape Liar Liar
-  uses). A module may also **reject a single submission** (`collectAnswer` returns `rejected`): the
-  engine replies to that one device with a targeted `answer_rejected` frame and writes no state -
+  uses). A module may also **reject a single submission** (`collectMove` returns `rejected`): the
+  engine replies to that one device with a targeted `move_rejected` frame and writes no state -
   never a broadcast (used for "someone already submitted that" in a bluffing game).
 - **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for
   the life of a game, recovered on reconnect. It also persists the current phase's streamed frames

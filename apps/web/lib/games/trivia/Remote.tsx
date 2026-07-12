@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 import type { GameState } from '../../game-state';
 import { asTriviaPrompt, pickTriviaRoundReveal } from './protocol';
 import { difficultyBand } from './config';
-import { useAnswerCountdown } from '../../use-answer-countdown';
+import { useMoveCountdown } from '../../use-move-countdown';
 import { FinalResults } from '../../../components/game/FinalResults';
 import { Leaderboard } from '../../../components/game/Leaderboard';
 
@@ -30,7 +30,7 @@ interface RemotePaneProps {
   /** True when the controller belongs to the host, who advances rounds itself (spec 0013). Used to
    * make between-round copy self-aware ("Tap Next when you're ready") instead of "waiting". */
   isHost?: boolean;
-  onAnswer: (round: number, answer: string) => void;
+  onMove: (round: number, answer: string) => void;
   /** The generic vote action: a Trivia dispute is a self-target, a ballot targets the disputer. */
   onVote: (round: number, target: string, agree: boolean) => void;
 }
@@ -44,7 +44,7 @@ export function RemotePane({
   me,
   showResults = false,
   isHost = false,
-  onAnswer,
+  onMove,
   onVote,
 }: RemotePaneProps) {
   const { phase, round, disputes } = state;
@@ -54,7 +54,7 @@ export function RemotePane({
   const [answer, setAnswer] = useState('');
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
   const [disputedRound, setDisputedRound] = useState<number | null>(null);
-  const secondsLeft = useAnswerCountdown(state.answerMsRemaining, state.round, state.paused);
+  const secondsLeft = useMoveCountdown(state.moveMsRemaining, state.round, state.paused);
 
   // A new round clears the draft and the per-round submission flags.
   useEffect(() => {
@@ -77,9 +77,9 @@ export function RemotePane({
     }
     const trimmed = answer.trim();
     if (!trimmed) return;
-    onAnswer(round, trimmed);
+    onMove(round, trimmed);
     setSubmittedRound(round);
-  }, [secondsLeft, phase, state.paused, round, submittedRound, answer, onAnswer]);
+  }, [secondsLeft, phase, state.paused, round, submittedRound, answer, onMove]);
 
   // "Time is up" only when the clock has truly run out (not merely paused at some remaining).
   const timeUp = secondsLeft === 0 && !state.paused;
@@ -92,7 +92,7 @@ export function RemotePane({
   function submit() {
     const trimmed = answer.trim();
     if (!trimmed) return;
-    onAnswer(round, trimmed);
+    onMove(round, trimmed);
     setSubmittedRound(round);
   }
 

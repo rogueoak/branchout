@@ -3,7 +3,7 @@
 // scaffold: `echo` (proves the transport end to end) and `error` (the server's reply to a frame
 // it cannot understand).
 //
-// Client -> server: join, answer, vote. Server -> client: prompt, reveal, leaderboard, state.
+// Client -> server: join, move, vote. Server -> client: prompt, reveal, leaderboard, state.
 
 import {
   PROTOCOL_VERSION,
@@ -43,15 +43,15 @@ export interface JoinMessage {
   nickname: string;
 }
 
-/** A player submits their answer for the current round. */
-export interface AnswerMessage {
+/** A player submits their move for the current round. */
+export interface MoveMessage {
   v: number;
-  type: 'answer';
+  type: 'move';
   room: string;
   game: string;
   player: string;
   round: number;
-  answer: string;
+  move: string;
 }
 
 /**
@@ -70,7 +70,7 @@ export interface VoteMessage {
   agree: boolean;
 }
 
-export type ClientMessage = JoinMessage | AnswerMessage | VoteMessage;
+export type ClientMessage = JoinMessage | MoveMessage | VoteMessage;
 
 // --- server -> client (broadcasts keyed by room/game) ---
 
@@ -102,9 +102,9 @@ export interface RevealMessage {
  * The `reason` is deliberately vague ("someone already submitted that"). Additive, server->client
  * only (never parsed off the wire), under the same `PROTOCOL_VERSION`.
  */
-export interface AnswerRejectedMessage {
+export interface MoveRejectedMessage {
   v: number;
-  type: 'answer_rejected';
+  type: 'move_rejected';
   room: string;
   game: string;
   round: number;
@@ -144,19 +144,19 @@ export interface StateMessage {
    */
   disputes?: string[];
   /**
-   * Milliseconds left in the answer window for the round in play, or absent when there is no timer
+   * Milliseconds left in the move window for the round in play, or absent when there is no timer
    * (spec 0017). Sent as *remaining* rather than an absolute deadline so a client anchors it to its
-   * own clock (`Date.now() + answerMsRemaining`), immune to client/server clock skew, and a
+   * own clock (`Date.now() + moveMsRemaining`), immune to client/server clock skew, and a
    * reconnecting device gets the true time left. While paused it carries the frozen remaining.
    *
    * Optional/additive under the same `PROTOCOL_VERSION`: a peer predating it still parses a valid
-   * `state` frame, and a reader treats its absence as "no answer timer".
+   * `state` frame, and a reader treats its absence as "no move timer".
    */
-  answerMsRemaining?: number;
+  moveMsRemaining?: number;
 }
 
 export type ServerMessage =
-  PromptMessage | RevealMessage | LeaderboardMessage | StateMessage | AnswerRejectedMessage;
+  PromptMessage | RevealMessage | LeaderboardMessage | StateMessage | MoveRejectedMessage;
 
 export type ProtocolMessage = EchoMessage | ErrorMessage | ClientMessage | ServerMessage;
 
@@ -179,15 +179,15 @@ function parseJoin(data: Record<string, unknown>): JoinMessage {
   };
 }
 
-function parseAnswer(data: Record<string, unknown>): AnswerMessage {
+function parseMove(data: Record<string, unknown>): MoveMessage {
   return {
     v: PROTOCOL_VERSION,
-    type: 'answer',
+    type: 'move',
     room: requireId(data, 'room'),
     game: requireId(data, 'game'),
     player: requireId(data, 'player'),
     round: requireInt(data, 'round'),
-    answer: requireString(data, 'answer'),
+    move: requireString(data, 'move'),
   };
 }
 
@@ -208,7 +208,7 @@ function parseVote(data: Record<string, unknown>): VoteMessage {
  * Decode and validate a raw wire frame from a client. Throws {@link ProtocolError} on anything
  * that is not a well-formed client message, so callers never see a half-parsed object.
  *
- * Only the frames the engine accepts on ingress (echo, join, answer, vote) are validated here;
+ * Only the frames the engine accepts on ingress (echo, join, move, vote) are validated here;
  * server-bound frames are constructed by the engine, never parsed off the wire.
  */
 export function parseMessage(raw: string): IngressMessage {
@@ -237,8 +237,8 @@ export function parseMessage(raw: string): IngressMessage {
   switch (data.type) {
     case 'join':
       return parseJoin(data);
-    case 'answer':
-      return parseAnswer(data);
+    case 'move':
+      return parseMove(data);
     case 'vote':
       return parseVote(data);
     default:
