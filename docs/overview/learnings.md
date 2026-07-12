@@ -336,6 +336,15 @@ Capture durable lessons as they emerge.
   else, with no cross-repo token. Pin the content by a git tag in a version file so it rolls back with
   the code. Keep the sync **best-effort** (on fetch/checkout failure, keep the last-good checkout and
   continue) so an unrelated app deploy is never blocked on the data pipeline. (Spec `0041`.)
+- **A "pull the pinned ref" sync must FORCE and CLEAN, not plain-checkout.** The first real promote
+  bumped the data version but the box stayed on the old tag: a stray untracked file on the box
+  collided with a tracked file in the target tag, so `git checkout --detach` aborted - and because
+  the sync is best-effort, it warned and kept the old data (a green deploy running stale content).
+  A box-side working tree drifts (leftover files, partial writes), so a re-sync must be idempotent
+  against any tree state: `git fetch` then `git clean -fd` then `git checkout -f --detach <tag>` -
+  the same hard-reset robustness branchout's own self-sync already uses (`git reset --hard`). Pair
+  best-effort with force: silently-keep-last-good hides a wedged sync unless the checkout can't fail
+  for an avoidable reason. (Spec `0041`.)
 - **A read-only bind mount from a host path is docker-rollout-safe; a mount that both instances read
   is fine to double.** Serving game data from a `:ro` host bind mount works with the zero-downtime
   swap because the path is identical and read-only on both Compose-indexed instances - nothing to
