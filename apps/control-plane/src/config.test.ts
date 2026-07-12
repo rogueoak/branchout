@@ -22,6 +22,14 @@ describe('loadConfig cookie policy', () => {
     expect(loadConfig({ ...base, COOKIE_SAMESITE: 'bogus' }).cookie.sameSite).toBe('lax');
   });
 
+  it('leaves the cookie host-only by default, and scopes to a parent domain when set (spec 0035)', () => {
+    // Unset -> no domain key at all (host-only), never `domain: undefined`.
+    expect('domain' in loadConfig({ ...base }).cookie).toBe(false);
+    expect(loadConfig({ ...base, COOKIE_DOMAIN: '.branchout.games' }).cookie.domain).toBe(
+      '.branchout.games',
+    );
+  });
+
   it('parses a comma-separated web origin allowlist', () => {
     const config = loadConfig({
       ...base,

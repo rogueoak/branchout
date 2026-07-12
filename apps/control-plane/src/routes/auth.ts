@@ -27,6 +27,9 @@ function cookieOptions(cookie: SessionCookieConfig) {
     httpOnly: true,
     secure: cookie.secure,
     sameSite: cookie.sameSite,
+    // A parent domain (spec 0035) makes one session span the apex + subdomains; omitted keeps it
+    // host-only. Spread so an unset domain never emits `Domain=undefined`.
+    ...(cookie.domain ? { domain: cookie.domain } : {}),
     path: '/',
     maxAge: cookie.ttlSeconds,
   } as const;
@@ -41,7 +44,12 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   };
 
   const clearSessionCookie = (reply: FastifyReply): void => {
-    reply.clearCookie(cookie.name, { path: '/' });
+    // Match path + domain so a domain-scoped session cookie (spec 0035) is actually cleared, not
+    // shadowed by a lingering host-only clear.
+    reply.clearCookie(cookie.name, {
+      path: '/',
+      ...(cookie.domain ? { domain: cookie.domain } : {}),
+    });
   };
 
   const currentSession = async (request: FastifyRequest): Promise<Session | null> => {

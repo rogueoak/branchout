@@ -4,6 +4,12 @@ const nextConfig = {
     // Linting runs through the shared flat config via `pnpm lint`, not Next's bundled setup.
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    // Enables `forbidden()` / `unauthorized()` (Next 15.1): the insiders layout (spec 0035) calls
+    // `forbidden()` for a signed-in non-insider so the app returns a real, styled 403 rather than a
+    // 200 "not allowed" page.
+    authInterrupts: true,
+  },
   // First-party analytics proxy (spec 0032): PostHog JS points at the same-origin `/ingest` path, and
   // these rewrites forward it to the PostHog US cloud - so the browser only ever calls our own domain
   // (no third-party tracker hostname; ad/tracking blockers that target PostHog do not drop our data).

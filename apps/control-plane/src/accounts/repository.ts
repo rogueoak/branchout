@@ -27,6 +27,8 @@ export interface Account {
   avatar: string;
   /** Who may see the full profile (spec 0027). */
   visibility: ProfileVisibility;
+  /** Beta-tester entitlement (spec 0035): gates the insiders surface. Granted out-of-band for now. */
+  insider: boolean;
   emailVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -75,6 +77,7 @@ interface AccountRow {
   nickname: string;
   avatar: string;
   profile_visibility: ProfileVisibility;
+  insider: boolean;
   email_verified: boolean;
   created_at: Date;
   updated_at: Date;
@@ -90,6 +93,7 @@ function mapRow(row: AccountRow): Account {
     nickname: row.nickname,
     avatar: row.avatar,
     visibility: row.profile_visibility,
+    insider: row.insider,
     emailVerified: row.email_verified,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

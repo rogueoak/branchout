@@ -18,6 +18,8 @@ export interface Viewer {
   gamerTag?: string;
   nickname?: string;
   avatar?: string;
+  /** Beta-tester entitlement (spec 0035): whether this account may see the insiders surface. */
+  insider?: boolean;
 }
 
 const SIGNED_OUT: Viewer = { signedIn: false };
@@ -45,7 +47,7 @@ export async function getViewer(): Promise<Viewer> {
 
     const data = (await res.json()) as {
       kind?: string;
-      account?: { gamerTag?: string; nickname?: string; avatar?: string };
+      account?: { gamerTag?: string; nickname?: string; avatar?: string; insider?: boolean };
     };
     if (data.kind !== 'account' || !data.account) return SIGNED_OUT;
     return {
@@ -53,6 +55,7 @@ export async function getViewer(): Promise<Viewer> {
       gamerTag: data.account.gamerTag,
       nickname: data.account.nickname,
       avatar: data.account.avatar,
+      insider: data.account.insider ?? false,
     };
   } catch {
     // Control plane unreachable or session check failed - show the anonymous view.

@@ -128,6 +128,32 @@ into the web image build (a build arg in `apps/web/Dockerfile`, sourced from the
 repo variable in `release.yml`) - the same build-time baking `NEXT_PUBLIC_SITE_URL` needs; a missing
 key yields an analytics-off bundle. The privacy policy (spec `0031`) describes exactly this.
 
+## Subdomain surfaces and the insider role (spec 0035)
+
+The insiders surface lives at `insiders.branchout.games` but is served by the **same `web` process** -
+no extra container on the RAM-bound droplet. `apps/web/middleware.ts` is host-aware: a request whose
+`Host` starts with `insiders.` is invisibly **rewritten** into the `/insiders` route tree (Caddy
+preserves the upstream `Host`, so `web` sees the subdomain); everything else is the main site. The
+detection is a bare-label check (`host.startsWith('insiders.')` in `lib/subdomain.ts`), so it works in
+prod and in local/e2e where `*.localhost` resolves to 127.0.0.1. The routing logic is pure and
+unit-tested; the middleware is a thin adapter.
+
+**Routing is not authorization.** Middleware only routes (plus a cheap signed-out shortcut to the
+**apex** login - crossing off the gated host so it never loops the login page back through the tree).
+The `app/insiders/layout.tsx` is the authoritative gate, run server-side on every insiders page: not
+signed in -> apex login; signed in but not an insider -> `forbidden()` (a real 403 via Next 15.1
+`authInterrupts` + `app/forbidden.tsx`). The apex cannot reach the tree by path - middleware 404s any
+`/insiders*` request that is not on the insiders host.
+
+The gate reads an account-level **`insider`** flag: a boolean column on `accounts` (migration 6),
+carried on `PublicAccount` -> `GET /auth/me` -> the web `Viewer`. It is granted out-of-band (a DB
+update) until the admin console (spec `0037`) ships a toggle. Because insiders are ordinary players who
+want one login across the game and the subdomain, the session cookie is scoped to a parent **domain**
+(`COOKIE_DOMAIN`, `.branchout.games` in prod; host-only in dev, `localhost` in e2e so the flow is
+testable across `*.localhost`). Caddy's `insiders.branchout.games` block reuses the shared `api_ws` +
+`web` snippets, so `/api` and `/ws` stay same-origin per subdomain (no CORS). Admin (spec `0037`) is a
+separate static app with its own block; it never reaches this Next middleware.
+
 ## Room setup flow and deep link (spec 0029)
 
 Creating a room runs a host wizard - **create -> pick a game -> invite** - rendered by `RoomClient`.

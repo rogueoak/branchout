@@ -11,7 +11,7 @@
 // 'use client' because the account menu is interactive (dropdown, logout); it also composes canopy's
 // button styles, and canopy owns its own client boundary needs (see the Theming learning).
 
-import { buttonVariants } from '@rogueoak/canopy';
+import { Badge, buttonVariants } from '@rogueoak/canopy';
 import type { Viewer } from '../lib/session';
 import { AccountMenu } from './AccountMenu';
 import { Wordmark } from './Wordmark';
@@ -19,12 +19,16 @@ import { Wordmark } from './Wordmark';
 // `signupVariant` lets a surface de-emphasize the nav's Sign up CTA. On a page whose body already
 // carries the primary signup action (the home hero's "Sign up free"), pass `outline` so there is one
 // primary per view; elsewhere (/rooms, /join, the lobby) the nav CTA is the page's primary.
+// `label` renders a small pill on the right (spec 0035): a surface marker like "Insiders" so a
+// tester always knows which surface they are on. Omitted on the main site.
 export function TopNav({
   viewer,
   signupVariant = 'primary',
+  label,
 }: {
   viewer: Viewer;
   signupVariant?: 'primary' | 'outline';
+  label?: string;
 }) {
   return (
     <header className="border-b border-border bg-bg">
@@ -48,25 +52,32 @@ export function TopNav({
           </a>
         </div>
 
-        {viewer.signedIn && viewer.gamerTag ? (
-          <AccountMenu
-            gamerTag={viewer.gamerTag}
-            nickname={viewer.nickname}
-            avatar={viewer.avatar}
-          />
-        ) : (
-          <div className="flex items-center gap-2 sm:gap-3">
-            <a
-              href="/login"
-              className="text-body-sm font-medium text-text-muted underline-offset-4 hover:text-text hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              Log in
-            </a>
-            <a href="/signup" className={buttonVariants({ variant: signupVariant, size: 'sm' })}>
-              Sign up
-            </a>
-          </div>
-        )}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {label ? (
+            <Badge variant="primary" className="uppercase tracking-wide">
+              {label}
+            </Badge>
+          ) : null}
+          {viewer.signedIn && viewer.gamerTag ? (
+            <AccountMenu
+              gamerTag={viewer.gamerTag}
+              nickname={viewer.nickname}
+              avatar={viewer.avatar}
+            />
+          ) : (
+            <div className="flex items-center gap-2 sm:gap-3">
+              <a
+                href="/login"
+                className="text-body-sm font-medium text-text-muted underline-offset-4 hover:text-text hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                Log in
+              </a>
+              <a href="/signup" className={buttonVariants({ variant: signupVariant, size: 'sm' })}>
+                Sign up
+              </a>
+            </div>
+          )}
+        </div>
       </nav>
     </header>
   );

@@ -36,6 +36,21 @@ describe('AccountService.signup', () => {
     expect(stored?.emailVerified).toBe(false);
   });
 
+  it('defaults a new account to non-insider, and getById reflects a later grant (spec 0035)', async () => {
+    const account = await service.signup({
+      email: 'beta@example.com',
+      password: 'supersecret',
+      gamerTag: 'Tester',
+    });
+    // Fresh accounts are not insiders; the flag is part of the public identity.
+    expect(account.insider).toBe(false);
+
+    // Granting out-of-band (the spec 0035 stand-in) shows through the public account.
+    repo.setInsider(account.id, true);
+    const granted = await service.getById(account.id);
+    expect(granted?.insider).toBe(true);
+  });
+
   it('rejects a duplicate email', async () => {
     await service.signup({ email: 'a@example.com', password: 'supersecret', gamerTag: 'One' });
     await expect(

@@ -11,6 +11,11 @@ services:
   control-plane:
     environment:
       WEB_ORIGIN: http://localhost:${WEB_PORT}
+      # The session cookie stays host-only here (as in dev). A `Domain=localhost` cookie is NOT
+      # spanned across `*.localhost` by Chromium, so it cannot stand in for prod's
+      # `.branchout.games`. The insiders spec instead plants the session cookie on the insiders host
+      # directly (see e2e/tests/insiders.spec.ts), which exercises the same middleware + layout +
+      # role gate; the Domain-setting itself is covered by the control-plane config/auth unit tests.
 
   postgres:
     # !reset clears the list inherited from the base compose (Compose spec merge override).

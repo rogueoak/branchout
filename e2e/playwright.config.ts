@@ -34,7 +34,13 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: ['share-unfurl.spec.ts', 'trivia-round.spec.ts', 'profile.spec.ts'],
+      testMatch: [
+        'share-unfurl.spec.ts',
+        'trivia-round.spec.ts',
+        'profile.spec.ts',
+        // Insiders subdomain gate + surface (spec 0035); includes its own 360px phone check.
+        'insiders.spec.ts',
+      ],
     },
     // The product is mobile-first, so a phone-viewport lane guards that the key surfaces render and
     // fit at ~390px (no horizontal overflow) - the mobile-first non-negotiable, checked in a real

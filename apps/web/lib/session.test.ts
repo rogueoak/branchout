@@ -43,7 +43,21 @@ describe('getSignedIn - server-side session check', () => {
       gamerTag: 'CoolCat',
       nickname: 'Cat',
       avatar: 'sprout',
+      // Absent in the /auth/me payload -> defaults to a non-insider (spec 0035).
+      insider: false,
     });
+  });
+
+  it('getViewer carries the insider flag when the account is a beta tester (spec 0035)', async () => {
+    cookieHolder.value = 'sid-123';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ kind: 'account', account: { ...ACCOUNT_ME.account, insider: true } }),
+      }),
+    );
+    expect((await getViewer()).insider).toBe(true);
   });
 
   it('getViewer is signed-out for an account kind that carries no account object', async () => {

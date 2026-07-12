@@ -77,6 +77,44 @@ export function downStack(): void {
   }
 }
 
+/**
+ * Grant the insider role to an account by gamer tag, via an UPDATE against the e2e Postgres
+ * container. This is the documented out-of-band grant (spec 0035) - the e2e stand-in for a manual DB
+ * update, until the admin console (spec 0037) ships a toggle. The tag is asserted alphanumeric (the
+ * uniqueAccount helper's shape) before it reaches the SQL, so the inline value is never attacker
+ * controlled.
+ */
+export function grantInsider(gamerTag: string): void {
+  if (!/^[A-Za-z0-9]+$/.test(gamerTag)) {
+    throw new Error(`grantInsider: unexpected gamer tag ${JSON.stringify(gamerTag)}`);
+  }
+  const out = execFileSync(
+    DOCKER,
+    [
+      'compose',
+      ...composeFiles(),
+      'exec',
+      '-T',
+      'postgres',
+      'psql',
+      '-U',
+      'branchout',
+      '-d',
+      'branchout',
+      '-c',
+      `UPDATE accounts SET insider = true WHERE gamer_tag = '${gamerTag}';`,
+    ],
+    { cwd: repoRoot, env: composeEnv, encoding: 'utf8' },
+  );
+  // psql prints "UPDATE <n>"; a 0-row update means the tag never landed, so fail loudly here rather
+  // than as a confusing gate failure later.
+  if (!/UPDATE\s+[1-9]/.test(out)) {
+    throw new Error(
+      `grantInsider: no account updated for gamer tag ${gamerTag} (got: ${out.trim()})`,
+    );
+  }
+}
+
 /** Poll the web app's /health until it answers ok, as a final gate after `up --wait`. */
 export async function waitForWeb(timeoutMs = 60_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;

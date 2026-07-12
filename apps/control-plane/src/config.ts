@@ -7,6 +7,12 @@ export interface SessionCookieConfig {
   secure: boolean;
   /** SameSite policy. `lax` sends the cookie on same-site requests, including localhost ports. */
   sameSite: 'lax' | 'strict' | 'none';
+  /**
+   * Cookie Domain attribute. Unset (the default) makes the cookie host-only. Set to a parent domain
+   * (e.g. `.branchout.games`) so one session spans the apex and its subdomains - the insiders surface
+   * needs this (spec 0035). Left unset in local/dev where every surface shares one host.
+   */
+  domain?: string;
   /** Session lifetime and sliding-expiry window, in seconds. */
   ttlSeconds: number;
 }
@@ -71,6 +77,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
       name: env.SESSION_COOKIE_NAME ?? 'branchout_session',
       secure: parseBool(env.COOKIE_SECURE, true),
       sameSite: parseSameSite(env.COOKIE_SAMESITE),
+      // Omit the key entirely when unset so the cookie stays host-only (no `domain: undefined`).
+      ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
       ttlSeconds: Number(env.SESSION_TTL_SECONDS ?? DEFAULT_SESSION_TTL),
     },
     engineUrl: env.ENGINE_URL ?? 'http://localhost:4001',
