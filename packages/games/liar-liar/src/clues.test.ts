@@ -1,40 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createMemoryAssetLoaderFactory, createTestServices } from '@branchout/game-sdk/testing';
-import {
-  CATEGORIES,
-  MIN_CLUES_PER_CATEGORY,
-  loadClueBank,
-  validateClueBank,
-  validateSeedBank,
-  type LiarLiarClue,
-} from './clues';
+import { CATEGORIES, loadClueBank, validateClueBank, type LiarLiarClue } from './clues';
 import { liarLiarPlugin } from './liar-liar';
 
 function clue(over: Partial<LiarLiarClue> = {}): LiarLiarClue {
   return { id: 'people-001', category: 'people', clue: 'A clue.', answer: 'Someone', ...over };
 }
 
-/** A valid full-coverage synthetic bank: all 8 categories, MIN clues each, distinct ids/prompts. */
-function seedBank(perCategory: number = MIN_CLUES_PER_CATEGORY): LiarLiarClue[] {
-  const bank: LiarLiarClue[] = [];
-  for (const category of CATEGORIES) {
-    for (let i = 1; i <= perCategory; i++) {
-      const n = String(i).padStart(3, '0');
-      bank.push(
-        clue({
-          id: `${category}-${n}`,
-          category,
-          clue: `${category} clue ${i}`,
-          answer: `${category} ${i}`,
-        }),
-      );
-    }
-  }
-  return bank;
-}
-
-describe('validateClueBank', () => {
-  it('accepts a well-formed bank', () => {
+describe('validateClueBank - structural checks', () => {
+  it('accepts a well-formed bank of any size', () => {
     expect(() =>
       validateClueBank([clue(), clue({ id: 'food-001', category: 'food', answer: 'Cheese' })]),
     ).not.toThrow();
@@ -46,6 +20,10 @@ describe('validateClueBank', () => {
 
   it('rejects an unknown category', () => {
     expect(() => validateClueBank([clue({ category: 'wizards' })])).toThrow(/category/);
+  });
+
+  it('rejects an id that breaks the <category>-NNN convention', () => {
+    expect(() => validateClueBank([clue({ id: 'people-1' })])).toThrow(/people-1.*NNN/s);
   });
 
   it('rejects an empty clue or answer', () => {
@@ -63,34 +41,11 @@ describe('validateClueBank', () => {
     // @ts-expect-error - a non-string source must be rejected at runtime
     expect(() => validateClueBank([clue({ source: 123 })])).toThrow(/source/);
   });
-});
-
-describe('validateSeedBank', () => {
-  it('accepts a bank with full category coverage', () => {
-    expect(() => validateSeedBank(seedBank())).not.toThrow();
-  });
-
-  it('rejects a bank missing a whole category', () => {
-    const bank = seedBank().filter((c) => c.category !== 'things');
-    expect(() => validateSeedBank(bank)).toThrow(/things.*at least/s);
-  });
-
-  it('rejects a category below the minimum count, naming it', () => {
-    const bank = seedBank().filter((c) => c.id !== 'sports-012'); // sports now has 11
-    expect(() => validateSeedBank(bank)).toThrow(/sports.*11 clues/s);
-  });
-
-  it('rejects a clue whose id breaks the <category>-NNN convention', () => {
-    const bank = seedBank();
-    bank.find((c) => c.id === 'people-001')!.id = 'people-1'; // two digits short
-    expect(() => validateSeedBank(bank)).toThrow(/people-1.*NNN/s);
-  });
 
   it('rejects a duplicate prompt within a category (case- and space-insensitive)', () => {
-    const bank = seedBank();
-    const food = bank.filter((c) => c.category === 'food');
-    food[1]!.clue = `  ${food[0]!.clue.toUpperCase()}  `; // same prompt, different case/spacing
-    expect(() => validateSeedBank(bank)).toThrow(/duplicate prompt.*food/s);
+    const first = clue({ id: 'food-001', category: 'food', clue: 'A tasty fact.' });
+    const dup = clue({ id: 'food-002', category: 'food', clue: '  A TASTY FACT.  ' });
+    expect(() => validateClueBank([first, dup])).toThrow(/duplicate prompt.*food/s);
   });
 });
 

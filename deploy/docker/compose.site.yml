@@ -23,6 +23,10 @@
 # Optional (spec 0004/0006): DATABASE_URL, REDIS_URL, INTERNAL_TOKEN
 # Optional (spec 0035): COOKIE_DOMAIN=.branchout.games - scopes the session cookie to the parent
 #   domain so one login spans the apex + the insider subdomain (unset keeps it host-only).
+# Optional (spec 0041): GAME_DATA_HOST - host path of the private game-data repo clone. Its `data/`
+#   is bind-mounted read-only into game-engine/admin at /srv/game-data/data, and GAME_DATA_DIR tells
+#   the asset loader to read the mount instead of each game package's bundled sample. Defaults to
+#   /home/deploy/branchout-data when unset; the deploy job writes the real path to .env.prod.
 name: branchout
 
 services:
@@ -72,8 +76,13 @@ services:
     expose:
       - '3002'
     env_file: .env.prod
+    # Read-only mount of the private game-data repo (spec 0041). admin does not read the banks yet;
+    # it gets the same read-only mount for future content moderation, so the wiring is in place.
+    volumes:
+      - ${GAME_DATA_HOST:-/home/deploy/branchout-data}/data:/srv/game-data/data:ro
     environment:
       NODE_ENV: production
+      GAME_DATA_DIR: /srv/game-data
     healthcheck:
       test: ['CMD-SHELL', 'curl -fsS http://localhost:3002/health -o /dev/null || exit 1']
       interval: 10s
@@ -132,8 +141,19 @@ services:
     expose:
       - '4001'
     env_file: .env.prod
+    # Read-only mount of the private game-data repo (spec 0041). GAME_DATA_HOST is the host clone
+    # path, written to .env.prod by the deploy job; the loader reads data/ under GAME_DATA_DIR.
+    # game-engine is the real reader (it loads both game banks at boot). The bind mount is compatible
+    # with docker-rollout: a read-only host path, identical on both indexed instances during a swap.
+    # The `/home/deploy/branchout-data` default is only a dev/misconfig fallback: the real deploy
+    # always sets GAME_DATA_HOST in .env.prod. It must track the rsync target and the written
+    # GAME_DATA_HOST (both $HOME/branchout-data), which agree only while the deploy user is `deploy`;
+    # if that user ever changes, update all three together (or this default silently mounts nothing).
+    volumes:
+      - ${GAME_DATA_HOST:-/home/deploy/branchout-data}/data:/srv/game-data/data:ro
     environment:
       NODE_ENV: production
+      GAME_DATA_DIR: /srv/game-data
     healthcheck:
       test: ['CMD-SHELL', 'curl -fsS http://localhost:4001/health -o /dev/null || exit 1']
       interval: 10s

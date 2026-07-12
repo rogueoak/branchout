@@ -23,6 +23,11 @@ What the product does for users, grouped by area. Each capability maps to one or
       plus Postgres + Redis, rolled forward hands-off by `release.yml` on every push to `main`
       (health-gated `up -d --wait`, `sha-<commit>` pins, rollback by redeploy). Pipeline built in
       spec `0011`; first cutover (one-time coming-soon decommission + secrets) is operator-run.
+- [x] External game data - the real game banks live in a separate **private** repo, not the public
+      one. The public repo ships only a tiny valid sample; production reads the full bank from the
+      private repo, pinned to the tag in `deploy/data.version`, checked out in CI and rsynced to the
+      box, then bind-mounted read-only into `game-engine`/`admin` (the engine loader reads it via
+      `GAME_DATA_DIR`). The box holds no GitHub credential (spec `0041`).
 
 ## Accounts and profiles
 
@@ -90,10 +95,12 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Round protocol - `packages/protocol` versioned envelopes for both channels (player <->
       engine WebSocket, engine <-> control-plane REST) plus idempotent round/complete reporting
       (spec `0007`).
-- [x] Trivia question bank - 1600 validated questions across 8 categories (Nature, Food, Animals,
-      Science, People, Places, Things, History), 200 per category, each rated 1-10 for difficulty
-      (spec `0016`), with loader and validator enforcing schema, difficulty range + spread, and
-      uniqueness constraints (specs `0009`, `0016`).
+- [x] Trivia question bank - questions across 8 categories (Nature, Food, Animals, Science, People,
+      Places, Things, History), each rated 1-10 for difficulty (spec `0016`), with a loader and a
+      structural validator (schema, id format + uniqueness, bounded difficulty, no duplicate prompt
+      in a category - no total/per-category count or spread gate, spec `0041`). The public repo ships
+      a small sample; the full bank is served from a private data repo mounted at deploy time (specs
+      `0009`, `0016`, `0041`).
 - [x] First reference game - Trivia: host-configured category (8 + Random), rounds (1-100,
       default 10) and a difficulty min-max range (1-10, default 4-6, spec `0016`) that draws only
       questions rated in the range (widening to the nearest rating when exhausted); free-text answer
@@ -107,11 +114,13 @@ What the product does for users, grouped by area. Each capability maps to one or
       truth, players guess within 30s, and scoring awards 100 for the truth and 50 per player a fake
       fools. Engine-side game logic ships as `@branchout/game-liar-liar` (spec `0021`); the web client
       is spec `0023`.
-- [x] Liar Liar clue bank - a research-sourced seed of ~119 absurd-but-true clues across the eight
-      categories (people, places, events, sports, food, nature, animals, things), each carrying a
-      `source` URL, gated by `validateSeedBank` (coverage, id convention, prompt uniqueness). Liar Liar
-      is now registered in the engine boot alongside Trivia, so a host can start and play it (spec
-      `0022`).
+- [x] Liar Liar clue bank - research-sourced absurd-but-true clues across the eight categories
+      (people, places, events, sports, food, nature, animals, things), each carrying a `source` URL,
+      gated by `validateClueBank` (schema, `<category>-NNN` id convention + uniqueness, prompt
+      uniqueness in a category - structural only, no coverage gate, spec `0041`). The public repo
+      ships a small sample; the full bank is served from the private data repo mounted at deploy time.
+      Liar Liar is registered in the engine boot alongside Trivia, so a host can start and play it
+      (specs `0022`, `0041`).
 
 ## Web
 

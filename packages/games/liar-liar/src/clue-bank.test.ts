@@ -1,39 +1,35 @@
-// Loads the REAL shipped clue bank from disk (spec 0022) and runs the strict seed gate. This is the
+// Loads the public SAMPLE clue bank from disk and runs the structural validator. This is the
 // path-resolution guard: it proves the fs asset loader, rooted at this package via import.meta.url,
 // resolves the package's own data/liar-liar files - the same resolution the engine relies on at boot.
+// The full research-sourced bank ships from the private data repo mounted at GAME_DATA_DIR.
 
 import { describe, expect, it } from 'vitest';
 import { createFsAssetLoaderFactory } from '@branchout/game-sdk';
-import {
-  CATEGORIES,
-  MIN_CLUES_PER_CATEGORY,
-  loadClueBank,
-  validateSeedBank,
-  type LiarLiarClue,
-} from './index';
+import { CATEGORIES, loadClueBank, validateClueBank, type LiarLiarClue } from './index';
 
-async function realBank(): Promise<LiarLiarClue[]> {
+async function sampleBank(): Promise<LiarLiarClue[]> {
   const assets = createFsAssetLoaderFactory().forModule(import.meta.url);
   return loadClueBank(assets);
 }
 
-describe('liar-liar seed clue bank (real data)', () => {
-  it('loads from the package data dir and passes the strict seed gate', async () => {
-    const bank = await realBank();
-    expect(() => validateSeedBank(bank)).not.toThrow();
+describe('liar-liar sample clue bank (real data)', () => {
+  it('loads a non-empty sample from the package data dir and passes the structural validator', async () => {
+    const bank = await sampleBank();
+    expect(bank.length).toBeGreaterThan(0);
+    expect(() => validateClueBank(bank)).not.toThrow();
   });
 
-  it('covers every category with at least the minimum number of clues', async () => {
-    const bank = await realBank();
+  it('carries every category and only known categories', async () => {
+    const bank = await sampleBank();
+    const present = new Set(bank.map((c) => c.category));
     for (const category of CATEGORIES) {
-      const count = bank.filter((c) => c.category === category).length;
-      expect(count).toBeGreaterThanOrEqual(MIN_CLUES_PER_CATEGORY);
+      expect(present.has(category), `${category} present`).toBe(true);
     }
-    expect(bank.length).toBeGreaterThanOrEqual(CATEGORIES.length * MIN_CLUES_PER_CATEGORY);
+    expect(present).toEqual(new Set(CATEGORIES));
   });
 
   it('carries real, sourced clues (spot check)', async () => {
-    const bank = await realBank();
+    const bank = await sampleBank();
     const clue = bank.find((c) => c.id === 'places-001');
     expect(clue).toBeDefined();
     expect(clue?.answer.trim().length).toBeGreaterThan(0);

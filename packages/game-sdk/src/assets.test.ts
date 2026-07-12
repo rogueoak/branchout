@@ -35,6 +35,50 @@ describe('createFsAssetLoaderFactory', () => {
     const rootUrl = pathToFileURL(path.join(path.parse(process.cwd()).root, 'nope.js')).href;
     expect(() => createFsAssetLoaderFactory().forModule(rootUrl)).toThrow(/package\.json/);
   });
+
+  it('reads from GAME_DATA_DIR when set, ignoring the module walk', async () => {
+    // The mount dir owns the data but NO package.json - so a moduleUrl walk from it would fail. That
+    // proves the loader used the mount root, not resolvePackageRoot.
+    const mount = await mkdtemp(path.join(tmpdir(), 'game-sdk-mount-'));
+    roots.push(mount);
+    await mkdir(path.join(mount, 'data'), { recursive: true });
+    await writeFile(path.join(mount, 'data', 'q.json'), JSON.stringify([{ id: 'm-001' }]));
+    // A module url pointing somewhere unrelated: the mount override must ignore it entirely.
+    const moduleUrl = pathToFileURL(path.join(tmpdir(), 'unrelated', 'mod.js')).href;
+
+    const prev = process.env.GAME_DATA_DIR;
+    process.env.GAME_DATA_DIR = mount;
+    try {
+      const loader = createFsAssetLoaderFactory().forModule(moduleUrl);
+      await expect(loader.readJson<{ id: string }[]>('data/q.json')).resolves.toEqual([
+        { id: 'm-001' },
+      ]);
+    } finally {
+      if (prev === undefined) delete process.env.GAME_DATA_DIR;
+      else process.env.GAME_DATA_DIR = prev;
+    }
+  });
+
+  it('falls back to the package walk when GAME_DATA_DIR is empty', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'game-sdk-empty-mount-'));
+    roots.push(root);
+    await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'fixture' }));
+    await mkdir(path.join(root, 'data'), { recursive: true });
+    await writeFile(path.join(root, 'data', 'q.json'), JSON.stringify([{ id: 'p-001' }]));
+    const moduleUrl = pathToFileURL(path.join(root, 'mod.js')).href;
+
+    const prev = process.env.GAME_DATA_DIR;
+    process.env.GAME_DATA_DIR = ''; // empty is treated as unset
+    try {
+      const loader = createFsAssetLoaderFactory().forModule(moduleUrl);
+      await expect(loader.readJson<{ id: string }[]>('data/q.json')).resolves.toEqual([
+        { id: 'p-001' },
+      ]);
+    } finally {
+      if (prev === undefined) delete process.env.GAME_DATA_DIR;
+      else process.env.GAME_DATA_DIR = prev;
+    }
+  });
 });
 
 describe('createMemoryAssetLoaderFactory', () => {

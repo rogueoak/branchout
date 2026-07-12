@@ -1,8 +1,10 @@
 // Liar Liar clue bank: the data contract, loader, and validator. A clue is an improbable-but-true
 // statement with a genuine (surprising) answer; players invent fakes around it. The shape and loader
-// are spec 0021; the seed content (data/liar-liar/*.json, research-sourced) ships in spec 0022.
-// `validateClueBank` is the lenient schema+id gate (used at boot and by synthetic tests);
-// `validateSeedBank` adds the strict per-category coverage gate for the real shipped bank.
+// are spec 0021; the seed content lives at data/liar-liar/*.json. The public repo ships a small
+// SAMPLE; the full research-sourced bank is served from the private data repo mounted at
+// GAME_DATA_DIR (see deploy/README.md). `validateClueBank` checks per-item STRUCTURE only (schema,
+// id format + uniqueness, no duplicate prompt in a category) - there is no per-category count gate,
+// because the bank grows over time and its category spread is deliberately uneven.
 
 import type { AssetLoader } from '@branchout/game-sdk';
 
@@ -55,13 +57,23 @@ export async function loadClueBank(assets: AssetLoader): Promise<LiarLiarClue[]>
 }
 
 /**
- * Validate a clue bank's schema and id uniqueness. Throws a descriptive `Error` on the first
- * violation. Category *coverage* (which categories exist and how many) is a content concern of the
- * bank spec (0022), not enforced here, so a synthetic or partial bank validates fine.
+ * Validate the STRUCTURE of every clue in the bank. Runs at engine boot on any bank size (the public
+ * sample or the full private bank). Throws a descriptive `Error` on the first violation. There is no
+ * per-category count/coverage gate: the bank grows over time and its category spread is deliberately
+ * uneven, so a bank of any size validates as long as each item is well-formed.
+ *
+ * Per-item rules enforced:
+ * 1. `id` is present, unique across the bank, and matches `<category>-NNN` (3-digit suffix).
+ * 2. `category` is one of {@link CATEGORIES}.
+ * 3. `clue` and `answer` are non-empty strings.
+ * 4. `aliases` (optional) is an array of non-empty strings; `source` (optional) is a non-empty string.
+ * 5. No duplicate `clue` prompt within a single category.
  */
 export function validateClueBank(clues: readonly LiarLiarClue[]): void {
   const seen = new Set<string>();
   const categories = new Set<string>(CATEGORIES);
+  // Track prompts seen per category, so a duplicate prompt in the same category is caught.
+  const promptsByCategory = new Map<string, Set<string>>();
 
   for (const clue of clues) {
     const pos = `clue id=${JSON.stringify(clue.id)}`;
@@ -80,6 +92,18 @@ export function validateClueBank(clues: readonly LiarLiarClue[]): void {
           `expected one of ${CATEGORIES.join(', ')}`,
       );
     }
+
+    // Id must follow the <category>-NNN convention (3-digit zero-padded suffix). Use a static
+    // pattern + a startsWith check (matching the trivia validator) rather than interpolating
+    // clue.category into a regex source - correct here since category is pre-validated, but the
+    // static form removes the injection footgun and reads the same across both games.
+    const idPattern = /^[a-z]+-\d{3}$/;
+    if (!idPattern.test(clue.id) || !clue.id.startsWith(`${clue.category}-`)) {
+      throw new Error(
+        `liar-liar clue bank: clue id "${clue.id}" must match ${clue.category}-NNN (3 digits)`,
+      );
+    }
+
     if (typeof clue.clue !== 'string' || clue.clue.trim().length === 0) {
       throw new Error(`liar-liar clue bank: ${pos} has an empty clue`);
     }
@@ -102,55 +126,19 @@ export function validateClueBank(clues: readonly LiarLiarClue[]): void {
     ) {
       throw new Error(`liar-liar clue bank: ${pos} source must be a non-empty string when present`);
     }
-  }
-}
 
-/** The minimum number of clues each category must carry for the shipped seed bank. */
-export const MIN_CLUES_PER_CATEGORY = 12;
-
-/**
- * The strict gate for the *real* shipped bank (spec 0022): everything {@link validateClueBank} checks,
- * plus category coverage (every category present with at least {@link MIN_CLUES_PER_CATEGORY} clues),
- * the `<category>-NNN` id convention, and no duplicate prompt within a category. Kept separate from
- * validateClueBank so synthetic/partial banks in unit tests still validate.
- */
-export function validateSeedBank(clues: readonly LiarLiarClue[]): void {
-  validateClueBank(clues);
-
-  const byCategory = new Map<string, LiarLiarClue[]>();
-  for (const clue of clues) {
-    let bucket = byCategory.get(clue.category);
-    if (!bucket) {
-      bucket = [];
-      byCategory.set(clue.category, bucket);
+    // No duplicate prompts within a category.
+    let seenPrompts = promptsByCategory.get(clue.category);
+    if (!seenPrompts) {
+      seenPrompts = new Set<string>();
+      promptsByCategory.set(clue.category, seenPrompts);
     }
-    bucket.push(clue);
-  }
-
-  for (const category of CATEGORIES) {
-    const bucket = byCategory.get(category) ?? [];
-    if (bucket.length < MIN_CLUES_PER_CATEGORY) {
+    const normalized = clue.clue.trim().toLowerCase();
+    if (seenPrompts.has(normalized)) {
       throw new Error(
-        `liar-liar clue bank: category "${category}" has ${bucket.length} clues, ` +
-          `expected at least ${MIN_CLUES_PER_CATEGORY}`,
+        `liar-liar clue bank: duplicate prompt in category "${clue.category}": "${clue.clue}"`,
       );
     }
-
-    const idPattern = new RegExp(`^${category}-\\d{3}$`);
-    const seenPrompts = new Set<string>();
-    for (const clue of bucket) {
-      if (!idPattern.test(clue.id)) {
-        throw new Error(
-          `liar-liar clue bank: clue id "${clue.id}" must match ${category}-NNN (3 digits)`,
-        );
-      }
-      const normalized = clue.clue.trim().toLowerCase();
-      if (seenPrompts.has(normalized)) {
-        throw new Error(
-          `liar-liar clue bank: duplicate prompt in category "${category}": "${clue.clue}"`,
-        );
-      }
-      seenPrompts.add(normalized);
-    }
+    seenPrompts.add(normalized);
   }
 }
