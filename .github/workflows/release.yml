@@ -90,54 +90,10 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # deploy only reads the repo and calls out over SSH; no extra permissions needed.
+    # deploy only reads the repo and calls out over SSH; no extra permissions needed. The private
+    # game-data repo is pulled ON THE BOX via a read-only deploy key (see the remote script below),
+    # so the runner needs no checkout and no cross-repo token.
     steps:
-      # Check out this repo so we can read the pinned data version. The box also self-syncs this
-      # repo over its own git remote inside the SSH script; this checkout is only for the runner.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      # Read the pinned game-data version (a git tag - or a full 40-char commit SHA - in the private
-      # data repo). Org policy blocks SSH deploy keys on the box, so the box holds NO GitHub
-      # credentials and cannot fetch the data repo; GitHub Actions checks the data out here and ships
-      # it to the box (see below). Take only the first line and validate its charset: the value
-      # becomes the checkout `ref` and flows to the box via GAME_DATA_HOST, so a stray newline (which
-      # would inject extra $GITHUB_OUTPUT keys) or a non-ref character must fail the job here, loudly.
-      - name: Read pinned data version
-        id: dataver
-        run: |
-          V="$(head -1 deploy/data.version | tr -d '[:space:]')"
-          case "$V" in
-            '' | *[!0-9a-fA-F.]* )
-              echo "invalid deploy/data.version: '$V' (expected a bare semver tag or a commit SHA)" >&2
-              exit 1
-              ;;
-          esac
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-
-      # Check out the PRIVATE game-data repo at the pinned ref, into ./branchout-data. Uses a
-      # read-only fine-grained PAT (DATA_REPO_TOKEN, Contents:read on rogueoak/branchout-data) - the
-      # run's own GITHUB_TOKEN is scoped to branchout only and cannot read another repo. NOTE: a tag
-      # is mutable, so the "pinned + rolls back with the code" guarantee holds only if the data repo's
-      # release tags are protected against force-move (or data.version holds a full commit SHA). See
-      # deploy/README.md.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          repository: rogueoak/branchout-data
-          ref: ${{ steps.dataver.outputs.version }}
-          token: ${{ secrets.DATA_REPO_TOKEN }}
-          path: branchout-data
-
-      # Fail closed at the SOURCE: if the checkout above produced no data (missing/expired
-      # DATA_REPO_TOKEN, or a ref with no data/ dir), stop now with a legible error rather than
-      # letting `rsync --delete` empty the box's data dir and surface only as a late 502 at the
-      # post-rollout health gate.
-      - name: Assert game data is present
-        run: |
-          test -d branchout-data/data && [ -n "$(ls -A branchout-data/data)" ] || {
-            echo "branchout-data/data is missing or empty - refusing to sync (would empty the box)" >&2
-            exit 1
-          }
-
       - name: Deploy over SSH
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -167,16 +123,6 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-          # Ship the private game-data (checked out at the pinned tag above) to the box over the same
-          # deploy key. The box holds no GitHub credential, so GHA is the only path the data reaches
-          # it. --delete keeps the mirror exact (a removed/renamed data file is removed on the box too).
-          # The destination is the host clone path the compose mount reads (GAME_DATA_HOST).
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            "$USER@$HOST" 'mkdir -p ~/branchout-data/data'
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes" \
-            branchout-data/data/ "$USER@$HOST:branchout-data/data/"
-
           # Pass every value to the remote shell over the encrypted stdin channel,
           # not on the SSH command line: printf %q emits a shell-safe assignment for
           # any value (a single quote or special char can't break the script), and
@@ -202,11 +148,27 @@ jobs:
           git fetch --prune origin
           git reset --hard origin/main
 
-          # Private game-data (spec 0041): the box holds NO GitHub credentials and does not fetch the
-          # data repo. GitHub Actions checks out rogueoak/branchout-data at the tag in
-          # deploy/data.version and rsyncs its data/ to $HOME/branchout-data/data BEFORE this script
-          # runs (see the deploy step). GAME_DATA_HOST below points the compose mount at that dir.
+          # Private game-data (spec 0041): sync $HOME/branchout-data to the tag pinned in
+          # deploy/data.version. The box authenticates to the private repo with a READ-ONLY deploy
+          # key via the `github-data` SSH alias (~/.ssh/config -> IdentityFile branchout_data_deploy;
+          # one-time host setup, see deploy/README.md). The compose mount reads $DATA_REPO/data.
+          # Best-effort: if GitHub is unreachable or the tag is missing, keep the currently
+          # checked-out data and continue - an app deploy is never blocked on the data pipeline, and
+          # the read-only mount always has the last-good content.
           DATA_REPO="$HOME/branchout-data"
+          DATA_VERSION="$(head -1 "$REPO/deploy/data.version" | tr -d '[:space:]')"
+          if [ ! -d "$DATA_REPO/.git" ]; then
+            git clone git@github-data:rogueoak/branchout-data.git "$DATA_REPO" || \
+              echo "WARNING: could not clone game-data repo (is the deploy key set up?); continuing"
+          fi
+          if [ -d "$DATA_REPO/.git" ]; then
+            if git -C "$DATA_REPO" fetch --tags --prune origin >/dev/null 2>&1 &&
+               git -C "$DATA_REPO" checkout --detach "tags/$DATA_VERSION" >/dev/null 2>&1; then
+              echo "game-data synced to $DATA_VERSION"
+            else
+              echo "WARNING: game-data sync to '$DATA_VERSION' failed; keeping existing $(git -C "$DATA_REPO" describe --tags 2>/dev/null || echo unknown)"
+            fi
+          fi
 
           # Ensure the shared edge network exists (idempotent).
           docker network inspect edge >/dev/null 2>&1 || docker network create edge

@@ -43,7 +43,7 @@ In:
 
 Out:
 - The private `branchout-data` repo itself, its content, and its release tagging - operator-run,
-  documented here only. Adding the `DATA_REPO_TOKEN` secret is a one-time operator step.
+  documented here only. Registering the box's read-only deploy key is a one-time operator step.
 - Any change to the `AssetLoader` / `AssetLoaderFactory` interfaces or their call sites.
 - Deploy secrets, SSH, GitHub tokens.
 
@@ -61,11 +61,11 @@ Out:
 - **Sample data.** Slice each JSON file to its first N items programmatically (2-space indent,
   trailing newline) so structure and ids stay intact. Keep `files: ["dist","data"]` so a local /
   fallback run still bundles the sample.
-- **Deploy.** `deploy/data.version` = `0.1.0` (a git tag in the private data repo). Org policy blocks
-  SSH deploy keys on the box, so the box holds no GitHub credential and never fetches the data repo.
-  Instead the `deploy` job in `release.yml` checks out `rogueoak/branchout-data` at that tag on the
-  runner (via a read-only `DATA_REPO_TOKEN` PAT) and rsyncs its `data/` to the box over the existing
-  deploy SSH key (`--delete` for an exact mirror), then writes `GAME_DATA_HOST` into `.env.prod`.
+- **Deploy.** `deploy/data.version` = `0.1.0` (a git tag in the private data repo). The box clones
+  `rogueoak/branchout-data` and, on every deploy, the remote script in `release.yml` fetches and
+  checks out that pinned tag, authenticating with a **read-only deploy key** (org deploy keys enabled)
+  scoped to the data repo via a `github-data` SSH alias. The sync is best-effort (on failure it keeps
+  the last-good checkout and continues), then the script writes `GAME_DATA_HOST` into `.env.prod`.
   `compose.site.yml` bind-mounts `${GAME_DATA_HOST}/data` at `/srv/game-data/data:ro` and sets
   `GAME_DATA_DIR=/srv/game-data` on `game-engine` and `admin`.
 
@@ -82,9 +82,9 @@ state, and `forModule` is called a handful of times at boot, not on a hot path.
       a category - and accept a small valid bank of any size. No count/spread rule remains.
 - [ ] Each Trivia category file has 8 items; each Liar Liar file has 5; all 8 categories per game.
       The sample loads and validates.
-- [ ] `deploy/data.version` is exactly `0.1.0\n`. `release.yml` checks out the private repo at that
-      tag on the runner and rsyncs its `data/` to the box, then writes `GAME_DATA_HOST`.
+- [ ] `deploy/data.version` is exactly `0.1.0\n`. `release.yml`'s remote script fetches and checks
+      out that tag on the box (read-only deploy key), then writes `GAME_DATA_HOST`.
       `compose.site.yml` mounts the data read-only into `game-engine` and `admin` with
-      `GAME_DATA_DIR=/srv/game-data`. `deploy/README.md` documents the external repo, the
-      `DATA_REPO_TOKEN` secret, the pinned tag, the GHA-to-box rsync, the mount, and the loader env.
+      `GAME_DATA_DIR=/srv/game-data`. `deploy/README.md` documents the external repo, the read-only
+      deploy key + one-time host setup, the pinned tag, the box-side sync, the mount, and the loader env.
 - [ ] `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm format:check` all pass.

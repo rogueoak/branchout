@@ -154,13 +154,15 @@ How it wires together:
   `rogueoak/branchout-data`, restricting who can move a `*.*.*` tag) - this repo pins its GitHub
   Actions to commit SHAs for exactly this reason. If you cannot protect tags, put a **full 40-char
   commit SHA** in `data.version` instead (the validator accepts it) for a truly immutable pin.
-- **Data ships from GitHub Actions, not the box.** Org policy blocks SSH deploy keys on the droplet,
-  so the box holds **no GitHub credential** and never talks to GitHub for the data repo. Instead the
-  `deploy` job in `release.yml` checks out `rogueoak/branchout-data` at the pinned tag on the runner
-  (using the `DATA_REPO_TOKEN` secret), then **rsyncs** its `data/` to the box over the existing
-  deploy SSH key: `rsync -az --delete ... branchout-data/data/ "$USER@$HOST:branchout-data/data/"`.
-  `--delete` keeps the box an exact mirror of the tagged content. It writes `GAME_DATA_HOST`
-  (`$HOME/branchout-data`) into `.env.prod` so compose can resolve the host path.
+- **The box pulls the data itself.** The droplet clones `rogueoak/branchout-data` at
+  `$HOME/branchout-data` and, on every deploy, the remote script fetches and checks out the pinned
+  tag from `deploy/data.version`. The box authenticates with a **read-only deploy key** (org deploy
+  keys are enabled) via a scoped `github-data` SSH alias (`~/.ssh/config` -> `IdentityFile
+~/.ssh/branchout_data_deploy`), so only the data repo uses that key and no cross-repo token is
+  needed. The deploy writes `GAME_DATA_HOST` (`$HOME/branchout-data`) into `.env.prod` so compose can
+  resolve the host path. The sync is **best-effort**: if GitHub is unreachable or the tag is missing,
+  the box keeps its currently checked-out data and the deploy continues (the app deploy is never
+  blocked on the data pipeline, and the read-only mount always has the last-good content).
 - **Read-only mount.** `compose.site.yml` bind-mounts `${GAME_DATA_HOST}/data` at
   `/srv/game-data/data:ro` into **game-engine** (the real reader; it loads the banks at boot) and
   **admin** (the same mount, for future content moderation), and sets `GAME_DATA_DIR=/srv/game-data`
@@ -170,6 +172,20 @@ How it wires together:
   `data/` from the mount instead of the package's bundled sample (the relative paths
   `data/trivia/...` / `data/liar-liar/...` are unchanged, so one mount root serves both games). Unset
   (local dev, tests, e2e), it falls back to the bundled sample.
+
+**One-time host setup** (done once per droplet, so the box can pull the private repo):
+
+```sh
+# On the droplet, as the deploy user:
+ssh-keygen -t ed25519 -f ~/.ssh/branchout_data_deploy -N "" -C "branchout-data-deploy-box"
+cat ~/.ssh/branchout_data_deploy.pub   # register this as a READ-ONLY deploy key on
+                                       # rogueoak/branchout-data (Settings -> Deploy keys, no write)
+# Scope the key to the data repo only (github.com is otherwise untouched):
+printf '\nHost github-data\n  HostName github.com\n  User git\n  IdentityFile ~/.ssh/branchout_data_deploy\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+chmod 600 ~/.ssh/config
+ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts   # pin the host key
+git clone git@github-data:rogueoak/branchout-data.git ~/branchout-data
+```
 
 ## One-time decommission of the coming-soon stack
 
@@ -197,17 +213,16 @@ brings up Caddy and the full site.
 
 Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branchout repo:
 
-| Secret                | Value                                                                                                                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet)                                                                                                  |
-| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                                                                                                                          |
-| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                                                                                                                                |
-| `DEPLOY_USER`         | `deploy`                                                                                                                                                                                                      |
-| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                                                                                                                      |
-| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                                                                                                                          |
-| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                                                                                                                               |
-| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)                                                                                                          |
-| `DATA_REPO_TOKEN`     | Read-only fine-grained PAT with **Contents: read** on `rogueoak/branchout-data` (spec 0041); GHA uses it to check out the pinned game-data tag and rsync it to the box. Required before the next real deploy. |
+| Secret                | Value                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet) |
+| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                         |
+| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                               |
+| `DEPLOY_USER`         | `deploy`                                                                                                     |
+| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                     |
+| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                         |
+| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                              |
+| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)         |
 
 Generate strong values with:
 

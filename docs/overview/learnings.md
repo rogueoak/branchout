@@ -314,14 +314,13 @@ Capture durable lessons as they emerge.
   from crashing the engine (id format + uniqueness, required fields, bounded values, no duplicate
   prompt in a category) and drop every check on the collection's size or distribution. A validator
   named for structure must run on a bank of any size. (Spec `0041`.)
-- **When the deploy box can't hold a credential for a second source, pull it in CI and push it to the
-  box - don't make the box reach out.** Org policy blocked an SSH deploy key on the droplet, so the
-  box could not `git fetch` the private game-data repo. Rather than thread a GitHub token onto the box
-  (a long-lived credential on a shared host), GitHub Actions checks the private repo out at the pinned
-  tag on the runner and rsyncs it to the box over the *existing* deploy SSH key. The box stays
-  credential-free; the runner already has scoped, ephemeral tokens. Pin the content by a git tag in a
-  version file so it rolls back with the code, and mirror with `rsync --delete` so a removed file is
-  removed on the box. (Spec `0041`.)
+- **Pull a second private source onto the box with a repo-scoped read-only deploy key, and make the
+  sync best-effort.** The box needs the private game-data repo but should not carry a broad,
+  long-lived credential. A **read-only deploy key** (org deploy keys enabled) scoped to that one repo
+  via a `github-data` SSH alias (`IdentitiesOnly yes`) lets the box `git fetch` the data and nothing
+  else, with no cross-repo token. Pin the content by a git tag in a version file so it rolls back with
+  the code. Keep the sync **best-effort** (on fetch/checkout failure, keep the last-good checkout and
+  continue) so an unrelated app deploy is never blocked on the data pipeline. (Spec `0041`.)
 - **A read-only bind mount from a host path is docker-rollout-safe; a mount that both instances read
   is fine to double.** Serving game data from a `:ro` host bind mount works with the zero-downtime
   swap because the path is identical and read-only on both Compose-indexed instances - nothing to
