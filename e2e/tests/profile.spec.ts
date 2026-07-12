@@ -90,4 +90,16 @@ test.describe('mobile-first at 360px (CLAUDE.md rule 1)', () => {
     await expect(page.getByText(`@${account.gamerTag}`, { exact: true })).toBeVisible();
     await expectFits(page);
   });
+
+  test('the Danger zone delete confirm is usable and fits at 360px (spec 0040)', async ({
+    page,
+  }) => {
+    await signUp(page);
+    await page.goto('/account');
+    // Reveal the two-step confirm; both buttons render and the page still fits the phone.
+    await page.getByRole('button', { name: 'Delete account' }).click();
+    await expect(page.getByRole('button', { name: 'Yes, delete my account' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+    await expectFits(page);
+  });
 });

@@ -308,18 +308,13 @@ export function AccountClient() {
           {confirmingDelete ? (
             <>
               <p className="text-body-sm text-text-muted">
-                This permanently deletes your account. Your gamer tag and email are freed up, and
-                you cannot undo this.
+                This permanently deletes your account and signs you out. Your gamer tag and email
+                are freed up, and you cannot undo this.
               </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={onDeleteAccount}
-                  disabled={deleting}
-                >
-                  {deleting ? 'Deleting...' : 'Yes, delete my account'}
-                </Button>
+              {/* Cancel is first in the DOM so on a phone (flex-col) it is the top, most
+                  thumb-reachable target - a hurried tap backs out instead of deleting. On wider
+                  screens flex-row-reverse restores the destructive action on the left. */}
+              <div className="flex flex-col gap-2 sm:flex-row-reverse sm:justify-end">
                 <Button
                   type="button"
                   variant="outline"
@@ -327,6 +322,14 @@ export function AccountClient() {
                   disabled={deleting}
                 >
                   Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={onDeleteAccount}
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Yes, delete my account'}
                 </Button>
               </div>
             </>

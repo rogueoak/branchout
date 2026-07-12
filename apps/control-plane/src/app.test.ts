@@ -89,6 +89,7 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
     repo,
     engine,
     plays,
+    ledger,
     limiter,
     admins,
     adminSessions,
@@ -1208,12 +1209,24 @@ describe('admin console API (spec 0037)', () => {
     );
     expect(player).toBeTruthy();
 
+    // Seed a credit-ledger entry for the player. Hard delete must KEEP the ledger (audit) even as it
+    // purges the account - that is the whole reason admin-delete is hard, not soft. (The sibling
+    // guarantee, account_game_plays cascading away, is a Postgres FK `ON DELETE CASCADE` that the
+    // in-memory harness does not model, so it is verified by the migration/schema, not asserted here.)
+    await t.ledger.grantDaily(player!.id);
+    const balanceBefore = await t.ledger.balance(player!.id);
+    expect(balanceBefore).toBeGreaterThan(0);
+
     const del = await t.app.inject({
       method: 'POST',
       url: `/v1/admin/users/${player!.id}/delete`,
       headers: { cookie },
     });
     expect(del.statusCode).toBe(200);
+
+    // The ledger rows survive the purge - the balance is unchanged (a regression guard against the
+    // service ever being changed to also delete the ledger).
+    expect(await t.ledger.balance(player!.id)).toBe(balanceBefore);
 
     // The detail 404s and the list no longer shows the player - the row is truly gone.
     const detail = await t.app.inject({

@@ -25,7 +25,10 @@ export interface PublicAccount {
   /** Beta-tester entitlement (spec 0035): the web gates the insider surface on this. */
   insider: boolean;
   /** When the account was soft-deleted (spec 0040); null while live. Only ever non-null on the
-   * admin read path - player/auth reads never load a deleted account. */
+   * admin read path - player/auth reads never load a deleted account (it is null-by-construction on
+   * `/auth/me`, since `getById` filters deleted rows, not null-by-type). If a later change adds a
+   * second admin-only field (or an undelete flow), split an `AdminAccount` DTO from `PublicAccount`
+   * here rather than widening this shared shape. */
   deletedAt: Date | null;
 }
 

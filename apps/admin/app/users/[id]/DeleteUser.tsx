@@ -41,15 +41,9 @@ export function DeleteUser({ userId, gamerTag }: { userId: string; gamerTag: str
             Permanently delete <span className="font-semibold text-text">{gamerTag}</span>? Their
             game history is removed too. This cannot be undone.
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onDelete}
-              disabled={busy}
-              className={buttonVariants({ variant: 'destructive', size: 'sm' })}
-            >
-              {busy ? 'Deleting...' : 'Yes, delete this player'}
-            </button>
+          {/* Cancel first in the DOM so on a phone (flex-col) it is the top target; flex-row-reverse
+              restores the destructive action on the left for wider screens. */}
+          <div className="flex flex-col gap-2 sm:flex-row-reverse sm:justify-end">
             <button
               type="button"
               onClick={() => setConfirming(false)}
@@ -57,6 +51,14 @@ export function DeleteUser({ userId, gamerTag }: { userId: string; gamerTag: str
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
               Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={busy}
+              className={buttonVariants({ variant: 'destructive', size: 'sm' })}
+            >
+              {busy ? 'Deleting...' : 'Yes, delete this player'}
             </button>
           </div>
         </>
