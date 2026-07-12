@@ -108,10 +108,10 @@ jobs:
           GITHUB_ACTOR_NAME: ${{ github.actor }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-          # Root admin seed (spec 0037). Unset -> blank -> the boot reconcile is a no-op (admin login
-          # simply has no accounts yet). Set both to seed/rotate the break-glass root admin.
-          ADMIN_ROOT_EMAIL: ${{ secrets.ADMIN_ROOT_EMAIL }}
-          ADMIN_ROOT_PASSWORD: ${{ secrets.ADMIN_ROOT_PASSWORD }}
+          # Root admin creds (spec 0037) are managed ON THE BOX only - never in GitHub. They live in the
+          # host .env.prod and are PRESERVED across the rewrite below (not sourced from a secret). To
+          # seed/rotate the break-glass root admin, edit ADMIN_ROOT_EMAIL/ADMIN_ROOT_PASSWORD in
+          # /home/deploy/branchout/deploy/docker/.env.prod on the droplet.
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
@@ -194,6 +194,11 @@ jobs:
           # only the deploy user can read it. This file is the only place secrets live
           # on the host; it is gitignored and never committed.
           ENV_FILE="deploy/docker/.env.prod"
+          # Root admin creds (spec 0037) live ONLY on the box - read them from the current env file
+          # before it is truncated, so the rewrite preserves them instead of clobbering them with a
+          # value from GitHub (which we deliberately do not store there).
+          PREV_ADMIN_ROOT_EMAIL=$(grep -E '^ADMIN_ROOT_EMAIL=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2-)
+          PREV_ADMIN_ROOT_PASSWORD=$(grep -E '^ADMIN_ROOT_PASSWORD=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2-)
           install -m 0600 /dev/null "$ENV_FILE"
           # Full runtime env for the app services. DATABASE_URL/REDIS_URL are required
           # by control-plane and game-engine; the rest wire the services to each other
@@ -207,12 +212,13 @@ jobs:
             printf 'CONTROL_PLANE_URL=http://control-plane:4000\n'
             printf 'WEB_ORIGIN=https://branchout.games\n'
             # Scope the player session cookie to the parent domain so one login spans the apex and the
-            # insiders subdomain (spec 0035). Written here (not a manual .env.prod key) because this file
+            # insider subdomain (spec 0035). Written here (not a manual .env.prod key) because this file
             # is rewritten fresh every deploy. The admin cookie is separate + always host-only.
             printf 'COOKIE_DOMAIN=.branchout.games\n'
-            # Root admin seed (spec 0037); blank when the secrets are unset -> boot reconcile no-ops.
-            printf 'ADMIN_ROOT_EMAIL=%s\n' "$ADMIN_ROOT_EMAIL"
-            printf 'ADMIN_ROOT_PASSWORD=%s\n' "$ADMIN_ROOT_PASSWORD"
+            # Root admin creds (spec 0037): preserved from the box's own env file (host-managed, never in
+            # GitHub). Blank on a box that never set them -> the boot reconcile is a no-op.
+            printf 'ADMIN_ROOT_EMAIL=%s\n' "$PREV_ADMIN_ROOT_EMAIL"
+            printf 'ADMIN_ROOT_PASSWORD=%s\n' "$PREV_ADMIN_ROOT_PASSWORD"
             # The engine reaches the report intake over the container network and does
             # not present a token yet (follow-up). Caddy blocks /api/engine/* from the
             # internet, so the intake is only reachable internally - open here is safe.
