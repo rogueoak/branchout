@@ -414,12 +414,10 @@ export class GameEngine {
     // Open the answer window: a fresh deadline the state frame projects as remaining ms, and a
     // timer that force-closes the round if it expires before everyone answers (spec 0017).
     state.moveRemainingMs = undefined;
-    state.moveDeadline =
-      state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
+    state.moveDeadline = state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
     await this.publish(state, this.stateMessage(state));
-    if (state.moveDeadline !== undefined)
-      this.armMoveWindow(state, module, state.moveWindowMs);
+    if (state.moveDeadline !== undefined) this.armMoveWindow(state, module, state.moveWindowMs);
   }
 
   /** One phase transition. Saves once at the end and (re)arms the dispute-window timer. */

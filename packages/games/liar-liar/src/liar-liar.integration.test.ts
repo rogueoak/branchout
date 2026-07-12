@@ -78,23 +78,11 @@ describe('Liar Liar full game', () => {
       scratch = game.startRound(ctx(round, 'collecting', scratch)).scratch;
 
       // Every player submits a distinct fake; a duplicate is rejected and writes nothing.
-      scratch = game.collectMove(
-        ctx(round, 'collecting', scratch),
-        'p1',
-        `Fake1-${round}`,
-      ).scratch;
-      scratch = game.collectMove(
-        ctx(round, 'collecting', scratch),
-        'p2',
-        `Fake2-${round}`,
-      ).scratch;
+      scratch = game.collectMove(ctx(round, 'collecting', scratch), 'p1', `Fake1-${round}`).scratch;
+      scratch = game.collectMove(ctx(round, 'collecting', scratch), 'p2', `Fake2-${round}`).scratch;
       const dup = game.collectMove(ctx(round, 'collecting', scratch), 'p3', `fake1-${round}`);
       expect(dup.rejected?.reason).toBe('someone already submitted that');
-      scratch = game.collectMove(
-        ctx(round, 'collecting', scratch),
-        'p3',
-        `Fake3-${round}`,
-      ).scratch;
+      scratch = game.collectMove(ctx(round, 'collecting', scratch), 'p3', `Fake3-${round}`).scratch;
 
       expect(game.allSubmitted?.(ctx(round, 'collecting', scratch))).toBe(true);
 
