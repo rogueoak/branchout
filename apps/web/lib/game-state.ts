@@ -44,6 +44,12 @@ export interface GameState {
   /** The latest standings - the between-round leaderboard and the final results. */
   standings: Standing[];
   /**
+   * The latest live-simulation snapshot for a continuous game (spec 0044's `sim` frame), or null for
+   * a turn-based game. Replaced (not accumulated) on each frame, so a physics game renders the live,
+   * continuously-swaying tower from the newest snapshot. Opaque; the game's UI module decodes it.
+   */
+  sim: unknown;
+  /**
    * The reason the engine rejected this device's last submission (spec 0020's `move_rejected`), or
    * null. Set on the targeted reject frame, cleared on the next prompt. The remote clears it too on a
    * fresh submit; a game that never rejects leaves it null.
@@ -67,6 +73,7 @@ export function initialGameState(): GameState {
     prompt: null,
     reveals: [],
     standings: [],
+    sim: null,
     rejected: null,
     error: null,
   };
@@ -123,6 +130,11 @@ export function reduceGameState(
       // Accumulate the opaque reveal payload; the module decodes the list. (One round can stream
       // several reveals - the module reads whichever shapes it recognizes.)
       return { ...state, reveals: [...state.reveals, frame.reveal] };
+
+    case 'sim':
+      // Replace (never accumulate) the live snapshot: a continuous game streams the newest tower
+      // transform set each tick, so the client always renders the latest, live-swaying state.
+      return { ...state, sim: frame.sim };
 
     case 'leaderboard':
       return { ...state, standings: frame.standings };

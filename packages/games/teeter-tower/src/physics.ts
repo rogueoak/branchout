@@ -1,18 +1,22 @@
-// The headless, deterministic physics core for Teeter Tower. Everything here is a pure function of
-// its inputs (a seed for shapes, a stored tower + a move for the settle), so the single server
-// simulation is reproducible and clients render exactly what the server computed. No DOM, no
-// wall-clock, no Math.random: matter-js supplies the solver; a seeded PRNG supplies the shapes; a
-// fixed timestep with a hard step cap bounds the run so it can never hang.
+// The physics core for Teeter Tower (spec 0044). Teeter is a LIVE game: instead of simulating a
+// single drop to settle and freezing a keyframe track, the module holds a continuously-running
+// matter world in process and steps it every engine tick. This file owns the matter primitives -
+// piece generation, the live world (create/step/add-piece/measure), legality, and the payload
+// builders that turn the live world into a streamable `TeeterSim` snapshot.
+//
+// Piece SHAPES stay deterministic (a seeded PRNG keyed on (seed, pieceIndex)) so every client sees
+// the same piece stream; the settle itself is now real-time (the world runs), so a reconnecting
+// device rebuilds the world from a compact scratch snapshot rather than replaying a pure track.
 
 import Matter from 'matter-js';
 import decomp from 'poly-decomp';
 import type { SeededRng } from './rng';
+import { createRng, deriveSeed } from './rng';
 import {
   CENTER_X,
   DEATH_Y,
   DROP_HALF_RANGE,
   GROUND_TOP,
-  LEVELS,
   MAX_FALL_SPEED,
   PALETTE,
   PIECE_DENSITY,
@@ -23,35 +27,33 @@ import {
   PLATFORM_W,
   SPAWN_Y,
 } from './levels';
-import type { Body as BodyPayload, Eye, Frame, Piece, Skin, Vec2 } from './types';
+import type { Body as BodyPayload, Eye, Piece, Skin, Vec2 } from './types';
 
 const { Bodies, Body, Common, Composite, Constraint, Engine, Query } = Matter;
 
 // Wire poly-decomp once at module load so `Bodies.fromVertices` decomposes the concave "blob" piece
 // into convex parts instead of silently falling back to a convex hull (which also logs a console.warn
-// on every settle). poly-decomp is deterministic, so this keeps the sim reproducible.
+// on every step). poly-decomp is deterministic, so a given seed always yields the same geometry.
 Common.setDecomp(decomp);
 
 // ---------------------------------------------------------------------------
-// Fixed-timestep + settle tuning (all deterministic; no wall-clock anywhere)
+// Fixed-timestep tuning (deterministic shapes; real-time solver stepping)
 // ---------------------------------------------------------------------------
 
 /** Fixed physics step, ms. 60 Hz, matching the prototype's runner. */
 export const STEP_MS = 1000 / 60;
-/** Record a keyframe every K steps (sampling stride) to keep the track compact. */
-export const TRACK_EVERY = 3;
-/** Hard cap on simulated steps so a pathological drop can never spin forever. */
-export const MAX_STEPS = 300;
-/** Max body speed under which the tower counts as "calm". */
-export const CALM_SPEED = 1.4;
-/** Consecutive calm steps required before we stop early (mirrors the prototype's settle > 25). */
-export const CALM_STEPS = 26;
+/**
+ * Physics substeps per engine tick. The engine ticks at 40ms (25 fps, spec 0044); stepping the
+ * solver at a fixed 60 Hz means ~2 substeps per tick, which keeps the feel stable and frame-rate
+ * independent (the solver never sees a variable dt).
+ */
+export const SUBSTEPS_PER_TICK = 2;
 
 // ---------------------------------------------------------------------------
-// Persisted tower shape (what the module keeps in scratch between drops)
+// Persisted body shape (what the module keeps in scratch so a reconnect rebuilds the world)
 // ---------------------------------------------------------------------------
 
-/** A settled piece as persisted in scratch: local geometry + world transform + cosmetics. */
+/** A placed piece as persisted in scratch: local geometry + world transform + cosmetics. */
 export interface StoredBody {
   id: number;
   /** One local-space polygon loop per collision part (compound pieces have several). */
@@ -61,6 +63,15 @@ export interface StoredBody {
   angle: number;
   skin: Skin;
   eyes: Eye[];
+}
+
+/** The aim piece as persisted in scratch (local geometry + cosmetics; no world transform yet). */
+export interface StoredPiece {
+  id: number;
+  verts: Vec2[][];
+  eyes: Eye[];
+  skin: Skin;
+  spinSeed: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +102,7 @@ export interface GeneratedPiece {
 /**
  * Build a piece body centered at the origin, deterministically from `rng`. Mirrors the prototype's
  * makePiece shape mix and jitter exactly, so a given seed always yields the same shape. The body is
- * created dynamic-but-inert here; callers place/freeze it as needed.
+ * created dynamic-but-inert here; callers place it into the world as needed.
  */
 export function makePiece(rng: SeededRng): GeneratedPiece {
   const skin = rng.pick(PALETTE);
@@ -151,6 +162,27 @@ export function makePiece(rng: SeededRng): GeneratedPiece {
   return { body, skin, eyes, spinSeed };
 }
 
+/**
+ * The piece for a given (seed, pieceIndex), deterministically. The piece stream is keyed on the
+ * base seed + the monotonic piece index, so startRound, collectMove (legality), and the aim preview
+ * all produce the *same* piece for a given index without persisting the seed's live generator.
+ */
+export function pieceForIndex(seed: number, pieceIndex: number): GeneratedPiece {
+  const rng = createRng(deriveSeed(seed, pieceIndex));
+  return makePiece(rng);
+}
+
+/** Snapshot a generated piece into the compact stored form persisted in scratch. */
+export function storedPieceFrom(id: number, piece: GeneratedPiece): StoredPiece {
+  return {
+    id,
+    verts: localVerts(piece.body),
+    eyes: piece.eyes,
+    skin: piece.skin,
+    spinSeed: piece.spinSeed,
+  };
+}
+
 /** Local-space vertex loops for a body: one loop per non-parent collision part, centroid-relative. */
 export function localVerts(body: Matter.Body): Vec2[][] {
   const parts = body.parts.length > 1 ? body.parts.slice(1) : body.parts;
@@ -159,10 +191,11 @@ export function localVerts(body: Matter.Body): Vec2[][] {
   return parts.map((part) => part.vertices.map((v) => ({ x: v.x - cx, y: v.y - cy })));
 }
 
-/** Build the streamable Piece payload (local geometry + spawn) from a generated piece. */
-export function toPiecePayload(piece: GeneratedPiece): Piece {
+/** Build the streamable Piece payload (local geometry + spawn) from a stored aim piece. */
+export function toPiecePayload(piece: StoredPiece): Piece {
   return {
-    verts: localVerts(piece.body),
+    id: piece.id,
+    verts: piece.verts,
     eyes: piece.eyes,
     skin: piece.skin,
     x: CENTER_X,
@@ -172,26 +205,43 @@ export function toPiecePayload(piece: GeneratedPiece): Piece {
 }
 
 // ---------------------------------------------------------------------------
-// World assembly (a fresh matter world from stored state, every reveal)
+// The live world: a continuously-running matter world held in process
 // ---------------------------------------------------------------------------
 
-interface BuiltWorld {
-  engine: Matter.Engine;
-  platform: Matter.Body;
-  placed: Matter.Body[];
-  pendulum: Matter.Body | null;
+/** A placed dynamic body plus the cosmetics + local geometry the snapshot streams. */
+interface Placed {
+  body: Matter.Body;
+  id: number;
+  skin: Skin;
+  eyes: Eye[];
+  verts: Vec2[][];
 }
 
-/** A live piece to add to the world when simulating a drop: local loops + transform + cosmetics. */
-export interface DropPiece {
-  id: number;
-  verts: Vec2[][];
-  eyes: Eye[];
-  skin: Skin;
-  x: number;
-  /** World-y of the piece's centroid at the drop origin. */
-  y: number;
-  angle: number;
+/**
+ * A live, continuously-running Teeter world. The engine steps it every tick (no matter Runner or
+ * Render - we drive `Engine.update` ourselves), so it can be serialized to scratch and rebuilt after
+ * a reconnect. All progression state (level, scores, piece index, seed) rides on the world.
+ */
+export interface LiveWorld {
+  engine: Matter.Engine;
+  platform: Matter.Body;
+  placed: Placed[];
+  pendulum: Matter.Body | null;
+  pendulumPhase: number;
+  /** Current internal level index (0-2). */
+  levelIndex: number;
+  /** Best height reached this level (px above the platform) - the per-level scoring basis. */
+  bestHeight: number;
+  /** Cumulative game score across levels (never resets; the HUD + standings read it). */
+  totalScore: number;
+  /** Monotonic index of the NEXT piece to spawn (also the next body id). */
+  pieceIndex: number;
+  /** The base seed the piece stream keys on. */
+  seed: number;
+  /** The current aim piece (local geometry + cosmetics), or null once the game is over. */
+  next: StoredPiece | null;
+  /** True once the final level cleared - the game is over and the world stops stepping. */
+  over: boolean;
 }
 
 /** Rebuild a matter body from stored local vertex loops at a world transform. */
@@ -247,30 +297,116 @@ function addPendulum(engine: Matter.Engine, target: number): Matter.Body {
   return bob;
 }
 
-/**
- * Assemble a fresh, deterministic matter world: gravity + solver iterations identical to the
- * prototype, the static platform, every stored tower body placed static at its transform, and the
- * pendulum when the level has one. Stored bodies are added STATIC so building the world never
- * perturbs the settled tower; the caller unfreezes them before simulating a drop.
- */
-export function buildWorld(tower: StoredBody[], target: number, pendulum: boolean): BuiltWorld {
+/** A fresh matter engine with gravity + solver iterations identical to the prototype. */
+function makeEngine(): Matter.Engine {
   const engine = Engine.create();
   engine.gravity.y = 1;
   engine.positionIterations = 10;
   engine.velocityIterations = 8;
+  return engine;
+}
 
+/**
+ * Create a fresh live world for a level: a new engine, the static platform, the level's pendulum
+ * (when present), and the placed bodies rebuilt from `bodies` (dynamic, at their world transforms).
+ * Used both to start a level (empty `bodies`) and to rebuild a world from a scratch snapshot.
+ */
+export function createWorld(args: {
+  seed: number;
+  levelIndex: number;
+  bestHeight: number;
+  totalScore: number;
+  pieceIndex: number;
+  bodies: StoredBody[];
+  next: StoredPiece | null;
+  over?: boolean;
+  target: number;
+  pendulum: boolean;
+}): LiveWorld {
+  const engine = makeEngine();
   const platform = makePlatform();
   Composite.add(engine.world, platform);
 
-  const placed = tower.map((b) => {
+  const placed: Placed[] = args.bodies.map((b) => {
     const body = bodyFromStored(b.verts, b.x, b.y, b.angle);
-    Body.setStatic(body, true);
-    return body;
+    Composite.add(engine.world, body);
+    return { body, id: b.id, skin: b.skin, eyes: b.eyes, verts: b.verts };
   });
-  Composite.add(engine.world, placed);
 
-  const bob = pendulum ? addPendulum(engine, target) : null;
-  return { engine, platform, placed, pendulum: bob };
+  const pendulum = args.pendulum ? addPendulum(engine, args.target) : null;
+
+  return {
+    engine,
+    platform,
+    placed,
+    pendulum,
+    pendulumPhase: 0,
+    levelIndex: args.levelIndex,
+    bestHeight: args.bestHeight,
+    totalScore: args.totalScore,
+    pieceIndex: args.pieceIndex,
+    seed: args.seed,
+    next: args.next,
+    over: args.over ?? false,
+  };
+}
+
+/**
+ * Add a dropped piece into the live world as a DYNAMIC body at `{ x, y, angle }`. The caller has
+ * already validated legality; this just introduces the body so gravity carries it onto the tower.
+ * Returns the placed body's id.
+ */
+export function addPieceToWorld(
+  world: LiveWorld,
+  piece: StoredPiece,
+  x: number,
+  y: number,
+  angle: number,
+): number {
+  const body = bodyFromStored(piece.verts, x, y, angle);
+  Body.setVelocity(body, { x: 0, y: 0 });
+  Body.setAngularVelocity(body, 0);
+  Composite.add(world.engine.world, body);
+  world.placed.push({
+    body,
+    id: piece.id,
+    skin: piece.skin,
+    eyes: piece.eyes,
+    verts: piece.verts,
+  });
+  return piece.id;
+}
+
+/**
+ * Step the live world one engine tick: cap fall speed on placed bodies, drive the pendulum, advance
+ * the solver a couple of fixed substeps, then cull any body that fell past DEATH_Y. Real-time and
+ * frame-rate independent (fixed dt), so a slow tick never destabilizes the solver.
+ */
+export function stepWorld(world: LiveWorld): void {
+  for (let i = 0; i < SUBSTEPS_PER_TICK; i++) {
+    // Cap fall speed so a dropped piece lands soft instead of slamming the tower sideways.
+    for (const p of world.placed) {
+      if (p.body.velocity.y > MAX_FALL_SPEED) {
+        Body.setVelocity(p.body, { x: p.body.velocity.x, y: MAX_FALL_SPEED });
+      }
+    }
+    // Drive the pendulum (so it never dies out), matching the prototype.
+    if (world.pendulum) {
+      world.pendulumPhase += 0.02;
+      const f = 0.00042 * world.pendulum.mass * Math.sin(world.pendulumPhase);
+      Body.applyForce(world.pendulum, world.pendulum.position, { x: f, y: 0 });
+    }
+    Engine.update(world.engine, STEP_MS);
+  }
+
+  // Cull bodies that tumbled off the bottom.
+  for (let i = world.placed.length - 1; i >= 0; i--) {
+    const p = world.placed[i];
+    if (p && p.body.position.y > DEATH_Y) {
+      Composite.remove(world.engine.world, p.body);
+      world.placed.splice(i, 1);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -291,22 +427,16 @@ export function overlapsScene(
 }
 
 /** The current tower height in px above the platform top (0 when empty). */
-export function towerHeight(placed: Matter.Body[]): number {
+export function worldHeight(world: LiveWorld): number {
   let top = GROUND_TOP;
-  for (const b of placed) top = Math.min(top, b.bounds.min.y);
+  for (const p of world.placed) top = Math.min(top, p.body.bounds.min.y);
   return Math.max(0, Math.round(GROUND_TOP - top));
 }
 
-/** The same height measure over stored bodies (used before a world is built). */
-export function storedTowerHeight(tower: StoredBody[]): number {
-  const world = buildWorld(tower, 0, false);
-  return towerHeight(world.placed);
-}
-
 /**
- * The min-drop line: a piece must be dropped fully above the next unmet point line above the
- * current tower height. Returns that line's height (px above the platform), or null once every line
- * is cleared. Ported verbatim from the prototype.
+ * The min-drop line: a piece must be dropped fully above the next unmet 25%-of-target line above
+ * the current tower height. Returns that line's height (px above the platform), or null once every
+ * line is cleared. Ported verbatim from the prototype, keyed on the tower's current highest point.
  */
 export function requiredDropHeight(target: number, height: number): number | null {
   for (const f of [0.25, 0.5, 0.75, 1]) {
@@ -352,151 +482,8 @@ export function heightToScore(height: number, target: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// The settle simulation (the authoritative drop; records the keyframe track)
+// Drop geometry + legality helpers
 // ---------------------------------------------------------------------------
-
-/** The result of simulating one drop: the settle track and the resulting tower + measurements. */
-export interface SettleResult {
-  track: Frame[];
-  tower: StoredBody[];
-  height: number;
-}
-
-/** Snapshot a live piece's local vertex loops (post-solver) so its stored geometry stays stable. */
-function storedFrom(
-  body: Matter.Body,
-  id: number,
-  skin: Skin,
-  eyes: Eye[],
-  verts: Vec2[][],
-): StoredBody {
-  return { id, verts, x: body.position.x, y: body.position.y, angle: body.angle, skin, eyes };
-}
-
-/**
- * Simulate a drop to settle, deterministically, recording a keyframe track. Rebuilds the world,
- * unfreezes the stored tower, drops `piece` at `{ x, angle }`, then steps at a FIXED timestep -
- * capping fall speed and driving the pendulum exactly like the prototype - until the tower is calm
- * for CALM_STEPS or MAX_STEPS is hit. Fallen bodies (past DEATH_Y) are culled. Returns the settle
- * track plus the new stored tower and height.
- */
-export function simulateDrop(
-  tower: StoredBody[],
-  piece: DropPiece,
-  target: number,
-  pendulum: boolean,
-): SettleResult {
-  const world = buildWorld(tower, target, pendulum);
-  const { engine, placed } = world;
-
-  // Unfreeze the settled tower so the new piece can interact with it.
-  for (const b of placed) Body.setStatic(b, false);
-
-  // Add the dropped piece at its chosen transform.
-  const dropBody = bodyFromStored(piece.verts, piece.x, piece.y, piece.angle);
-  Body.setVelocity(dropBody, { x: 0, y: 0 });
-  Body.setAngularVelocity(dropBody, 0);
-  Composite.add(engine.world, dropBody);
-  placed.push(dropBody);
-
-  // Cosmetics + local geometry, tracked in parallel with the live bodies for the stored output.
-  interface Live {
-    body: Matter.Body;
-    id: number;
-    skin: Skin;
-    eyes: Eye[];
-    verts: Vec2[][];
-  }
-  const live: Live[] = tower.map((b, i) => ({
-    body: placed[i] as Matter.Body,
-    id: b.id,
-    skin: b.skin,
-    eyes: b.eyes,
-    verts: b.verts,
-  }));
-  live.push({
-    body: dropBody,
-    id: piece.id,
-    skin: piece.skin,
-    eyes: piece.eyes,
-    verts: piece.verts,
-  });
-
-  const track: Frame[] = [];
-  let phase = 0;
-  let calm = 0;
-  let t = 0;
-
-  const recordFrame = (): void => {
-    track.push({
-      t,
-      bodies: live
-        .filter((l) => l.body.position.y <= DEATH_Y)
-        .map((l) => ({
-          id: l.id,
-          x: round2(l.body.position.x),
-          y: round2(l.body.position.y),
-          angle: round4(l.body.angle),
-        })),
-    });
-  };
-
-  recordFrame(); // t=0 opening frame so the client has the drop's starting pose.
-
-  for (let step = 0; step < MAX_STEPS; step++) {
-    // Cap fall speed so a dropped piece lands soft instead of slamming the tower sideways.
-    for (const l of live) {
-      if (l.body.velocity.y > MAX_FALL_SPEED) {
-        Body.setVelocity(l.body, { x: l.body.velocity.x, y: MAX_FALL_SPEED });
-      }
-    }
-    // Drive the pendulum (so it never dies out), matching the prototype.
-    if (world.pendulum) {
-      phase += 0.02;
-      const f = 0.00042 * world.pendulum.mass * Math.sin(phase);
-      Body.applyForce(world.pendulum, world.pendulum.position, { x: f, y: 0 });
-    }
-
-    Engine.update(engine, STEP_MS);
-    t += STEP_MS;
-
-    let maxSpeed = 0;
-    for (const l of live) maxSpeed = Math.max(maxSpeed, l.body.speed);
-    if (maxSpeed < CALM_SPEED) calm++;
-    else calm = 0;
-
-    if (step % TRACK_EVERY === 0) recordFrame();
-
-    if (calm >= CALM_STEPS) break;
-  }
-
-  recordFrame(); // final resting pose.
-
-  // Cull bodies that tumbled off the bottom, then read the settled tower.
-  const survivors = live.filter((l) => l.body.position.y <= DEATH_Y);
-  const survivorBodies = survivors.map((l) => l.body);
-  const height = towerHeight(survivorBodies);
-  const newTower = survivors.map((l) => storedFrom(l.body, l.id, l.skin, l.eyes, l.verts));
-
-  return { track, tower: newTower, height };
-}
-
-// ---------------------------------------------------------------------------
-// Payload builders
-// ---------------------------------------------------------------------------
-
-/** Convert the stored tower into the world-space Body[] the prompt/reveal streams. */
-export function toBodyPayloads(tower: StoredBody[]): BodyPayload[] {
-  return tower.map((b) => ({
-    id: b.id,
-    verts: b.verts,
-    x: round2(b.x),
-    y: round2(b.y),
-    angle: round4(b.angle),
-    skin: b.skin,
-    eyes: b.eyes,
-  }));
-}
 
 /** Clamp a drop x to the legal horizontal range around center (mirrors the prototype's aiming). */
 export function clampDropX(x: number): number {
@@ -507,9 +494,9 @@ export function clampDropX(x: number): number {
 export const DROP_MARGIN = 8;
 
 /**
- * The canonical drop origin (centroid world-y) for a piece at a given angle. The move contract is
- * `{ angle, dropX }` only, so the server picks the height: the piece is released from just above the
- * current required min-drop line (or, once all lines are cleared, just above the tower top), so a
+ * The canonical drop origin (centroid world-y) for a piece at a given angle. The move carries
+ * `{ angle, dropX, dropY }`, but the server clamps `dropY` so the piece is released from just above
+ * the current required min-drop line (or, once all lines are cleared, just above the tower top): a
  * straight aim is always legal on the line rule and gravity carries it down onto the tower. Returns
  * a y clamped to at most the spawn line so the piece never starts below the platform view.
  */
@@ -530,42 +517,46 @@ export function dropYFor(
   return Math.min(centroidY, GROUND_TOP - SPAWN_Y);
 }
 
-/** A generated piece placed at `{ dropX, dropY, angle }`, ready to feed simulateDrop. */
-export function pieceToDrop(
-  id: number,
-  piece: GeneratedPiece,
-  angle: number,
-  dropX: number,
-  dropY: number,
-): DropPiece {
-  return {
-    id,
-    verts: localVerts(piece.body),
-    eyes: piece.eyes,
-    skin: piece.skin,
-    x: clampDropX(dropX),
-    y: dropY,
-    angle,
-  };
-}
-
 /**
  * Build the held body for a legality check at a given transform, without mutating anything: makes a
  * body from local vertex loops, positioned at the drop origin. Used by collectMove to reject an
- * illegal placement before it is stored. `x` is expected pre-clamped.
+ * illegal placement before it is added. `x` is expected pre-clamped.
  */
 export function heldBodyAt(verts: Vec2[][], x: number, y: number, angle: number): Matter.Body {
   return bodyFromStored(verts, x, y, angle);
 }
 
-/** The level for a given level index, clamped to the last level. */
-export function levelAt(index: number): (typeof LEVELS)[number] {
-  const level = LEVELS[Math.min(index, LEVELS.length - 1)];
-  // LEVELS is non-empty; narrow for noUncheckedIndexedAccess.
-  return level as (typeof LEVELS)[number];
+// ---------------------------------------------------------------------------
+// Payload builders (turn the live world into the streamable TeeterSim)
+// ---------------------------------------------------------------------------
+
+/** Convert the live world's placed bodies into the world-space Body[] the snapshot streams. */
+export function toBodyPayloads(world: LiveWorld): BodyPayload[] {
+  return world.placed.map((p) => ({
+    id: p.id,
+    verts: p.verts,
+    x: round2(p.body.position.x),
+    y: round2(p.body.position.y),
+    angle: round4(p.body.angle),
+    skin: p.skin,
+    eyes: p.eyes,
+  }));
 }
 
-// Keep floats compact + stable on the wire (avoids float jitter bloating the track).
+/** Snapshot the live world's placed bodies into the compact stored form persisted in scratch. */
+export function toStoredBodies(world: LiveWorld): StoredBody[] {
+  return world.placed.map((p) => ({
+    id: p.id,
+    verts: p.verts,
+    x: round2(p.body.position.x),
+    y: round2(p.body.position.y),
+    angle: round4(p.body.angle),
+    skin: p.skin,
+    eyes: p.eyes,
+  }));
+}
+
+// Keep floats compact + stable on the wire (avoids float jitter bloating the snapshot).
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }

@@ -7,6 +7,10 @@ import { GameStage } from './GameStage';
 // stub it module-wide to keep test output clean. The scroll-to-question tests re-spy to assert.
 vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
+// The single-surface (Teeter) viewer draws with a 2D canvas context jsdom does not implement; the
+// draw loop guards on a null context, so stub getContext to null to keep the jsdom noise out.
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null as never);
+
 const players = [
   { player: 'p1', nickname: 'Ada', connected: true },
   { player: 'p2', nickname: 'Bo', connected: true },
@@ -338,6 +342,62 @@ describe('GameStage remote-only player sees results without a viewer', () => {
     const controller = screen.getByLabelText('Your controller');
     within(controller).getByText(/Tap Next when you are ready/);
     expect(within(controller).queryByText(/Waiting for the host/)).toBeNull();
+  });
+});
+
+describe('GameStage single-surface game (Teeter Tower)', () => {
+  // A single-surface game (registry flag `singleSurface: true`) is one interactive canvas: the shell
+  // renders only the Viewer, full width, and passes onMove to it - even for a role that would
+  // normally see the remote-only or viewer-only split.
+  function teeterState(activePlayer: string): GameState {
+    return build({
+      phase: 'collecting',
+      sim: {
+        bodies: [],
+        next: {
+          id: 1,
+          verts: [],
+          eyes: [],
+          skin: { fill: '#fff', stroke: '#000' },
+          x: 410,
+          y: 440,
+          spinSeed: 0.02,
+        },
+        activePlayer,
+        height: 0,
+        score: 0,
+        level: 0,
+        target: 600,
+        requiredLine: 520,
+        over: false,
+      },
+    });
+  }
+
+  it('renders only the viewer (no separate controller) for a remote player', () => {
+    renderStage({ game: 'teeter-tower', state: teeterState('p1'), role: 'player', mode: 'remote' });
+    // The single surface is the viewer, shown even though a remote player normally sees no viewer.
+    expect(screen.getByLabelText('Game viewer')).toBeDefined();
+    // No separate remote controller pane (Teeter's Remote is a null no-op and is never rendered).
+    expect(screen.queryByLabelText('Your controller')).toBeNull();
+  });
+
+  it('shows the viewer for an observer without any controller', () => {
+    renderStage({
+      game: 'teeter-tower',
+      state: teeterState('p1'),
+      role: 'observer',
+      mode: undefined,
+    });
+    expect(screen.getByLabelText('Game viewer')).toBeDefined();
+    expect(screen.queryByLabelText('Your controller')).toBeNull();
+  });
+
+  it('leaves the standard viewer + remote split intact for a non-single-surface game', () => {
+    // Trivia is not single-surface: an interactive player still gets both panes.
+    renderStage({ game: 'trivia', role: 'player', mode: 'interactive' });
+    expect(screen.getByLabelText('Game viewer')).toBeDefined();
+    expect(screen.getByLabelText('Your controller')).toBeDefined();
   });
 });
 

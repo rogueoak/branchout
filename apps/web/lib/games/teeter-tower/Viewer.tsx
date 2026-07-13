@@ -1,170 +1,198 @@
 'use client';
 
-// The Teeter Tower viewer (spec 0043): the shared screen everyone watches. It is a PURE RENDERER -
-// it runs no physics. It draws the server-provided tower (world-space Body[]), the dashed target
-// line + score bands, and googly eyes; when a new reveal arrives it plays back the server's settle
-// `track` frame by frame (rAF, mapping Frame.t to real time), then rests on the settled tower. A HUD
-// shows level / height / score / round. Mobile-first: the canvas scales by aspect ratio and reads
-// well at ~360px wide, with `touch-action: none`.
+// The Teeter Tower single interactive surface (spec 0044). Teeter is a LIVE game: the engine steps a
+// continuously-running world and streams a `TeeterSim` on the `sim` frame (~25x/sec). This ONE canvas
+// is the whole game - it renders the streamed live tower and, when it is the local player's turn,
+// lets them aim + drop the next piece directly on the canvas. It runs no physics; the server is
+// authoritative.
 //
-// Continuous play: after the settle animation finishes AND the round is at `leaderboard` (the "tower
-// settled, next piece ready" rest state), the host viewer calls `onAdvance()` exactly once so the
-// next piece spawns without a manual tap. A `complete` game shows a final summary instead.
+// Rendering: a single rAF loop draws every animation frame. It INTERPOLATES between the last two
+// received sim snapshots by wall-clock time, so the ~25 fps stream looks smooth (the tower visibly
+// sways / settles / topples as the stream changes). A vertical camera pans up to follow the tower top.
+//
+// Aim -> lock -> drop (only when `me === sim.activePlayer` and `sim.next` exists):
+//   1. The next piece spins locally (spinSeed drives the rotation via rAF). Tap/click to LOCK the
+//      on-screen angle.
+//   2. After locking, the piece FOLLOWS THE POINTER (x and y), clamped so its bottom stays ABOVE the
+//      required line and its x within the platform range. It ghosts + turns red (drop blocked) when
+//      the pointer would put it below the line (client preview; the server re-checks).
+//   3. Tap/click again to DROP: onMove(round, JSON.stringify({ angle, dropX, dropY })). No re-aim -
+//      we wait for the stream to show it land and present the next piece (a new `sim.next` id).
+// Mobile-first (CLAUDE.md rule #1): the canvas scales by aspect-ratio, reads well at ~360px wide, uses
+// big tap targets and pointer capture + touch-action:none so a drag never scrolls the page.
 
 import { Badge } from '@rogueoak/canopy';
 import { useEffect, useRef, useState } from 'react';
 import type { GameViewProps } from '../registry';
-import { FinalResults } from '../../../components/game/FinalResults';
+import { asTeeterSim, type Body, type Piece, type TeeterSim } from './protocol';
 import {
-  asTeeterPrompt,
-  pickTeeterReveal,
-  type Body,
-  type Frame,
-  type TeeterReveal,
-} from './protocol';
-import {
+  CENTER_X,
+  GROUND_TOP,
+  VIEW_H,
+  VIEW_W,
+  clampDropX,
+  drawBody,
   drawPlatform,
+  drawRequiredLine,
   drawSky,
   drawTargetBands,
   drawTower,
   resolveChrome,
-  VIEW_H,
-  VIEW_W,
+  rotatedYSpan,
   withWorldTransform,
 } from './render';
 
 const LEVEL_NAMES = ['Warm-up', 'Reach for the sky', 'The Pendulum'];
 
-/** Interpolate a body's transform between two keyframes at fraction `f` (0..1). */
-function lerpTransform(
-  a: { x: number; y: number; angle: number },
-  b: { x: number; y: number; angle: number },
-  f: number,
-): { x: number; y: number; angle: number } {
-  return {
-    x: a.x + (b.x - a.x) * f,
-    y: a.y + (b.y - a.y) * f,
-    angle: a.angle + (b.angle - a.angle) * f,
+/** The local aim phase for the active player: the piece is spinning, or locked and being placed. */
+type AimPhase = 'spinning' | 'placing';
+
+/** Interpolate one transform between two snapshots at fraction `f` (0..1). */
+function lerp(a: number, b: number, f: number): number {
+  return a + (b - a) * f;
+}
+
+/** The shortest-arc angle interpolation (so a wrap across +/-PI does not spin the long way). */
+function lerpAngle(a: number, b: number, f: number): number {
+  let d = b - a;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return a + d * f;
+}
+
+/**
+ * Interpolate the tower bodies between the previous and current sim by fraction `f`. Bodies matched
+ * by id lerp their transform; a body only in the newer snapshot (a piece that just landed) or only in
+ * the older one snaps to whichever exists.
+ */
+function interpolateBodies(prev: Body[], cur: Body[], f: number): Body[] {
+  const prevById = new Map(prev.map((b) => [b.id, b]));
+  return cur.map((c) => {
+    const p = prevById.get(c.id);
+    if (!p) return c;
+    return {
+      ...c,
+      x: lerp(p.x, c.x, f),
+      y: lerp(p.y, c.y, f),
+      angle: lerpAngle(p.angle, c.angle, f),
+    };
+  });
+}
+
+function nicknameOf(state: GameViewProps['state'], id: string): string {
+  return state.players.find((player) => player.player === id)?.nickname ?? id;
+}
+
+/**
+ * Translate an engine rejection reason into player-clear copy. The engine's raw reasons read like
+ * internal verdicts ("not your turn", "drop above the required line", ...); rendered verbatim they can
+ * confuse. This maps the known reasons to friendly, self-contained lines and falls back to a generic
+ * nudge for anything unexpected.
+ */
+function rejectionMessage(reason: string): string {
+  const map: Record<string, string> = {
+    'not your turn': 'Hold tight - it is not your turn yet.',
+    'drop above the required line': 'Drop it higher, above the marked line.',
+    'piece overlaps the tower': 'That spot is blocked - nudge it over and try again.',
+    'malformed move': 'That did not send cleanly - aim and drop again.',
+    'game over': 'The tower is finished - nothing left to drop.',
   };
+  return map[reason] ?? 'That drop did not land - aim and drop again.';
 }
 
-/** Build the world-space bodies to draw at simulated time `t` (ms) from the settle track + skins. */
-function bodiesAt(track: Frame[], skins: Map<number, Body>, t: number): Body[] {
-  if (track.length === 0) return [];
-  // Find the bracketing frames for t.
-  let lo = 0;
-  for (let i = 0; i < track.length - 1; i++) {
-    if (track[i]!.t <= t) lo = i;
-    else break;
-  }
-  const a = track[lo]!;
-  const b = track[Math.min(lo + 1, track.length - 1)]!;
-  const span = b.t - a.t;
-  const f = span > 0 ? Math.max(0, Math.min(1, (t - a.t) / span)) : 0;
-
-  const byIdB = new Map(b.bodies.map((body) => [body.id, body]));
-  const out: Body[] = [];
-  for (const fa of a.bodies) {
-    const skin = skins.get(fa.id);
-    if (!skin) continue;
-    const fb = byIdB.get(fa.id) ?? fa;
-    const tr = lerpTransform(fa, fb, f);
-    out.push({ ...skin, x: tr.x, y: tr.y, angle: tr.angle });
-  }
-  return out;
-}
-
-export function TeeterViewer({ state, onAdvance }: GameViewProps) {
-  const { phase } = state;
-  const prompt = asTeeterPrompt(state.prompt);
-  const reveal = pickTeeterReveal(state.reveals);
+export function TeeterViewer({ state, me, onMove }: GameViewProps) {
+  const sim = asTeeterSim(state.sim);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // The reveal currently being animated (null when resting). A new reveal object (by round + track
-  // length) starts a fresh playback; playing sets `animating` so the rest render yields to it.
-  const [animating, setAnimating] = useState(false);
-  const playedRevealKey = useRef<string | null>(null);
-  const advancedRound = useRef<number | null>(null);
-  // A pending "advance after a beat" timer, so a solo player can read the "Level cleared" status +
-  // score tick before the next piece spawns. Cleared on unmount / round change.
-  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The active player's local aim state. `angle` is the locked drop angle; `pointer` is the latest
+  // world-space pointer position while placing. A spinning piece has no locked angle yet.
+  const [aim, setAim] = useState<AimPhase>('spinning');
+  const [angle, setAngle] = useState(0);
+  const [pointer, setPointer] = useState<{ x: number; y: number }>({
+    x: CENTER_X,
+    y: GROUND_TOP - 100,
+  });
+  // The `sim.next` id we last aimed at, so a new piece (new id) resets the aim UI to spinning.
+  const [aimedPieceId, setAimedPieceId] = useState<number | null>(null);
+  // True from the moment we submit a drop until the stream presents a new piece id - so we stop
+  // spinning/aiming while the drop is in flight and the piece is landing.
+  const [dropped, setDropped] = useState(false);
 
-  /** How long to linger on the settled tower before the continuous auto-advance fires (ms). */
-  const ADVANCE_DELAY_MS = 900;
+  const me_ = me ?? '';
+  const isActive = sim != null && !sim.over && sim.next != null && sim.activePlayer === me_;
+  const nextId = sim?.next?.id ?? null;
 
-  // The values the draw loop reads without re-subscribing rAF each render. Refs keep the animation
-  // loop stable while state drives when to start/stop it.
-  const revealRef = useRef<TeeterReveal | null>(null);
-  revealRef.current = reveal;
-  const promptTowerRef = useRef<Body[]>(prompt?.tower ?? []);
-  promptTowerRef.current = prompt?.tower ?? [];
-  const targetRef = useRef<number>(prompt?.target ?? reveal?.target ?? 300);
-  targetRef.current = prompt?.target ?? reveal?.target ?? 300;
-  const onAdvanceRef = useRef(onAdvance);
-  onAdvanceRef.current = onAdvance;
-  const phaseRef = useRef(phase);
-  phaseRef.current = phase;
-  const roundRef = useRef(state.round);
-  roundRef.current = state.round;
-
-  // Start playback when a new reveal with a non-empty track arrives.
+  // A new aim piece (or losing the turn) resets the local aim UI.
   useEffect(() => {
-    if (!reveal) return;
-    const key = `${state.round}:${reveal.track.length}:${reveal.score}`;
-    if (playedRevealKey.current === key) return;
-    playedRevealKey.current = key;
-    setAnimating(reveal.track.length > 0);
-    // A trackless reveal (host force-close) has nothing to animate: fall straight through to the
-    // rest render + the advance check below.
-    if (reveal.track.length === 0) maybeAdvance();
-  }, [reveal, state.round]);
-
-  // Advance once per round when we are resting at leaderboard (continuous play). Guarded so a
-  // re-render or a repeated leaderboard frame never schedules it twice. A short beat lets a solo
-  // player read the "Level cleared" status + score tick before the next piece spawns. The guard is
-  // claimed at schedule time (not fire time), so a repeated frame during the delay is a no-op.
-  function maybeAdvance(): void {
-    if (
-      phaseRef.current === 'leaderboard' &&
-      onAdvanceRef.current &&
-      advancedRound.current !== roundRef.current
-    ) {
-      advancedRound.current = roundRef.current;
-      advanceTimer.current = setTimeout(() => {
-        advanceTimer.current = null;
-        onAdvanceRef.current?.();
-      }, ADVANCE_DELAY_MS);
+    if (nextId !== aimedPieceId) {
+      setAimedPieceId(nextId);
+      setAim('spinning');
+      setAngle(0);
+      setDropped(false);
+      setPointer({ x: CENTER_X, y: GROUND_TOP - 100 });
     }
+  }, [nextId, aimedPieceId]);
+
+  // Refs the draw loop reads without re-subscribing rAF each render. The loop stays stable for the
+  // component's life; refs carry the changing sim, aim, and pointer into it.
+  const simRef = useRef<TeeterSim | null>(sim);
+  const prevSimRef = useRef<TeeterSim | null>(null);
+  const simArrivedRef = useRef<number>(0);
+  const prevArrivedRef = useRef<number>(0);
+  const cameraRef = useRef<number>(0);
+
+  const aimRef = useRef(aim);
+  aimRef.current = aim;
+  const angleRef = useRef(angle);
+  angleRef.current = angle;
+  const pointerRef = useRef(pointer);
+  pointerRef.current = pointer;
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
+  const droppedRef = useRef(dropped);
+  droppedRef.current = dropped;
+  // The live spin angle the draw loop advances, so the angle a tap locks is exactly the one on screen.
+  const spinAngleRef = useRef(0);
+
+  // Fold each new sim snapshot into the interpolation buffer: keep the previous snapshot + its arrival
+  // time so the draw loop can lerp between them by wall-clock. A brand-new object identity (the reducer
+  // replaces `sim` each frame) marks a fresh arrival.
+  useEffect(() => {
+    if (!sim) return;
+    if (simRef.current !== sim) {
+      prevSimRef.current = simRef.current;
+      prevArrivedRef.current = simArrivedRef.current;
+      simRef.current = sim;
+      simArrivedRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    }
+  }, [sim]);
+
+  // Clamp the placing piece's centroid so its rotated bottom stays above the required line and its x
+  // stays in the platform range. Returns the drawable transform + whether the drop is currently legal.
+  function placedTransform(
+    piece: Piece,
+    live: TeeterSim,
+  ): { x: number; y: number; legal: boolean; rawBottom: number } {
+    const span = rotatedYSpan(piece, angleRef.current);
+    const x = clampDropX(pointerRef.current.x);
+    // The piece bottom (centroid y + rotated max) must be strictly above requiredLine (smaller y).
+    const rawBottom = pointerRef.current.y + span.max;
+    const legal = rawBottom < live.requiredLine;
+    // Clamp the drawn y so the ghost never sinks below the line (a small margin keeps it readable).
+    const maxCentroidY = live.requiredLine - span.max - 1;
+    const y = Math.min(pointerRef.current.y, maxCentroidY);
+    return { x, y, legal, rawBottom };
   }
 
-  // If we are resting (not animating) and already at leaderboard, advance. Covers the case where the
-  // leaderboard frame lands after the track already finished.
-  useEffect(() => {
-    if (!animating && phase === 'leaderboard') maybeAdvance();
-  }, [animating, phase, state.round]);
-
-  // Clear any pending advance timer when the round changes or the component unmounts, so a beat that
-  // has not fired yet never advances a round it no longer belongs to.
-  useEffect(() => {
-    return () => {
-      if (advanceTimer.current !== null) {
-        clearTimeout(advanceTimer.current);
-        advanceTimer.current = null;
-      }
-    };
-  }, [state.round]);
-
-  // The draw loop. One rAF loop lives for the component's life; it draws the rest tower every frame
-  // and, while animating, advances the settle playback in real time, ending it (and checking the
-  // continuous-play advance) when the track's final timestamp is reached.
+  // The single draw loop: interpolate + draw the live tower every frame, follow the tower top with the
+  // camera, and (when active) overlay the spinning / placing aim piece.
   useEffect(() => {
     let raf = 0;
-    let playStart: number | null = null;
-
-    const render = (now: number): void => {
+    const render = (): void => {
       const canvas = canvasRef.current;
-      if (canvas) {
+      const live = simRef.current;
+      if (canvas && live) {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const rect = canvas.getBoundingClientRect();
         const w = Math.max(1, Math.round(rect.width * dpr));
@@ -175,34 +203,73 @@ export function TeeterViewer({ state, onAdvance }: GameViewProps) {
         }
         const ctx = canvas.getContext('2d');
         if (ctx) {
+          // Interpolate the tower between the previous and current snapshot by wall-clock time. The
+          // stream is ~25 fps (40ms/frame); ease toward the newest over that window for smooth sway.
+          const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          const prev = prevSimRef.current;
+          const span = simArrivedRef.current - prevArrivedRef.current;
+          const f =
+            prev && span > 0 ? Math.max(0, Math.min(1, (now - simArrivedRef.current) / span)) : 1;
+          const bodies = prev ? interpolateBodies(prev.bodies, live.bodies, f) : live.bodies;
+
+          // Camera: follow the highest body (smallest y), keeping it in the upper portion of the view.
+          let top = GROUND_TOP;
+          for (const b of bodies) top = Math.min(top, b.y);
+          const targetCam = Math.min(0, top - VIEW_H * 0.4);
+          cameraRef.current += (targetCam - cameraRef.current) * 0.08;
+          const cameraY = cameraRef.current;
+
           const chrome = resolveChrome(canvas);
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          withWorldTransform(ctx, rect.width, rect.height, dpr);
-          drawSky(ctx, chrome);
-          drawTargetBands(ctx, chrome, targetRef.current);
+          withWorldTransform(ctx, rect.width, rect.height, dpr, cameraY);
+          drawSky(ctx, chrome, cameraY);
+          drawTargetBands(ctx, chrome, live.target);
           drawPlatform(ctx, chrome);
+          drawTower(ctx, bodies);
 
-          const rev = revealRef.current;
-          if (animating && rev && rev.track.length > 0) {
-            if (playStart === null) playStart = now;
-            const elapsed = now - playStart;
-            const endT = rev.track[rev.track.length - 1]!.t;
-            const skins = new Map(rev.tower.map((b) => [b.id, b]));
-            // The track only carries surviving bodies' final skins; also index the opening frame's
-            // ids so a body that fell off still animates out (it just is not in the settled tower).
-            for (const b of rev.tower) skins.set(b.id, b);
-            const bodies = bodiesAt(rev.track, skins, Math.min(elapsed, endT));
-            drawTower(ctx, bodies);
-            if (elapsed >= endT) {
-              playStart = null;
-              setAnimating(false);
-              maybeAdvance();
+          // The aim overlay for the active player who has not yet dropped.
+          if (isActiveRef.current && !droppedRef.current && live.next) {
+            const piece = live.next;
+            if (aimRef.current === 'spinning') {
+              spinAngleRef.current += piece.spinSeed;
+              drawBody(
+                ctx,
+                piece.verts,
+                piece.eyes,
+                piece.skin,
+                piece.x,
+                piece.y,
+                spinAngleRef.current,
+                { x: 0, y: 0 },
+                0.9,
+              );
+            } else {
+              drawRequiredLine(ctx, chrome, live.requiredLine);
+              const t = placedTransform(piece, live);
+              const skin = t.legal ? piece.skin : { fill: '#c23b52', stroke: chrome.dropLine };
+              // A drop guide line from the piece down to the platform.
+              ctx.save();
+              ctx.strokeStyle = chrome.dropLine;
+              ctx.setLineDash([8, 8]);
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(t.x, t.y);
+              ctx.lineTo(t.x, GROUND_TOP);
+              ctx.stroke();
+              ctx.restore();
+              drawBody(
+                ctx,
+                piece.verts,
+                piece.eyes,
+                skin,
+                t.x,
+                t.y,
+                angleRef.current,
+                { x: 0, y: 0 },
+                0.85,
+              );
             }
-          } else {
-            // Rest render: the settled tower from the last reveal, or the prompt's tower.
-            const resting = rev && !animating ? rev.tower : promptTowerRef.current;
-            drawTower(ctx, resting);
           }
         }
       }
@@ -210,26 +277,80 @@ export function TeeterViewer({ state, onAdvance }: GameViewProps) {
     };
     raf = requestAnimationFrame(render);
     return () => cancelAnimationFrame(raf);
-  }, [animating]);
+  }, []);
 
-  const level = reveal?.level ?? prompt?.level ?? 0;
-  const height = reveal?.height ?? prompt?.height ?? 0;
-  const target = targetRef.current;
-  const score = reveal?.score ?? state.scores[Object.keys(state.scores)[0] ?? ''] ?? 0;
+  // Map a pointer event to world coordinates (accounting for the letterbox scale + the camera pan).
+  function pointerToWorld(clientX: number, clientY: number): { x: number; y: number } {
+    const canvas = canvasRef.current;
+    if (!canvas) return pointerRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scale = Math.min(rect.width / VIEW_W, rect.height / VIEW_H);
+    // A zero-sized rect (not laid out yet) would divide by zero; keep the last known pointer.
+    if (!(scale > 0)) return pointerRef.current;
+    const offsetX = (rect.width - VIEW_W * scale) / 2;
+    const offsetY = (rect.height - VIEW_H * scale) / 2;
+    return {
+      x: (clientX - rect.left - offsetX) / scale,
+      y: (clientY - rect.top - offsetY) / scale + cameraRef.current,
+    };
+  }
 
-  if (phase === 'complete') {
+  // Tap 1 locks the spin; tap 2 drops. Between them the pointer moves the piece.
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>): void {
+    if (!isActive || dropped) return;
+    // Capture the pointer so a finger that drifts off a small (~360px) board mid-drag keeps tracking
+    // (guarded: jsdom / older engines may not implement pointer capture).
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    if (aim === 'spinning') {
+      setAngle(spinAngleRef.current);
+      setPointer(pointerToWorld(e.clientX, e.clientY));
+      setAim('placing');
+    } else {
+      drop();
+    }
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>): void {
+    if (!isActive || dropped || aim !== 'placing') return;
+    setPointer(pointerToWorld(e.clientX, e.clientY));
+  }
+
+  function releaseCapture(e: React.PointerEvent<HTMLDivElement>): void {
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    }
+  }
+
+  function drop(): void {
+    const live = simRef.current;
+    if (!live || !live.next || !isActive || aim !== 'placing') return;
+    const t = placedTransform(live.next, live);
+    // Submit the piece's current transform. The server clamps + re-checks; we send our previewed pose.
+    onMove?.(state.round, JSON.stringify({ angle: angleRef.current, dropX: t.x, dropY: t.y }));
+    setDropped(true);
+  }
+
+  const level = sim?.level ?? 0;
+  const height = sim?.height ?? 0;
+  const target = sim?.target ?? 600;
+  const score = sim?.score ?? 0;
+
+  // Game over: a final summary with the score.
+  if (sim?.over) {
     return (
-      <section aria-label="Game viewer" className="flex flex-col gap-5">
+      <section aria-label="Game viewer" className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4 text-center">
           <h2 className="text-h3 text-text">Tower complete</h2>
           <p className="text-body-sm text-text-muted">
-            You stacked your way to {height} px. Nice climbing.
+            You stacked your way to {height} px for {score} pts. Nice climbing.
           </p>
         </div>
-        <FinalResults standings={state.standings} me={undefined} />
+        <TowerCanvas canvasRef={canvasRef} />
       </section>
     );
   }
+
+  const watchingName = sim && !isActive ? nicknameOf(state, sim.activePlayer) : null;
 
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-4">
@@ -244,28 +365,72 @@ export function TeeterViewer({ state, onAdvance }: GameViewProps) {
         <Badge variant={score >= 100 ? 'success' : 'neutral'}>
           <span aria-label={`Score ${score}`}>{score} pts</span>
         </Badge>
-        <Badge variant="neutral">Piece {state.round}</Badge>
       </div>
 
-      {/* Aspect-ratio box keeps the canvas the world's shape and good at ~360px wide (mobile-first).
-          touch-action:none so a drag over the board never scrolls the page. */}
+      {isActive ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="info">Your turn</Badge>
+          <Badge variant="neutral">
+            {dropped
+              ? 'Dropping...'
+              : aim === 'spinning'
+                ? 'Tap the board to lock the angle'
+                : 'Move to aim, tap to drop'}
+          </Badge>
+        </div>
+      ) : watchingName ? (
+        <p role="status" className="text-body-sm text-text-muted">
+          Watching {watchingName} build the tower.
+        </p>
+      ) : null}
+
+      {state.rejected ? (
+        <p role="alert" className="text-body-sm text-danger">
+          {rejectionMessage(state.rejected)}
+        </p>
+      ) : null}
+
+      {/* The single game surface: the live tower, plus the aim overlay when it is the local turn.
+          touch-action:none + pointer capture keep a drag over the board from scrolling the page and
+          keep tracking when a finger drifts off a small (~360px) board mid-drag (mobile-first). */}
       <div
         className="w-full overflow-hidden rounded-xl border border-border bg-bg"
         style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}`, touchAction: 'none' }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={releaseCapture}
+        onPointerCancel={releaseCapture}
       >
         <canvas
           ref={canvasRef}
-          aria-label="Teeter Tower board"
+          aria-label={isActive ? 'Aim and drop the piece' : 'Teeter Tower board'}
           role="img"
           className="block h-full w-full"
         />
       </div>
 
-      {reveal?.cleared ? (
-        <p role="status" className="text-body-sm text-success">
-          Level cleared - reaching for the next height.
+      {isActive && !dropped && aim === 'placing' ? (
+        <p className="text-body-sm text-text-muted">
+          Keep the piece above the marked line, then tap to drop.
         </p>
       ) : null}
     </section>
+  );
+}
+
+/** The bare canvas element, shared by the over/summary and main views so one draw loop keeps running. */
+function TowerCanvas({ canvasRef }: { canvasRef: React.RefObject<HTMLCanvasElement | null> }) {
+  return (
+    <div
+      className="w-full overflow-hidden rounded-xl border border-border bg-bg"
+      style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+    >
+      <canvas
+        ref={canvasRef}
+        aria-label="Teeter Tower board"
+        role="img"
+        className="block h-full w-full"
+      />
+    </div>
   );
 }

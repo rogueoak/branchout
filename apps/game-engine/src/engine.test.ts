@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   GameCompleteReport,
   RoundReport,
@@ -964,5 +964,151 @@ describe('decision/guess phase (spec 0020)', () => {
       /no resolveDecision/,
     );
     expect((await engine.getState('r1', 'bad-decider'))?.phase).toBe('collecting');
+  });
+});
+
+// A live game (spec 0044): the engine runs a per-session sim loop calling `tick`, streams the
+// returned `sim`, ends the game when `tick` reports `over`, and does NOT drive reveal/leaderboard.
+const LIVE_GAME_ID = 'live-stub';
+
+/** Number of ticks the fake live game runs before it reports `over`. */
+const LIVE_TICKS_TO_END = 3;
+
+/**
+ * A minimal live module: each `tick` increments a `t` counter in scratch, streams `{ t }` as the
+ * sim, and reports `over` once `t` reaches `LIVE_TICKS_TO_END`. `collectMove` records a drop into
+ * scratch (the "apply to the live world" analogue). Implementing `tick` marks it live.
+ */
+function liveStubGame(): GameModule {
+  const t = (ctx: { scratch: Readonly<Record<string, unknown>> }): number =>
+    (ctx.scratch.t as number | undefined) ?? 0;
+  return {
+    id: LIVE_GAME_ID,
+    configure: () => ({ scratch: { t: 0, drops: 0 }, rounds: 1, moveWindowMs: 0 }),
+    startRound: (ctx) => ({ scratch: { ...ctx.scratch }, prompt: { t: t(ctx) } }),
+    collectMove: (ctx) => ({
+      scratch: { ...ctx.scratch, drops: ((ctx.scratch.drops as number) ?? 0) + 1 },
+    }),
+    reveal: (ctx) => ({
+      scratch: ctx.scratch as Record<string, unknown>,
+      reveal: null,
+      scores: [],
+    }),
+    collectVote: (ctx) => ({ scratch: ctx.scratch as Record<string, unknown> }),
+    disputeWindow: (ctx) => ({ scratch: ctx.scratch as Record<string, unknown>, disputes: [] }),
+    disputeVote: (ctx) => ({ scratch: ctx.scratch as Record<string, unknown>, scores: [] }),
+    leaderboard: () => [],
+    advance: () => ({ done: true }),
+    endGame: (ctx) => [{ player: 'p1', nickname: 'Ada', score: t(ctx) * 10, rank: 1 }],
+    tick: (ctx) => {
+      const next = t(ctx) + 1;
+      return {
+        scratch: { ...ctx.scratch, t: next },
+        sim: { t: next },
+        over: next >= LIVE_TICKS_TO_END,
+      };
+    },
+  };
+}
+
+describe('GameEngine live game (sim loop)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function liveHarness() {
+    const store = new InMemorySessionStore();
+    const pubsub = new InMemoryPubSub();
+    const reporter = new CapturingReporter();
+    const scheduler = new ManualScheduler();
+    const engine = new GameEngine({
+      registry: new GameRegistry([liveStubGame()]),
+      store,
+      pubsub,
+      reporter,
+      scheduler,
+      logger: { error: () => {} },
+    });
+    return { engine, store, pubsub, reporter, scheduler };
+  }
+
+  function liveHandoff(): StartHandoffRequest {
+    return {
+      v: PROTOCOL_VERSION,
+      room: 'r1',
+      game: LIVE_GAME_ID,
+      players: [{ player: 'p1', nickname: 'Ada' }],
+      config: {},
+    };
+  }
+
+  it('runs the sim loop on a timer, streaming sim frames and ending on tick.over', async () => {
+    const h = liveHarness();
+    const sims: unknown[] = [];
+    // Subscribe to capture every streamed frame; collect the sim payloads.
+    await h.pubsub.subscribe(streamChannel('r1', LIVE_GAME_ID), (frame) => {
+      if (frame.type === 'sim') sims.push((frame as { sim: unknown }).sim);
+    });
+
+    await h.engine.start(liveHandoff());
+    // The game sits in the live `collecting` phase (no reveal/leaderboard); no sim yet (loop armed).
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('collecting');
+
+    // Advance one tick: the loop fires, steps the world, and streams one sim frame.
+    await vi.advanceTimersByTimeAsync(40);
+    expect(sims).toEqual([{ t: 1 }]);
+
+    // Two more ticks reach LIVE_TICKS_TO_END: tick reports over -> the engine ends the game.
+    await vi.advanceTimersByTimeAsync(80);
+    expect(sims).toEqual([{ t: 1 }, { t: 2 }, { t: 3 }]);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('complete');
+
+    // The final standings came from endGame (score = t*10), and the completion was reported once.
+    expect(h.reporter.completes).toHaveLength(1);
+    expect(h.reporter.completes[0]?.standings[0]?.score).toBe(30);
+
+    // No sim frames stream after the game ended (the loop stopped).
+    await vi.advanceTimersByTimeAsync(200);
+    expect(sims).toEqual([{ t: 1 }, { t: 2 }, { t: 3 }]);
+
+    // A live game never runs the turn cycle: no round report was ever produced.
+    expect(h.reporter.rounds).toHaveLength(0);
+  });
+
+  it('freezes the world on pause and resumes it, and a joiner catches up to the last sim', async () => {
+    const h = liveHarness();
+    await h.engine.start(liveHandoff());
+
+    // One tick, then pause: the loop stops, so time passing streams no further sims.
+    await vi.advanceTimersByTimeAsync(40);
+    await h.engine.control('r1', LIVE_GAME_ID, 'pause');
+    expect((await h.engine.getSnapshot('r1', LIVE_GAME_ID))?.paused).toBe(true);
+
+    // A joiner mid-pause gets the last streamed sim in its catch-up frames.
+    const frames = await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+    const sim = frames.find((f) => f.type === 'sim') as { sim: unknown } | undefined;
+    expect(sim?.sim).toEqual({ t: 1 });
+
+    // Time passes while paused: the world does not step (t stays 1 in scratch).
+    await vi.advanceTimersByTimeAsync(400);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.scratch.t).toBe(1);
+
+    // Resume: the loop restarts and the world steps again, ending the game.
+    await h.engine.control('r1', LIVE_GAME_ID, 'pause');
+    await vi.advanceTimersByTimeAsync(80);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('complete');
+  });
+
+  it('a host advance ends a live game rather than pushing it into reveal', async () => {
+    const h = liveHarness();
+    await h.engine.start(liveHandoff());
+    await h.engine.control('r1', LIVE_GAME_ID, 'advance');
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('complete');
+    // No reveal frame was streamed and no round was reported.
+    expect(h.reporter.rounds).toHaveLength(0);
+    expect(h.reporter.completes).toHaveLength(1);
   });
 });

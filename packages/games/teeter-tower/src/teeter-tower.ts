@@ -1,14 +1,18 @@
-// The Teeter Tower game module (spec 0043). A deterministic, headless GameModule: the engine owns
-// phase sequencing, timers, streaming, and persistence; this module owns the physics stacking rules.
-// One piece-drop is one engine round; the settle is simulated once, server-side and authoritative,
-// and streamed as a keyframe track in the reveal so every client renders the identical tower.
+// The Teeter Tower game module (spec 0044). Teeter is a LIVE game: instead of the discrete
+// collect -> reveal -> advance turn cycle, it holds a continuously-running physics world in process
+// and the engine steps it every tick via `tick`, streaming a `TeeterSim` snapshot so a precarious
+// tower sways in real time. `collectMove` doubles as "apply this move to the live world" - it adds
+// the dropped piece as a dynamic body; there is no pending/reveal.
 //
-// Determinism: services.rng is consumed exactly once (to derive the base seed); every reproducible
-// value after that - each round's piece shape + spin - comes from a seeded PRNG keyed on
-// (baseSeed, round). The settle runs at a fixed timestep with a hard step cap. No Math.random, no
-// wall-clock: the whole sim is a pure function of (seed, moves).
+// State lives in two places, kept in sync: an in-process `LiveWorld` (the matter engine + bodies,
+// the source of truth while a session is running) and a compact scratch snapshot (persisted every
+// tick, so a reconnect / engine restart rebuilds the world). Piece SHAPES stay deterministic (a
+// seeded PRNG keyed on (seed, pieceIndex)); the settle is now real-time, not a pure track.
+//
+// v1 has NO lose state on purpose (no out-of-pieces fail): a level ends only on reaching its target,
+// and the game ends when the final level clears. An out-of-pieces / retry lose path is a follow-up.
 
-import { rankStandings, type ScoreEvent, type Standing } from '@branchout/protocol';
+import { rankStandings, type Standing } from '@branchout/protocol';
 import type {
   AdvanceResult,
   ConfigureResult,
@@ -17,40 +21,37 @@ import type {
   GameModule,
   GamePlugin,
   GameServices,
+  LiveTickResult,
   RevealResult,
   RoundContext,
   ScratchResult,
   SessionPlayer,
   StartRoundResult,
 } from '@branchout/game-sdk';
-import { LEVELS, TOTAL_ROUNDS } from './levels';
-import { createRng, deriveSeed } from './rng';
+import { LEVELS, levelAt, TOTAL_ROUNDS } from './levels';
 import {
-  buildWorld,
-  dropYFor,
+  addPieceToWorld,
+  clampDropX,
+  createWorld,
   evaluatePlacement,
   heightToScore,
   heldBodyAt,
-  levelAt,
-  makePiece,
-  pieceToDrop,
+  pieceForIndex,
   requiredDropHeight,
-  simulateDrop,
-  storedTowerHeight,
+  stepWorld,
+  storedPieceFrom,
   toBodyPayloads,
   toPiecePayload,
-  towerHeight,
+  toStoredBodies,
+  worldHeight,
+  type LiveWorld,
   type StoredBody,
+  type StoredPiece,
 } from './physics';
-import type { TeeterMove, TeeterPrompt, TeeterReveal } from './types';
+import { GROUND_TOP } from './levels';
+import type { TeeterMove, TeeterSim } from './types';
 
 export const TEETER_TOWER_GAME_ID = 'teeter-tower';
-
-/**
- * A small dispute window (ms) so the empty `disputing` phase auto-closes to `leaderboard` without a
- * host tap - the "tower settled, next piece ready" rest state.
- */
-export const DISPUTE_WINDOW_MS = 150;
 
 /** Host-supplied configuration. Teeter starts on defaults; there is nothing to tune yet. */
 export type TeeterConfig = Record<string, never>;
@@ -63,31 +64,27 @@ export function validateConfig(config: unknown): TeeterConfig {
   return {};
 }
 
-/** The module's persisted state: the authoritative tower, level progress, and the base seed. */
+/**
+ * The module's persisted state: a compact snapshot of the live world, enough to rebuild it after a
+ * reconnect / engine restart. Persisted by `tick` (every tick) and by `collectMove` (on a drop).
+ */
 interface TeeterScratch {
-  /** The base seed, derived once from services.rng, that every round's piece stream keys on. */
+  /** The base seed, derived once from services.rng, that the piece stream keys on. */
   seed: number;
-  /** Current level index (0-2). Internal progression the engine need not know about. */
+  /** Current level index (0-2). */
   levelIndex: number;
-  /** The authoritative settled tower (local geometry + world transforms + cosmetics). */
-  tower: StoredBody[];
-  /** Best height reached this level (px above the platform) - the scoring basis. */
+  /** Best height reached this level (px above the platform) - the per-level scoring basis. */
   bestHeight: number;
-  /**
-   * The cumulative game score: the running total of every emitted score delta so far. Because
-   * bestHeight resets to 0 on a level clear, the per-level band (heightToScore) alone would disagree
-   * with the engine's accumulated scores across levels; this running total is the single scale both
-   * the Viewer HUD (reveal.score) and the leaderboard/FinalResults (accumulated scores) read.
-   */
+  /** Cumulative game score across levels (never resets; the HUD + standings read it). */
   totalScore: number;
-  /** Monotonic id for the next dropped piece. */
-  nextId: number;
-  /** The active player's pending move for the current round, or null until submitted. */
-  pending: TeeterMove | null;
-}
-
-function emptyScratch(seed: number): TeeterScratch {
-  return { seed, levelIndex: 0, tower: [], bestHeight: 0, totalScore: 0, nextId: 1, pending: null };
+  /** Monotonic index of the NEXT piece to spawn (also the next body id). */
+  pieceIndex: number;
+  /** The placed tower bodies (local geometry + world transform + cosmetics). */
+  bodies: StoredBody[];
+  /** The current aim piece, or null once the game is over. */
+  next: StoredPiece | null;
+  /** True once the final level cleared - the game is over. */
+  over: boolean;
 }
 
 function asScratch(scratch: Readonly<Record<string, unknown>>): TeeterScratch {
@@ -95,57 +92,24 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): TeeterScratch {
   return {
     seed: s.seed ?? 0,
     levelIndex: s.levelIndex ?? 0,
-    tower: s.tower ?? [],
     bestHeight: s.bestHeight ?? 0,
     totalScore: s.totalScore ?? 0,
-    nextId: s.nextId ?? 1,
-    pending: s.pending ?? null,
+    pieceIndex: s.pieceIndex ?? 0,
+    bodies: s.bodies ?? [],
+    next: s.next ?? null,
+    over: s.over ?? false,
   };
-}
-
-/** Deep clone so a mutation never leaks back into the engine's persisted state. */
-function clone(scratch: TeeterScratch): TeeterScratch {
-  return JSON.parse(JSON.stringify(scratch)) as TeeterScratch;
 }
 
 function toRecord(scratch: TeeterScratch): Record<string, unknown> {
   return scratch as unknown as Record<string, unknown>;
 }
 
-/** The active player for a round: `round % players.length` (spec's turn model). */
-function activePlayerFor(ctx: RoundContext): string {
-  const players = ctx.players;
+/** The active player for the current piece: `pieceIndex % players.length` (spec's turn model). */
+function activePlayerFor(pieceIndex: number, players: readonly SessionPlayer[]): string {
   if (players.length === 0) return '';
-  const idx = ((ctx.round % players.length) + players.length) % players.length;
+  const idx = ((pieceIndex % players.length) + players.length) % players.length;
   return (players[idx] as SessionPlayer).player;
-}
-
-/**
- * Regenerate the piece for a round deterministically. The piece stream is keyed on
- * (baseSeed, round), so startRound, collectMove (legality), and reveal all produce the *same* piece
- * for a given round without persisting the shape - the seed is the single source of truth.
- */
-function pieceForRound(seed: number, round: number): ReturnType<typeof makePiece> {
-  const rng = createRng(deriveSeed(seed, round));
-  return makePiece(rng);
-}
-
-/** Parse a `move` string into a validated `{ angle, dropX }`, or return null if malformed. */
-function parseMove(move: string): TeeterMove | null {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(move);
-  } catch {
-    return null;
-  }
-  if (raw == null || typeof raw !== 'object') return null;
-  const m = raw as Partial<TeeterMove>;
-  if (typeof m.angle !== 'number' || !Number.isFinite(m.angle)) return null;
-  if (typeof m.dropX !== 'number' || !Number.isFinite(m.dropX)) return null;
-  // Defense-in-depth: normalize the angle into (-PI, PI]. Rotation is periodic, so a huge or tiny
-  // value is legal but noisy; wrapping keeps the settle geometry identical while bounding the input
-  // (dropX is already clamped downstream by clampDropX).
-  return { angle: normalizeAngle(m.angle), dropX: m.dropX };
 }
 
 /** Wrap an angle (radians) into the canonical (-PI, PI] range. */
@@ -157,11 +121,102 @@ function normalizeAngle(angle: number): number {
   return a;
 }
 
+/** Parse a `move` string into a validated `{ angle, dropX, dropY }`, or null if malformed. */
+function parseMove(move: string): TeeterMove | null {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(move);
+  } catch {
+    return null;
+  }
+  if (raw == null || typeof raw !== 'object') return null;
+  const m = raw as Partial<TeeterMove>;
+  if (typeof m.angle !== 'number' || !Number.isFinite(m.angle)) return null;
+  if (typeof m.dropX !== 'number' || !Number.isFinite(m.dropX)) return null;
+  if (typeof m.dropY !== 'number' || !Number.isFinite(m.dropY)) return null;
+  return { angle: normalizeAngle(m.angle), dropX: m.dropX, dropY: m.dropY };
+}
+
 /**
- * Build a Teeter Tower module. Optionally seeded for tests; in production `create` derives the seed
- * from the injected rng. All simulation is a pure function of the seed + the moves played.
+ * Build a Teeter Tower module. The world lives in a per-session `Map`, keyed by `room:game`; if a
+ * session's world is missing (a fresh process / engine restart) it is rebuilt from the scratch
+ * snapshot. Optionally seeded for tests; in production `create` derives the seed from the injected
+ * rng (consumed exactly once).
  */
 export function createTeeterTowerGame(rng: () => number = Math.random): GameModule {
+  const worlds = new Map<string, LiveWorld>();
+
+  const keyFor = (ctx: RoundContext): string => `${ctx.room}:${ctx.game}`;
+
+  /** The current required min-drop line, as a world-y (keyed off the tower's highest point). */
+  const requiredLineY = (target: number, height: number): number => {
+    const reqH = requiredDropHeight(target, height);
+    // Once all lines are cleared, the "line" is the tower top itself.
+    return GROUND_TOP - (reqH ?? height);
+  };
+
+  /** Rebuild the live world for a session from a scratch snapshot. */
+  const rebuild = (scratch: TeeterScratch): LiveWorld => {
+    const level = levelAt(scratch.levelIndex);
+    return createWorld({
+      seed: scratch.seed,
+      levelIndex: scratch.levelIndex,
+      bestHeight: scratch.bestHeight,
+      totalScore: scratch.totalScore,
+      pieceIndex: scratch.pieceIndex,
+      bodies: scratch.bodies,
+      next: scratch.next,
+      target: level.target,
+      pendulum: level.pendulum,
+    });
+  };
+
+  /** Get the live world for this session, rebuilding it from scratch if the process lost it. */
+  const worldFor = (ctx: RoundContext): LiveWorld => {
+    const key = keyFor(ctx);
+    let world = worlds.get(key);
+    if (!world) {
+      world = rebuild(asScratch(ctx.scratch));
+      worlds.set(key, world);
+    }
+    return world;
+  };
+
+  /** Ensure the world has an aim piece; generate the next one deterministically if missing. */
+  const ensureNext = (world: LiveWorld): void => {
+    if (world.next || world.over) return;
+    world.next = storedPieceFrom(world.pieceIndex, pieceForIndex(world.seed, world.pieceIndex));
+  };
+
+  /** Snapshot the live world into a persisted scratch record. */
+  const snapshot = (world: LiveWorld): TeeterScratch => ({
+    seed: world.seed,
+    levelIndex: world.levelIndex,
+    bestHeight: world.bestHeight,
+    totalScore: world.totalScore,
+    pieceIndex: world.pieceIndex,
+    bodies: toStoredBodies(world),
+    next: world.next,
+    over: world.over,
+  });
+
+  /** The streamable TeeterSim snapshot for the current world. */
+  const toSim = (world: LiveWorld, players: readonly SessionPlayer[]): TeeterSim => {
+    const level = levelAt(world.levelIndex);
+    const height = worldHeight(world);
+    return {
+      bodies: toBodyPayloads(world),
+      next: world.next ? toPiecePayload(world.next) : null,
+      activePlayer: activePlayerFor(world.pieceIndex, players),
+      height,
+      score: world.totalScore,
+      level: world.levelIndex,
+      target: level.target,
+      requiredLine: requiredLineY(level.target, height),
+      over: world.over,
+    };
+  };
+
   return {
     id: TEETER_TOWER_GAME_ID,
 
@@ -169,41 +224,47 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       validateConfig(config);
       // Derive the base seed once from the injected rng; everything reproducible flows from it.
       const seed = Math.floor(rng() * 0xffffffff) >>> 0;
-      // v1 has NO fail state on purpose. TOTAL_ROUNDS is the sum of every level's `pieces` budget
-      // (11 + 20 + 22 in levels.ts), but that budget is not enforced as an "out of pieces" loss: a
-      // level ends only on reaching its target, and the game runs the fixed round count regardless.
-      // An out-of-pieces / retry lose flow (the prototype has one) is a deliberate follow-up.
-      return {
-        scratch: toRecord(emptyScratch(seed)),
-        rounds: TOTAL_ROUNDS,
-        disputeWindowMs: DISPUTE_WINDOW_MS,
-        moveWindowMs: 0,
+      const scratch: TeeterScratch = {
+        seed,
+        levelIndex: 0,
+        bestHeight: 0,
+        totalScore: 0,
+        pieceIndex: 0,
+        bodies: [],
+        next: null,
+        over: false,
       };
+      // `rounds` is unused for a live game (the engine ends it via tick.over), but the SDK requires
+      // it >= 1. TOTAL_ROUNDS keeps a meaningful non-zero value. There is NO out-of-pieces lose
+      // state in v1 (a deliberate follow-up); a level ends only on reaching its target.
+      // No move window either: moves are accepted continuously while the world runs.
+      return { scratch: toRecord(scratch), rounds: TOTAL_ROUNDS, moveWindowMs: 0 };
     },
 
     startRound(ctx: RoundContext): StartRoundResult {
-      const scratch = clone(asScratch(ctx.scratch));
-      scratch.pending = null;
-      const level = levelAt(scratch.levelIndex);
-      const piece = pieceForRound(scratch.seed, ctx.round);
-      const height = storedTowerHeight(scratch.tower);
-      const prompt: TeeterPrompt = {
-        round: ctx.round,
-        level: scratch.levelIndex,
-        target: level.target,
-        height,
-        activePlayer: activePlayerFor(ctx),
-        tower: toBodyPayloads(scratch.tower),
-        piece: toPiecePayload(piece),
-      };
+      // Ensure the world exists for this session (fresh or rebuilt from scratch), seed the first aim
+      // piece, and return the initial snapshot as the prompt so the client renders before tick 1.
+      const world = worldFor(ctx);
+      ensureNext(world);
+      const scratch = snapshot(world);
+      const prompt: TeeterSim = toSim(world, ctx.players);
       return { scratch: toRecord(scratch), prompt };
     },
 
     collectMove(ctx: RoundContext, player: string, move: string): ScratchResult {
-      const scratch = clone(asScratch(ctx.scratch));
+      const world = worldFor(ctx);
+      ensureNext(world);
 
-      // Only the active player may move (turn model). A non-active submission is rejected outright.
-      if (player !== activePlayerFor(ctx)) {
+      if (world.over) {
+        return {
+          scratch: ctx.scratch as Record<string, unknown>,
+          rejected: { reason: 'game over' },
+        };
+      }
+
+      // Only the active player may drop (turn model): active = pieceIndex % players.length.
+      const active = activePlayerFor(world.pieceIndex, ctx.players);
+      if (player !== active) {
         return {
           scratch: ctx.scratch as Record<string, unknown>,
           rejected: { reason: 'not your turn' },
@@ -218,22 +279,30 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         };
       }
 
-      // Legality: rebuild the world + the held piece at the chosen transform and evaluate the same
-      // overlap + min-drop-line rules the prototype enforces. Reject an illegal drop to the sender.
-      const level = levelAt(scratch.levelIndex);
-      const world = buildWorld(scratch.tower, level.target, level.pendulum);
-      const height = towerHeight(world.placed);
-      const piece = pieceForRound(scratch.seed, ctx.round);
-      const requiredLine = requiredDropHeight(level.target, height);
-      const dropY = dropYFor(toPiecePayload(piece).verts, parsed.angle, requiredLine, height);
-      const drop = pieceToDrop(scratch.nextId, piece, parsed.angle, parsed.dropX, dropY);
-      const held = heldBodyAt(drop.verts, drop.x, drop.y, drop.angle);
+      const piece = world.next;
+      if (!piece) {
+        return {
+          scratch: ctx.scratch as Record<string, unknown>,
+          rejected: { reason: 'game over' },
+        };
+      }
+
+      // Legality: the piece is placed at the client's chosen transform (angle, dropX, dropY), then
+      // the server re-checks both rules authoritatively: it must clear the scene AND (min-drop rule)
+      // sit fully above the required line, computed off the tower's CURRENT highest point. dropX is
+      // clamped to the legal horizontal range; dropY is honored as sent (the client aims the height).
+      const level = levelAt(world.levelIndex);
+      const height = worldHeight(world);
+      const dropX = clampDropX(parsed.dropX);
+      const dropY = parsed.dropY;
+      const held = heldBodyAt(piece.verts, dropX, dropY, parsed.angle);
+      const placedBodies = world.placed.map((p) => p.body);
       const verdict = evaluatePlacement(
         held,
         level.target,
         height,
         world.platform,
-        world.placed,
+        placedBodies,
         world.pendulum,
       );
       if (!verdict.ok) {
@@ -242,98 +311,67 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         return { scratch: ctx.scratch as Record<string, unknown>, rejected: { reason } };
       }
 
-      scratch.pending = { angle: parsed.angle, dropX: parsed.dropX };
-      return { scratch: toRecord(scratch) };
+      // Success: add the piece as a DYNAMIC body, advance the piece index, and generate the next aim
+      // piece deterministically. No re-aim: once added it is in the live world.
+      addPieceToWorld(world, piece, dropX, dropY, parsed.angle);
+      world.pieceIndex += 1;
+      world.next = storedPieceFrom(world.pieceIndex, pieceForIndex(world.seed, world.pieceIndex));
+
+      return { scratch: toRecord(snapshot(world)) };
     },
 
-    // The round closes once the active player's single move is stored.
-    allSubmitted(ctx: RoundContext): boolean {
-      return asScratch(ctx.scratch).pending != null;
+    tick(ctx: RoundContext): LiveTickResult {
+      const world = worldFor(ctx);
+      if (world.over) {
+        // Terminal: no more stepping. Re-emit the final snapshot so a late frame stays consistent.
+        return { scratch: toRecord(snapshot(world)), sim: toSim(world, ctx.players), over: true };
+      }
+
+      stepWorld(world);
+
+      // Recompute height + score. The per-drop delta is this level's band gain (heightToScore of the
+      // new best minus the prior best); it accumulates into the cumulative total across levels.
+      const level = levelAt(world.levelIndex);
+      const height = worldHeight(world);
+      const priorScore = heightToScore(world.bestHeight, level.target);
+      world.bestHeight = Math.max(world.bestHeight, height);
+      const newScore = heightToScore(world.bestHeight, level.target);
+      world.totalScore += newScore - priorScore;
+
+      let over = false;
+      if (height >= level.target) {
+        if (world.levelIndex < LEVELS.length - 1) {
+          // Level cleared: advance the internal level and reset the tower for the next one. The
+          // banked score carries (totalScore never resets); bestHeight resets for the fresh level.
+          advanceLevel(world);
+        } else {
+          // Final level cleared: the game is over. No lose state in v1. Clear the aim piece so the
+          // final snapshot streams `next: null` (nothing left to drop).
+          world.over = true;
+          world.next = null;
+          over = true;
+        }
+      }
+
+      ensureNext(world);
+      const scratch = snapshot(world);
+      const sim = toSim(world, ctx.players);
+      if (over) {
+        // Drop the retired world so a restart rebuilds cleanly.
+        worlds.delete(keyFor(ctx));
+      }
+      return { scratch: toRecord(scratch), sim, over };
+    },
+
+    // --- turn-based lifecycle callbacks: present for interface completeness, unused in live flow ---
+
+    collectVote(ctx: RoundContext): ScratchResult {
+      return { scratch: ctx.scratch as Record<string, unknown> };
     },
 
     reveal(ctx: RoundContext): RevealResult {
-      const scratch = clone(asScratch(ctx.scratch));
-      const active = activePlayerFor(ctx);
-      const move = scratch.pending;
-      const level = levelAt(scratch.levelIndex);
-
-      // Defensive: reveal without a stored move (host force-close) yields a no-op settle so the game
-      // never wedges. It re-emits the current tower with an empty track.
-      if (!move) {
-        const height = storedTowerHeight(scratch.tower);
-        const reveal: TeeterReveal = {
-          track: [],
-          tower: toBodyPayloads(scratch.tower),
-          height,
-          // No settle ran, so the cumulative game score is unchanged. Report the running total (the
-          // same scale the leaderboard reads), not the per-level band.
-          score: scratch.totalScore,
-          level: scratch.levelIndex,
-          target: level.target,
-          cleared: false,
-        };
-        return { scratch: toRecord(scratch), reveal, scores: [] };
-      }
-
-      const piece = pieceForRound(scratch.seed, ctx.round);
-      const id = scratch.nextId;
-      scratch.nextId += 1;
-      // Compute the drop origin exactly as collectMove did (the tower is unchanged between them), so
-      // the simulated settle matches the placement the move was validated against.
-      const height = storedTowerHeight(scratch.tower);
-      const requiredLine = requiredDropHeight(level.target, height);
-      const dropY = dropYFor(toPiecePayload(piece).verts, move.angle, requiredLine, height);
-      const drop = pieceToDrop(id, piece, move.angle, move.dropX, dropY);
-
-      const settle = simulateDrop(scratch.tower, drop, level.target, level.pendulum);
-      scratch.tower = settle.tower;
-
-      // Score is a running total across all levels. Each drop's delta is this level's band gain
-      // (heightToScore of the new best minus the prior best); we add it to the cumulative total so
-      // reveal.score (the Viewer HUD) and the accumulated engine scores (the leaderboard) agree.
-      const priorScore = heightToScore(scratch.bestHeight, level.target);
-      scratch.bestHeight = Math.max(scratch.bestHeight, settle.height);
-      const newScore = heightToScore(scratch.bestHeight, level.target);
-      const delta = newScore - priorScore;
-      scratch.totalScore += delta;
-
-      // Level cleared when the tower reaches the target: advance the internal level and reset the
-      // tower for the next one. bestHeight resets to 0 for the new level, but totalScore carries the
-      // 100 already banked for this cleared level (the running total never resets).
-      let cleared = false;
-      if (settle.height >= level.target && scratch.levelIndex < LEVELS.length - 1) {
-        cleared = true;
-        scratch.levelIndex += 1;
-        scratch.tower = [];
-        scratch.bestHeight = 0;
-      } else if (settle.height >= level.target) {
-        // Final level cleared: keep the tower but mark it cleared.
-        cleared = true;
-      }
-
-      scratch.pending = null;
-
-      const revealLevel = levelAt(scratch.levelIndex);
-      const reveal: TeeterReveal = {
-        track: settle.track,
-        tower: toBodyPayloads(scratch.tower),
-        height: cleared && scratch.tower.length === 0 ? 0 : settle.height,
-        // The cumulative game score (sum of all emitted deltas), so the HUD matches the leaderboard.
-        score: scratch.totalScore,
-        level: scratch.levelIndex,
-        target: revealLevel.target,
-        cleared,
-      };
-
-      const scores: ScoreEvent[] =
-        delta > 0 ? [{ player: active, points: delta, reason: 'tower height' }] : [];
-
-      return { scratch: toRecord(scratch), reveal, scores };
-    },
-
-    collectVote(ctx: RoundContext): ScratchResult {
-      // Teeter has no disputes or ballots; votes are ignored.
-      return { scratch: ctx.scratch as Record<string, unknown> };
+      // A live game never reveals; return the current tower defensively so nothing wedges.
+      return { scratch: ctx.scratch as Record<string, unknown>, reveal: null, scores: [] };
     },
 
     disputeWindow(ctx: RoundContext): DisputeWindowResult {
@@ -345,17 +383,60 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
     },
 
     leaderboard(ctx: RoundContext): Standing[] {
-      return rankStandings(ctx.players, ctx.scores);
+      return standingsFor(ctx);
     },
 
-    advance(ctx: RoundContext): AdvanceResult {
-      return { done: ctx.round >= TOTAL_ROUNDS };
+    advance(): AdvanceResult {
+      // Never drive rounds for a live game; a host `advance` is a defensive no-op that ends it.
+      return { done: true };
     },
 
     endGame(ctx: RoundContext): Standing[] {
-      return rankStandings(ctx.players, ctx.scores);
+      return standingsFor(ctx);
     },
   };
+
+  /**
+   * Final/interim standings for a live game. The engine applies no reveal scores (a live game has no
+   * reveal), so the score lives in the world/sim; rank the active player by the world's totalScore
+   * when it is available, falling back to the engine's accumulated scores. Multiplayer per-player
+   * scoring is a later concern - solo is one player.
+   */
+  function standingsFor(ctx: RoundContext): Standing[] {
+    const world = worlds.get(keyFor(ctx));
+    const total = world?.totalScore ?? asScratch(ctx.scratch).totalScore;
+    const scores: Record<string, number> = { ...ctx.scores };
+    const active = activePlayerFor(
+      world?.pieceIndex ?? asScratch(ctx.scratch).pieceIndex,
+      ctx.players,
+    );
+    if (active) scores[active] = total;
+    return rankStandings(ctx.players, scores);
+  }
+}
+
+/** Reset the world's tower for the next level, keeping the cumulative score and seed. */
+function advanceLevel(world: LiveWorld): void {
+  world.levelIndex += 1;
+  world.bestHeight = 0;
+  const level = levelAt(world.levelIndex);
+  const fresh = createWorld({
+    seed: world.seed,
+    levelIndex: world.levelIndex,
+    bestHeight: 0,
+    totalScore: world.totalScore,
+    pieceIndex: world.pieceIndex,
+    bodies: [],
+    next: world.next,
+    target: level.target,
+    pendulum: level.pendulum,
+  });
+  // Swap the fresh world's matter state in place so the caller's reference stays valid.
+  world.engine = fresh.engine;
+  world.platform = fresh.platform;
+  world.placed = fresh.placed;
+  world.pendulum = fresh.pendulum;
+  world.pendulumPhase = 0;
 }
 
 /**
@@ -363,11 +444,11 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
  * (consumed once to seed determinism). `validateConfig` is the manifest's config schema, run at the
  * start-handoff boundary. The manifest is marked `insider` so the game stays off the public catalog.
  */
-export const teeterTowerPlugin: GamePlugin<TeeterConfig, TeeterPrompt, TeeterReveal> = {
+export const teeterTowerPlugin: GamePlugin<TeeterConfig, TeeterSim, unknown> = {
   manifest: {
     id: TEETER_TOWER_GAME_ID,
     name: 'Teeter Tower',
-    version: '0.1.0',
+    version: '0.2.0',
     configSchema: validateConfig,
     capabilities: { minPlayers: 1 },
     visibility: 'insider',

@@ -12,12 +12,12 @@ export interface GameViewProps {
   state: GameState;
   me?: string;
   /**
-   * Advance to the next round on the host's behalf, or undefined when this viewer cannot advance
-   * (a non-host, or the shell chose not to wire it). The shell passes `() => onControl('advance')`
-   * only for the host; it is game-agnostic - most games ignore it, but a continuous-play game (Teeter
-   * Tower) calls it once after its settle animation finishes so the next piece spawns without a tap.
+   * Submit this player's move for the round, or undefined when the viewer cannot move. Only a
+   * single-surface game (Teeter Tower) uses it: its viewer IS the interactive surface, so the shell
+   * passes `onMove` straight through and the player aims + drops on the viewer canvas. Multi-surface
+   * games ignore it - their moves come from the separate Remote controller.
    */
-  onAdvance?: () => void;
+  onMove?: (round: number, move: string) => void;
 }
 
 /** Props a game remote (the private controller) receives: state, identity, and the wire actions. */
@@ -60,6 +60,13 @@ export interface GameUiModule {
    * feature pages, and the sitemap all exclude them). Gating is enforced via `gamesForViewer`.
    */
   visibility?: 'public' | 'insider';
+  /**
+   * When true, this game is a SINGLE interactive surface: the shell renders only its `Viewer`, full
+   * width (no Remote pane, no two-column layout), and passes `onMove` straight to the viewer so the
+   * player acts directly on it (Teeter Tower). When false/unset, the game keeps the standard viewer +
+   * remote split. Branch on this flag, never on the game id.
+   */
+  singleSurface?: boolean;
   /** The display name shown in the host's game picker. */
   name: string;
   /** A short tagline for the picker. */

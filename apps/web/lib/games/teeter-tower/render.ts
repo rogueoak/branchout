@@ -1,9 +1,9 @@
-// Shared canvas-rendering helpers and world constants for the Teeter Tower renderer (spec 0043).
-// The browser runs NO physics - it draws server-provided world-space geometry. These constants mirror
-// the engine's world (packages/games/teeter-tower/src/levels.ts) so the client's coordinate space
-// matches exactly what the server simulated. Chrome colors read Branch Out theme tokens at render
-// time (the canvas needs concrete color strings, so we resolve the CSS custom properties); the piece
-// palette stays the engine's bright cosmetics, which arrive per body on the wire.
+// Shared canvas-rendering helpers and world constants for the Teeter Tower renderer (spec 0044).
+// The browser runs NO physics - it draws the server-streamed live world-space geometry. These
+// constants mirror the engine's world (packages/games/teeter-tower/src/levels.ts) so the client's
+// coordinate space matches exactly what the server simulated. Chrome colors read Branch Out theme
+// tokens at render time (the canvas needs concrete color strings, so we resolve the CSS custom
+// properties); the piece palette stays the engine's bright cosmetics, which arrive per body on the wire.
 
 import type { Body, Eye, Piece, Vec2 } from './protocol';
 
@@ -56,27 +56,41 @@ export function resolveChrome(el: Element | null): ChromeColors {
   };
 }
 
-/** Set up the canvas transform so drawing happens in world coordinates, scaled to the element size. */
+/**
+ * Set up the canvas transform so drawing happens in world coordinates, scaled to the element size and
+ * panned by the vertical camera (`cameraY`). The camera shifts the visible world window up as the
+ * tower grows (a smaller/negative `cameraY` reveals higher world-y-negative space), like the prototype.
+ */
 export function withWorldTransform(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   dpr: number,
+  cameraY = 0,
 ): void {
   // Map the VIEW_W x VIEW_H world onto the device-pixel canvas, letterboxed to preserve aspect.
   const scale = Math.min(width / VIEW_W, height / VIEW_H);
   const offsetX = (width - VIEW_W * scale) / 2;
   const offsetY = (height - VIEW_H * scale) / 2;
-  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, offsetX * dpr, offsetY * dpr);
+  // cameraY is a world-space vertical pan: subtract it so a negative cameraY moves the world down on
+  // screen (revealing the upward-growing tower).
+  ctx.setTransform(
+    scale * dpr,
+    0,
+    0,
+    scale * dpr,
+    offsetX * dpr,
+    (offsetY - cameraY * scale) * dpr,
+  );
 }
 
-/** Paint the sky gradient behind everything (world coords). */
-export function drawSky(ctx: CanvasRenderingContext2D, chrome: ChromeColors): void {
-  const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+/** Paint the sky gradient behind everything. Drawn in screen space so it fills regardless of camera. */
+export function drawSky(ctx: CanvasRenderingContext2D, chrome: ChromeColors, cameraY = 0): void {
+  const g = ctx.createLinearGradient(0, cameraY, 0, cameraY + VIEW_H);
   g.addColorStop(0, chrome.skyTop);
   g.addColorStop(1, chrome.skyBottom);
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  ctx.fillRect(0, cameraY, VIEW_W, VIEW_H);
 }
 
 /** Paint the static platform the tower stacks on. */
@@ -127,9 +141,40 @@ export function drawTargetBands(
 }
 
 /**
+ * Draw the dashed minimum-drop line (the required-drop line, a world-y) plus a soft forbidden-zone
+ * gradient below it, ported from the prototype. The active player must drop with the piece's bottom
+ * ABOVE this line (`bottom.y < requiredLine`).
+ */
+export function drawRequiredLine(
+  ctx: CanvasRenderingContext2D,
+  chrome: ChromeColors,
+  requiredLine: number,
+): void {
+  ctx.save();
+  const grad = ctx.createLinearGradient(0, requiredLine, 0, requiredLine + 140);
+  grad.addColorStop(0, 'rgba(239,71,111,0.30)');
+  grad.addColorStop(1, 'rgba(239,71,111,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, requiredLine, VIEW_W, 140);
+  ctx.setLineDash([10, 6]);
+  ctx.strokeStyle = chrome.dropLine;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, requiredLine);
+  ctx.lineTo(VIEW_W, requiredLine);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = chrome.dropLine;
+  ctx.font = "bold 13px 'Trebuchet MS', system-ui, sans-serif";
+  ctx.fillText('drop above this line', VIEW_W - 170, requiredLine + 18);
+  ctx.restore();
+}
+
+/**
  * Draw one body's polygon loops at a world transform, filling with its skin and drawing its googly
  * eyes. `verts` are LOCAL loops; the caller supplies world `x`/`y`/`angle`. `vel` biases the pupils
- * so they track "downward" (toward gravity, nudged by motion) like the prototype's drawEyes.
+ * so they track "downward" (toward gravity, nudged by motion) like the prototype's drawEyes. An
+ * optional `override` fill/stroke tints the piece (the aim ghost turns red when the drop is illegal).
  */
 export function drawBody(
   ctx: CanvasRenderingContext2D,
@@ -140,8 +185,10 @@ export function drawBody(
   y: number,
   angle: number,
   vel: Vec2 = { x: 0, y: 0 },
+  alpha = 1,
 ): void {
   ctx.save();
+  ctx.globalAlpha = alpha;
   ctx.translate(x, y);
   ctx.rotate(angle);
   ctx.fillStyle = skin.fill;
@@ -163,7 +210,10 @@ export function drawBody(
   ctx.restore();
 
   // Eyes are drawn in world space (unrotated pupils) so they read as googly and track gravity.
+  ctx.save();
+  ctx.globalAlpha = alpha;
   drawEyes(ctx, eyes, x, y, angle, vel);
+  ctx.restore();
 }
 
 /** Draw the googly eyes for a body whose centroid is at world `(px, py)` rotated by `angle`. */
@@ -204,7 +254,7 @@ export function drawEyes(
   }
 }
 
-/** Draw the whole settled tower (each body world-space), with still (velocity-free) eyes. */
+/** Draw the whole live tower (each body world-space), with still (velocity-free) eyes. */
 export function drawTower(ctx: CanvasRenderingContext2D, tower: Body[]): void {
   for (const b of tower) {
     drawBody(ctx, b.verts, b.eyes, b.skin, b.x, b.y, b.angle);
@@ -217,27 +267,22 @@ export function clampDropX(x: number): number {
 }
 
 /**
- * Compute a piece's local-vertex bounds (min/max over every loop). Used by the Remote aim UI to keep
- * the spinning/aimed piece drawn on screen and to size the drop cursor.
+ * The world-space vertical extent of a piece's LOCAL geometry once rotated by `angle` (min/max of the
+ * rotated y of every vertex, relative to the centroid). The piece's world bottom at centroid-y `cy`
+ * is `cy + halfSpan.max`; used to clamp `dropY` so the bottom stays above the required line.
  */
-export function pieceBounds(piece: Piece): {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-} {
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
+export function rotatedYSpan(piece: Piece, angle: number): { min: number; max: number } {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  let min = Infinity;
+  let max = -Infinity;
   for (const loop of piece.verts) {
     for (const p of loop) {
-      minX = Math.min(minX, p.x);
-      minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x);
-      maxY = Math.max(maxY, p.y);
+      const ry = p.x * sin + p.y * cos;
+      min = Math.min(min, ry);
+      max = Math.max(max, ry);
     }
   }
-  if (!Number.isFinite(minX)) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-  return { minX, minY, maxX, maxY };
+  if (!Number.isFinite(min)) return { min: 0, max: 0 };
+  return { min, max };
 }

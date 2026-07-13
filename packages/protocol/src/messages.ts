@@ -111,6 +111,21 @@ export interface MoveRejectedMessage {
   reason: string;
 }
 
+/**
+ * A live simulation snapshot for a continuous ("live") game, streamed at a fixed cadence while the
+ * world is in motion (spec 0044). `sim` is opaque, game-defined payload - for a physics game the
+ * current tower (body transforms + geometry) plus its HUD. Unlike `reveal` (which accumulates), a
+ * reader REPLACES its live state from each `sim` frame, so a precarious tower streams its sway.
+ * Server -> client only, never parsed off the wire, under the same `PROTOCOL_VERSION`.
+ */
+export interface SimMessage {
+  v: number;
+  type: 'sim';
+  room: string;
+  game: string;
+  sim: unknown;
+}
+
 /** The current standings, streamed between rounds and on demand. */
 export interface LeaderboardMessage {
   v: number;
@@ -156,7 +171,12 @@ export interface StateMessage {
 }
 
 export type ServerMessage =
-  PromptMessage | RevealMessage | LeaderboardMessage | StateMessage | MoveRejectedMessage;
+  | PromptMessage
+  | RevealMessage
+  | SimMessage
+  | LeaderboardMessage
+  | StateMessage
+  | MoveRejectedMessage;
 
 export type ProtocolMessage = EchoMessage | ErrorMessage | ClientMessage | ServerMessage;
 
