@@ -73,6 +73,16 @@ describe('TeeterViewer single interactive surface', () => {
     expect(screen.queryByRole('img', { name: /aim and drop the piece/i })).toBeNull();
   });
 
+  it('mirrors the level/height/score + turn state into an aria-live region for assistive tech', () => {
+    // The HUD + hint paint on the canvas (opaque to a screen reader), so the live state must survive in
+    // the DOM via a polite aria-live status region (also the stable signal the e2e asserts on).
+    render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={noop} />);
+    const status = screen.getByRole('status');
+    expect(status.textContent).toMatch(/Level 1, Warm-up/i);
+    expect(status.textContent).toMatch(/Tower 0 of 600 pixels, 0 points/i);
+    expect(status.textContent).toMatch(/Your turn: tap the board to lock/i);
+  });
+
   it('a tap to lock then a tap to drop (after the debounce) calls onMove with a JSON {angle,dropX,dropY}', () => {
     vi.useFakeTimers();
     try {

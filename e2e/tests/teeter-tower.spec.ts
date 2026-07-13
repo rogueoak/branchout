@@ -34,28 +34,30 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   // Start the game solo (the host is a viewer + a player, so the start gate is satisfied).
   await page.getByRole('button', { name: /start game/i }).click();
 
-  // The single interactive board appears with the level-1 target (600) and the aim prompt.
+  // The single interactive board appears. The level/height/score + turn state are painted ON the
+  // canvas (feedback 0022), so assert the DOM signals that remain: the aria-live status region (the
+  // visually-hidden mirror of the HUD/turn), which is also what a screen reader reads.
   const board = page.locator('canvas').first();
   await expect(board).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText('/ 600 px')).toBeVisible();
-  await expect(page.getByText(/lock the angle/i)).toBeVisible();
+  const status = page.getByText(/of 600 pixels/i); // the live status region, level-1 target 600
+  await expect(status).toContainText(/tower 0 of 600 pixels/i, { timeout: 30_000 });
+  await expect(status).toContainText(/tap the board to lock/i);
 
-  // Aim + drop directly on the canvas. The first tap locks the spinning angle (-> "tap to drop").
-  // Then MOVE the pointer to a spot above the min-drop line and tap to drop there - the move both
-  // aims and arms the drop past the double-tap guard (a reflexive same-spot double-tap is swallowed).
-  // There is no slider and no re-aim - the drop is final.
+  // Aim + drop directly on the canvas. The first tap locks the spinning angle (the status flips to the
+  // "move to aim, then tap to drop" prompt). Then MOVE the pointer to a spot above the min-drop line
+  // and tap to drop there - the move both aims and arms the drop past the double-tap guard. No re-aim.
   await board.click();
-  await expect(page.getByText(/tap to drop/i)).toBeVisible();
+  await expect(status).toContainText(/move to aim, then tap to drop/i);
   const box = await board.boundingBox();
   if (!box) throw new Error('board has no bounding box');
   // Upper-third, centered: comfortably above the 25%-from-platform line, and a real move from center.
   await board.click({ position: { x: box.width / 2, y: box.height * 0.32 } });
 
-  // The engine dropped the piece into the live world and streamed it back: the score climbs above
-  // zero and a fresh piece is offered. This proves the full live-authoritative loop, not a freeze.
-  await expect(page.getByText(/[1-9]\d* pts/)).toBeVisible({ timeout: 30_000 });
+  // The engine dropped the piece into the live world and streamed it back: the tower now has non-zero
+  // height and a fresh piece is offered. This proves the full live-authoritative loop, not a freeze.
+  await expect(page.getByText(/tower [1-9]\d* of 600 pixels/i)).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect(page.getByText(/lock the angle/i)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/tap the board to lock/i)).toBeVisible({ timeout: 30_000 });
 });
 
 test('a non-insider never sees Teeter Tower in the game picker', async ({ page }) => {

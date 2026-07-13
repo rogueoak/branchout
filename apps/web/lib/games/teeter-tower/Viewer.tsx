@@ -263,7 +263,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
                 piece.eyes,
                 piece.skin,
                 CENTER_X,
-                view.top + 60,
+                view.top + 110,
                 spinAngleRef.current,
                 { x: 0, y: 0 },
                 0.9,
@@ -379,6 +379,8 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     setDropped(true);
   }
 
+  const level = sim?.level ?? 0;
+  const target = sim?.target ?? 600;
   const height = sim?.height ?? 0;
   const score = sim?.score ?? 0;
 
@@ -402,21 +404,45 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
 
   const watchingName = sim && !isActive ? nicknameOf(state, sim.activePlayer) : null;
 
-  // The turn/aim hint, mirroring the old DOM badges. The draw loop paints it as an on-canvas overlay,
-  // so the info/turn copy is no longer in the DOM (the canvas aria-label + the rejection alert are).
+  // The SHORT turn/aim hint the draw loop paints as an on-canvas overlay (kept terse so it never
+  // squishes at ~360px). The full copy lives in the screen-reader status below.
   const hint = isActive
     ? dropped
       ? 'Dropping...'
       : aim === 'spinning'
-        ? 'Tap the board to lock the angle'
-        : 'Move to aim, tap to drop - the drop is final, no re-aim'
+        ? 'Tap to lock the angle'
+        : 'Aim, then tap to drop (final)'
     : watchingName
-      ? `Watching ${watchingName} build`
+      ? `Watching ${watchingName}`
       : '';
   hintRef.current = hint;
 
+  // The live game state as text, for the visually-hidden aria-live region below. The HUD + hint are
+  // painted on the canvas (feedback 0022 #6), so this restores the level/height/score/turn info to the
+  // DOM for screen readers - and gives an automated test a stable signal (the canvas pixels are opaque
+  // to both). `polite` so it announces changes without interrupting.
+  const levelName = LEVEL_NAMES[level] ?? `level ${level + 1}`;
+  const srStatus = [
+    `Level ${level + 1}, ${levelName}.`,
+    `Tower ${height} of ${target} pixels, ${score} points.`,
+    isActive
+      ? dropped
+        ? 'Dropping the piece.'
+        : aim === 'spinning'
+          ? 'Your turn: tap the board to lock the angle.'
+          : 'Your turn: move to aim, then tap to drop. The drop is final, no re-aim.'
+      : watchingName
+        ? `Watching ${watchingName} build the tower.`
+        : '',
+  ].join(' ');
+
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-4">
+      {/* The level/height/score + turn state as text for screen readers (the on-canvas HUD/hint are
+          invisible to assistive tech and to automated tests). Visually hidden; announced politely. */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {srStatus}
+      </p>
       {/* The single game surface: the live tower, plus the aim overlay when it is the local turn.
           The level/height/score HUD and the turn/aim hint are drawn ON the canvas (feedback 0022 #6),
           freeing this space so the surface fills the viewport height. touch-action:none + pointer

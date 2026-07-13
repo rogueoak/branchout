@@ -384,16 +384,18 @@ export function drawHintOverlay(
   text: string,
 ): void {
   if (!text) return;
+  void cssH;
   ctx.save();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.font = "600 13px 'Trebuchet MS', system-ui, sans-serif";
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   ctx.shadowColor = 'rgba(0,0,0,0.7)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;
   ctx.fillStyle = chrome.text;
-  // Pinned bottom-center so it never crowds the top HUD pill or the spinning aim piece.
-  ctx.fillText(text, cssW / 2, cssH - 20, cssW - 24);
+  // Top-RIGHT: clear of the top-left HUD pill (left) and the spinning aim piece (center), and out of
+  // the bottom thumb/tower-base zone. The hint is kept short so it never reaches back into the pill.
+  ctx.fillText(text, cssW - 14, 22, cssW / 2 - 8);
   ctx.restore();
 }
