@@ -57,9 +57,10 @@ export function resolveChrome(el: Element | null): ChromeColors {
 }
 
 /**
- * Set up the canvas transform so drawing happens in world coordinates, scaled to the element size and
- * panned by the vertical camera (`cameraY`). The camera shifts the visible world window up as the
- * tower grows (a smaller/negative `cameraY` reveals higher world-y-negative space), like the prototype.
+ * Set up the canvas transform so drawing happens in world coordinates, FIT TO WIDTH and panned by the
+ * vertical camera (`cameraY`). World x 0..VIEW_W maps to the full element width; a taller element shows
+ * more of the world vertically (no letterbox), so the upward-growing tower gets the extra space.
+ * screenY = (worldY - cameraY) * scale, with scale = width / VIEW_W.
  */
 export function withWorldTransform(
   ctx: CanvasRenderingContext2D,
@@ -68,29 +69,38 @@ export function withWorldTransform(
   dpr: number,
   cameraY = 0,
 ): void {
-  // Map the VIEW_W x VIEW_H world onto the device-pixel canvas, letterboxed to preserve aspect.
-  const scale = Math.min(width / VIEW_W, height / VIEW_H);
-  const offsetX = (width - VIEW_W * scale) / 2;
-  const offsetY = (height - VIEW_H * scale) / 2;
-  // cameraY is a world-space vertical pan: subtract it so a negative cameraY moves the world down on
-  // screen (revealing the upward-growing tower).
-  ctx.setTransform(
-    scale * dpr,
-    0,
-    0,
-    scale * dpr,
-    offsetX * dpr,
-    (offsetY - cameraY * scale) * dpr,
-  );
+  const scale = width / VIEW_W;
+  // cameraY is a world-space vertical pan: subtract it so panning the camera up (smaller cameraY)
+  // moves the world down on screen (revealing the upward-growing tower). `height` is unused here - the
+  // fit-width mapping deliberately lets a taller canvas reveal more vertical world.
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, -cameraY * scale * dpr);
 }
 
-/** Paint the sky gradient behind everything. Drawn in screen space so it fills regardless of camera. */
-export function drawSky(ctx: CanvasRenderingContext2D, chrome: ChromeColors, cameraY = 0): void {
-  const g = ctx.createLinearGradient(0, cameraY, 0, cameraY + VIEW_H);
+/** The world->screen scale for a canvas of the given CSS width under the fit-width transform. */
+export function viewScale(width: number): number {
+  return width / VIEW_W;
+}
+
+/** How much vertical world (in world px) a canvas of the given CSS size shows under fit-width. */
+export function visibleWorldHeight(width: number, height: number): number {
+  return height / (width / VIEW_W);
+}
+
+/**
+ * Paint the sky gradient behind everything. Drawn under the world transform, filling the whole visible
+ * vertical world range [cameraY, cameraY + visibleH] so it covers the canvas regardless of camera pan.
+ */
+export function drawSky(
+  ctx: CanvasRenderingContext2D,
+  chrome: ChromeColors,
+  cameraY = 0,
+  visibleH = VIEW_H,
+): void {
+  const g = ctx.createLinearGradient(0, cameraY, 0, cameraY + visibleH);
   g.addColorStop(0, chrome.skyTop);
   g.addColorStop(1, chrome.skyBottom);
   ctx.fillStyle = g;
-  ctx.fillRect(0, cameraY, VIEW_W, VIEW_H);
+  ctx.fillRect(0, cameraY, VIEW_W, visibleH);
 }
 
 /** Paint the static platform the tower stacks on. */
@@ -285,4 +295,87 @@ export function rotatedYSpan(piece: Piece, angle: number): { min: number; max: n
   }
   if (!Number.isFinite(min)) return { min: 0, max: 0 };
   return { min, max };
+}
+
+/** Stroke a rounded-rectangle path (helper for the screen-space HUD pill). */
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+/**
+ * Draw the compact level/height/score HUD as a screen-space pill in the top-left. Resets to the screen
+ * transform (undoing any world transform) so it stays pinned regardless of the camera. `text` holds 1-2
+ * short lines (e.g. `['Lv 1 - Warm-up', '258/600 px   50 pts']`).
+ */
+export function drawHudOverlay(
+  ctx: CanvasRenderingContext2D,
+  chrome: ChromeColors,
+  dpr: number,
+  text: string[],
+): void {
+  const lines = text.filter((t) => t.length > 0);
+  if (lines.length === 0) return;
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.font = "12px 'Trebuchet MS', system-ui, sans-serif";
+  ctx.textBaseline = 'middle';
+  let maxW = 0;
+  for (const line of lines) maxW = Math.max(maxW, ctx.measureText(line).width);
+  const padX = 10;
+  const padY = 7;
+  const lineH = 16;
+  const x = 8;
+  const y = 8;
+  const w = maxW + padX * 2;
+  const h = lines.length * lineH + padY * 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  roundRectPath(ctx, x, y, w, h, 8);
+  ctx.fill();
+  ctx.fillStyle = chrome.text;
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i]!, x + padX, y + padY + lineH * i + lineH / 2);
+  }
+  ctx.restore();
+}
+
+/**
+ * Draw the turn/aim hint as centered screen-space text near the top-center, with a text-shadow so it
+ * reads over the sky. Resets to the screen transform. `cssW`/`cssH` are the canvas CSS pixel size.
+ */
+export function drawHintOverlay(
+  ctx: CanvasRenderingContext2D,
+  chrome: ChromeColors,
+  dpr: number,
+  cssW: number,
+  cssH: number,
+  text: string,
+): void {
+  if (!text) return;
+  void cssH; // reserved: the hint can be pinned bottom-center (cssH - N); it currently sits top-center.
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.font = "600 13px 'Trebuchet MS', system-ui, sans-serif";
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.7)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = chrome.text;
+  // Below the HUD pill (top-left) but still near the top so it never crowds the aim piece / platform.
+  ctx.fillText(text, cssW / 2, 22, cssW - 24);
+  ctx.restore();
 }

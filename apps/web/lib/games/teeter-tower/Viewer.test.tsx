@@ -5,8 +5,10 @@ import { TeeterViewer } from './Viewer';
 
 // The single canvas draws with rAF + a 2D context. jsdom leaves getContext unimplemented (returns
 // null); the draw loop guards on a null context, so rendering is safe - stub getContext to keep the
-// jsdom "Not implemented" noise out of the test output. The tests assert on the DOM affordances (the
-// aim badges, the watching note, the drop payload), not the pixels.
+// jsdom "Not implemented" noise out of the test output. The level/height/score HUD and the turn/aim
+// hint now render ON the canvas (screen-space overlays), so they are NOT in the DOM. The tests assert
+// on what IS still in the DOM: the canvas aria-label (aim vs board), the rejection alert copy, the
+// over-screen summary, and the drop payload emitted via onMove.
 beforeAll(() => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null as never);
 });
@@ -57,19 +59,18 @@ function state(overrides: Partial<GameState>): GameState {
 function noop() {}
 
 describe('TeeterViewer single interactive surface', () => {
-  it('shows the aim affordance to the active player', () => {
+  it('labels the board for aiming for the active player (an interactive surface)', () => {
     render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={noop} />);
-    expect(screen.getByText(/your turn/i)).toBeDefined();
-    expect(screen.getByText(/lock the angle/i)).toBeDefined();
-    // The board is labelled for aiming (an interactive surface), not just a passive board.
+    // The turn/aim hint is drawn on-canvas now, so the DOM signal that it is the local turn is the
+    // canvas aria-label switching to the interactive "aim and drop" label.
     expect(screen.getByRole('img', { name: /aim and drop the piece/i })).toBeDefined();
+    expect(screen.queryByRole('img', { name: /teeter tower board/i })).toBeNull();
   });
 
-  it('shows a watching note to a non-active player (no aim affordance)', () => {
+  it('labels the board as a passive board for a non-active player (no aim affordance)', () => {
     render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p2" onMove={noop} />);
-    expect(screen.getByText(/watching ada build/i)).toBeDefined();
-    expect(screen.queryByText(/your turn/i)).toBeNull();
     expect(screen.getByRole('img', { name: /teeter tower board/i })).toBeDefined();
+    expect(screen.queryByRole('img', { name: /aim and drop the piece/i })).toBeNull();
   });
 
   it('a tap to lock then a tap to drop (after the debounce) calls onMove with a JSON {angle,dropX,dropY}', () => {
@@ -80,9 +81,8 @@ describe('TeeterViewer single interactive surface', () => {
       const board = screen.getByRole('img', { name: /aim and drop the piece/i })
         .parentElement as HTMLElement;
       // getBoundingClientRect is 0-sized in jsdom; pointerToWorld tolerates it and the drop still
-      // fires. Tap 1 locks the spin angle; the badge flips to the placing hint.
+      // fires. Tap 1 locks the spin angle (the placing hint is now on-canvas, not in the DOM).
       fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
-      expect(screen.getByText(/move to aim, tap to drop/i)).toBeDefined();
       // The double-tap guard: the drop is not armed until the debounce elapses. Advance past it so a
       // deliberate second tap in the same spot drops.
       vi.advanceTimersByTime(250);
@@ -114,8 +114,8 @@ describe('TeeterViewer single interactive surface', () => {
       fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
       fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
       expect(onMove).not.toHaveBeenCalled();
-      // Still in the placing state, aimable - the piece was not committed.
-      expect(screen.getByText(/move to aim, tap to drop/i)).toBeDefined();
+      // Still aimable - the piece was not committed, so the board keeps its interactive aim label.
+      expect(screen.getByRole('img', { name: /aim and drop the piece/i })).toBeDefined();
     } finally {
       vi.useRealTimers();
     }
@@ -149,6 +149,8 @@ describe('TeeterViewer single interactive surface', () => {
   it('shows a final summary when the game is over', () => {
     render(<TeeterViewer state={state({ sim: teeterSim('p1', true) })} me="p1" onMove={noop} />);
     expect(screen.getByText(/tower complete/i)).toBeDefined();
-    expect(screen.queryByText(/your turn/i)).toBeNull();
+    // The over view shows a board-only canvas (no interactive aim surface).
+    expect(screen.getByRole('img', { name: /teeter tower board/i })).toBeDefined();
+    expect(screen.queryByRole('img', { name: /aim and drop the piece/i })).toBeNull();
   });
 });

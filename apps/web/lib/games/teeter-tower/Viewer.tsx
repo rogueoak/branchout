@@ -18,20 +18,25 @@
 //      the pointer would put it below the line (client preview; the server re-checks).
 //   3. Tap/click again to DROP: onMove(round, JSON.stringify({ angle, dropX, dropY })). No re-aim -
 //      we wait for the stream to show it land and present the next piece (a new `sim.next` id).
-// Mobile-first (CLAUDE.md rule #1): the canvas scales by aspect-ratio, reads well at ~360px wide, uses
-// big tap targets and pointer capture + touch-action:none so a drag never scrolls the page.
+// Mobile-first (CLAUDE.md rule #1): the surface fills the viewport height and the canvas fits WIDTH
+// (a taller canvas shows more of the tower, no letterbox), reads well at ~360px wide, uses big tap
+// targets and pointer capture + touch-action:none so a drag never scrolls the page, and disables text
+// selection / the iOS callout so aiming by drag never pops copy/paste. The level/height/score HUD and
+// the turn/aim hint are drawn ON the canvas (screen-space overlays) rather than as DOM rows.
 
-import { Badge } from '@rogueoak/canopy';
 import { useEffect, useRef, useState } from 'react';
 import type { GameViewProps } from '../registry';
 import { asTeeterSim, type Body, type Piece, type TeeterSim } from './protocol';
 import {
   CENTER_X,
   GROUND_TOP,
+  PLATFORM_H,
   VIEW_H,
   VIEW_W,
   clampDropX,
   drawBody,
+  drawHintOverlay,
+  drawHudOverlay,
   drawPlatform,
   drawRequiredLine,
   drawSky,
@@ -163,6 +168,8 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   isActiveRef.current = isActive;
   const droppedRef = useRef(dropped);
   droppedRef.current = dropped;
+  // The turn/aim hint text the draw loop paints as a screen-space overlay (computed below from state).
+  const hintRef = useRef('');
   // The live spin angle the draw loop advances, so the angle a tap locks is exactly the one on screen.
   const spinAngleRef = useRef(0);
   // Double-tap guard state: when the angle was locked (ms) and the pointer position at lock, so the
@@ -227,10 +234,18 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             prev && span > 0 ? Math.max(0, Math.min(1, (now - simArrivedRef.current) / span)) : 1;
           const bodies = prev ? interpolateBodies(prev.bodies, live.bodies, f) : live.bodies;
 
-          // Camera: follow the highest body (smallest y), keeping it in the upper portion of the view.
-          let top = GROUND_TOP;
-          for (const b of bodies) top = Math.min(top, b.y);
-          const targetCam = Math.min(0, top - VIEW_H * 0.4);
+          // Fit-width mapping: world x 0..VIEW_W fills the CSS width; a taller canvas reveals more world
+          // vertically. `visibleH` is how much world (in world px) the canvas shows at this scale.
+          const scale = rect.width / VIEW_W;
+          const visibleH = scale > 0 ? rect.height / scale : VIEW_H;
+
+          // Camera: keep the platform base parked at the bottom of the view (baseCam), and follow the
+          // highest point (smallest y) so a tall tower stays visible - whichever shows more (min).
+          let topWorld = GROUND_TOP;
+          for (const b of bodies) topWorld = Math.min(topWorld, b.y);
+          const baseCam = GROUND_TOP + PLATFORM_H + 40 - visibleH;
+          const followCam = topWorld - visibleH * 0.2;
+          const targetCam = Math.min(baseCam, followCam);
           cameraRef.current += (targetCam - cameraRef.current) * 0.08;
           const cameraY = cameraRef.current;
 
@@ -238,7 +253,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           withWorldTransform(ctx, rect.width, rect.height, dpr, cameraY);
-          drawSky(ctx, chrome, cameraY);
+          drawSky(ctx, chrome, cameraY, visibleH);
           drawTargetBands(ctx, chrome, live.target);
           drawPlatform(ctx, chrome);
           drawTower(ctx, bodies);
@@ -251,13 +266,16 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             drawRequiredLine(ctx, chrome, live.requiredLine);
             if (aimRef.current === 'spinning') {
               spinAngleRef.current += piece.spinSeed;
+              // Spawn the spinning piece at the TOP of the current view (cameraY + 80), so it always
+              // reads clearly ABOVE the tower and the required line no matter how tall the tower is -
+              // never the payload's fixed low position (which would hover inside a grown pile).
               drawBody(
                 ctx,
                 piece.verts,
                 piece.eyes,
                 piece.skin,
-                piece.x,
-                piece.y,
+                CENTER_X,
+                cameraRef.current + 80,
                 spinAngleRef.current,
                 { x: 0, y: 0 },
                 0.9,
@@ -288,6 +306,17 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
               );
             }
           }
+
+          // Screen-space overlays (reset transform inside each helper): the compact level/height/score
+          // HUD pill top-left, and the turn/aim hint centered near the top. These replace the old DOM
+          // badge rows so the canvas keeps all the vertical space (feedback 0022 #6).
+          const lvl = live.level;
+          const hud = [
+            `Lv ${lvl + 1} - ${LEVEL_NAMES[lvl] ?? `Level ${lvl + 1}`}`,
+            `${live.height}/${live.target} px   ${live.score} pts`,
+          ];
+          drawHudOverlay(ctx, chrome, dpr, hud);
+          drawHintOverlay(ctx, chrome, dpr, rect.width, rect.height, hintRef.current);
         }
       }
       raf = requestAnimationFrame(render);
@@ -296,19 +325,19 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Map a pointer event to world coordinates (accounting for the letterbox scale + the camera pan).
+  // Map a pointer event to world coordinates. Mirrors the fit-width draw transform exactly: world x
+  // 0..VIEW_W fills the CSS width, and screenY = (worldY - cameraY) * scale, so worldY = clientY/scale +
+  // cameraY. No letterbox offsets - a taller canvas simply shows more world.
   function pointerToWorld(clientX: number, clientY: number): { x: number; y: number } {
     const canvas = canvasRef.current;
     if (!canvas) return pointerRef.current;
     const rect = canvas.getBoundingClientRect();
-    const scale = Math.min(rect.width / VIEW_W, rect.height / VIEW_H);
+    const scale = rect.width / VIEW_W;
     // A zero-sized rect (not laid out yet) would divide by zero; keep the last known pointer.
     if (!(scale > 0)) return pointerRef.current;
-    const offsetX = (rect.width - VIEW_W * scale) / 2;
-    const offsetY = (rect.height - VIEW_H * scale) / 2;
     return {
-      x: (clientX - rect.left - offsetX) / scale,
-      y: (clientY - rect.top - offsetY) / scale + cameraRef.current,
+      x: (clientX - rect.left) / scale,
+      y: (clientY - rect.top) / scale + cameraRef.current,
     };
   }
 
@@ -362,9 +391,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     setDropped(true);
   }
 
-  const level = sim?.level ?? 0;
   const height = sim?.height ?? 0;
-  const target = sim?.target ?? 600;
   const score = sim?.score ?? 0;
 
   // Game over: a final summary with the score.
@@ -387,53 +414,38 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
 
   const watchingName = sim && !isActive ? nicknameOf(state, sim.activePlayer) : null;
 
+  // The turn/aim hint, mirroring the old DOM badges. The draw loop paints it as an on-canvas overlay,
+  // so the info/turn copy is no longer in the DOM (the canvas aria-label + the rejection alert are).
+  const hint = isActive
+    ? dropped
+      ? 'Dropping...'
+      : aim === 'spinning'
+        ? 'Tap the board to lock the angle'
+        : 'Move to aim, tap to drop - the drop is final, no re-aim'
+    : watchingName
+      ? `Watching ${watchingName} build`
+      : '';
+  hintRef.current = hint;
+
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2" aria-label="Game status">
-        <Badge variant="info">Level {level + 1}</Badge>
-        <Badge variant="neutral">{LEVEL_NAMES[level] ?? `Level ${level + 1}`}</Badge>
-        <Badge variant="neutral">
-          <span aria-label={`Height ${height} of ${target} pixels`}>
-            {height} / {target} px
-          </span>
-        </Badge>
-        <Badge variant={score >= 100 ? 'success' : 'neutral'}>
-          <span aria-label={`Score ${score}`}>{score} pts</span>
-        </Badge>
-      </div>
-
-      {isActive ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="info">Your turn</Badge>
-          <Badge variant="neutral">
-            {dropped
-              ? 'Dropping...'
-              : aim === 'spinning'
-                ? 'Tap the board to lock the angle'
-                : 'Move to aim, tap to drop'}
-          </Badge>
-          {!dropped && aim === 'placing' ? (
-            <Badge variant="warning">The drop is final - no re-aim</Badge>
-          ) : null}
-        </div>
-      ) : watchingName ? (
-        <p role="status" className="text-body-sm text-text-muted">
-          Watching {watchingName} build the tower.
-        </p>
-      ) : null}
-
-      {state.rejected ? (
-        <p role="alert" className="text-body-sm text-danger">
-          {rejectionMessage(state.rejected)}
-        </p>
-      ) : null}
-
       {/* The single game surface: the live tower, plus the aim overlay when it is the local turn.
-          touch-action:none + pointer capture keep a drag over the board from scrolling the page and
-          keep tracking when a finger drifts off a small (~360px) board mid-drag (mobile-first). */}
+          The level/height/score HUD and the turn/aim hint are drawn ON the canvas (feedback 0022 #6),
+          freeing this space so the surface fills the viewport height. touch-action:none + pointer
+          capture keep a drag over the board from scrolling the page and keep tracking when a finger
+          drifts off a small (~360px) board mid-drag; user-select/callout off stop iOS copy/paste while
+          dragging to aim (mobile-first). `relative` anchors the rejection overlay. */}
       <div
-        className="w-full overflow-hidden rounded-xl border border-border bg-bg"
-        style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}`, touchAction: 'none' }}
+        className="relative w-full overflow-hidden rounded-xl border border-border bg-bg"
+        style={{
+          height: 'min(78svh, calc(100svh - 190px))',
+          minHeight: '320px',
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitTapHighlightColor: 'transparent',
+        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={releaseCapture}
@@ -445,14 +457,15 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           role="img"
           className="block h-full w-full"
         />
+        {state.rejected ? (
+          <p
+            role="alert"
+            className="absolute inset-x-0 top-0 m-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
+          >
+            {rejectionMessage(state.rejected)}
+          </p>
+        ) : null}
       </div>
-
-      {isActive && !dropped && aim === 'placing' ? (
-        <p className="text-body-sm text-text-muted">
-          Keep the piece above the marked line, then tap to drop. Once it drops, it commits - there
-          is no undo or re-aim.
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -461,8 +474,15 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
 function TowerCanvas({ canvasRef }: { canvasRef: React.RefObject<HTMLCanvasElement | null> }) {
   return (
     <div
-      className="w-full overflow-hidden rounded-xl border border-border bg-bg"
-      style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+      className="relative w-full overflow-hidden rounded-xl border border-border bg-bg"
+      style={{
+        height: 'min(78svh, calc(100svh - 190px))',
+        minHeight: '320px',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitTapHighlightColor: 'transparent',
+      }}
     >
       <canvas
         ref={canvasRef}
