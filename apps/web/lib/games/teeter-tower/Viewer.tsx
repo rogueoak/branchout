@@ -51,11 +51,20 @@ const LEVEL_NAMES = ['Warm-up', 'Reach for the sky', 'The Pendulum'];
 
 /**
  * The local aim phase for the active player (feedback 0023): the piece is spinning (the canvas moves
- * it while it spins) or its angle is locked and it is being placed. The top-right button transitions
- * between them ("Stop spin" -> 'placing') and finally drops ("Drop"). The CANVAS never locks or drops -
- * a tap/drag only moves the piece - so there is no double-tap-to-drop hazard to guard against.
+ * it while it spins) or its angle is locked and it is being placed. The button (now ABOVE the canvas,
+ * feedback 0025) transitions between them ("Stop spin" -> 'placing') and finally drops ("Drop"). A
+ * tap/drag on the canvas moves the piece; a double-tap (double-click) is a shortcut for the button.
  */
 type AimPhase = 'spinning' | 'placing';
+
+/**
+ * Double-tap shortcut tuning (feedback 0025). A "tap" is a quick press that barely moves; two taps
+ * within `DOUBLE_TAP_MS` fire the aim button. A drag (moves past `TAP_MAX_MOVE_PX`) or a long press
+ * (over `TAP_MAX_MS`) is not a tap and breaks the sequence, so aiming never trips the shortcut.
+ */
+const DOUBLE_TAP_MS = 320;
+const TAP_MAX_MS = 250;
+const TAP_MAX_MOVE_PX = 12;
 
 /** The default world-y a fresh piece starts at (high + centered, so it reads clearly above the tower). */
 const DEFAULT_AIM_Y = GROUND_TOP - 300;
@@ -134,6 +143,14 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   // True from the moment we submit a drop until the stream presents a new piece id - so we stop
   // spinning/aiming while the drop is in flight and the piece is landing.
   const [dropped, setDropped] = useState(false);
+  // Whether this device is touch-first (`pointer: coarse`), so the onboarding hint says "Double tap"
+  // vs "Click". Resolved on mount (SSR has no matchMedia); defaults to the mouse copy.
+  const [isCoarse, setIsCoarse] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      setIsCoarse(window.matchMedia('(pointer: coarse)').matches);
+    }
+  }, []);
 
   const me_ = me ?? '';
   const isActive = sim != null && !sim.over && sim.next != null && sim.activePlayer === me_;
@@ -166,6 +183,10 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   // Stop-spin/Drop button would otherwise re-aim the piece to the button's corner right before the
   // drop lands. Touch has no hover so this never bit mobile, but it breaks the desktop/responsive path.
   const draggingRef = useRef(false);
+  // Double-tap tracking (feedback 0025): the current press's start (time + screen pos) and the time of
+  // the last completed tap, so releaseCapture can tell a tap from a drag and pair two taps.
+  const pressStartRef = useRef<{ t: number; x: number; y: number } | null>(null);
+  const lastTapRef = useRef(0);
   const pointerRef = useRef(pointer);
   pointerRef.current = pointer;
   const isActiveRef = useRef(isActive);
@@ -291,13 +312,14 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             );
           }
 
-          // Screen-space overlays (reset transform inside each helper): the compact level/height/score
-          // HUD pill top-left, and the turn/aim hint centered near the top. These replace the old DOM
-          // badge rows so the canvas keeps all the vertical space (feedback 0022 #6).
+          // Screen-space overlays (reset transform inside each helper): the compact round/score HUD pill
+          // top-left, and the turn/aim hint centered near the top. These replace the old DOM badge rows
+          // so the canvas keeps all the vertical space (feedback 0022 #6). Points only, no px readout,
+          // and "Round" not "Level" (feedback 0025).
           const lvl = live.level;
           const hud = [
-            `Lv ${lvl + 1} - ${LEVEL_NAMES[lvl] ?? `Level ${lvl + 1}`}`,
-            `${live.height}/${live.target} px   ${live.score} pts`,
+            `Round ${lvl + 1} - ${LEVEL_NAMES[lvl] ?? `Round ${lvl + 1}`}`,
+            `${live.score} pts`,
           ];
           drawHudOverlay(ctx, chrome, dpr, hud);
           drawHintOverlay(ctx, chrome, dpr, rect.width, rect.height, hintRef.current);
@@ -325,20 +347,22 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     };
   }
 
-  // The CANVAS only MOVES the piece (feedback 0023): a tap or drag sets the drop position in BOTH
-  // phases. It never locks the angle or drops - the top-right button does both.
+  // The CANVAS MOVES the piece (a tap/drag sets the drop position in both phases) and a DOUBLE-TAP is a
+  // shortcut for the aim button above it (feedback 0025). It never single-tap-drops - so a stray tap
+  // only repositions, while a deliberate double-tap stops the spin / drops.
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>): void {
     if (!isActive || dropped) return;
     // Capture the pointer so a finger that drifts off a small (~360px) board mid-drag keeps tracking
     // (guarded: jsdom / older engines may not implement pointer capture).
     e.currentTarget.setPointerCapture?.(e.pointerId);
     draggingRef.current = true;
+    pressStartRef.current = { t: e.timeStamp, x: e.clientX, y: e.clientY };
     setPointer(pointerToWorld(e.clientX, e.clientY));
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>): void {
-    // Only track a real press-drag, never a bare hover: a mouse moving to the top-right button must
-    // not re-aim the piece (touch has no hover, so this only affects the desktop/responsive path).
+    // Only track a real press-drag, never a bare hover: a mouse moving to the button must not re-aim the
+    // piece (touch has no hover, so this only affects the desktop/responsive path).
     if (!isActive || dropped || !draggingRef.current) return;
     setPointer(pointerToWorld(e.clientX, e.clientY));
   }
@@ -347,6 +371,23 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     draggingRef.current = false;
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture?.(e.pointerId);
+    }
+    // Double-tap detection: a quick press that barely moved is a tap; two taps close in time fire the
+    // aim button. A drag or long press breaks the pairing so aiming never trips the shortcut.
+    const start = pressStartRef.current;
+    pressStartRef.current = null;
+    if (!isActive || dropped || !start) return;
+    const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+    const isTap = e.timeStamp - start.t <= TAP_MAX_MS && moved <= TAP_MAX_MOVE_PX;
+    if (!isTap) {
+      lastTapRef.current = 0;
+      return;
+    }
+    if (e.timeStamp - lastTapRef.current <= DOUBLE_TAP_MS) {
+      lastTapRef.current = 0;
+      handleAimButton();
+    } else {
+      lastTapRef.current = e.timeStamp;
     }
   }
 
@@ -367,6 +408,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     const live = simRef.current;
     if (!live || !live.next || !isActive || aim !== 'placing') return;
     const t = placedTransform(live.next, live, angleRef.current);
+    // Refuse an illegal (below-the-line) drop here too - the button is disabled for it, but the
+    // double-tap shortcut (feedback 0025) reaches drop() directly, and the server would reject it anyway.
+    if (!t.legal) return;
     // Submit the piece's current transform. The server clamps + re-checks; we send our previewed pose.
     onMove?.(state.round, JSON.stringify({ angle: angleRef.current, dropX: t.x, dropY: t.y }));
     setDropped(true);
@@ -380,8 +424,6 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
       : false;
 
   const level = sim?.level ?? 0;
-  const target = sim?.target ?? 600;
-  const height = sim?.height ?? 0;
   const score = sim?.score ?? 0;
 
   // Game over: a final summary with the score.
@@ -391,7 +433,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
         <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4 text-center">
           <h2 className="text-h3 text-text">Tower complete</h2>
           <p className="text-body-sm text-text-muted">
-            You stacked your way to {height} px for {score} pts. Nice climbing.
+            You stacked your way to {score} pts. Nice climbing.
           </p>
           <p className="text-body-sm text-text-muted">
             The host can play again or head back to the lobby.
@@ -419,13 +461,13 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   hintRef.current = hint;
 
   // The live game state as text, for the visually-hidden aria-live region below. The HUD + hint are
-  // painted on the canvas (feedback 0022 #6), so this restores the level/height/score/turn info to the
-  // DOM for screen readers - and gives an automated test a stable signal (the canvas pixels are opaque
-  // to both). `polite` so it announces changes without interrupting.
-  const levelName = LEVEL_NAMES[level] ?? `level ${level + 1}`;
+  // painted on the canvas (feedback 0022 #6), so this restores the round/score/turn info to the DOM for
+  // screen readers - and gives an automated test a stable signal (the canvas pixels are opaque to both).
+  // Points only, "Round" not "Level" (feedback 0025). `polite` so it announces without interrupting.
+  const roundName = LEVEL_NAMES[level] ?? `round ${level + 1}`;
   const srStatus = [
-    `Level ${level + 1}, ${levelName}.`,
-    `Tower ${height} of ${target} pixels, ${score} points.`,
+    `Round ${level + 1}, ${roundName}.`,
+    `${score} points.`,
     isActive
       ? dropped
         ? 'Dropping the piece.'
@@ -439,24 +481,54 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
         : '',
   ].join(' ');
 
+  // The start-of-game gesture hint (feedback 0025): a centered onboarding overlay shown only while the
+  // very first piece is still being aimed (nothing has landed yet), with copy for touch vs. mouse.
+  const showStartHint =
+    isActive && !dropped && sim != null && sim.level === 0 && sim.score === 0 && sim.height === 0;
+  const startHintText = isCoarse
+    ? 'Double tap to stop spin and drop'
+    : 'Click to stop spin and drop';
+
   return (
-    <section aria-label="Game viewer" className="flex flex-col gap-4">
-      {/* The level/height/score + turn state as text for screen readers (the on-canvas HUD/hint are
-          invisible to assistive tech and to automated tests). Visually hidden; announced politely. */}
+    <section aria-label="Game viewer" className="flex flex-col gap-3">
+      {/* The round/score + turn state as text for screen readers (the on-canvas HUD/hint are invisible
+          to assistive tech and to automated tests). Visually hidden; announced politely. */}
       <p className="sr-only" role="status" aria-live="polite">
         {srStatus}
       </p>
-      {/* The single game surface: the live tower, plus the aim overlay when it is the local turn.
-          The level/height/score HUD and the turn/aim hint are drawn ON the canvas (feedback 0022 #6),
-          freeing this space so the surface fills the viewport height. touch-action:none + pointer
-          capture keep a drag over the board from scrolling the page and keep tracking when a finger
-          drifts off a small (~360px) board mid-drag; user-select/callout off stop iOS copy/paste while
-          dragging to aim (mobile-first). `relative` anchors the rejection overlay. */}
+      {/* The aim control bar ABOVE the canvas (feedback 0025), so the button never sits on the on-canvas
+          hint. 'spinning' -> "Stop spin" (lock the angle); 'placing' -> "Drop" (submit); disabled below
+          the required line. A double-tap on the board is the same action. min-h keeps the row from
+          collapsing (no layout jump) when it is not the local turn. */}
+      <div className="flex min-h-11 items-center justify-end">
+        {isActive && !dropped ? (
+          <button
+            type="button"
+            aria-label={
+              aim === 'spinning'
+                ? 'Stop the spin and lock the angle'
+                : dropLegal
+                  ? 'Drop the piece'
+                  : 'The piece is below the line - move it higher before dropping'
+            }
+            disabled={aim === 'placing' && !dropLegal}
+            onClick={handleAimButton}
+            className="min-h-11 min-w-24 rounded-lg bg-accent px-4 py-2 text-body-sm font-semibold text-black shadow-md disabled:opacity-50"
+          >
+            {aim === 'spinning' ? 'Stop spin' : dropLegal ? 'Drop' : 'Too low'}
+          </button>
+        ) : null}
+      </div>
+      {/* The single game surface: the live tower, plus the aim overlay when it is the local turn. The
+          round/score HUD and the turn/aim hint are drawn ON the canvas (feedback 0022 #6). touch-action
+          :none + pointer capture keep a drag over the board from scrolling the page and keep tracking
+          when a finger drifts off a small (~360px) board mid-drag; user-select/callout off stop iOS
+          copy/paste while dragging to aim (mobile-first). `relative` anchors the overlays. */}
       <div
         className="relative w-full overflow-hidden rounded-xl border border-border bg-bg"
         style={{
-          height: 'min(78svh, calc(100svh - 190px))',
-          minHeight: '320px',
+          height: 'min(74svh, calc(100svh - 244px))',
+          minHeight: '300px',
           touchAction: 'none',
           userSelect: 'none',
           WebkitUserSelect: 'none',
@@ -474,38 +546,17 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           role="img"
           className="block h-full w-full"
         />
-        {/* The aim action button (feedback 0023): a real, thumb-sized HTML button pinned top-right over
-            the canvas. 'spinning' -> "Stop spin" (lock the angle); 'placing' -> "Drop" (submit). It is
-            disabled while placing below the required line (the ghost also turns red); the server still
-            re-checks. stopPropagation keeps its taps from also moving the piece via the board handlers. */}
-        {isActive && !dropped ? (
-          <button
-            type="button"
-            aria-label={
-              aim === 'spinning'
-                ? 'Stop the spin and lock the angle'
-                : dropLegal
-                  ? 'Drop the piece'
-                  : 'The piece is below the line - move it higher before dropping'
-            }
-            disabled={aim === 'placing' && !dropLegal}
-            onPointerDown={(e) => e.stopPropagation()}
-            onPointerUp={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAimButton();
-            }}
-            className="absolute right-2 top-2 min-h-11 min-w-24 rounded-lg bg-accent px-4 py-2 text-body-sm font-semibold text-black shadow-md disabled:opacity-50"
-          >
-            {aim === 'spinning' ? 'Stop spin' : dropLegal ? 'Drop' : 'Too low'}
-          </button>
+        {showStartHint ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
+            <p className="max-w-[15rem] rounded-lg bg-black/70 px-4 py-3 text-center text-body-sm font-semibold text-white shadow-md">
+              {startHintText}
+            </p>
+          </div>
         ) : null}
         {state.rejected ? (
           <p
             role="alert"
-            // Sits BELOW the top-right aim button (top-14, clearing its 44px height + top-2 offset) so
-            // the rejection copy stays legible next to the button on a ~360px screen instead of under it.
-            className="absolute inset-x-0 top-14 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
+            className="absolute inset-x-0 top-2 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
           >
             {rejectionMessage(state.rejected)}
           </p>

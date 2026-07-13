@@ -64,14 +64,23 @@ function noop() {}
 // screen->world mapping NaN. Construct the event and pin the coordinates so a real drag can be tested.
 function firePointer(
   el: HTMLElement,
-  type: 'pointerDown' | 'pointerMove',
+  type: 'pointerDown' | 'pointerMove' | 'pointerUp',
   clientX: number,
   clientY: number,
+  timeStamp?: number,
 ): void {
   const ev = createEvent[type](el, { bubbles: true });
   Object.defineProperty(ev, 'clientX', { value: clientX });
   Object.defineProperty(ev, 'clientY', { value: clientY });
+  if (timeStamp != null) Object.defineProperty(ev, 'timeStamp', { value: timeStamp });
   fireEvent(el, ev);
+}
+
+// A quick, near-stationary tap: a pointerdown + pointerup at (x,y) at time `t`. Two taps close in time
+// are the double-tap shortcut (feedback 0025).
+function tap(board: HTMLElement, x: number, y: number, t: number): void {
+  firePointer(board, 'pointerDown', x, y, t);
+  firePointer(board, 'pointerUp', x, y, t + 10);
 }
 
 describe('TeeterViewer single interactive surface', () => {
@@ -89,13 +98,15 @@ describe('TeeterViewer single interactive surface', () => {
     expect(screen.queryByRole('img', { name: /aim and drop the piece/i })).toBeNull();
   });
 
-  it('mirrors the level/height/score + turn state into an aria-live region for assistive tech', () => {
+  it('mirrors the round/score + turn state into an aria-live region for assistive tech', () => {
     // The HUD + hint paint on the canvas (opaque to a screen reader), so the live state must survive in
-    // the DOM via a polite aria-live status region (also the stable signal the e2e asserts on).
+    // the DOM via a polite aria-live status region (also the stable signal the e2e asserts on). Points
+    // only, "Round" not "Level" (feedback 0025).
     render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={noop} />);
     const status = screen.getByRole('status');
-    expect(status.textContent).toMatch(/Level 1, Warm-up/i);
-    expect(status.textContent).toMatch(/Tower 0 of 450 pixels, 0 points/i);
+    expect(status.textContent).toMatch(/Round 1, Warm-up/i);
+    expect(status.textContent).toMatch(/0 points/i);
+    expect(status.textContent).not.toMatch(/pixels/i);
     expect(status.textContent).toMatch(/move the piece on the board, then Stop spin/i);
   });
 
@@ -132,6 +143,26 @@ describe('TeeterViewer single interactive surface', () => {
     expect(move).toHaveProperty('dropY');
     expect(typeof move.dropX).toBe('number');
     expect(typeof move.dropY).toBe('number');
+  });
+
+  it('a double-tap on the board is a shortcut for the aim button (feedback 0025)', () => {
+    const onMove = vi.fn();
+    render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={onMove} />);
+    const board = screen.getByRole('img', { name: /aim and drop the piece/i })
+      .parentElement as HTMLElement;
+    // A single tap only moves the piece - it must not stop the spin or drop.
+    tap(board, 100, 100, 500);
+    expect(screen.getByRole('button', { name: /stop the spin and lock the angle/i })).toBeDefined();
+    expect(onMove).not.toHaveBeenCalled();
+    // A double-tap while spinning stops the spin (same as the button) - it now offers Drop.
+    tap(board, 100, 100, 1000);
+    tap(board, 100, 100, 1150); // second tap within DOUBLE_TAP_MS
+    expect(screen.getByRole('button', { name: /drop the piece/i })).toBeDefined();
+    expect(onMove).not.toHaveBeenCalled();
+    // A double-tap while placing drops (submits the move).
+    tap(board, 100, 100, 2000);
+    tap(board, 100, 100, 2150);
+    expect(onMove).toHaveBeenCalledTimes(1);
   });
 
   it('follows a press-drag but ignores a bare hover, so travelling to the button never re-aims (feedback 0023)', () => {

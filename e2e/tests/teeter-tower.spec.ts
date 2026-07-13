@@ -38,42 +38,38 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   // Start the game solo (the host is a viewer + a player, so the start gate is satisfied).
   await page.getByRole('button', { name: /start game/i }).click();
 
-  // The single interactive board appears. The level/height/score + turn state are painted ON the
-  // canvas (feedback 0022), so assert the DOM signals that remain: the aria-live status region (the
-  // visually-hidden mirror of the HUD/turn), which is also what a screen reader reads.
+  // The single interactive board appears. The round/score + turn state are painted ON the canvas
+  // (feedback 0022), so assert the DOM signals that remain: the aria-live status region (the visually-
+  // hidden mirror of the HUD/turn). Points only, "Round" not "Level" (feedback 0025).
   const board = page.locator('canvas').first();
   await expect(board).toBeVisible({ timeout: 30_000 });
-  const status = page.getByText(/of 450 pixels/i); // the live status region, level-1 target 450
-  await expect(status).toContainText(/tower 0 of 450 pixels/i, { timeout: 30_000 });
+  const viewer = page.getByRole('region', { name: /game viewer/i });
+  const status = viewer.getByRole('status');
+  await expect(status).toContainText(/Round 1, Warm-up/i, { timeout: 30_000 });
+  await expect(status).toContainText(/0 points/i);
+  await expect(status).not.toContainText(/pixels/i);
   await expect(status).toContainText(/move the piece on the board, then Stop spin/i);
 
-  // Aim + drop on the canvas (feedback 0023). MOVE the piece to a spot above the min-drop line, then
-  // the top-right "Stop spin" button locks the angle (status flips to the "then Drop" prompt) and the
-  // "Drop" button submits. The canvas only moves the piece; the button drives stop-spin -> drop.
+  // Aim + drop on the canvas. MOVE the piece to a spot above the min-drop line, then the "Stop spin"
+  // button (now above the canvas, feedback 0025) locks the angle and the "Drop" button submits.
   const box = await board.boundingBox();
   if (!box) throw new Error('board has no bounding box');
-  // Lower-middle, centered: comfortably above the 25%-from-platform min-drop line, yet low enough that a
-  // single piece does NOT reach the level's full target (so the tower gains height but stays on level 1).
+  // Lower-middle, centered: comfortably above the 25%-from-platform min-drop line, and low enough that
+  // the piece settles below the round's target (so it does not clear the round on a single drop).
   await board.click({ position: { x: box.width / 2, y: box.height * 0.58 } });
   await page.getByRole('button', { name: /stop the spin and lock the angle/i }).click();
   await expect(status).toContainText(/move it into place, then Drop/i);
   await page.getByRole('button', { name: /drop the piece/i }).click();
 
-  // The engine dropped the piece into the live world and streamed it back: the tower now has non-zero
-  // height and a fresh piece is offered. This proves the full live-authoritative loop, not a freeze.
-  await expect(page.getByText(/tower [1-9]\d* of 450 pixels/i)).toBeVisible({ timeout: 30_000 });
-  // Explicitly still on level 1: a single drop should gain height, NOT clear the level. If a future
-  // fit/target/platform tweak pushed the drop position above target, this fails loudly rather than the
-  // "of 450 pixels" assertion silently passing on a level-2 board.
-  await expect(page.getByText(/Level 1, Warm-up/i)).toBeVisible();
-  // No rejection surfaced. Scope to the game viewer: the page carries an always-present empty top-level
-  // aria-live alert region, so the assertion targets the viewer's own rejection <p role="alert"> only.
-  await expect(page.getByRole('region', { name: /game viewer/i }).getByRole('alert')).toHaveCount(
-    0,
-  );
-  await expect(page.getByText(/move the piece on the board, then Stop spin/i)).toBeVisible({
+  // The engine accepted the drop and streamed the next piece: the aim resets, so the turn cycles back to
+  // the spin prompt (it had switched to the "then Drop" prompt above). With the settle-gate + banded
+  // scoring (feedback 0025) a single low drop scores 0 pts, so the live loop is proven by the turn
+  // cycling, not a score bump. No rejection surfaced, and still Round 1.
+  await expect(status).toContainText(/move the piece on the board, then Stop spin/i, {
     timeout: 30_000,
   });
+  await expect(status).toContainText(/Round 1, Warm-up/i);
+  await expect(viewer.getByRole('alert')).toHaveCount(0);
 });
 
 test('a non-insider never sees Teeter Tower in the game picker', async ({ page }) => {
