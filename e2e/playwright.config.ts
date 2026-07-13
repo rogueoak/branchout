@@ -42,6 +42,9 @@ export default defineConfig({
         'insider.spec.ts',
         // Admin console: separate identity, user management, insider toggle (spec 0037).
         'admin.spec.ts',
+        // Teeter Tower: the insider-only live physics game - aim + drop loop and the picker gate
+        // (spec 0044, feedback 0023).
+        'teeter-tower.spec.ts',
       ],
     },
     // The product is mobile-first, so a phone-viewport lane guards that the key surfaces render and

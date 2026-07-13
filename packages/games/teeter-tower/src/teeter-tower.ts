@@ -173,6 +173,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       over: scratch.over,
       target: level.target,
       pendulum: level.pendulum,
+      platformWidth: level.platformWidth,
+      walls: level.walls,
     });
   };
 
@@ -218,6 +220,9 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       level: world.levelIndex,
       target: level.target,
       requiredLine: requiredLineY(level.target, height),
+      // The client draws the platform + walls and clamps drop-x from this authoritative config, so a
+      // per-level platform (level 1 is wider + walled) is honored client-side without a hardcoded width.
+      platform: { width: level.platformWidth, walls: level.walls },
       over: world.over,
     };
   };
@@ -308,7 +313,7 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       // the height; the clamp guards a malformed or wildly out-of-range value).
       const level = levelAt(world.levelIndex);
       const height = worldHeight(world);
-      const dropX = clampDropX(parsed.dropX);
+      const dropX = clampDropX(parsed.dropX, world.platformWidth);
       const dropY = clampDropY(parsed.dropY);
       const held = heldBodyAt(piece.verts, dropX, dropY, parsed.angle);
       const placedBodies = world.placed.map((p) => p.body);
@@ -319,6 +324,7 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         world.platform,
         placedBodies,
         world.pendulum,
+        world.walls,
       );
       if (!verdict.ok) {
         const reason =
@@ -451,10 +457,14 @@ function advanceLevel(world: LiveWorld): void {
     next: world.next,
     target: level.target,
     pendulum: level.pendulum,
+    platformWidth: level.platformWidth,
+    walls: level.walls,
   });
   // Swap the fresh world's matter state in place so the caller's reference stays valid.
   world.engine = fresh.engine;
   world.platform = fresh.platform;
+  world.walls = fresh.walls;
+  world.platformWidth = fresh.platformWidth;
   world.placed = fresh.placed;
   world.pendulum = fresh.pendulum;
   world.pendulumPhase = 0;

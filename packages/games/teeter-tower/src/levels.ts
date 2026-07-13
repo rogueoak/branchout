@@ -22,26 +22,74 @@ export const PIECE_DENSITY = 0.0016;
 /** Caps drop velocity so a piece can't slam the tower off center. */
 export const MAX_FALL_SPEED = 9;
 
-/** The horizontal half-range (from center) a drop position may occupy. */
-export const DROP_HALF_RANGE = PLATFORM_W / 2 + 90;
+/** The default horizontal drop half-range beyond the platform's own half-width (px each side). */
+export const DROP_EDGE_MARGIN = 90;
+/** The horizontal half-range (from center) a drop position may occupy on the DEFAULT platform. */
+export const DROP_HALF_RANGE = PLATFORM_W / 2 + DROP_EDGE_MARGIN;
 /** Spawn height above the platform top for a freshly spun piece. */
 export const SPAWN_Y = 100;
 
-/** A level definition: target height (px above the platform), piece budget, optional pendulum. */
+/** Side-wall geometry for a walled (level 1) platform: short, thin, high-friction curbs. */
+export const WALL_THICKNESS = 18;
+export const WALL_HEIGHT = 70;
+
+/**
+ * Level 1's near-full-width platform (px). Wider than the default PLATFORM_W (480) and close to the
+ * VIEW_W (820) frame, so the warm-up gives pieces room to land; it also drives the drop-x clamp and the
+ * side-wall placement for the walled level.
+ */
+export const WIDE_PLATFORM_W = 760;
+
+/**
+ * A level definition: target height (px above the platform), piece budget, optional pendulum, and the
+ * platform config (its width + whether it has side walls). Level 1 is a wide, walled warm-up so pieces
+ * do not slide off; levels 2/3 keep the narrower open platform.
+ */
 export interface Level {
   name: string;
   target: number;
   pieces: number;
   pendulum: boolean;
+  /** The platform's width (px). Level 1 is near-full-width; levels 2/3 use PLATFORM_W. */
+  platformWidth: number;
+  /** Whether the platform has short static side walls (level 1 only). */
+  walls: boolean;
 }
 
 export const LEVELS: readonly Level[] = [
-  // Level 1's target is 600 (2x the prototype's 300) so the warm-up tower is a satisfying,
-  // twice-as-tall build (spec 0044). Levels 2/3 keep the prototype's 620.
-  { name: 'Warm-up', target: 600, pieces: 11, pendulum: false },
-  { name: 'Reach for the sky', target: 620, pieces: 20, pendulum: false },
-  { name: 'The Pendulum', target: 620, pieces: 22, pendulum: true },
+  // Level 1's target is 450 (feedback 0023: 25% lower than the old 600) for an easier warm-up, on a
+  // near-full-width walled platform so pieces do not slide off the edges. Levels 2/3 keep the narrower
+  // open platform and the prototype's 620 target.
+  {
+    name: 'Warm-up',
+    target: 450,
+    pieces: 11,
+    pendulum: false,
+    platformWidth: WIDE_PLATFORM_W,
+    walls: true,
+  },
+  {
+    name: 'Reach for the sky',
+    target: 620,
+    pieces: 20,
+    pendulum: false,
+    platformWidth: PLATFORM_W,
+    walls: false,
+  },
+  {
+    name: 'The Pendulum',
+    target: 620,
+    pieces: 22,
+    pendulum: true,
+    platformWidth: PLATFORM_W,
+    walls: false,
+  },
 ];
+
+/** The horizontal drop half-range for a level's platform: half its width plus the edge margin. */
+export function dropHalfRangeForWidth(platformWidth: number): number {
+  return platformWidth / 2 + DROP_EDGE_MARGIN;
+}
 
 /** The level for a given level index, clamped to the last level. */
 export function levelAt(index: number): Level {

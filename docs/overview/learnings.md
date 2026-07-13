@@ -231,6 +231,16 @@ Capture durable lessons as they emerge.
   since the host could fix it by switching itself to Interactive. Make the blocked copy aware of the
   actor: when the caller is the one who can lift the gate, point at their own control instead of
   telling them to wait. (Review `0013`.)
+- **On a mobile-first surface with a desktop path, "follow the pointer" is not the same input on
+  touch and mouse - gate press-drag vs. hover explicitly.** Teeter's canvas aim let the piece follow
+  every `pointermove` over the board. On touch that is only ever a press-drag, so it played right on a
+  phone; on a mouse it also fires on a bare hover, so travelling the cursor to the on-canvas Stop-spin/
+  Drop button re-aimed the piece to that top-right corner right before the drop - a high drop that
+  instantly cleared the level. Track a `dragging` flag (true on pointer-down, false on up/cancel) and
+  ignore moves while it is unset; a tap still positions, a drag still tracks, a hover is inert. Verify
+  the responsive path with a *real mouse moving to the controls*, not only the phone - the bug was
+  invisible to touch playtesting and to jsdom (which also drops synthetic-pointer clientX/Y). (Feedback
+  `0023`.)
 
 ## Live game state and the seam
 

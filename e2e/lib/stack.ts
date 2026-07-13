@@ -119,6 +119,51 @@ export function grantInsider(gamerTag: string): void {
   }
 }
 
+/**
+ * Top up an account's credit balance by gamer tag, via an append to the credit_ledger against the e2e
+ * Postgres container. A fresh account gets only the free-tier daily grant (10), but a live game like
+ * Teeter Tower reserves its full round budget (~53) to start, so a test that plays it must fund the
+ * account first. This is test scaffolding for the credit economy, not a claim about it. The tag shape
+ * is asserted alphanumeric before it reaches the SQL, and the idempotency key is keyed on the tag so a
+ * re-run does not double-grant.
+ */
+export function grantCredits(gamerTag: string, amount = 200): void {
+  if (!/^[A-Za-z0-9]+$/.test(gamerTag)) {
+    throw new Error(`grantCredits: unexpected gamer tag ${JSON.stringify(gamerTag)}`);
+  }
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new Error(`grantCredits: amount must be a positive integer, got ${amount}`);
+  }
+  const out = execFileSync(
+    DOCKER,
+    [
+      'compose',
+      ...composeFiles(),
+      'exec',
+      '-T',
+      'postgres',
+      'psql',
+      '-U',
+      'branchout',
+      '-d',
+      'branchout',
+      '-c',
+      `INSERT INTO credit_ledger (account_id, delta, reason, idempotency_key)
+       SELECT id, ${amount}, 'e2e-topup', 'e2e-topup-${gamerTag}'
+       FROM accounts WHERE gamer_tag = '${gamerTag}'
+       ON CONFLICT (idempotency_key) DO NOTHING;`,
+    ],
+    { cwd: repoRoot, env: composeEnv, encoding: 'utf8' },
+  );
+  // psql prints "INSERT 0 <n>". A fresh unique account (just created by signUp) yields "INSERT 0 1";
+  // ON CONFLICT makes an accidental re-run a harmless no-op ("INSERT 0 0"). We only guard that the
+  // command ran (an INSERT line, not a psql error/typo) - a genuinely missing account is already caught
+  // loudly upstream by the grantInsider call on the same tag, so we do not re-check it here.
+  if (!/INSERT\s+0\s+\d+/.test(out)) {
+    throw new Error(`grantCredits: unexpected psql output for ${gamerTag} (got: ${out.trim()})`);
+  }
+}
+
 /** Poll the web app's /health until it answers ok, as a final gate after `up --wait`. */
 export async function waitForWeb(timeoutMs = 60_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;

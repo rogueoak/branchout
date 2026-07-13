@@ -58,8 +58,12 @@ function tallBlock(id: number, height: number): StoredBody {
   };
 }
 
-/** Move helper defaulting dropY to 0 (the server clamps dropY anyway). */
-function move(angle: number, dropX: number, dropY = 0): TeeterMove {
+/**
+ * Move helper. dropY defaults to a modest world-y (~200px above the platform) so the piece lands ABOVE
+ * the required min-drop line yet the resulting tower height stays well UNDER the level-1 target (450) -
+ * a drop far higher would report a huge height and trip the target-reached level advance mid-test.
+ */
+function move(angle: number, dropX: number, dropY = GROUND_TOP - 200): TeeterMove {
   return { angle, dropX, dropY };
 }
 
@@ -163,18 +167,20 @@ describe('collectMove (apply to the live world)', () => {
   });
 
   it('rejects a drop whose lowest point is below the required line', () => {
-    // For an empty tower (target 600) the required line is 150px = world-y 390; a piece must sit fully
-    // ABOVE it (bottom y < 390). Dropping low (bottom well below 390) is rejected on the line rule.
+    // For an empty tower the required line is the first 25%-of-target line above the platform; a piece
+    // must sit fully ABOVE it. We read the line from the prompt and drop well below it (larger world-y,
+    // y grows down), so the placement is rejected on the line rule regardless of the exact target.
     const game = createTeeterTowerGame(stubRng(0.5));
     const scratch = game.configure({}, players('p1')).scratch;
     const base = ctx({ scratch });
     const started = game.startRound(base);
     const requiredLine = (started.prompt as TeeterSim).requiredLine;
-    // Drop the piece centroid at requiredLine + 100 (well below the line, y grows down).
+    // Drop the piece centroid just below the line (larger world-y) but still clear of the platform, so
+    // it is rejected on the LINE rule (a much lower drop would instead overlap the platform).
     const bad = game.collectMove(
       { ...base, scratch: started.scratch },
       'p1',
-      JSON.stringify(move(0, 410, requiredLine + 100)),
+      JSON.stringify(move(0, 410, requiredLine + 45)),
     );
     expect(bad.rejected?.reason).toMatch(/line/i);
   });

@@ -15,7 +15,7 @@ import { createRng, deriveSeed } from './rng';
 import {
   CENTER_X,
   DEATH_Y,
-  DROP_HALF_RANGE,
+  dropHalfRangeForWidth,
   GROUND_TOP,
   MAX_FALL_SPEED,
   PALETTE,
@@ -26,10 +26,12 @@ import {
   PLATFORM_H,
   PLATFORM_W,
   SPAWN_Y,
+  WALL_HEIGHT,
+  WALL_THICKNESS,
 } from './levels';
 import type { Body as BodyPayload, Eye, Piece, Skin, Vec2 } from './types';
 
-const { Bodies, Body, Common, Composite, Constraint, Engine, Query } = Matter;
+const { Bodies, Body, Common, Composite, Constraint, Engine, Query, Vertices } = Matter;
 
 // Wire poly-decomp once at module load so `Bodies.fromVertices` decomposes the concave "blob" piece
 // into convex parts instead of silently falling back to a convex hull (which also logs a console.warn
@@ -69,6 +71,11 @@ export interface StoredBody {
   vx: number;
   vy: number;
   angularVelocity: number;
+  /**
+   * The body's density, persisted so the heavy trapezoid (4x, `TRAP_DENSITY_MULT`) keeps its weight
+   * across a rebuild-from-snapshot. Absent on a legacy snapshot -> the default `PIECE_DENSITY`.
+   */
+  density?: number;
   skin: Skin;
   eyes: Eye[];
 }
@@ -80,13 +87,17 @@ export interface StoredPiece {
   eyes: Eye[];
   skin: Skin;
   spinSeed: number;
+  /** The piece's density (4x for the heavy trapezoid), so a dropped piece keeps its weight. */
+  density?: number;
 }
 
 // ---------------------------------------------------------------------------
 // Deterministic piece generation (ported from the prototype's makePiece)
 // ---------------------------------------------------------------------------
 
-type PieceType = 'block' | 'plank' | 'ell' | 'blob' | 'tri';
+type PieceType = 'block' | 'plank' | 'ell' | 'blob' | 'tri' | 'trap';
+// The type mix. `trap` is the SPECIAL heavy reinforcement piece - one slot, so it shows up
+// occasionally (a piece you place deliberately to anchor a wall), not on every drop.
 const TYPE_BAG: readonly PieceType[] = [
   'block',
   'block',
@@ -96,7 +107,13 @@ const TYPE_BAG: readonly PieceType[] = [
   'ell',
   'blob',
   'tri',
+  'trap',
 ];
+
+/** The heavy trapezoid's density multiplier vs a normal piece (4x heavier - reinforcement). */
+export const TRAP_DENSITY_MULT = 4;
+/** The heavy trapezoid's cosmetics: near-black with a faint outline so it reads on the dark sky. */
+const TRAP_SKIN: Skin = { fill: '#0e0e16', stroke: '#4a4a5c' };
 
 /** A generated piece: a matter body plus its cosmetics, all in local space (centered at origin). */
 export interface GeneratedPiece {
@@ -113,7 +130,7 @@ export interface GeneratedPiece {
  * created dynamic-but-inert here; callers place it into the world as needed.
  */
 export function makePiece(rng: SeededRng): GeneratedPiece {
-  const skin = rng.pick(PALETTE);
+  let skin = rng.pick(PALETTE);
   const opts: Matter.IChamferableBodyDefinition = {
     friction: PIECE_FRICTION,
     frictionStatic: PIECE_FRICTION_STATIC,
@@ -142,6 +159,24 @@ export function makePiece(rng: SeededRng): GeneratedPiece {
     body = Bodies.rectangle(0, 0, rng.range(64, 90) * s, rng.range(58, 82) * s, opts);
   } else if (type === 'tri') {
     body = Bodies.polygon(0, 0, 3, rng.range(52, 66) * s, opts);
+  } else if (type === 'trap') {
+    // The special heavy trapezoid: a wide base narrowing to the top (a stable footing to build a
+    // wall on), 4x denser than a normal piece so it anchors the stack. Single convex body, so it
+    // round-trips cleanly. Always near-black with the white googly eyes for contrast.
+    const wb = rng.range(96, 128) * s; // bottom (wide)
+    const wt = wb * rng.range(0.5, 0.62); // top (narrow)
+    const h = rng.range(46, 60) * s;
+    const verts: Vec2[] = [
+      { x: -wb / 2, y: h / 2 },
+      { x: wb / 2, y: h / 2 },
+      { x: wt / 2, y: -h / 2 },
+      { x: -wt / 2, y: -h / 2 },
+    ];
+    body = Bodies.fromVertices(0, 0, [verts], {
+      ...opts,
+      density: PIECE_DENSITY * TRAP_DENSITY_MULT,
+    });
+    skin = TRAP_SKIN;
   } else {
     // "ell" - a compound L shape.
     const t = rng.range(28, 36) * s;
@@ -188,6 +223,7 @@ export function storedPieceFrom(id: number, piece: GeneratedPiece): StoredPiece 
     eyes: piece.eyes,
     skin: piece.skin,
     spinSeed: piece.spinSeed,
+    density: piece.body.density,
   };
 }
 
@@ -233,6 +269,10 @@ interface Placed {
 export interface LiveWorld {
   engine: Matter.Engine;
   platform: Matter.Body;
+  /** The level's static side walls (level 1 only) - included in collisions + overlap checks. */
+  walls: Matter.Body[];
+  /** The current level's platform width (px) - the horizontal drop clamp derives from it. */
+  platformWidth: number;
   placed: Placed[];
   pendulum: Matter.Body | null;
   pendulumPhase: number;
@@ -253,26 +293,43 @@ export interface LiveWorld {
 }
 
 /** Rebuild a matter body from stored local vertex loops at a world transform. */
-function bodyFromStored(verts: Vec2[][], x: number, y: number, angle: number): Matter.Body {
+function bodyFromStored(
+  verts: Vec2[][],
+  x: number,
+  y: number,
+  angle: number,
+  density: number = PIECE_DENSITY,
+): Matter.Body {
   const opts: Matter.IChamferableBodyDefinition = {
     friction: PIECE_FRICTION,
     frictionStatic: PIECE_FRICTION_STATIC,
     frictionAir: PIECE_FRICTION_AIR,
     restitution: 0,
-    density: PIECE_DENSITY,
+    density,
   };
   let body: Matter.Body;
   if (verts.length === 1) {
     const loop = verts[0] ?? [];
     body = Bodies.fromVertices(0, 0, [loop.map((v) => ({ ...v }))], opts);
   } else {
-    const parts = verts.map((loop) =>
-      Body.create({
-        vertices: loop.map((v) => ({ ...v })),
+    // Compound (e.g. the "ell"): each part's loop carries its OWN offset from the compound centroid.
+    // Matter's setVertices re-centres a part's vertices on the part's origin, so we must position each
+    // part at its loop's CENTROID; otherwise every part collapses onto (0,0) and the arms overlap - the
+    // collision shape would then drift from the drawn shape (spec 0023). Positioning at the centroid and
+    // passing the centroid-relative vertices reconstructs the arrangement faithfully.
+    const parts = verts.map((loop) => {
+      const pts = loop.map((v) => ({ ...v }));
+      const c = Vertices.centre(pts);
+      return Body.create({
+        position: c,
+        vertices: pts,
         friction: PIECE_FRICTION,
         frictionStatic: PIECE_FRICTION_STATIC,
-      }),
-    );
+      });
+    });
+    // `density` (via opts) applies at the COMPOUND level, not per-part. Fine today: the only heavy piece
+    // (the trapezoid) is single-body, so this branch always runs at PIECE_DENSITY. A future compound
+    // heavy piece would need per-part density here to restore its exact mass distribution.
     body = Body.create({ parts, ...opts });
   }
   Body.setPosition(body, { x, y });
@@ -280,14 +337,38 @@ function bodyFromStored(verts: Vec2[][], x: number, y: number, angle: number): M
   return body;
 }
 
-/** Create the static platform (matching the prototype's grip). */
-function makePlatform(): Matter.Body {
-  const platform = Bodies.rectangle(CENTER_X, GROUND_TOP + PLATFORM_H / 2, PLATFORM_W, PLATFORM_H, {
-    isStatic: true,
-  });
+/** Create the static platform at a given width (matching the prototype's grip). */
+function makePlatform(platformWidth: number): Matter.Body {
+  const platform = Bodies.rectangle(
+    CENTER_X,
+    GROUND_TOP + PLATFORM_H / 2,
+    platformWidth,
+    PLATFORM_H,
+    { isStatic: true },
+  );
   platform.friction = PIECE_FRICTION;
   platform.frictionStatic = PIECE_FRICTION_STATIC;
   return platform;
+}
+
+/**
+ * Create the short static side walls for a walled (level 1) platform: thin, high-friction curbs at the
+ * platform's top-left and top-right edges so a piece resting near the edge cannot slide off. Returns an
+ * empty list when the level has no walls.
+ */
+function makeWalls(platformWidth: number, walls: boolean): Matter.Body[] {
+  if (!walls) return [];
+  const halfW = platformWidth / 2;
+  // Sit each wall on the platform TOP, its inner face flush with the platform edge.
+  const wallCY = GROUND_TOP - WALL_HEIGHT / 2;
+  const leftCX = CENTER_X - halfW + WALL_THICKNESS / 2;
+  const rightCX = CENTER_X + halfW - WALL_THICKNESS / 2;
+  return [leftCX, rightCX].map((cx) => {
+    const wall = Bodies.rectangle(cx, wallCY, WALL_THICKNESS, WALL_HEIGHT, { isStatic: true });
+    wall.friction = PIECE_FRICTION;
+    wall.frictionStatic = PIECE_FRICTION_STATIC;
+    return wall;
+  });
 }
 
 /** Add the level-3 pendulum (a driven wrecking ball) to the world. Returns the bob body. */
@@ -330,13 +411,19 @@ export function createWorld(args: {
   over?: boolean;
   target: number;
   pendulum: boolean;
+  /** The level's platform width (px). The horizontal drop clamp derives from it. */
+  platformWidth: number;
+  /** Whether the level's platform has short static side walls (level 1 only). */
+  walls: boolean;
 }): LiveWorld {
   const engine = makeEngine();
-  const platform = makePlatform();
+  const platform = makePlatform(args.platformWidth);
   Composite.add(engine.world, platform);
+  const walls = makeWalls(args.platformWidth, args.walls);
+  for (const wall of walls) Composite.add(engine.world, wall);
 
   const placed: Placed[] = args.bodies.map((b) => {
-    const body = bodyFromStored(b.verts, b.x, b.y, b.angle);
+    const body = bodyFromStored(b.verts, b.x, b.y, b.angle, b.density ?? PIECE_DENSITY);
     // Restore persisted per-body velocity so a rebuilt tower resumes motion instead of re-settling
     // from rest (spec 0044). Legacy snapshots without velocity default to 0 (rest), as before.
     Body.setVelocity(body, { x: b.vx ?? 0, y: b.vy ?? 0 });
@@ -350,6 +437,8 @@ export function createWorld(args: {
   return {
     engine,
     platform,
+    walls,
+    platformWidth: args.platformWidth,
     placed,
     pendulum,
     pendulumPhase: 0,
@@ -375,7 +464,7 @@ export function addPieceToWorld(
   y: number,
   angle: number,
 ): number {
-  const body = bodyFromStored(piece.verts, x, y, angle);
+  const body = bodyFromStored(piece.verts, x, y, angle, piece.density ?? PIECE_DENSITY);
   Body.setVelocity(body, { x: 0, y: 0 });
   Body.setAngularVelocity(body, 0);
   Composite.add(world.engine.world, body);
@@ -425,14 +514,15 @@ export function stepWorld(world: LiveWorld): void {
 // Legality (ported from overlapsScene / requiredDropHeight / evaluatePlacement)
 // ---------------------------------------------------------------------------
 
-/** Does the held body geometrically overlap the platform, tower, or pendulum? */
+/** Does the held body geometrically overlap the platform, side walls, tower, or pendulum? */
 export function overlapsScene(
   body: Matter.Body,
   platform: Matter.Body,
   placed: Matter.Body[],
   pendulum: Matter.Body | null,
+  walls: Matter.Body[] = [],
 ): boolean {
-  const others = [platform, ...placed];
+  const others = [platform, ...walls, ...placed];
   if (pendulum) others.push(pendulum);
   const hits = Query.collides(body, others);
   return hits.some((h) => h.depth > 2);
@@ -475,10 +565,12 @@ export function evaluatePlacement(
   platform: Matter.Body,
   placed: Matter.Body[],
   pendulum: Matter.Body | null,
+  walls: Matter.Body[] = [],
 ): PlacementVerdict {
   const reqH = requiredDropHeight(target, height);
   const lineY = reqH == null ? null : GROUND_TOP - reqH;
-  if (overlapsScene(body, platform, placed, pendulum)) return { ok: false, reason: 'overlap' };
+  if (overlapsScene(body, platform, placed, pendulum, walls))
+    return { ok: false, reason: 'overlap' };
   if (lineY != null && body.bounds.max.y > lineY) return { ok: false, reason: 'line' };
   return { ok: true, reason: null };
 }
@@ -497,9 +589,14 @@ export function heightToScore(height: number, target: number): number {
 // Drop geometry + legality helpers
 // ---------------------------------------------------------------------------
 
-/** Clamp a drop x to the legal horizontal range around center (mirrors the prototype's aiming). */
-export function clampDropX(x: number): number {
-  return Math.max(CENTER_X - DROP_HALF_RANGE, Math.min(CENTER_X + DROP_HALF_RANGE, x));
+/**
+ * Clamp a drop x to the legal horizontal range around center for a given platform width. The half-range
+ * derives from the level's platform (half its width plus the edge margin), so a wider level-1 platform
+ * lets a drop reach across it while a narrower level keeps the tighter range.
+ */
+export function clampDropX(x: number, platformWidth: number = PLATFORM_W): number {
+  const half = dropHalfRangeForWidth(platformWidth);
+  return Math.max(CENTER_X - half, Math.min(CENTER_X + half, x));
 }
 
 /**
@@ -559,6 +656,7 @@ export function toStoredBodies(world: LiveWorld): StoredBody[] {
     vx: round4(p.body.velocity.x),
     vy: round4(p.body.velocity.y),
     angularVelocity: round4(p.body.angularVelocity),
+    density: p.body.density,
     skin: p.skin,
     eyes: p.eyes,
   }));
