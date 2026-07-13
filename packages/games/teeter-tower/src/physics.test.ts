@@ -17,6 +17,7 @@ import {
   overlapsScene,
   pieceForIndex,
   requiredDropHeight,
+  sceneSettled,
   stepWorld,
   storedPieceFrom,
   toBodyPayloads,
@@ -68,6 +69,8 @@ function worldWith(bodies: StoredBody[], target = LEVELS[0]!.target, pendulum = 
     seed: 1,
     levelIndex: 0,
     bestHeight: 0,
+    stableHeight: 0,
+    piecesThisLevel: 0,
     totalScore: 0,
     pieceIndex: 0,
     bodies,
@@ -86,6 +89,8 @@ describe('level-1 side walls (feedback 0023: pieces do not slide off)', () => {
       seed: 1,
       levelIndex: 0,
       bestHeight: 0,
+      stableHeight: 0,
+      piecesThisLevel: 0,
       totalScore: 0,
       pieceIndex: 0,
       bodies: [],
@@ -284,30 +289,38 @@ describe('worldHeight', () => {
     expect(worldHeight(worldWith([]))).toBe(0);
   });
 
-  it('does not count a piece still in free-fall (feedback 0025: no airborne instant-win)', () => {
+  it('holds the reported height until the scene settles (feedback 0026: no airborne instant-win)', () => {
     const world = worldWith([]);
     const target = LEVELS[0]!.target; // 450
     // Release a piece from well ABOVE the target line - its top starts ~500px up, over the 450 target.
-    // Before the settle-gate, worldHeight counted it at that release height and the level "cleared"
-    // instantly; now a still-moving body contributes nothing until it comes to rest.
+    // The reported height is `stableHeight`, refreshed ONLY when the scene is settled (this mirrors the
+    // tick). While the piece falls, the scene is not settled, so the reported height holds (0 here) and
+    // the level never "clears" on the airborne peak.
     const piece = storedPieceFrom(1, pieceForIndex(42, 0));
     addPieceToWorld(world, piece, CENTER_X, GROUND_TOP - 480, 0);
-    let maxDuringFall = 0;
-    let settled = 0;
-    // The gate is not monotonic: while the piece bounces to rest it flickers above/below the settle
-    // threshold, so the measured height flips 0 <-> real for a few ticks. 220 steps lands well past the
-    // last jitter (the piece rests ~step 70), so the final read is stable - keep the budget generous.
+    let stableHeight = 0;
+    let maxReported = 0;
+    // 220 steps lands well past the piece coming to rest (~step 70), so the final read is stable.
     for (let i = 0; i < 220; i++) {
-      stepWorld(world);
-      const h = worldHeight(world); // mirrors the tick: measured AFTER stepping
-      maxDuringFall = Math.max(maxDuringFall, h);
-      settled = h;
+      stepWorld(world); // mirrors the tick: step, THEN (only if settled) refresh the reported height
+      if (sceneSettled(world)) stableHeight = worldHeight(world);
+      maxReported = Math.max(maxReported, stableHeight);
     }
-    // It comes to rest on the platform, far below the release height, so the height is real (> 0) but
-    // never reached the target while airborne - the level would not have cleared on the drop.
-    expect(settled).toBeGreaterThan(0);
-    expect(settled).toBeLessThan(target);
-    expect(maxDuringFall).toBeLessThan(target);
+    // It comes to rest on the platform far below the release height, so the reported height is real
+    // (> 0) but never reached the target - the level would not have cleared on the drop.
+    expect(stableHeight).toBeGreaterThan(0);
+    expect(stableHeight).toBeLessThan(target);
+    expect(maxReported).toBeLessThan(target);
+  });
+
+  it('sceneSettled is false while a body moves and true once at rest (feedback 0026)', () => {
+    const world = worldWith([]);
+    const piece = storedPieceFrom(1, pieceForIndex(42, 0));
+    addPieceToWorld(world, piece, CENTER_X, GROUND_TOP - 480, 0);
+    stepWorld(world); // one step under gravity -> the piece is now moving
+    expect(sceneSettled(world)).toBe(false);
+    for (let i = 0; i < 220; i++) stepWorld(world);
+    expect(sceneSettled(world)).toBe(true);
   });
 });
 

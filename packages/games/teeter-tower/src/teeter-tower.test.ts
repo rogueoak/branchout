@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveTickResult, RoundContext, SessionPlayer } from '@branchout/game-sdk';
 import { createTeeterTowerGame } from './teeter-tower';
-import { GROUND_TOP, LEVELS, levelAt, TOTAL_ROUNDS } from './levels';
+import { GROUND_TOP, LEVELS, levelAt, PAR_PENALTY, TOTAL_ROUNDS } from './levels';
 import { MAX_PLACED_BODIES, type StoredBody } from './physics';
 import type { TeeterMove, TeeterSim } from './types';
 
@@ -116,6 +116,31 @@ describe('collectMove (apply to the live world)', () => {
     const after = collected.scratch as { bodies: StoredBody[]; pieceIndex: number };
     expect(after.bodies).toHaveLength(1);
     expect(after.pieceIndex).toBe(1);
+  });
+
+  it('subtracts points for each piece dropped beyond the round par (feedback 0026)', () => {
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const scratch0 = game.configure({}, players('p1')).scratch;
+    const base = ctx({ scratch: scratch0 });
+    let scratch = game.startRound(base).scratch;
+    const par = LEVELS[0]!.par; // 8
+    const drops = par + 2;
+    // Drop par+2 legal pieces WITHOUT ticking: each sits above the (stable, 0-height) required line and
+    // is well vertically separated from the others so none overlap. No tick means the height/score never
+    // updates from stacking, so the total isolates the over-par penalty: 0 through par, then -PENALTY per
+    // extra piece (the running total goes negative).
+    for (let i = 0; i < drops; i++) {
+      const res = game.collectMove(
+        { ...base, scratch },
+        'p1',
+        JSON.stringify(move(0, 410, 390 - i * 150)),
+      );
+      expect(res.rejected).toBeUndefined();
+      scratch = res.scratch;
+    }
+    const s = scratch as { totalScore: number; piecesThisLevel: number };
+    expect(s.piecesThisLevel).toBe(drops);
+    expect(s.totalScore).toBe(-2 * PAR_PENALTY); // exactly the 2 pieces over par
   });
 
   it('rejects a move from a player who is not the active player', () => {

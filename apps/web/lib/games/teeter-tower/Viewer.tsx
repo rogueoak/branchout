@@ -69,6 +69,13 @@ const TAP_MAX_MOVE_PX = 12;
 /** The default world-y a fresh piece starts at (high + centered, so it reads clearly above the tower). */
 const DEFAULT_AIM_Y = GROUND_TOP - 300;
 
+/**
+ * While spinning, the piece hovers a FIXED gap (px) between its bottom and the required line (feedback
+ * 0026): the pointer moves it left/right but not up/down, so it never bobs on the moving line. It may
+ * end up above the finish line when the line is near the target - that is intended.
+ */
+const SPIN_GAP = 80;
+
 /** Interpolate one transform between two snapshots at fraction `f` (0..1). */
 function lerp(a: number, b: number, f: number): number {
   return a + (b - a) * f;
@@ -178,11 +185,6 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   aimRef.current = aim;
   const angleRef = useRef(angle);
   angleRef.current = angle;
-  // True only while a press-drag is in progress (pointer down on the board). The piece follows the
-  // pointer during a drag, NOT on a bare hover: on a mouse, moving the cursor up to tap the top-right
-  // Stop-spin/Drop button would otherwise re-aim the piece to the button's corner right before the
-  // drop lands. Touch has no hover so this never bit mobile, but it breaks the desktop/responsive path.
-  const draggingRef = useRef(false);
   // Double-tap tracking (feedback 0025): the current press's start (time + screen pos) and the time of
   // the last completed tap, so releaseCapture can tell a tap from a drag and pair two taps.
   const pressStartRef = useRef<{ t: number; x: number; y: number } | null>(null);
@@ -212,17 +214,22 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     }
   }, [sim]);
 
-  // Clamp the aim piece's centroid at a given angle so its rotated bottom stays above the required line
-  // and its x stays in the platform range. Returns the drawable transform + whether the drop is legal.
-  // Used in BOTH phases (the spinning piece and the placing ghost both follow the pointer): pass the
-  // live spin angle while spinning, the locked angle while placing.
+  // The aim piece's transform. X always follows the pointer (clamped to the platform range). Y differs
+  // by phase (feedback 0026): while SPINNING the piece hovers at a FIXED gap above the required line
+  // (pointer.y ignored, so no bob on the moving line); while PLACING it follows pointer.y, clamped above
+  // the line. Returns the drawable transform + whether the drop is legal (always legal while spinning).
   function placedTransform(
     piece: Piece,
     live: TeeterSim,
     angleAt: number,
+    spinning: boolean,
   ): { x: number; y: number; legal: boolean; rawBottom: number } {
     const span = rotatedYSpan(piece, angleAt);
     const x = clampDropX(pointerRef.current.x, live.platform.width);
+    if (spinning) {
+      const y = live.requiredLine - span.max - SPIN_GAP;
+      return { x, y, legal: true, rawBottom: y + span.max };
+    }
     // The piece bottom (centroid y + rotated max) must be strictly above requiredLine (smaller y).
     const rawBottom = pointerRef.current.y + span.max;
     const legal = rawBottom < live.requiredLine;
@@ -286,7 +293,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             const spinning = aimRef.current === 'spinning';
             if (spinning) spinAngleRef.current += piece.spinSeed;
             const drawAngle = spinning ? spinAngleRef.current : angleRef.current;
-            const t = placedTransform(piece, live, drawAngle);
+            const t = placedTransform(piece, live, drawAngle, spinning);
             const skin =
               spinning || t.legal ? piece.skin : { fill: '#c23b52', stroke: chrome.dropLine };
             // A drop guide line from the piece down to the platform, so the landing spot reads clearly.
@@ -315,11 +322,15 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           // Screen-space overlays (reset transform inside each helper): the compact round/score HUD pill
           // top-left, and the turn/aim hint centered near the top. These replace the old DOM badge rows
           // so the canvas keeps all the vertical space (feedback 0022 #6). Points only, no px readout,
-          // and "Round" not "Level" (feedback 0025).
+          // "Round" not "Level" (feedback 0025), plus the par + piece count (feedback 0026).
           const lvl = live.level;
+          const overPar = live.pieces > live.par;
           const hud = [
             `Round ${lvl + 1} - ${LEVEL_NAMES[lvl] ?? `Round ${lvl + 1}`}`,
             `${live.score} pts`,
+            overPar
+              ? `Pieces ${live.pieces}/${live.par} - over par, -10 each`
+              : `Pieces ${live.pieces}/${live.par}`,
           ];
           drawHudOverlay(ctx, chrome, dpr, hud);
           drawHintOverlay(ctx, chrome, dpr, rect.width, rect.height, hintRef.current);
@@ -347,28 +358,28 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     };
   }
 
-  // The CANVAS MOVES the piece (a tap/drag sets the drop position in both phases) and a DOUBLE-TAP is a
-  // shortcut for the aim button above it (feedback 0025). It never single-tap-drops - so a stray tap
-  // only repositions, while a deliberate double-tap stops the spin / drops.
+  // The CANVAS MOVES the piece: the pointer positions it (a hover on a mouse, a touch/drag on a finger -
+  // no click required, feedback 0026), and a DOUBLE-TAP is a shortcut for the aim button above it
+  // (feedback 0025). It never single-tap-drops, so a stray tap only repositions. Re-enabling bare-hover
+  // tracking is safe now the button lives ABOVE the canvas (feedback 0025) - a mouse travelling to it
+  // leaves the board, so it can no longer drag the piece to a corner (the bug the old drag-guard fixed).
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>): void {
     if (!isActive || dropped) return;
     // Capture the pointer so a finger that drifts off a small (~360px) board mid-drag keeps tracking
     // (guarded: jsdom / older engines may not implement pointer capture).
     e.currentTarget.setPointerCapture?.(e.pointerId);
-    draggingRef.current = true;
     pressStartRef.current = { t: e.timeStamp, x: e.clientX, y: e.clientY };
     setPointer(pointerToWorld(e.clientX, e.clientY));
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>): void {
-    // Only track a real press-drag, never a bare hover: a mouse moving to the button must not re-aim the
-    // piece (touch has no hover, so this only affects the desktop/responsive path).
-    if (!isActive || dropped || !draggingRef.current) return;
+    // Follow the pointer on any move over the board - a hover (mouse) or a drag (touch). Touch has no
+    // hover, so on a finger this still only fires during a press.
+    if (!isActive || dropped) return;
     setPointer(pointerToWorld(e.clientX, e.clientY));
   }
 
   function releaseCapture(e: React.PointerEvent<HTMLDivElement>): void {
-    draggingRef.current = false;
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture?.(e.pointerId);
     }
@@ -408,7 +419,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   function drop(): void {
     const live = simRef.current;
     if (!live || !live.next || !isActive || aim !== 'placing') return;
-    const t = placedTransform(live.next, live, angleRef.current);
+    const t = placedTransform(live.next, live, angleRef.current, false);
     // Refuse an illegal (below-the-line) drop here too - the button is disabled for it, but the
     // double-tap shortcut (feedback 0025) reaches drop() directly, and the server would reject it anyway.
     if (!t.legal) return;
@@ -421,11 +432,13 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   // authoritative; this only disables/annotates the Drop button + colors the ghost.
   const dropLegal =
     isActive && sim != null && sim.next != null && aim === 'placing'
-      ? placedTransform(sim.next, sim, angle).legal
+      ? placedTransform(sim.next, sim, angle, false).legal
       : false;
 
   const level = sim?.level ?? 0;
   const score = sim?.score ?? 0;
+  const par = sim?.par ?? 0;
+  const piecesUsed = sim?.pieces ?? 0;
 
   // Game over: a final summary with the score.
   if (sim?.over) {
@@ -469,6 +482,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   const srStatus = [
     `Round ${level + 1}, ${roundName}.`,
     `${score} points.`,
+    piecesUsed > par
+      ? `${piecesUsed} of ${par} par pieces used - over par, minus ten points per piece.`
+      : `${piecesUsed} of ${par} par pieces used.`,
     isActive
       ? dropped
         ? 'Dropping the piece.'

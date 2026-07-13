@@ -287,6 +287,14 @@ export interface LiveWorld {
   pendulumPhase: number;
   /** Current internal level index (0-2). */
   levelIndex: number;
+  /**
+   * The last SETTLED tower height (px above the platform) - the reported height the tick refreshes only
+   * when {@link sceneSettled} holds (feedback 0026). Scoring, level-clear, and the min-drop line read
+   * this, not the live {@link worldHeight}, so a falling/tumbling tower does not jump the line.
+   */
+  stableHeight: number;
+  /** Pieces the player has dropped THIS round (resets each level) - drives the over-par penalty. */
+  piecesThisLevel: number;
   /** Best height reached this level (px above the platform) - the per-level scoring basis. */
   bestHeight: number;
   /** Cumulative game score across levels (never resets; the HUD + standings read it). */
@@ -413,6 +421,8 @@ export function createWorld(args: {
   seed: number;
   levelIndex: number;
   bestHeight: number;
+  stableHeight: number;
+  piecesThisLevel: number;
   totalScore: number;
   pieceIndex: number;
   bodies: StoredBody[];
@@ -452,6 +462,8 @@ export function createWorld(args: {
     pendulum,
     pendulumPhase: 0,
     levelIndex: args.levelIndex,
+    stableHeight: args.stableHeight,
+    piecesThisLevel: args.piecesThisLevel,
     bestHeight: args.bestHeight,
     totalScore: args.totalScore,
     pieceIndex: args.pieceIndex,
@@ -538,19 +550,29 @@ export function overlapsScene(
 }
 
 /**
- * The current tower height in px above the platform top (0 when empty). Counts ONLY settled bodies
- * (feedback 0025): a piece still falling or bouncing is excluded until it comes to rest, so its airborne
- * peak never inflates the height. This is read by scoring, level-clear, and the streamed min-drop line,
- * so gating it here keeps all three from reacting to a piece mid-flight (no instant win, no jumping line).
+ * The current RAW tower height in px above the platform top (0 when empty) - the topmost point of any
+ * placed body right now, moving or not. The reported height that drives scoring/level-clear/the min-drop
+ * line is NOT this: it is the world's `stableHeight`, which the tick only refreshes to this value when
+ * the whole scene is at rest (see {@link sceneSettled} + feedback 0026), so a falling or tumbling tower
+ * never jumps the reported height / line.
  */
 export function worldHeight(world: LiveWorld): number {
   let top = GROUND_TOP;
-  for (const p of world.placed) {
-    if (p.body.speed < SETTLE_SPEED && p.body.angularSpeed < SETTLE_ANGULAR) {
-      top = Math.min(top, p.body.bounds.min.y);
-    }
-  }
+  for (const p of world.placed) top = Math.min(top, p.body.bounds.min.y);
   return Math.max(0, Math.round(GROUND_TOP - top));
+}
+
+/**
+ * Whether the scene has stabilized: every placed body is (near) at rest (linear + angular speed below
+ * the settle thresholds). The tick only refreshes the reported `stableHeight` when this holds, so height
+ * / score / level-clear / the min-drop line all wait for the tower to settle instead of reacting to a
+ * piece mid-flight or a tumble (feedback 0026). Empty scene = settled. A just-dropped body has been
+ * stepped once under gravity before this is checked, so it reads as moving (not falsely settled high).
+ */
+export function sceneSettled(world: LiveWorld): boolean {
+  return world.placed.every(
+    (p) => p.body.speed < SETTLE_SPEED && p.body.angularSpeed < SETTLE_ANGULAR,
+  );
 }
 
 /**

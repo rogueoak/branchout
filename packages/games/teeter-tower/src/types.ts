@@ -73,12 +73,18 @@ export interface TeeterSim {
   next: Piece | null;
   /** Whose turn it is to drop (playerId); the client enables input only when this is the local player. */
   activePlayer: string;
-  /** Current tower height (px above the platform) and cumulative game score. */
+  /** Current SETTLED tower height (px above the platform) and cumulative game score (can be negative). */
   height: number;
   score: number;
   /** Current internal level index and its target height. */
   level: number;
   target: number;
+  /**
+   * The round's par (the piece count it "should" take) and how many pieces the player has dropped this
+   * round. Past par, each further drop costs points (feedback 0026); the client shows par + the count.
+   */
+  par: number;
+  pieces: number;
   /**
    * The world-y the piece's bottom must be ABOVE to drop (the next 25%-of-target line measured from
    * the tower's highest point). Since y grows downward, a legal drop has its lowest point at

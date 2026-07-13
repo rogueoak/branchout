@@ -48,6 +48,8 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   await expect(status).toContainText(/Round 1, Warm-up/i, { timeout: 30_000 });
   await expect(status).toContainText(/0 points/i);
   await expect(status).not.toContainText(/pixels/i);
+  // Par is surfaced (feedback 0026): 0 of 8 pieces used at the start of round 1, not yet over par.
+  await expect(status).toContainText(/0 of 8 par pieces used/i);
   await expect(status).toContainText(/move the piece on the board, then Stop spin/i);
 
   // Aim + drop on the canvas. MOVE the piece to a spot above the min-drop line, then the "Stop spin"

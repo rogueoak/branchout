@@ -49,6 +49,12 @@ export interface Level {
   name: string;
   target: number;
   pieces: number;
+  /**
+   * Par: the piece count the round "should" take (feedback 0026). Dropping MORE than `par` pieces costs
+   * `PAR_PENALTY` points each - the running total can go negative. These are initial estimates; tune by
+   * playtest.
+   */
+  par: number;
   pendulum: boolean;
   /** The platform's width (px). Level 1 is near-full-width; levels 2/3 use PLATFORM_W. */
   platformWidth: number;
@@ -56,14 +62,19 @@ export interface Level {
   walls: boolean;
 }
 
+/** Points lost per piece dropped beyond a round's par (feedback 0026). */
+export const PAR_PENALTY = 10;
+
 export const LEVELS: readonly Level[] = [
   // Level 1's target is 450 (feedback 0023: 25% lower than the old 600) for an easier warm-up, on a
   // near-full-width walled platform so pieces do not slide off the edges. Levels 2/3 keep the narrower
-  // open platform and the prototype's 620 target.
+  // open platform and the prototype's 620 target. `par` is an initial estimate of the pieces it takes
+  // to reach the target (feedback 0026) - tune by playtest.
   {
     name: 'Warm-up',
     target: 450,
     pieces: 11,
+    par: 8,
     pendulum: false,
     platformWidth: WIDE_PLATFORM_W,
     walls: true,
@@ -72,6 +83,7 @@ export const LEVELS: readonly Level[] = [
     name: 'Reach for the sky',
     target: 620,
     pieces: 20,
+    par: 13,
     pendulum: false,
     platformWidth: PLATFORM_W,
     walls: false,
@@ -80,6 +92,7 @@ export const LEVELS: readonly Level[] = [
     name: 'The Pendulum',
     target: 620,
     pieces: 22,
+    par: 14,
     pendulum: true,
     platformWidth: PLATFORM_W,
     walls: false,

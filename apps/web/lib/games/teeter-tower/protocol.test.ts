@@ -27,6 +27,8 @@ function sim(overrides: Record<string, unknown> = {}) {
     score: 25,
     level: 0,
     target: 600,
+    par: 8,
+    pieces: 3,
     requiredLine: 480,
     platform: { width: 480, walls: false },
     over: false,
@@ -66,6 +68,9 @@ describe('asTeeterSim', () => {
     expect(asTeeterSim(sim({ activePlayer: 2 }))).toBeNull();
     // requiredLine must be a finite number.
     expect(asTeeterSim(sim({ requiredLine: 'high' }))).toBeNull();
+    // par + pieces (feedback 0026) must be finite numbers.
+    expect(asTeeterSim(sim({ par: 'lots' }))).toBeNull();
+    expect(asTeeterSim(sim({ pieces: null }))).toBeNull();
     // over must be a boolean.
     expect(asTeeterSim(sim({ over: 'yes' }))).toBeNull();
     // next is Piece | null - an malformed object (not null) is rejected.
