@@ -30,6 +30,10 @@ interactive, streamed canvas; the min-drop-from-top rule; level 1 height.
 "out of pieces" lose state (deliberately deferred); final name/art. Turn-based games (Trivia, Liar
 Liar) are untouched.
 
+**Limit:** with no lose state in v1, the placed-body count is hard-capped (`MAX_PLACED_BODIES`, 60 -
+comfortably above the summed level piece budgets) so a spammed stream of legal drops cannot grow the
+world/snapshot without bound; a drop at the cap is rejected (`tower is full`).
+
 ## Approach
 
 - **New wire frame `sim`** (`packages/protocol`): an opaque, game-defined live snapshot, broadcast on

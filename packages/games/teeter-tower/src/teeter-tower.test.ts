@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import type { LiveTickResult, RoundContext, SessionPlayer } from '@branchout/game-sdk';
 import { createTeeterTowerGame } from './teeter-tower';
 import { GROUND_TOP, LEVELS, levelAt, TOTAL_ROUNDS } from './levels';
-import type { StoredBody } from './physics';
+import { MAX_PLACED_BODIES, type StoredBody } from './physics';
 import type { TeeterMove, TeeterSim } from './types';
 
 /** A fixed rng so `configure` derives a stable base seed. Returns a constant per game. */
@@ -50,6 +50,9 @@ function tallBlock(id: number, height: number): StoredBody {
     x: 410,
     y: GROUND_TOP - half,
     angle: 0,
+    vx: 0,
+    vy: 0,
+    angularVelocity: 0,
     skin: { fill: '#fff', stroke: '#000' },
     eyes: [],
   };
@@ -253,6 +256,68 @@ describe('tick (step the live world)', () => {
     expect(sim.over).toBe(true);
     expect(sim.next).toBeNull();
     expect((ticked.scratch as { over: boolean }).over).toBe(true);
+  });
+});
+
+describe('tower cap (spec 0044: no lose state, so a hard cap bounds the world)', () => {
+  it('rejects a drop once the tower is at the placed-body cap', () => {
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const scratch = game.configure({}, players('p1')).scratch;
+    // Seed a full tower: MAX_PLACED_BODIES (60) stored bodies stacked above the line so only the cap,
+    // not overlap or the line rule, can reject the next drop.
+    const bodies: StoredBody[] = [];
+    for (let i = 0; i < MAX_PLACED_BODIES; i++) {
+      bodies.push(tallBlock(i + 1, LEVELS[0]!.target + 40));
+    }
+    const base = ctx({ scratch: { ...(scratch as object), bodies, pieceIndex: 0 } });
+    const started = game.startRound(base);
+    const bad = game.collectMove(
+      { ...base, scratch: started.scratch },
+      'p1',
+      JSON.stringify(move(0, 410)),
+    );
+    expect(bad.rejected?.reason).toMatch(/full/i);
+  });
+});
+
+describe('dropY is clamped to the world range before it reaches the solver', () => {
+  it('accepts a legal move whose dropY is a wildly out-of-range value', () => {
+    // A dropY far above the world (a huge negative y) is clamped, not passed through, so a straight
+    // aim above the line still lands rather than being flung off-world.
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const scratch = game.configure({}, players('p1')).scratch;
+    const base = ctx({ scratch });
+    const started = game.startRound(base);
+    const collected = game.collectMove(
+      { ...base, scratch: started.scratch },
+      'p1',
+      JSON.stringify(move(0, 410, -100000)),
+    );
+    expect(collected.rejected).toBeUndefined();
+    expect((collected.scratch as { bodies: StoredBody[] }).bodies).toHaveLength(1);
+  });
+});
+
+describe('disposeLive releases the in-process world (spec 0044)', () => {
+  it('a fresh rebuild after disposeLive starts from the given scratch, not a stale world', () => {
+    // Play a drop, dispose, then tick from EMPTY scratch: with the world released, the module rebuilds
+    // from that empty scratch (no bodies) rather than reusing the stale one-piece world.
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const scratch = game.configure({}, players('p1')).scratch;
+    const base = ctx({ scratch });
+    const started = game.startRound(base);
+    const collected = game.collectMove(
+      { ...base, scratch: started.scratch },
+      'p1',
+      JSON.stringify(move(0, 410)),
+    );
+    expect((collected.scratch as { bodies: StoredBody[] }).bodies).toHaveLength(1);
+
+    game.disposeLive!(base);
+    // A fresh empty scratch: after disposal the module must rebuild from it (empty tower).
+    const emptyScratch = game.configure({}, players('p1')).scratch;
+    const ticked = game.tick!({ ...base, scratch: emptyScratch });
+    expect((ticked.sim as TeeterSim).bodies).toEqual([]);
   });
 });
 

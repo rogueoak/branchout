@@ -193,4 +193,13 @@ export interface GameModule {
    * unaffected.
    */
   tick?(ctx: RoundContext): LiveTickResult;
+
+  /**
+   * Live games only (spec 0044): called by the engine when a live session ends (endGame / host exit /
+   * host restart) so the module can release its in-process world. A live module holds a per-session
+   * world outside the engine's Redis-backed state (a Matter.js world for Teeter); without this hook
+   * that world would leak once the session ends, and a restart would reuse the stale cached world
+   * instead of rebuilding from empty scratch. Turn-based games hold no such state and omit it.
+   */
+  disposeLive?(ctx: RoundContext): void;
 }

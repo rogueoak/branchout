@@ -598,10 +598,12 @@ export class GameEngine {
   }
 
   private async endGame(state: SessionState, module: GameModule): Promise<void> {
-    // A live game's sim loop must stop before the game ends (spec 0044); clear its cached frame too.
+    // A live game's sim loop must stop before the game ends (spec 0044); clear its cached frame too,
+    // and let the module release its in-process world (endGame path, spec 0044) so it does not leak.
     const key = sessionKey(state.room, state.game);
     this.stopSimLoop(key);
     this.lastSim.delete(key);
+    module.disposeLive?.(this.context(state));
     state.phase = 'complete';
     const standings = module.endGame(this.context(state));
     state.standings = standings;
@@ -630,6 +632,9 @@ export class GameEngine {
     const key = sessionKey(state.room, state.game);
     this.stopSimLoop(key);
     this.lastSim.delete(key);
+    // Release the old in-process world BEFORE the fresh configure/startRound (spec 0044), so a live
+    // game rebuilds from empty scratch instead of reusing the stale cached world (its old tower/score).
+    module.disposeLive?.(this.context(state));
     const cfg = module.configure(state.config, state.players);
     state.runId += 1;
     state.round = 1;
@@ -649,10 +654,12 @@ export class GameEngine {
   }
 
   private async exit(state: SessionState, module: GameModule): Promise<void> {
-    // Stop a live game's sim loop and drop its cached frame before ending (spec 0044).
+    // Stop a live game's sim loop, drop its cached frame, and release its in-process world before
+    // ending (spec 0044) so the host-exit path does not leak the world.
     const key = sessionKey(state.room, state.game);
     this.stopSimLoop(key);
     this.lastSim.delete(key);
+    module.disposeLive?.(this.context(state));
     // End the game now, report final standings, then drop the session so the room can reset.
     const standings = module.endGame(this.context(state));
     state.phase = 'complete';
@@ -753,9 +760,18 @@ export class GameEngine {
         if (!current || current.paused || current.phase === 'complete') return;
         const result = module.tick!(this.context(current));
         current.scratch = result.scratch;
-        await this.store.save(current);
         this.lastSim.set(key, result.sim);
-        if (result.sim != null) await this.publish(current, this.simMessage(current, result.sim));
+        // Idle guard: with ZERO connected devices there is nobody to stream to and no move can land,
+        // so skip the broadcast AND the per-tick save while idle (the world still stepped, and the
+        // newest sim is cached so a reconnecting device catches up). The `over` end path below still
+        // runs regardless, so an idle game still ends and disposes. Correctness holds: the save only
+        // persists a rebuild snapshot, no rebuild can happen with no devices, and the next connected
+        // tick saves again.
+        const anyConnected = current.players.some((p) => p.connected);
+        if (anyConnected) {
+          await this.store.save(current);
+          if (result.sim != null) await this.publish(current, this.simMessage(current, result.sim));
+        }
         if (result.over) {
           this.stopSimLoop(key);
           await this.endGame(current, module);

@@ -40,11 +40,16 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   await expect(page.getByText('/ 600 px')).toBeVisible();
   await expect(page.getByText(/lock the angle/i)).toBeVisible();
 
-  // Aim + drop directly on the canvas: the first tap locks the spinning angle (-> "tap to drop"),
-  // the second tap drops the piece. There is no slider and no re-aim - the drop is final.
+  // Aim + drop directly on the canvas. The first tap locks the spinning angle (-> "tap to drop").
+  // Then MOVE the pointer to a spot above the min-drop line and tap to drop there - the move both
+  // aims and arms the drop past the double-tap guard (a reflexive same-spot double-tap is swallowed).
+  // There is no slider and no re-aim - the drop is final.
   await board.click();
   await expect(page.getByText(/tap to drop/i)).toBeVisible();
-  await board.click();
+  const box = await board.boundingBox();
+  if (!box) throw new Error('board has no bounding box');
+  // Upper-third, centered: comfortably above the 25%-from-platform line, and a real move from center.
+  await board.click({ position: { x: box.width / 2, y: box.height * 0.32 } });
 
   // The engine dropped the piece into the live world and streamed it back: the score climbs above
   // zero and a fresh piece is offered. This proves the full live-authoritative loop, not a freeze.

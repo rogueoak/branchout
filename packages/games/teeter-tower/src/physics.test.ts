@@ -18,6 +18,8 @@ import {
   stepWorld,
   storedPieceFrom,
   toBodyPayloads,
+  toStoredBodies,
+  clampDropY,
   worldHeight,
   type LiveWorld,
   type StoredBody,
@@ -41,6 +43,9 @@ function block(id: number, x: number, y: number, w: number, h: number): StoredBo
     x,
     y,
     angle: 0,
+    vx: 0,
+    vy: 0,
+    angularVelocity: 0,
     skin: { fill: '#fff', stroke: '#000' },
     eyes: [],
   };
@@ -238,10 +243,37 @@ describe('the live world', () => {
       x: p.body.position.x,
       y: p.body.position.y,
       angle: p.body.angle,
+      vx: p.body.velocity.x,
+      vy: p.body.velocity.y,
+      angularVelocity: p.body.angularVelocity,
       skin: p.skin,
       eyes: p.eyes,
     }));
     const rebuilt = worldWith(bodies);
     expect(worldHeight(rebuilt)).toBe(settledHeight);
+  });
+
+  it('persists per-body velocity and restores it on rebuild (spec 0044)', () => {
+    // A body mid-fall carries velocity; toStoredBodies must persist it and createWorld restore it, so
+    // a rebuild resumes motion rather than re-settling from rest.
+    const world = worldWith([]);
+    const piece = storedPieceFrom(1, pieceForIndex(42, 0));
+    addPieceToWorld(world, piece, 410, GROUND_TOP - 300, 0);
+    for (let i = 0; i < 10; i++) stepWorld(world); // still falling: non-zero downward velocity
+    const stored = toStoredBodies(world);
+    expect(stored[0]!.vy).toBeGreaterThan(0);
+    const rebuilt = worldWith(stored);
+    // The rebuilt body resumes with (approximately) the stored velocity, not from rest.
+    expect(rebuilt.placed[0]!.body.velocity.y).toBeCloseTo(stored[0]!.vy, 2);
+  });
+});
+
+describe('clampDropY', () => {
+  it('clamps a finite y into the world range and passes an in-range y through', () => {
+    // Below the platform is clamped up to GROUND_TOP; far above the world is clamped to the ceiling;
+    // an in-range value is unchanged.
+    expect(clampDropY(GROUND_TOP + 500)).toBe(GROUND_TOP);
+    expect(clampDropY(-100000)).toBe(GROUND_TOP - 2000);
+    expect(clampDropY(GROUND_TOP - 300)).toBe(GROUND_TOP - 300);
   });
 });

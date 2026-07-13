@@ -53,7 +53,7 @@ export const SUBSTEPS_PER_TICK = 2;
 // Persisted body shape (what the module keeps in scratch so a reconnect rebuilds the world)
 // ---------------------------------------------------------------------------
 
-/** A placed piece as persisted in scratch: local geometry + world transform + cosmetics. */
+/** A placed piece as persisted in scratch: local geometry + world transform + motion + cosmetics. */
 export interface StoredBody {
   id: number;
   /** One local-space polygon loop per collision part (compound pieces have several). */
@@ -61,6 +61,14 @@ export interface StoredBody {
   x: number;
   y: number;
   angle: number;
+  /**
+   * Per-body velocity persisted with the transform (spec 0044), so a rebuild-from-snapshot resumes
+   * the tower's motion rather than re-settling every body from rest (which can diverge from the live
+   * world). Absent on a legacy snapshot -> restored as rest (0), matching the old behavior.
+   */
+  vx: number;
+  vy: number;
+  angularVelocity: number;
   skin: Skin;
   eyes: Eye[];
 }
@@ -329,6 +337,10 @@ export function createWorld(args: {
 
   const placed: Placed[] = args.bodies.map((b) => {
     const body = bodyFromStored(b.verts, b.x, b.y, b.angle);
+    // Restore persisted per-body velocity so a rebuilt tower resumes motion instead of re-settling
+    // from rest (spec 0044). Legacy snapshots without velocity default to 0 (rest), as before.
+    Body.setVelocity(body, { x: b.vx ?? 0, y: b.vy ?? 0 });
+    Body.setAngularVelocity(body, b.angularVelocity ?? 0);
     Composite.add(engine.world, body);
     return { body, id: b.id, skin: b.skin, eyes: b.eyes, verts: b.verts };
   });
@@ -490,31 +502,23 @@ export function clampDropX(x: number): number {
   return Math.max(CENTER_X - DROP_HALF_RANGE, Math.min(CENTER_X + DROP_HALF_RANGE, x));
 }
 
-/** Margin (px) the piece's bottom is held above the required min-drop line at the drop origin. */
-export const DROP_MARGIN = 8;
+/**
+ * Hard cap on placed bodies in one world (spec 0044). v1 has no lose state, so `world.placed` could
+ * otherwise grow unbounded (a player spamming legal drops) and swell the sim/snapshot without bound.
+ * 60 comfortably exceeds the summed level piece budgets (11+20+22=53), so it never bites normal play
+ * while still bounding the worst case.
+ */
+export const MAX_PLACED_BODIES = 60;
 
 /**
- * The canonical drop origin (centroid world-y) for a piece at a given angle. The move carries
- * `{ angle, dropX, dropY }`, but the server clamps `dropY` so the piece is released from just above
- * the current required min-drop line (or, once all lines are cleared, just above the tower top): a
- * straight aim is always legal on the line rule and gravity carries it down onto the tower. Returns
- * a y clamped to at most the spawn line so the piece never starts below the platform view.
+ * Clamp a drop y to the world's legal vertical range: finite, never below the platform view
+ * (`GROUND_TOP`) and never above a generous ceiling well past the tallest target. Mirrors clampDropX
+ * so a malformed or wildly out-of-range dropY can never reach the solver. y grows downward, so the
+ * range runs from the ceiling (small y) to the platform top (large y).
  */
-export function dropYFor(
-  verts: Vec2[][],
-  angle: number,
-  requiredLine: number | null,
-  height: number,
-): number {
-  // The piece's half-height below its centroid at this angle (how far its bottom hangs down).
-  const probe = bodyFromStored(verts, 0, 0, angle);
-  const bottomOffset = probe.bounds.max.y; // centroid is at 0, so this is the downward reach.
-  // The line the bottom must sit above: the required line, or the tower top once lines are cleared.
-  const clearLine = requiredLine ?? height;
-  const lineY = GROUND_TOP - clearLine;
-  const centroidY = lineY - DROP_MARGIN - bottomOffset;
-  // Never start below the normal spawn line (keeps the drop on screen for short towers).
-  return Math.min(centroidY, GROUND_TOP - SPAWN_Y);
+export function clampDropY(y: number): number {
+  const ceiling = GROUND_TOP - 2000; // well above the tallest target (620), so it never bites play
+  return Math.max(ceiling, Math.min(GROUND_TOP, y));
 }
 
 /**
@@ -551,6 +555,10 @@ export function toStoredBodies(world: LiveWorld): StoredBody[] {
     x: round2(p.body.position.x),
     y: round2(p.body.position.y),
     angle: round4(p.body.angle),
+    // Persist per-body velocity so a rebuild resumes the tower's live motion (spec 0044).
+    vx: round4(p.body.velocity.x),
+    vy: round4(p.body.velocity.y),
+    angularVelocity: round4(p.body.angularVelocity),
     skin: p.skin,
     eyes: p.eyes,
   }));

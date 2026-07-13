@@ -32,10 +32,12 @@ import { LEVELS, levelAt, TOTAL_ROUNDS } from './levels';
 import {
   addPieceToWorld,
   clampDropX,
+  clampDropY,
   createWorld,
   evaluatePlacement,
   heightToScore,
   heldBodyAt,
+  MAX_PLACED_BODIES,
   pieceForIndex,
   requiredDropHeight,
   stepWorld,
@@ -166,6 +168,9 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       pieceIndex: scratch.pieceIndex,
       bodies: scratch.bodies,
       next: scratch.next,
+      // Thread `over` through, or a world rebuilt from a snapshot with over:true would come back
+      // over:false and keep stepping past game end.
+      over: scratch.over,
       target: level.target,
       pendulum: level.pendulum,
     });
@@ -287,14 +292,24 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         };
       }
 
+      // Hard cap the tower: v1 has no lose state, so without a bound `world.placed` could grow
+      // unbounded (a player spamming legal drops) and swell the sim/snapshot. Refuse a drop at the cap.
+      if (world.placed.length >= MAX_PLACED_BODIES) {
+        return {
+          scratch: ctx.scratch as Record<string, unknown>,
+          rejected: { reason: 'tower is full' },
+        };
+      }
+
       // Legality: the piece is placed at the client's chosen transform (angle, dropX, dropY), then
       // the server re-checks both rules authoritatively: it must clear the scene AND (min-drop rule)
-      // sit fully above the required line, computed off the tower's CURRENT highest point. dropX is
-      // clamped to the legal horizontal range; dropY is honored as sent (the client aims the height).
+      // sit fully above the required line, computed off the tower's CURRENT highest point. dropX and
+      // dropY are both clamped to the legal world range before the solver sees them (the client aims
+      // the height; the clamp guards a malformed or wildly out-of-range value).
       const level = levelAt(world.levelIndex);
       const height = worldHeight(world);
       const dropX = clampDropX(parsed.dropX);
-      const dropY = parsed.dropY;
+      const dropY = clampDropY(parsed.dropY);
       const held = heldBodyAt(piece.verts, dropX, dropY, parsed.angle);
       const placedBodies = world.placed.map((p) => p.body);
       const verdict = evaluatePlacement(
@@ -393,6 +408,12 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
 
     endGame(ctx: RoundContext): Standing[] {
       return standingsFor(ctx);
+    },
+
+    disposeLive(ctx: RoundContext): void {
+      // Release the in-process Matter world for this session (spec 0044): the engine calls this on
+      // endGame / host exit / host restart so the world does not leak and a restart rebuilds fresh.
+      worlds.delete(keyFor(ctx));
     },
   };
 

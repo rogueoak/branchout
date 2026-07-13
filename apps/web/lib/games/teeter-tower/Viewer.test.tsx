@@ -72,26 +72,53 @@ describe('TeeterViewer single interactive surface', () => {
     expect(screen.getByRole('img', { name: /teeter tower board/i })).toBeDefined();
   });
 
-  it('a tap to lock then a tap to drop calls onMove with a JSON {angle,dropX,dropY}', () => {
-    const onMove = vi.fn();
-    render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={onMove} />);
-    const board = screen.getByRole('img', { name: /aim and drop the piece/i })
-      .parentElement as HTMLElement;
-    // getBoundingClientRect is 0-sized in jsdom; pointerToWorld tolerates it and the drop still fires.
-    // Tap 1 locks the spin angle; the badge flips to the placing hint.
-    fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
-    expect(screen.getByText(/move to aim, tap to drop/i)).toBeDefined();
-    // Tap 2 drops: onMove is called once with a JSON-encoded move for this round.
-    fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
-    expect(onMove).toHaveBeenCalledTimes(1);
-    const [round, moveString] = onMove.mock.calls[0]!;
-    expect(round).toBe(4);
-    const move = JSON.parse(moveString as string);
-    expect(move).toHaveProperty('angle');
-    expect(move).toHaveProperty('dropX');
-    expect(move).toHaveProperty('dropY');
-    expect(typeof move.dropX).toBe('number');
-    expect(typeof move.dropY).toBe('number');
+  it('a tap to lock then a tap to drop (after the debounce) calls onMove with a JSON {angle,dropX,dropY}', () => {
+    vi.useFakeTimers();
+    try {
+      const onMove = vi.fn();
+      render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={onMove} />);
+      const board = screen.getByRole('img', { name: /aim and drop the piece/i })
+        .parentElement as HTMLElement;
+      // getBoundingClientRect is 0-sized in jsdom; pointerToWorld tolerates it and the drop still
+      // fires. Tap 1 locks the spin angle; the badge flips to the placing hint.
+      fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
+      expect(screen.getByText(/move to aim, tap to drop/i)).toBeDefined();
+      // The double-tap guard: the drop is not armed until the debounce elapses. Advance past it so a
+      // deliberate second tap in the same spot drops.
+      vi.advanceTimersByTime(250);
+      // Tap 2 drops: onMove is called once with a JSON-encoded move for this round.
+      fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
+      expect(onMove).toHaveBeenCalledTimes(1);
+      const [round, moveString] = onMove.mock.calls[0]!;
+      expect(round).toBe(4);
+      const move = JSON.parse(moveString as string);
+      expect(move).toHaveProperty('angle');
+      expect(move).toHaveProperty('dropX');
+      expect(move).toHaveProperty('dropY');
+      expect(typeof move.dropX).toBe('number');
+      expect(typeof move.dropY).toBe('number');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('swallows a reflexive double-tap (lock+drop in the same spot with no delay does not drop)', () => {
+    vi.useFakeTimers();
+    try {
+      const onMove = vi.fn();
+      render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={onMove} />);
+      const board = screen.getByRole('img', { name: /aim and drop the piece/i })
+        .parentElement as HTMLElement;
+      // Two fast taps in the SAME spot with no debounce elapsed: the first locks, the second is
+      // swallowed by the guard, so the irreversible drop does not fire.
+      fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
+      fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
+      expect(onMove).not.toHaveBeenCalled();
+      // Still in the placing state, aimable - the piece was not committed.
+      expect(screen.getByText(/move to aim, tap to drop/i)).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('maps a server rejection reason to player-clear copy', () => {

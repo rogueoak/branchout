@@ -44,6 +44,16 @@ import {
 
 const LEVEL_NAMES = ['Warm-up', 'Reach for the sky', 'The Pendulum'];
 
+/**
+ * Double-tap guard (spec 0044): lock-angle and drop are the SAME tap in the SAME spot, so a reflexive
+ * double-tap would lock AND immediately drop an irreversible piece. After locking we do not arm the
+ * drop until either the pointer has MOVED past `DROP_ARM_MOVE_PX` (world px) OR `DROP_ARM_MS` have
+ * elapsed - so a fast double-tap cannot lock+drop in one motion, while a deliberate single tap after
+ * aiming still drops.
+ */
+const DROP_ARM_MS = 200;
+const DROP_ARM_MOVE_PX = 12;
+
 /** The local aim phase for the active player: the piece is spinning, or locked and being placed. */
 type AimPhase = 'spinning' | 'placing';
 
@@ -96,6 +106,7 @@ function rejectionMessage(reason: string): string {
     'piece overlaps the tower': 'That spot is blocked - nudge it over and try again.',
     'malformed move': 'That did not send cleanly - aim and drop again.',
     'game over': 'The tower is finished - nothing left to drop.',
+    'tower is full': 'The tower is packed full - no room for another piece.',
   };
   return map[reason] ?? 'That drop did not land - aim and drop again.';
 }
@@ -154,6 +165,10 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   droppedRef.current = dropped;
   // The live spin angle the draw loop advances, so the angle a tap locks is exactly the one on screen.
   const spinAngleRef = useRef(0);
+  // Double-tap guard state: when the angle was locked (ms) and the pointer position at lock, so the
+  // drop only arms after a small move or a short debounce (see DROP_ARM_MS / DROP_ARM_MOVE_PX).
+  const lockedAtRef = useRef(0);
+  const lockPointerRef = useRef<{ x: number; y: number } | null>(null);
 
   // Fold each new sim snapshot into the interpolation buffer: keep the previous snapshot + its arrival
   // time so the draw loop can lerp between them by wall-clock. A brand-new object identity (the reducer
@@ -231,6 +246,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           // The aim overlay for the active player who has not yet dropped.
           if (isActiveRef.current && !droppedRef.current && live.next) {
             const piece = live.next;
+            // Draw the min-drop line + forbidden zone in BOTH phases (spinning and placing), so the
+            // "drop above this line" rule is visible from the first frame - not only once locked.
+            drawRequiredLine(ctx, chrome, live.requiredLine);
             if (aimRef.current === 'spinning') {
               spinAngleRef.current += piece.spinSeed;
               drawBody(
@@ -245,7 +263,6 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
                 0.9,
               );
             } else {
-              drawRequiredLine(ctx, chrome, live.requiredLine);
               const t = placedTransform(piece, live);
               const skin = t.legal ? piece.skin : { fill: '#c23b52', stroke: chrome.dropLine };
               // A drop guide line from the piece down to the platform.
@@ -302,9 +319,15 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     // (guarded: jsdom / older engines may not implement pointer capture).
     e.currentTarget.setPointerCapture?.(e.pointerId);
     if (aim === 'spinning') {
+      const at = pointerToWorld(e.clientX, e.clientY);
       setAngle(spinAngleRef.current);
-      setPointer(pointerToWorld(e.clientX, e.clientY));
+      setPointer(at);
       setAim('placing');
+      // Record the lock time + position for the double-tap guard: the drop only arms after a small
+      // move OR a short debounce, so a reflexive double-tap cannot lock+drop in one motion. Date.now
+      // (a wall clock) is enough here - the guard is a coarse ~200ms debounce, not a render clock.
+      lockedAtRef.current = Date.now();
+      lockPointerRef.current = at;
     } else {
       drop();
     }
@@ -324,6 +347,15 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   function drop(): void {
     const live = simRef.current;
     if (!live || !live.next || !isActive || aim !== 'placing') return;
+    // Double-tap guard: do not drop until the drop is armed - the pointer has moved past the
+    // threshold OR the debounce has elapsed since the lock. A fast lock+tap in the same spot is
+    // swallowed here (the piece stays aimable), so the irreversible drop needs a deliberate action.
+    const elapsed = Date.now() - lockedAtRef.current;
+    const lock = lockPointerRef.current;
+    const moved =
+      lock != null &&
+      Math.hypot(pointerRef.current.x - lock.x, pointerRef.current.y - lock.y) >= DROP_ARM_MOVE_PX;
+    if (elapsed < DROP_ARM_MS && !moved) return;
     const t = placedTransform(live.next, live);
     // Submit the piece's current transform. The server clamps + re-checks; we send our previewed pose.
     onMove?.(state.round, JSON.stringify({ angle: angleRef.current, dropX: t.x, dropY: t.y }));
@@ -343,6 +375,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           <h2 className="text-h3 text-text">Tower complete</h2>
           <p className="text-body-sm text-text-muted">
             You stacked your way to {height} px for {score} pts. Nice climbing.
+          </p>
+          <p className="text-body-sm text-text-muted">
+            The host can play again or head back to the lobby.
           </p>
         </div>
         <TowerCanvas canvasRef={canvasRef} />
@@ -377,6 +412,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
                 ? 'Tap the board to lock the angle'
                 : 'Move to aim, tap to drop'}
           </Badge>
+          {!dropped && aim === 'placing' ? (
+            <Badge variant="warning">The drop is final - no re-aim</Badge>
+          ) : null}
         </div>
       ) : watchingName ? (
         <p role="status" className="text-body-sm text-text-muted">
@@ -411,7 +449,8 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
 
       {isActive && !dropped && aim === 'placing' ? (
         <p className="text-body-sm text-text-muted">
-          Keep the piece above the marked line, then tap to drop.
+          Keep the piece above the marked line, then tap to drop. Once it drops, it commits - there
+          is no undo or re-aim.
         </p>
       ) : null}
     </section>
