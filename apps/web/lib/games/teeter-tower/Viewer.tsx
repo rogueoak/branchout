@@ -161,6 +161,11 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   aimRef.current = aim;
   const angleRef = useRef(angle);
   angleRef.current = angle;
+  // True only while a press-drag is in progress (pointer down on the board). The piece follows the
+  // pointer during a drag, NOT on a bare hover: on a mouse, moving the cursor up to tap the top-right
+  // Stop-spin/Drop button would otherwise re-aim the piece to the button's corner right before the
+  // drop lands. Touch has no hover so this never bit mobile, but it breaks the desktop/responsive path.
+  const draggingRef = useRef(false);
   const pointerRef = useRef(pointer);
   pointerRef.current = pointer;
   const isActiveRef = useRef(isActive);
@@ -327,15 +332,19 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     // Capture the pointer so a finger that drifts off a small (~360px) board mid-drag keeps tracking
     // (guarded: jsdom / older engines may not implement pointer capture).
     e.currentTarget.setPointerCapture?.(e.pointerId);
+    draggingRef.current = true;
     setPointer(pointerToWorld(e.clientX, e.clientY));
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>): void {
-    if (!isActive || dropped) return;
+    // Only track a real press-drag, never a bare hover: a mouse moving to the top-right button must
+    // not re-aim the piece (touch has no hover, so this only affects the desktop/responsive path).
+    if (!isActive || dropped || !draggingRef.current) return;
     setPointer(pointerToWorld(e.clientX, e.clientY));
   }
 
   function releaseCapture(e: React.PointerEvent<HTMLDivElement>): void {
+    draggingRef.current = false;
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture?.(e.pointerId);
     }

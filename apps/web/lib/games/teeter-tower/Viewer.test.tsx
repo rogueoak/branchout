@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
 import { TeeterViewer } from './Viewer';
@@ -60,6 +60,20 @@ function state(overrides: Partial<GameState>): GameState {
 
 function noop() {}
 
+// jsdom's synthetic PointerEvent drops clientX/clientY (they arrive undefined), which would make the
+// screen->world mapping NaN. Construct the event and pin the coordinates so a real drag can be tested.
+function firePointer(
+  el: HTMLElement,
+  type: 'pointerDown' | 'pointerMove',
+  clientX: number,
+  clientY: number,
+): void {
+  const ev = createEvent[type](el, { bubbles: true });
+  Object.defineProperty(ev, 'clientX', { value: clientX });
+  Object.defineProperty(ev, 'clientY', { value: clientY });
+  fireEvent(el, ev);
+}
+
 describe('TeeterViewer single interactive surface', () => {
   it('labels the board for aiming for the active player (an interactive surface)', () => {
     render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={noop} />);
@@ -118,6 +132,60 @@ describe('TeeterViewer single interactive surface', () => {
     expect(move).toHaveProperty('dropY');
     expect(typeof move.dropX).toBe('number');
     expect(typeof move.dropY).toBe('number');
+  });
+
+  it('follows a press-drag but ignores a bare hover, so travelling to the button never re-aims (feedback 0023)', () => {
+    // pointerToWorld ignores a zero-sized rect (jsdom's default) and keeps the last pointer, so give the
+    // canvas a real rect to make the screen->world mapping live. Then a hover (pointer move with no press
+    // down) must be a no-op while a real press-drag moves the piece: this is the regression guard for the
+    // desktop bug where a mouse travelling up to the top-right Stop-spin/Drop button dragged the piece to
+    // that corner (a high drop that instantly cleared the level). Touch has no hover, so mobile was fine.
+    const rect = {
+      left: 0,
+      top: 0,
+      right: 356,
+      bottom: 648,
+      width: 356,
+      height: 648,
+      x: 0,
+      y: 0,
+      toJSON() {},
+    } as DOMRect;
+    const rectSpy = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue(rect);
+    try {
+      const dropXAfter = (interact: (board: HTMLElement) => void): number => {
+        const onMove = vi.fn();
+        const { unmount } = render(
+          <TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={onMove} />,
+        );
+        const board = screen.getByRole('img', { name: /aim and drop the piece/i })
+          .parentElement as HTMLElement;
+        interact(board);
+        fireEvent.click(screen.getByRole('button', { name: /stop the spin and lock the angle/i }));
+        fireEvent.click(screen.getByRole('button', { name: /drop the piece/i }));
+        const move = JSON.parse(onMove.mock.calls[0]![1] as string) as { dropX: number };
+        unmount();
+        return move.dropX;
+      };
+
+      // A legal, well-left-of-center spot (maps above the required line, so the Drop stays enabled). A
+      // mouse hovers across positions like this on its way up to the top-right button.
+      const [x, y] = [60, 300];
+      const baseline = dropXAfter(() => {}); // no board interaction -> default (centered) aim x
+      const hovered = dropXAfter((b) => firePointer(b, 'pointerMove', x, y)); // hover only (no press)
+      const dragged = dropXAfter((b) => {
+        firePointer(b, 'pointerDown', x, y);
+        firePointer(b, 'pointerMove', x, y);
+      });
+
+      // A bare hover leaves the drop x at the centered default; only a real press-drag moves it.
+      expect(hovered).toBeCloseTo(baseline, 5);
+      expect(dragged).toBeLessThan(baseline - 50);
+    } finally {
+      rectSpy.mockRestore();
+    }
   });
 
   it('maps a server rejection reason to player-clear copy', () => {
