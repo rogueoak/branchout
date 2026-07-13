@@ -71,11 +71,13 @@ const DEFAULT_AIM_Y = GROUND_TOP - 300;
 
 /**
  * While spinning, the piece's CENTRE hovers this fixed gap (px) above the required line (feedback
- * 0026/0027): the pointer moves it left/right but not up/down, so it never bobs. Chosen large enough
- * that even the tallest piece's rotated bottom stays clear of the line. It may sit above the finish
- * line when the line is near the target - that is intended.
+ * 0026/0027): the pointer moves it left/right but not up/down, so it never bobs. Chosen comfortably
+ * larger than the tallest piece's rotated half-height (~106px for the longest plank) so the spinning
+ * bottom stays clear of the line with margin to spare. It may sit above the finish line when the line
+ * is near the target - that is intended. (Cosmetic only: `placing` re-clamps and `drop()` refuses an
+ * illegal pose, so the spin gap can never let an illegal tower through.)
  */
-const SPIN_GAP = 110;
+const SPIN_GAP = 130;
 
 /**
  * The spinning piece's centroid world-y: a FIXED gap above the required line, INDEPENDENT of the spin
@@ -86,6 +88,19 @@ const SPIN_GAP = 110;
  */
 export function spinGapY(requiredLine: number): number {
   return requiredLine - SPIN_GAP;
+}
+
+/**
+ * The 0..1 interpolation fraction between the previous and current sim frame at wall-clock `now`
+ * (feedback 0027). The inter-frame span is CAPPED at {@link MAX_INTERP_SPAN_MS}: after a pause the gap
+ * between the last pre-pause frame and the first resumed frame is the whole pause, which would make the
+ * fraction crawl (the tower looks frozen). Capping it snaps to the newest frame within a couple of
+ * frames instead. Pure so the cap is unit-testable (the draw loop it lives in is not jsdom-runnable).
+ */
+export function interpFraction(now: number, arrived: number, prevArrived: number): number {
+  const span = Math.min(arrived - prevArrived, MAX_INTERP_SPAN_MS);
+  if (!(span > 0)) return 1;
+  return Math.max(0, Math.min(1, (now - arrived) / span));
 }
 
 /**
@@ -146,6 +161,7 @@ function rejectionMessage(reason: string): string {
     'malformed move': 'That did not send cleanly - aim and drop again.',
     'game over': 'The tower is finished - nothing left to drop.',
     'tower is full': 'The tower is packed full - no room for another piece.',
+    'wait for the tower to settle': 'Let the tower settle - the next piece is on its way.',
   };
   return map[reason] ?? 'That drop did not land - aim and drop again.';
 }
@@ -286,9 +302,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           // look frozen mid-air on resume. Capping it recovers within a couple of frames instead.
           const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
           const prev = prevSimRef.current;
-          const span = Math.min(simArrivedRef.current - prevArrivedRef.current, MAX_INTERP_SPAN_MS);
-          const f =
-            prev && span > 0 ? Math.max(0, Math.min(1, (now - simArrivedRef.current) / span)) : 1;
+          const f = prev ? interpFraction(now, simArrivedRef.current, prevArrivedRef.current) : 1;
           const bodies = prev ? interpolateBodies(prev.bodies, live.bodies, f) : live.bodies;
 
           // Fit a FIXED reference height into the canvas (feedback 0023), centered horizontally at a
@@ -468,7 +482,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   // Game over: a final summary with the score.
   if (sim?.over) {
     return (
-      <section aria-label="Game viewer" className="flex flex-col gap-4">
+      // Fill the stage height like the live view (feedback 0027) so the summary + board never push the
+      // host's "Back to lobby" control off a short viewport (the running view is overflow-hidden).
+      <section aria-label="Game viewer" className="flex h-full min-h-0 flex-1 flex-col gap-3">
         <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4 text-center">
           <h2 className="text-h3 text-text">Tower complete</h2>
           <p className="text-body-sm text-text-muted">
@@ -489,18 +505,24 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
 
   const watchingName = sim && !isActive ? nicknameOf(state, sim.activePlayer) : null;
 
+  // The between-piece pause (feedback 0027): no aim piece yet while the tower settles. Show a "Settling"
+  // hint (for everyone) so the vanished aim controls read as intentional pacing, not a stall.
+  const settling = sim != null && !sim.over && sim.next == null;
+
   // The SHORT turn/aim hint the draw loop paints as an on-canvas overlay (kept terse so it never
   // squishes at ~360px). The full copy lives in the screen-reader status below. It describes the new
   // flow: the canvas moves the piece; the top-right button stops the spin, then drops (feedback 0023).
-  const hint = isActive
-    ? dropped
-      ? 'Dropping...'
-      : aim === 'spinning'
-        ? 'Move the piece, then Stop spin'
-        : 'Move it into place, then Drop'
-    : watchingName
-      ? `Watching ${watchingName}`
-      : '';
+  const hint = settling
+    ? 'Settling...'
+    : isActive
+      ? dropped
+        ? 'Dropping...'
+        : aim === 'spinning'
+          ? 'Move the piece, then Stop spin'
+          : 'Move it into place, then Drop'
+      : watchingName
+        ? `Watching ${watchingName}`
+        : '';
   hintRef.current = hint;
 
   // The live game state as text, for the visually-hidden aria-live region below. The HUD + hint are
@@ -514,17 +536,19 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     piecesUsed > par
       ? `${piecesUsed} of ${par} par pieces used - over par, minus ten points per piece.`
       : `${piecesUsed} of ${par} par pieces used.`,
-    isActive
-      ? dropped
-        ? 'Dropping the piece.'
-        : aim === 'spinning'
-          ? 'Your turn: move the piece on the board, then Stop spin to lock the angle.'
-          : dropLegal
-            ? 'Your turn: move it into place, then Drop. The drop is final, no re-aim.'
-            : 'Your turn: the piece is below the line - move it higher before you can drop.'
-      : watchingName
-        ? `Watching ${watchingName} build the tower.`
-        : '',
+    settling
+      ? 'Letting the tower settle - the next piece is coming.'
+      : isActive
+        ? dropped
+          ? 'Dropping the piece.'
+          : aim === 'spinning'
+            ? 'Your turn: move the piece on the board, then Stop spin to lock the angle.'
+            : dropLegal
+              ? 'Your turn: move it into place, then Drop. The drop is final, no re-aim.'
+              : 'Your turn: the piece is below the line - move it higher before you can drop.'
+        : watchingName
+          ? `Watching ${watchingName} build the tower.`
+          : '',
   ].join(' ');
 
   // The start-of-game gesture hint (feedback 0025): a centered onboarding overlay shown only while the
@@ -619,10 +643,11 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
 function TowerCanvas({ canvasRef }: { canvasRef: React.RefObject<HTMLCanvasElement | null> }) {
   return (
     <div
-      className="relative w-full overflow-hidden rounded-xl border border-border bg-bg"
+      className="relative w-full flex-1 overflow-hidden rounded-xl border border-border bg-bg"
       style={{
-        height: 'min(78svh, calc(100svh - 190px))',
-        minHeight: '320px',
+        // Fill the summary's remaining height (flex-1) with a small floor, so the results card + host
+        // bar always stay on screen under the running view's viewport lock (feedback 0027).
+        minHeight: '200px',
         userSelect: 'none',
         WebkitUserSelect: 'none',
         WebkitTouchCallout: 'none',

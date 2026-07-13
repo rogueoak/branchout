@@ -281,7 +281,6 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
 
     collectMove(ctx: RoundContext, player: string, move: string): ScratchResult {
       const world = worldFor(ctx);
-      ensureNext(world);
 
       if (world.over) {
         return {
@@ -309,9 +308,12 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
 
       const piece = world.next;
       if (!piece) {
+        // Between-piece pause (feedback 0027): the tower is still settling, so no aim piece is offered
+        // yet. A well-behaved client cannot submit (it gates aiming on `next`), but reject a lagging or
+        // scripted drop server-side rather than regenerating the piece and dropping onto a moving tower.
         return {
           scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'game over' },
+          rejected: { reason: 'wait for the tower to settle' },
         };
       }
 

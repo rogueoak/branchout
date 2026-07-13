@@ -175,29 +175,48 @@ describe('collectMove (apply to the live world)', () => {
     expect((cur as { stableHeight: number }).stableHeight).toBe(0);
   });
 
-  it('subtracts points for each piece dropped beyond the round par (feedback 0026)', () => {
+  it('rejects a drop during the between-piece pause, server-side (feedback 0027)', () => {
     const game = createTeeterTowerGame(stubRng(0.5));
     const scratch0 = game.configure({}, players('p1')).scratch;
     const base = ctx({ scratch: scratch0 });
-    let scratch = game.startRound(base).scratch;
+    const started = game.startRound(base);
+    // Drop the first piece high; `next` is now cleared while the tower settles.
+    const dropped = game.collectMove(
+      { ...base, scratch: started.scratch },
+      'p1',
+      JSON.stringify(move(0, 410, GROUND_TOP - 350)),
+    );
+    expect(dropped.rejected).toBeUndefined();
+    expect((dropped.scratch as { next: unknown }).next).toBeNull();
+    // A second drop before the tower settles is REFUSED (not silently regenerated), so a lagging or
+    // scripted client cannot drop onto a still-tumbling tower - the pause is a server rule.
+    const early = game.collectMove(
+      { ...base, scratch: dropped.scratch },
+      'p1',
+      JSON.stringify(move(0, 410)),
+    );
+    expect(early.rejected?.reason).toMatch(/settle/i);
+    expect((early.scratch as { bodies: unknown[] }).bodies).toHaveLength(1); // no new body added
+  });
+
+  it('subtracts points for a piece dropped beyond the round par (feedback 0026)', () => {
     const par = LEVELS[0]!.par; // 8
-    const drops = par + 2;
-    // Drop par+2 legal pieces WITHOUT ticking: each sits above the (stable, 0-height) required line and
-    // is well vertically separated from the others so none overlap. No tick means the height/score never
-    // updates from stacking, so the total isolates the over-par penalty: 0 through par, then -PENALTY per
-    // extra piece (the running total goes negative).
-    for (let i = 0; i < drops; i++) {
-      const res = game.collectMove(
-        { ...base, scratch },
-        'p1',
-        JSON.stringify(move(0, 410, 390 - i * 150)),
-      );
-      expect(res.rejected).toBeUndefined();
-      scratch = res.scratch;
-    }
-    const s = scratch as { totalScore: number; piecesThisLevel: number };
-    expect(s.piecesThisLevel).toBe(drops);
-    expect(s.totalScore).toBe(-2 * PAR_PENALTY); // exactly the 2 pieces over par
+    // A started scratch (which carries a valid `next` aim piece) pre-seeded to ALREADY be at par pieces
+    // this round, so the next drop is the (par+1)th - the first one past par. A fresh game rebuilds from
+    // this scratch (its world is not cached), so the seeded piecesThisLevel takes effect. This isolates
+    // the penalty from band scoring (which only updates in tick) without needing many drops.
+    const seedGame = createTeeterTowerGame(stubRng(0.5));
+    const started = seedGame.startRound(
+      ctx({ scratch: seedGame.configure({}, players('p1')).scratch }),
+    );
+    const seeded = { ...(started.scratch as Record<string, unknown>), piecesThisLevel: par };
+
+    const game = createTeeterTowerGame(stubRng(0.5)); // fresh -> rebuilds the world from `seeded`
+    const dropped = game.collectMove(ctx({ scratch: seeded }), 'p1', JSON.stringify(move(0, 410)));
+    expect(dropped.rejected).toBeUndefined();
+    const after = dropped.scratch as { totalScore: number; piecesThisLevel: number };
+    expect(after.piecesThisLevel).toBe(par + 1);
+    expect(after.totalScore).toBe(-PAR_PENALTY); // one piece over par -> -PENALTY (the total can go negative)
   });
 
   it('rejects a move from a player who is not the active player', () => {
@@ -226,24 +245,24 @@ describe('collectMove (apply to the live world)', () => {
   });
 
   it('rejects a drop that overlaps the tower', () => {
-    // Drop a piece high, then IMMEDIATELY (no tick) drop the next piece at the SAME x and y. The
-    // first body is still at its drop origin (nothing has stepped), so the second piece placed on top
-    // of it geometrically overlaps and is rejected. dropY is honored as sent (the client aims height).
-    const game = createTeeterTowerGame(stubRng(0.5));
-    const scratch = game.configure({}, players('p1')).scratch;
-    const base = ctx({ scratch });
-    const started = game.startRound(base);
-    const first = game.collectMove(
-      { ...base, scratch: started.scratch },
-      'p1',
-      JSON.stringify(move(0, 410, 0)),
+    // Pre-seed a tower with a block centered on x=410, plus a valid next aim piece, then drop that piece
+    // onto the block (same x, a y inside it): it geometrically overlaps and is rejected. (Overlap is
+    // checked before the min-drop line, so the low drop reads as 'overlap', not 'line'.) A fresh game
+    // rebuilds from the seeded scratch. This replaces the old "drop twice at the same spot without
+    // ticking" setup, which the between-piece pause (feedback 0027) no longer allows.
+    const seedGame = createTeeterTowerGame(stubRng(0.5));
+    const started = seedGame.startRound(
+      ctx({ scratch: seedGame.configure({}, players('p1')).scratch }),
     );
-    expect(first.rejected).toBeUndefined();
-    // Second drop at the exact same spot, before any tick moves the first piece: overlaps it.
+    const seeded = {
+      ...(started.scratch as Record<string, unknown>),
+      bodies: [tallBlock(1, 120)], // a 120px block resting on the platform, centered on x=410
+    };
+    const game = createTeeterTowerGame(stubRng(0.5)); // fresh -> rebuilds the world from `seeded`
     const bad = game.collectMove(
-      { ...base, scratch: first.scratch },
+      ctx({ scratch: seeded }),
       'p1',
-      JSON.stringify(move(0, 410, 0)),
+      JSON.stringify(move(0, 410, GROUND_TOP - 60)), // into the block's body
     );
     expect(bad.rejected?.reason).toMatch(/overlap/i);
   });

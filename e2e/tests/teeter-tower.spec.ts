@@ -63,10 +63,11 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   await expect(status).toContainText(/move it into place, then Drop/i);
   await page.getByRole('button', { name: /drop the piece/i }).click();
 
-  // The engine accepted the drop and streamed the next piece: the aim resets, so the turn cycles back to
-  // the spin prompt (it had switched to the "then Drop" prompt above). With the settle-gate + banded
-  // scoring (feedback 0025) a single low drop scores 0 pts, so the live loop is proven by the turn
-  // cycling, not a score bump. No rejection surfaced, and still Round 1.
+  // The engine accepted the drop, then (feedback 0027) held the next piece until the tower settled - the
+  // between-piece pause - before re-offering it. So the aim resets and the turn cycles back to the spin
+  // prompt (it had switched to the "then Drop" prompt above) once the piece comes to rest. With the
+  // settle-gate + banded scoring (feedback 0025/0026) a single low drop scores 0 pts, so the live loop
+  // is proven by the turn cycling, not a score bump. The 30s timeout absorbs the ~1-2s settle pause.
   await expect(status).toContainText(/move the piece on the board, then Stop spin/i, {
     timeout: 30_000,
   });

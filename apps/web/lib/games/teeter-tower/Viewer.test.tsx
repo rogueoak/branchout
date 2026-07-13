@@ -1,7 +1,7 @@
 import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
-import { spinGapY, TeeterViewer } from './Viewer';
+import { interpFraction, spinGapY, TeeterViewer } from './Viewer';
 
 // The single canvas draws with rAF + a 2D context. jsdom leaves getContext unimplemented (returns
 // null); the draw loop guards on a null context, so rendering is safe - stub getContext to keep the
@@ -98,6 +98,20 @@ describe('TeeterViewer single interactive surface', () => {
     render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p2" onMove={noop} />);
     expect(screen.getByRole('img', { name: /teeter tower board/i })).toBeDefined();
     expect(screen.queryByRole('img', { name: /aim and drop the piece/i })).toBeNull();
+  });
+
+  it('during the between-piece pause (next=null, not over) shows the board with no aim controls (feedback 0027)', () => {
+    // A running game with no aim piece yet (the tower is settling): the local player gets NO aim button
+    // and a "settling" status, not a stuck spin/drop control - and a joiner sees the same passive board.
+    const sim = { ...teeterSim('p1'), next: null };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
+    expect(
+      screen.queryByRole('button', {
+        name: /stop the spin|drop the piece|below the line/i,
+      }),
+    ).toBeNull();
+    expect(screen.getByRole('status').textContent).toMatch(/settle/i);
+    expect(screen.getByRole('img', { name: /teeter tower board/i })).toBeDefined();
   });
 
   it('mirrors the round/score + turn state into an aria-live region for assistive tech', () => {
@@ -325,10 +339,27 @@ describe('spinGapY (fixed-height spin math, feedback 0027)', () => {
     const y = spinGapY(requiredLine);
     // The centre sits a fixed gap above the line...
     expect(y).toBeLessThan(requiredLine);
-    expect(requiredLine - y).toBe(110);
+    expect(requiredLine - y).toBe(130);
     // ...and takes NO piece/angle argument, so as the piece spins (its rotated half-height changing
     // every frame) the height never moves. It also tracks the line: a lower line lowers the piece by
     // the same amount.
     expect(spinGapY(500) - spinGapY(400)).toBe(100);
+  });
+});
+
+describe('interpFraction (interpolation span cap, feedback 0027)', () => {
+  it('interpolates a normal frame gap proportionally', () => {
+    // 20ms into a 40ms (~TICK_MS) inter-frame span -> halfway.
+    expect(interpFraction(1020, 1000, 960)).toBeCloseTo(0.5, 5);
+    // Zero/negative span (no prior frame time) snaps to the newest frame.
+    expect(interpFraction(1000, 1000, 1000)).toBe(1);
+  });
+
+  it('CAPS a pause-sized gap so the tower catches up fast instead of freezing', () => {
+    // After a pause the gap is the whole pause (~5s). Capped at 160ms, 50ms past the resumed frame the
+    // fraction is already ~0.31 (50/160) - NOT the crawling ~0.01 (50/5000) an uncapped span would give.
+    expect(interpFraction(1050, 1000, -4000)).toBeGreaterThan(0.25);
+    // ...and it reaches the newest frame within a couple of frames (300ms past -> clamped to 1).
+    expect(interpFraction(1300, 1000, -4000)).toBe(1);
   });
 });
