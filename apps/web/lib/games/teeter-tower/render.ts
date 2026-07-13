@@ -384,7 +384,6 @@ export function drawHintOverlay(
   text: string,
 ): void {
   if (!text) return;
-  void cssH; // reserved: the hint can be pinned bottom-center (cssH - N); it currently sits top-center.
   ctx.save();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.font = "600 13px 'Trebuchet MS', system-ui, sans-serif";
@@ -394,7 +393,7 @@ export function drawHintOverlay(
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;
   ctx.fillStyle = chrome.text;
-  // Below the HUD pill (top-left) but still near the top so it never crowds the aim piece / platform.
-  ctx.fillText(text, cssW / 2, 22, cssW - 24);
+  // Pinned bottom-center so it never crowds the top HUD pill or the spinning aim piece.
+  ctx.fillText(text, cssW / 2, cssH - 20, cssW - 24);
   ctx.restore();
 }
