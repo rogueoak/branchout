@@ -121,6 +121,14 @@ export const TRAP_DENSITY_MULT = 4;
  */
 export const SETTLE_SPEED = 0.16;
 export const SETTLE_ANGULAR = 0.12;
+
+/**
+ * Max ticks to wait for the tower to settle before offering the next piece (feedback 0027) - the pause
+ * between pieces. Normally the scene settles well within this; the cap only bites a never-resting scene
+ * (e.g. the pendulum perpetually nudging the tower) so it can't withhold the next piece forever. At
+ * TICK_MS (~40ms) this is ~2s.
+ */
+export const MAX_SETTLE_TICKS = 50;
 /** The heavy trapezoid's cosmetics: near-black with a faint outline so it reads on the dark sky. */
 const TRAP_SKIN: Skin = { fill: '#0e0e16', stroke: '#4a4a5c' };
 
@@ -295,6 +303,12 @@ export interface LiveWorld {
   stableHeight: number;
   /** Pieces the player has dropped THIS round (resets each level) - drives the over-par penalty. */
   piecesThisLevel: number;
+  /**
+   * Ticks elapsed since the last drop while waiting for the tower to settle before offering the next
+   * piece (feedback 0027). In-memory only (a rebuild resets it); the tick offers the next piece once
+   * the scene settles OR this hits a cap, so a never-resting scene can't withhold the next piece forever.
+   */
+  settleWaitTicks: number;
   /** Best height reached this level (px above the platform) - the per-level scoring basis. */
   bestHeight: number;
   /** Cumulative game score across levels (never resets; the HUD + standings read it). */
@@ -464,6 +478,8 @@ export function createWorld(args: {
     levelIndex: args.levelIndex,
     stableHeight: args.stableHeight,
     piecesThisLevel: args.piecesThisLevel,
+    // In-memory only (feedback 0027): the between-piece settle wait starts fresh on a (re)build.
+    settleWaitTicks: 0,
     bestHeight: args.bestHeight,
     totalScore: args.totalScore,
     pieceIndex: args.pieceIndex,

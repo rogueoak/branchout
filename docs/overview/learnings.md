@@ -336,6 +336,17 @@ Capture durable lessons as they emerge.
   ABOVE the canvas (feedback `0025`), a mouse leaving the board could no longer drag the piece, so the
   guard only blocked the wanted behavior (hover-to-aim). Removing it restored mouse aiming (feedback
   `0026`). When you move a control, revisit the guards that existed only to protect its old position.
+- **To hold a value STILL, pin it to a constant - not to something that itself changes.** Teeter's
+  "fixed-height" spinning piece was placed at `requiredLine - rotatedHalfHeight - gap`; the rotated half
+  height changes every frame as the piece spins, so the centre bobbed - the derived offset reintroduced
+  the exact motion "fixed height" was meant to remove. Pin the centre to `requiredLine - gap` and let it
+  rotate in place. When a position must not move, none of its inputs may move either. (Feedback `0027`.)
+- **A wall-clock-normalized interpolation must CAP its inter-frame span, or a pause freezes it.** The
+  live tower eased between sim frames by `f = (now - arrived) / (arrived - prevArrived)`. After a pause
+  the gap between the last pre-pause frame and the first resumed frame is the whole pause duration, so
+  the denominator explodes and `f` crawls - the tower looks frozen on resume even though the server is
+  streaming again. Cap the span to a few frame-times so a long gap (pause, dropped frames) recovers in
+  a couple of rendered frames instead of over the entire gap. (Feedback `0027`.)
 
 ## Client-server contracts
 

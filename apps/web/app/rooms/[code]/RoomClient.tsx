@@ -129,6 +129,10 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
 
   const isHost = membership?.isHost ?? false;
   const running = room?.status === 'running';
+  // A single-surface game (Teeter) locks the running view to the viewport so the page does not scroll
+  // (feedback 0027) - a scrolling page under a drag-to-aim canvas breaks immersion. Multi-surface games
+  // keep the normal scrolling page.
+  const fitViewport = running && getGameUi(room?.selectedGame ?? game)?.singleSurface === true;
   // Only the host runs the setup wizard, and never while the game is running.
   const activeStep: SetupStep = isHost && !running ? step : null;
   // The picker shows for the create-flow `pick` step or the in-room change-game (local) flow.
@@ -361,11 +365,23 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
   }
 
   return (
-    <main className="min-h-screen bg-bg text-text">
+    <main
+      className={
+        fitViewport
+          ? 'flex h-[100svh] flex-col overflow-hidden bg-bg text-text'
+          : 'min-h-screen bg-bg text-text'
+      }
+    >
       {/* The shared top nav (spec 0028) shows in the lobby and setup wizard, but NOT once the game is
           running - the in-game stage keeps its own compact room-code/leave header, chrome-free. */}
       {!running ? <TopNav viewer={viewer} /> : null}
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <div
+        className={
+          fitViewport
+            ? 'mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-3 sm:px-6'
+            : 'mx-auto max-w-5xl px-4 py-8 sm:px-6'
+        }
+      >
         {loadError ? (
           <p role="alert" className="mb-4 text-body-sm text-danger">
             {loadError}
@@ -373,7 +389,9 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
         ) : null}
 
         {running ? (
-          <div className="flex flex-col gap-6">
+          <div
+            className={fitViewport ? 'flex min-h-0 flex-1 flex-col gap-3' : 'flex flex-col gap-6'}
+          >
             <header className="flex items-center justify-between">
               <p className="text-body-sm text-text-muted">
                 Room <span className="tabular-nums tracking-widest">{room.code}</span>

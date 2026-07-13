@@ -117,7 +117,10 @@ export function GameStage({
   }, [state.round, state.phase, remoteVisible]);
 
   return (
-    <div className="flex flex-col gap-4">
+    // A single-surface game (Teeter) fills the viewport height so the page does not scroll (feedback
+    // 0027): the stage is a min-h-0 flex column, the viewer flexes to fill, the host bar sits below.
+    // Multi-surface games keep the normal auto-height, scrolling layout.
+    <div className={singleSurface ? 'flex min-h-0 flex-1 flex-col gap-2' : 'flex flex-col gap-4'}>
       {connectionNote ? (
         <Badge variant="warning" className="w-fit" role="status">
           {connectionNote}
@@ -144,13 +147,15 @@ export function GameStage({
 
       <div
         className={
-          viewerVisible && remoteVisible
-            ? 'grid grid-cols-1 gap-6 lg:grid-cols-2'
-            : 'grid grid-cols-1 gap-6'
+          singleSurface
+            ? 'flex min-h-0 flex-1'
+            : viewerVisible && remoteVisible
+              ? 'grid grid-cols-1 gap-6 lg:grid-cols-2'
+              : 'grid grid-cols-1 gap-6'
         }
       >
         {viewerVisible && ui ? (
-          <div className="order-1">
+          <div className={singleSurface ? 'order-1 flex min-h-0 flex-1 flex-col' : 'order-1'}>
             {/* onMove is game-agnostic: a single-surface game (Teeter Tower) is one interactive
                 canvas, so the shell passes the move action straight to its viewer and the player aims
                 + drops on it. Multi-surface game viewers ignore it (their moves come from the remote). */}
