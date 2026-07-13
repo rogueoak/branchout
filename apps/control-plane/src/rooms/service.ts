@@ -41,6 +41,7 @@ export class RoomError extends Error {
     public code:
       | 'forbidden'
       | 'not_found'
+      | 'not_member'
       | 'kicked'
       | 'no_game'
       | 'no_viewer'
@@ -104,6 +105,25 @@ export interface CreateResult {
   playerId: string;
 }
 
+/**
+ * The caller's own seat in a room, for the web client to rebuild its per-tab membership after it
+ * has forgotten (a closed tab clears `sessionStorage`). Returned by {@link RoomService.resume} /
+ * `GET /rooms/:code/me`. `player` is the caller's public engine `playerId` (mirrors {@link
+ * JoinResult}); `sessionId` is never included. A durable host whose ephemeral roster row has
+ * expired is re-seated before this is built, so a returning host gets its host row back rather than
+ * a `not_member`.
+ */
+export interface ResumeResult {
+  room: RoomView;
+  membership: {
+    role: RoomMember['role'];
+    isHost: boolean;
+    mode?: Mode;
+    nickname: string;
+    player: string;
+  };
+}
+
 function toView(room: Room): RoomView {
   return {
     id: room.id,
@@ -112,6 +132,26 @@ function toView(room: Room): RoomView {
     status: room.status,
     selectedGame: room.selectedGame,
     hostAccountId: room.hostAccountId,
+  };
+}
+
+/**
+ * Build the host's roster row from its account session. The host is a full player (`role: 'player'`)
+ * that also carries `isHost`, joins with its account nickname, and defaults to `interactive` mode -
+ * the client refines the mode from the device via `setMode`. Used both when a room is first created
+ * and when a durable host is re-seated after its ephemeral row expired (feedback 0021); a fresh
+ * `playerId` is minted each time (the caller must have an `accountId` - `canHost` guarantees it).
+ */
+function hostMember(session: Session): RoomMember {
+  return {
+    sessionId: session.id,
+    playerId: newPlayerId(),
+    accountId: session.accountId!,
+    role: 'player',
+    isHost: true,
+    mode: normalizeMode(undefined),
+    nickname: session.displayName,
+    connected: true,
   };
 }
 
@@ -161,16 +201,7 @@ export class RoomService {
       throw new RoomError('forbidden', 'Sign in to host a room.');
     }
     const room = await this.createWithUniqueCode(session.accountId);
-    const host: RoomMember = {
-      sessionId: session.id,
-      playerId: newPlayerId(),
-      accountId: session.accountId,
-      role: 'player',
-      isHost: true,
-      mode: normalizeMode(undefined),
-      nickname: session.displayName,
-      connected: true,
-    };
+    const host = hostMember(session);
     await this.membership.put(room.id, host);
     // Echo the host's public playerId (like `join` does) so the browser has its engine identity
     // immediately, without waiting on the members list - a host reloading mid-game must not be
@@ -370,7 +401,9 @@ export class RoomService {
    */
   async view(code: string, session: Session): Promise<RoomView> {
     const room = await this.requireRoom(code);
-    const caller = await this.membership.get(room.id, session.id);
+    // `resolveCaller` re-seats a durable host whose ephemeral roster row has expired, so a host
+    // polling past the Redis TTL is silently restored rather than 403'd off its own room.
+    const caller = await this.resolveCaller(room, session);
     if (!caller) {
       throw new RoomError('forbidden', 'Join the room to see it.');
     }
@@ -393,7 +426,7 @@ export class RoomService {
     session: Session,
   ): Promise<Array<Omit<RoomMember, 'sessionId'> & { sessionId?: string }>> {
     const room = await this.requireRoom(code);
-    const caller = await this.membership.get(room.id, session.id);
+    const caller = await this.resolveCaller(room, session);
     if (!caller) {
       throw new RoomError('forbidden', 'Join the room to see its members.');
     }
@@ -406,6 +439,54 @@ export class RoomService {
       delete redacted.sessionId;
       return redacted;
     });
+  }
+
+  /**
+   * Rebuild the caller's own seat in a room. The web client remembers its membership only in per-tab
+   * `sessionStorage`, which a closed tab clears; when it reloads with nothing remembered it calls
+   * this to learn whether it is still in the room before falling back to the join screen. A durable
+   * host (the account owning the room) whose ephemeral roster row has expired is re-seated here, so a
+   * returning host is dropped straight back in with host powers instead of being told to re-join. A
+   * caller who is genuinely not a member (and not the host) gets `not_member`, which the client reads
+   * as "show the join prompt" - distinct from a transient error.
+   */
+  async resume(code: string, session: Session): Promise<ResumeResult> {
+    const room = await this.requireRoom(code);
+    const caller = await this.resolveCaller(room, session);
+    if (!caller) {
+      throw new RoomError('not_member', 'Join the room to enter it.');
+    }
+    return {
+      room: toView(room),
+      membership: {
+        role: caller.role,
+        isHost: caller.isHost,
+        ...(caller.mode ? { mode: caller.mode } : {}),
+        nickname: caller.nickname,
+        player: caller.playerId,
+      },
+    };
+  }
+
+  /**
+   * Resolve the caller's roster row, healing the durable-vs-ephemeral split (feedback 0021). Returns
+   * the live row if present. Otherwise, if the session is the room's durable host (its account owns
+   * the room in Postgres), re-seats the host as a full player with host powers and returns that -
+   * the ephemeral row (Redis, 12h TTL) can vanish while `host_account_id` never does. Any other
+   * caller with no row returns `null` (a guest must re-join). Re-seating mints a fresh `playerId`,
+   * matching the existing `join`-after-expiry behaviour.
+   */
+  private async resolveCaller(room: Room, session: Session): Promise<RoomMember | null> {
+    const existing = await this.membership.get(room.id, session.id);
+    if (existing) {
+      return existing;
+    }
+    if (canHost(session) && session.accountId === room.hostAccountId) {
+      const host = hostMember(session);
+      await this.membership.put(room.id, host);
+      return host;
+    }
+    return null;
   }
 
   /**

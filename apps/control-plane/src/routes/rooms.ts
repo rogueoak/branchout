@@ -31,6 +31,8 @@ function statusFor(code: RoomError['code']): number {
       return 403;
     case 'not_found':
       return 404;
+    case 'not_member':
+      return 404;
     case 'kicked':
       return 403;
     case 'insufficient_credits':
@@ -185,6 +187,18 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
       const { code } = request.params as { code: string };
       const room = await rooms.view(code, session);
       return reply.code(200).send({ room });
+    }),
+  );
+
+  // Resume: the caller's own seat, so the web client can rebuild its per-tab membership after a
+  // closed tab cleared it. Re-seats a durable host whose ephemeral roster row expired (feedback
+  // 0021), so a returning host lands back in its room instead of the join screen; a true non-member
+  // gets `not_member` (404).
+  app.get('/rooms/:code/me', async (request, reply) =>
+    withSession(request, reply, async (session) => {
+      const { code } = request.params as { code: string };
+      const { room, membership } = await rooms.resume(code, session);
+      return reply.code(200).send({ room, membership });
     }),
   );
 
