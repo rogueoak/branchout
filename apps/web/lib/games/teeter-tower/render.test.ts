@@ -6,8 +6,8 @@ import {
   PLATFORM_W,
   VIEW_H,
   VIEW_W,
-  viewScale,
-  visibleWorldHeight,
+  levelView,
+  visibleLeftX,
 } from './render';
 import { TEETER_TOTAL_ROUNDS } from './index';
 
@@ -32,24 +32,29 @@ describe('render world constants mirror the engine (packages/games/teeter-tower/
   });
 });
 
-// The renderer fits the world to WIDTH (not letterboxed), so a taller canvas reveals more of the
-// upward-growing tower. These pin the scale + visible-world-height helpers the draw loop, camera, and
-// pointer mapping all share, keeping the on-screen coordinate space consistent across them.
-describe('fit-width view mapping', () => {
-  it('scales the world by width / VIEW_W', () => {
-    expect(viewScale(VIEW_W)).toBe(1);
-    expect(viewScale(VIEW_W / 2)).toBe(0.5);
-    expect(viewScale(360)).toBeCloseTo(360 / VIEW_W);
+// The renderer fits the CURRENT LEVEL's height (platform -> above the target line) into the canvas,
+// centered horizontally at a uniform scale, so the tower fills the vertical space with no camera pan.
+// These pin the mapping the draw loop and pointer mapping share, keeping the coordinate space consistent.
+describe('fit-level view mapping', () => {
+  it('maps the top edge to screen 0 and the bottom edge to the canvas height', () => {
+    const v = levelView(390, 700, 600);
+    expect(v.top * v.scale + v.originY).toBeCloseTo(0);
+    expect(v.bottom * v.scale + v.originY).toBeCloseTo(700);
   });
 
-  it('shows exactly VIEW_H of world when the canvas is at the VIEW aspect ratio', () => {
-    expect(visibleWorldHeight(VIEW_W, VIEW_H)).toBeCloseTo(VIEW_H);
+  it('centers the world horizontally (world CENTER_X -> canvas mid)', () => {
+    const v = levelView(390, 700, 600);
+    expect(CENTER_X * v.scale + v.originX).toBeCloseTo(390 / 2);
   });
 
-  it('reveals MORE vertical world as the canvas gets taller (no letterbox)', () => {
-    const shortH = visibleWorldHeight(VIEW_W, VIEW_H);
-    const tallH = visibleWorldHeight(VIEW_W, VIEW_H * 2);
-    expect(tallH).toBeGreaterThan(shortH);
-    expect(tallH).toBeCloseTo(VIEW_H * 2);
+  it('scales the level UP as the canvas gets taller (fills the vertical space)', () => {
+    const short = levelView(390, 400, 600);
+    const tall = levelView(390, 800, 600);
+    expect(tall.scale).toBeGreaterThan(short.scale);
+  });
+
+  it('visibleLeftX is the world x at the left canvas edge', () => {
+    const v = levelView(390, 700, 600);
+    expect(visibleLeftX(v) * v.scale + v.originX).toBeCloseTo(0);
   });
 });

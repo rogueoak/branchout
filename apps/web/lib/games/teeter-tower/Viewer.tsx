@@ -30,9 +30,7 @@ import { asTeeterSim, type Body, type Piece, type TeeterSim } from './protocol';
 import {
   CENTER_X,
   GROUND_TOP,
-  PLATFORM_H,
-  VIEW_H,
-  VIEW_W,
+  applyLevelTransform,
   clampDropX,
   drawBody,
   drawHintOverlay,
@@ -42,9 +40,10 @@ import {
   drawSky,
   drawTargetBands,
   drawTower,
+  levelView,
   resolveChrome,
   rotatedYSpan,
-  withWorldTransform,
+  visibleLeftX,
 } from './render';
 
 const LEVEL_NAMES = ['Warm-up', 'Reach for the sky', 'The Pendulum'];
@@ -156,7 +155,6 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   const prevSimRef = useRef<TeeterSim | null>(null);
   const simArrivedRef = useRef<number>(0);
   const prevArrivedRef = useRef<number>(0);
-  const cameraRef = useRef<number>(0);
 
   const aimRef = useRef(aim);
   aimRef.current = aim;
@@ -234,27 +232,17 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             prev && span > 0 ? Math.max(0, Math.min(1, (now - simArrivedRef.current) / span)) : 1;
           const bodies = prev ? interpolateBodies(prev.bodies, live.bodies, f) : live.bodies;
 
-          // Fit-width mapping: world x 0..VIEW_W fills the CSS width; a taller canvas reveals more world
-          // vertically. `visibleH` is how much world (in world px) the canvas shows at this scale.
-          const scale = rect.width / VIEW_W;
-          const visibleH = scale > 0 ? rect.height / scale : VIEW_H;
-
-          // Camera: keep the platform base parked at the bottom of the view (baseCam), and follow the
-          // highest point (smallest y) so a tall tower stays visible - whichever shows more (min).
-          let topWorld = GROUND_TOP;
-          for (const b of bodies) topWorld = Math.min(topWorld, b.y);
-          const baseCam = GROUND_TOP + PLATFORM_H + 40 - visibleH;
-          const followCam = topWorld - visibleH * 0.2;
-          const targetCam = Math.min(baseCam, followCam);
-          cameraRef.current += (targetCam - cameraRef.current) * 0.08;
-          const cameraY = cameraRef.current;
+          // Fit the whole level's height into the canvas (platform -> above the target line), centered
+          // horizontally at a uniform scale, so the tower fills the vertical space with no camera pan.
+          const view = levelView(rect.width, rect.height, live.target);
+          const labelX = visibleLeftX(view) + 12;
 
           const chrome = resolveChrome(canvas);
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          withWorldTransform(ctx, rect.width, rect.height, dpr, cameraY);
-          drawSky(ctx, chrome, cameraY, visibleH);
-          drawTargetBands(ctx, chrome, live.target);
+          drawSky(ctx, chrome, rect.width, rect.height, dpr);
+          applyLevelTransform(ctx, view, dpr);
+          drawTargetBands(ctx, chrome, live.target, labelX);
           drawPlatform(ctx, chrome);
           drawTower(ctx, bodies);
 
@@ -263,19 +251,19 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             const piece = live.next;
             // Draw the min-drop line + forbidden zone in BOTH phases (spinning and placing), so the
             // "drop above this line" rule is visible from the first frame - not only once locked.
-            drawRequiredLine(ctx, chrome, live.requiredLine);
+            drawRequiredLine(ctx, chrome, live.requiredLine, labelX);
             if (aimRef.current === 'spinning') {
               spinAngleRef.current += piece.spinSeed;
-              // Spawn the spinning piece at the TOP of the current view (cameraY + 80), so it always
-              // reads clearly ABOVE the tower and the required line no matter how tall the tower is -
-              // never the payload's fixed low position (which would hover inside a grown pile).
+              // Spawn the spinning piece near the TOP of the view (just above the target line), so it
+              // always reads clearly ABOVE the tower and the required line no matter how tall the tower
+              // is - never the payload's fixed low position (which would hover inside a grown pile).
               drawBody(
                 ctx,
                 piece.verts,
                 piece.eyes,
                 piece.skin,
                 CENTER_X,
-                cameraRef.current + 80,
+                view.top + 60,
                 spinAngleRef.current,
                 { x: 0, y: 0 },
                 0.9,
@@ -325,19 +313,19 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Map a pointer event to world coordinates. Mirrors the fit-width draw transform exactly: world x
-  // 0..VIEW_W fills the CSS width, and screenY = (worldY - cameraY) * scale, so worldY = clientY/scale +
-  // cameraY. No letterbox offsets - a taller canvas simply shows more world.
+  // Map a pointer event to world coordinates. Mirrors the level-fit draw transform exactly: inverse of
+  // `applyLevelTransform` for the current target, so a tap lands where it looks. `worldX = (screenX -
+  // originX)/scale`, `worldY = (screenY - originY)/scale`.
   function pointerToWorld(clientX: number, clientY: number): { x: number; y: number } {
     const canvas = canvasRef.current;
     if (!canvas) return pointerRef.current;
     const rect = canvas.getBoundingClientRect();
-    const scale = rect.width / VIEW_W;
-    // A zero-sized rect (not laid out yet) would divide by zero; keep the last known pointer.
-    if (!(scale > 0)) return pointerRef.current;
+    // A zero-sized rect (not laid out yet, e.g. jsdom) has no meaningful mapping; keep the last pointer.
+    if (!(rect.width > 0 && rect.height > 0)) return pointerRef.current;
+    const view = levelView(rect.width, rect.height, simRef.current?.target ?? 600);
     return {
-      x: (clientX - rect.left) / scale,
-      y: (clientY - rect.top) / scale + cameraRef.current,
+      x: (clientX - rect.left - view.originX) / view.scale,
+      y: (clientY - rect.top - view.originY) / view.scale,
     };
   }
 

@@ -56,51 +56,68 @@ export function resolveChrome(el: Element | null): ChromeColors {
   };
 }
 
+/** World headroom above the target line for the spinning aim piece + breathing room at the top. */
+const AIM_HEADROOM = 130;
+/** World y just below the platform - the bottom edge of the view. */
+const VIEW_BOTTOM = GROUND_TOP + PLATFORM_H + 24;
+
+/** The world->screen mapping for a level: `screenX = worldX*scale + originX`, same for y. */
+export interface LevelView {
+  scale: number;
+  originX: number;
+  originY: number;
+  /** World y at the top edge of the view (a bit above the target line). */
+  top: number;
+  /** World y at the bottom edge of the view (just below the platform). */
+  bottom: number;
+}
+
 /**
- * Set up the canvas transform so drawing happens in world coordinates, FIT TO WIDTH and panned by the
- * vertical camera (`cameraY`). World x 0..VIEW_W maps to the full element width; a taller element shows
- * more of the world vertically (no letterbox), so the upward-growing tower gets the extra space.
- * screenY = (worldY - cameraY) * scale, with scale = width / VIEW_W.
+ * Fit the CURRENT LEVEL's full height - from just below the platform up to above the target line -
+ * into the canvas, centered horizontally, at a uniform scale (pieces keep their aspect). The whole
+ * level fits, so the tower fills the vertical space with no camera pan; a taller canvas simply scales
+ * the level up. The tower is centered, so the platform's edges may fall outside the canvas width - the
+ * action is always in the middle.
  */
-export function withWorldTransform(
+export function levelView(cssW: number, cssH: number, target: number): LevelView {
+  const top = GROUND_TOP - target - AIM_HEADROOM;
+  const bottom = VIEW_BOTTOM;
+  const scale = cssH > 0 ? cssH / (bottom - top) : 1;
+  return { scale, originX: cssW / 2 - CENTER_X * scale, originY: -top * scale, top, bottom };
+}
+
+/** Apply a {@link LevelView} to the canvas context (accounting for device pixel ratio). */
+export function applyLevelTransform(
   ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
+  v: LevelView,
   dpr: number,
-  cameraY = 0,
 ): void {
-  const scale = width / VIEW_W;
-  // cameraY is a world-space vertical pan: subtract it so panning the camera up (smaller cameraY)
-  // moves the world down on screen (revealing the upward-growing tower). `height` is unused here - the
-  // fit-width mapping deliberately lets a taller canvas reveal more vertical world.
-  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, -cameraY * scale * dpr);
+  ctx.setTransform(v.scale * dpr, 0, 0, v.scale * dpr, v.originX * dpr, v.originY * dpr);
 }
 
-/** The world->screen scale for a canvas of the given CSS width under the fit-width transform. */
-export function viewScale(width: number): number {
-  return width / VIEW_W;
-}
-
-/** How much vertical world (in world px) a canvas of the given CSS size shows under fit-width. */
-export function visibleWorldHeight(width: number, height: number): number {
-  return height / (width / VIEW_W);
+/** The leftmost world x currently visible under a {@link LevelView} (for placing edge labels). */
+export function visibleLeftX(v: LevelView): number {
+  return -v.originX / v.scale;
 }
 
 /**
- * Paint the sky gradient behind everything. Drawn under the world transform, filling the whole visible
- * vertical world range [cameraY, cameraY + visibleH] so it covers the canvas regardless of camera pan.
+ * Paint the sky gradient behind everything, in SCREEN space so it always fills the whole canvas
+ * regardless of the level fit. Resets to the device-pixel transform, then restores nothing (the caller
+ * sets the world transform next).
  */
 export function drawSky(
   ctx: CanvasRenderingContext2D,
   chrome: ChromeColors,
-  cameraY = 0,
-  visibleH = VIEW_H,
+  cssW: number,
+  cssH: number,
+  dpr: number,
 ): void {
-  const g = ctx.createLinearGradient(0, cameraY, 0, cameraY + visibleH);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const g = ctx.createLinearGradient(0, 0, 0, cssH);
   g.addColorStop(0, chrome.skyTop);
   g.addColorStop(1, chrome.skyBottom);
   ctx.fillStyle = g;
-  ctx.fillRect(0, cameraY, VIEW_W, visibleH);
+  ctx.fillRect(0, 0, cssW, cssH);
 }
 
 /** Paint the static platform the tower stacks on. */
@@ -118,6 +135,7 @@ export function drawTargetBands(
   ctx: CanvasRenderingContext2D,
   chrome: ChromeColors,
   target: number,
+  labelX = 10,
 ): void {
   ctx.save();
   ctx.lineWidth = 1;
@@ -132,7 +150,7 @@ export function drawTargetBands(
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = chrome.bandText;
-    ctx.fillText(`${i * 25} pts`, 10, y - 4);
+    ctx.fillText(`${i * 25} pts`, labelX, y - 4);
   }
 
   const ty = GROUND_TOP - target;
@@ -146,7 +164,7 @@ export function drawTargetBands(
   ctx.setLineDash([]);
   ctx.fillStyle = chrome.target;
   ctx.font = "bold 14px 'Trebuchet MS', system-ui, sans-serif";
-  ctx.fillText('TARGET - 100 pts', 10, ty - 8);
+  ctx.fillText('TARGET - 100 pts', labelX, ty - 8);
   ctx.restore();
 }
 
@@ -159,6 +177,7 @@ export function drawRequiredLine(
   ctx: CanvasRenderingContext2D,
   chrome: ChromeColors,
   requiredLine: number,
+  labelX = VIEW_W - 170,
 ): void {
   ctx.save();
   const grad = ctx.createLinearGradient(0, requiredLine, 0, requiredLine + 140);
@@ -176,7 +195,7 @@ export function drawRequiredLine(
   ctx.setLineDash([]);
   ctx.fillStyle = chrome.dropLine;
   ctx.font = "bold 13px 'Trebuchet MS', system-ui, sans-serif";
-  ctx.fillText('drop above this line', VIEW_W - 170, requiredLine + 18);
+  ctx.fillText('drop above this line', labelX, requiredLine + 18);
   ctx.restore();
 }
 
