@@ -13,6 +13,7 @@ import {
   type RevealMessage,
   type RoundReport,
   type ServerMessage,
+  type SimMessage,
   type StartHandoffRequest,
   type StartHandoffResponse,
   type StateMessage,
@@ -36,6 +37,18 @@ export type HostAction = 'pause' | 'advance' | 'restart' | 'exit';
  * that a player can still tweak a just-typed answer before the reveal.
  */
 export const AUTO_ADVANCE_MS = 2000;
+
+/**
+ * The per-session sim-loop cadence for a live game (spec 0044): 40ms = 25 fps. The engine steps the
+ * module's world on this interval and streams the returned `sim` frame, so a precarious tower sways
+ * in real time. Turn-based games have no tick and never start this loop.
+ */
+export const TICK_MS = 40;
+
+/** True when a module runs a continuous world the engine streams (implements `tick`), spec 0044. */
+function isLiveModule(module: GameModule): boolean {
+  return typeof module.tick === 'function';
+}
 
 export class NoSessionError extends Error {
   constructor(room: string, game: string) {
@@ -76,6 +89,10 @@ export class GameEngine {
   private readonly configSchemas?: Map<string, ConfigSchema<unknown>>;
   /** Per-session promise chain: serializes reads-modify-writes within this process. */
   private readonly locks = new Map<string, Promise<unknown>>();
+  /** Per-session sim-loop interval handles for live games (spec 0044); absent when not looping. */
+  private readonly simTimers = new Map<string, NodeJS.Timeout>();
+  /** The most recent `sim` payload per session, so a joiner catches up to the live world at once. */
+  private readonly lastSim = new Map<string, unknown>();
 
   constructor(deps: EngineDeps) {
     this.registry = deps.registry;
@@ -201,6 +218,8 @@ export class GameEngine {
         } else {
           // Continue the answer countdown from where the host's drop froze it (spec 0017).
           this.resumeMoveWindow(state, module);
+          // Restart a live game's world where the host disconnect froze it (spec 0044).
+          this.startSimLoop(state, module);
         }
       }
       await this.store.save(state);
@@ -218,6 +237,11 @@ export class GameEngine {
     if (state.standings !== undefined) {
       frames.push(this.leaderboardMessage(state, state.standings));
     }
+    // For a live game (spec 0044), append the newest streamed `sim` so a joiner renders the live,
+    // in-motion tower immediately - the prompt is only the round's opening snapshot, and pub/sub
+    // carries later frames only to devices already subscribed.
+    const sim = this.lastSim.get(sessionKey(state.room, state.game));
+    if (sim != null) frames.push(this.simMessage(state, sim));
     frames.push(this.stateMessage(state));
     return frames;
   }
@@ -240,6 +264,8 @@ export class GameEngine {
         // The auto-pause must also hold the answer countdown, or it keeps ticking (and could
         // force-close the round) while the host is away (spec 0017).
         this.freezeMoveWindow(state);
+        // A live game's world freezes while the host is away, mirroring the host pause (spec 0044).
+        this.stopSimLoop(sessionKey(state.room, state.game));
       }
       await this.store.save(state);
       await this.publish(state, this.stateMessage(state));
@@ -333,6 +359,10 @@ export class GameEngine {
           // and a resume continues from the time left, not a fresh window (spec 0017).
           if (state.paused) this.freezeMoveWindow(state);
           else this.resumeMoveWindow(state, module);
+          // A live game's world freezes on pause and resumes on unpause (spec 0044): stop/start the
+          // sim loop in the exact spots the move window is frozen/resumed.
+          if (state.paused) this.stopSimLoop(sessionKey(state.room, state.game));
+          else this.startSimLoop(state, module);
           await this.store.save(state);
           await this.publish(state, this.stateMessage(state));
           // Resuming inside a timed dispute/vote/guess window re-arms it, so a paused window does not
@@ -411,18 +441,29 @@ export class GameEngine {
     state.prompt = result.prompt;
     state.reveal = undefined;
     state.standings = undefined;
-    // Open the answer window: a fresh deadline the state frame projects as remaining ms, and a
-    // timer that force-closes the round if it expires before everyone answers (spec 0017).
+    // A live game (spec 0044) sits in `collecting` and never opens a move window or auto-advances -
+    // the sim loop drives streaming and game end. A turn-based game opens its answer window as usual.
+    const live = isLiveModule(module);
     state.moveRemainingMs = undefined;
-    state.moveDeadline = state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
+    state.moveDeadline =
+      !live && state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
     await this.publish(state, this.stateMessage(state));
     if (state.moveDeadline !== undefined) this.armMoveWindow(state, module, state.moveWindowMs);
+    // Start (or self-heal) the per-session sim loop for a live game once the round is open.
+    if (live) this.startSimLoop(state, module);
   }
 
   /** One phase transition. Saves once at the end and (re)arms the dispute-window timer. */
   private async advanceLocked(state: SessionState, module: GameModule): Promise<void> {
     if (state.paused) return;
+    // A live game (spec 0044) has no reveal/dispute/leaderboard cycle - the sim loop drives it and
+    // ends it via tick.over. A host `advance` must never push it into `reveal`; treat it as "end now".
+    if (isLiveModule(module) && state.phase === 'collecting') {
+      await this.endGame(state, module);
+      await this.store.save(state);
+      return;
+    }
     switch (state.phase) {
       case 'configuring':
         await this.startRoundInto(state, module);
@@ -557,6 +598,12 @@ export class GameEngine {
   }
 
   private async endGame(state: SessionState, module: GameModule): Promise<void> {
+    // A live game's sim loop must stop before the game ends (spec 0044); clear its cached frame too,
+    // and let the module release its in-process world (endGame path, spec 0044) so it does not leak.
+    const key = sessionKey(state.room, state.game);
+    this.stopSimLoop(key);
+    this.lastSim.delete(key);
+    module.disposeLive?.(this.context(state));
     state.phase = 'complete';
     const standings = module.endGame(this.context(state));
     state.standings = standings;
@@ -581,6 +628,13 @@ export class GameEngine {
   }
 
   private async restart(state: SessionState, module: GameModule): Promise<void> {
+    // Stop any live sim loop and clear its cached frame; startRoundInto restarts a fresh one below.
+    const key = sessionKey(state.room, state.game);
+    this.stopSimLoop(key);
+    this.lastSim.delete(key);
+    // Release the old in-process world BEFORE the fresh configure/startRound (spec 0044), so a live
+    // game rebuilds from empty scratch instead of reusing the stale cached world (its old tower/score).
+    module.disposeLive?.(this.context(state));
     const cfg = module.configure(state.config, state.players);
     state.runId += 1;
     state.round = 1;
@@ -600,6 +654,12 @@ export class GameEngine {
   }
 
   private async exit(state: SessionState, module: GameModule): Promise<void> {
+    // Stop a live game's sim loop, drop its cached frame, and release its in-process world before
+    // ending (spec 0044) so the host-exit path does not leak the world.
+    const key = sessionKey(state.room, state.game);
+    this.stopSimLoop(key);
+    this.lastSim.delete(key);
+    module.disposeLive?.(this.context(state));
     // End the game now, report final standings, then drop the session so the room can reset.
     const standings = module.endGame(this.context(state));
     state.phase = 'complete';
@@ -677,6 +737,57 @@ export class GameEngine {
         await this.advanceLocked(current, module);
       });
     });
+  }
+
+  /**
+   * Start the per-session sim loop for a live game (spec 0044): a 40ms interval that steps the
+   * module's world and streams the returned `sim`. Idempotent - a no-op if the module is not live or
+   * a timer already runs for this session. Each tick reloads the latest state (so a pause/exit that
+   * lands between ticks is honored), steps the world, persists the snapshot, publishes the `sim`, and
+   * ends the game when `tick` reports `over`. The interval is `unref`d so a pending timer never keeps
+   * the process alive on its own.
+   */
+  private startSimLoop(state: SessionState, module: GameModule): void {
+    if (!isLiveModule(module)) return;
+    const key = sessionKey(state.room, state.game);
+    if (this.simTimers.has(key)) return;
+    const { room, game } = state;
+    const timer = setInterval(() => {
+      void this.run(key, async () => {
+        // A timer can outlive the state it was armed for; bail on anything but a running live round.
+        if (!this.simTimers.has(key)) return;
+        const current = await this.store.load(room, game);
+        if (!current || current.paused || current.phase === 'complete') return;
+        const result = module.tick!(this.context(current));
+        current.scratch = result.scratch;
+        this.lastSim.set(key, result.sim);
+        // Idle guard: with ZERO connected devices there is nobody to stream to and no move can land,
+        // so skip the broadcast AND the per-tick save while idle (the world still stepped, and the
+        // newest sim is cached so a reconnecting device catches up). The `over` end path below still
+        // runs regardless, so an idle game still ends and disposes. Correctness holds: the save only
+        // persists a rebuild snapshot, no rebuild can happen with no devices, and the next connected
+        // tick saves again.
+        const anyConnected = current.players.some((p) => p.connected);
+        if (anyConnected) {
+          await this.store.save(current);
+          if (result.sim != null) await this.publish(current, this.simMessage(current, result.sim));
+        }
+        if (result.over) {
+          this.stopSimLoop(key);
+          await this.endGame(current, module);
+          await this.store.save(current);
+        }
+      });
+    }, TICK_MS);
+    if (typeof timer === 'object' && 'unref' in timer) timer.unref();
+    this.simTimers.set(key, timer);
+  }
+
+  /** Stop and clear a session's sim loop (freeze the live world). Safe if none is running. */
+  private stopSimLoop(key: string): void {
+    const timer = this.simTimers.get(key);
+    if (timer) clearInterval(timer);
+    this.simTimers.delete(key);
   }
 
   /** Freeze the answer countdown when the game pauses mid-`collecting` so it does not tick away. */
@@ -799,6 +910,17 @@ export class GameEngine {
       game: state.game,
       round: state.round,
       reveal,
+    };
+  }
+
+  /** A live simulation snapshot frame for a live game (spec 0044), broadcast each sim-loop tick. */
+  private simMessage(state: SessionState, sim: unknown): SimMessage {
+    return {
+      v: PROTOCOL_VERSION,
+      type: 'sim',
+      room: state.room,
+      game: state.game,
+      sim,
     };
   }
 

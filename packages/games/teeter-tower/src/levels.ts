@@ -36,10 +36,19 @@ export interface Level {
 }
 
 export const LEVELS: readonly Level[] = [
-  { name: 'Warm-up', target: 300, pieces: 11, pendulum: false },
+  // Level 1's target is 600 (2x the prototype's 300) so the warm-up tower is a satisfying,
+  // twice-as-tall build (spec 0044). Levels 2/3 keep the prototype's 620.
+  { name: 'Warm-up', target: 600, pieces: 11, pendulum: false },
   { name: 'Reach for the sky', target: 620, pieces: 20, pendulum: false },
   { name: 'The Pendulum', target: 620, pieces: 22, pendulum: true },
 ];
+
+/** The level for a given level index, clamped to the last level. */
+export function levelAt(index: number): Level {
+  const level = LEVELS[Math.min(index, LEVELS.length - 1)];
+  // LEVELS is non-empty; narrow for noUncheckedIndexedAccess.
+  return level as Level;
+}
 
 /**
  * Total pieces across every level - the engine's total round count. NOTE: v1 has no fail state on

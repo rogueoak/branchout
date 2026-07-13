@@ -93,6 +93,22 @@ export interface AdvanceResult {
   done: boolean;
 }
 
+/**
+ * One live tick of a continuous ("live") game (spec 0044). A live game - one whose module implements
+ * {@link GameModule.tick} - owns a world (a physics tower) the engine steps on a fixed cadence and
+ * streams as a `sim` frame, instead of the discrete collect -> reveal -> advance turn cycle. Its
+ * `collectMove` doubles as "apply this move to the live world" (add the dropped piece) rather than
+ * staging a pending answer.
+ */
+export interface LiveTickResult {
+  /** The serializable snapshot to persist, so the world can be rebuilt after a reconnect/restart. */
+  scratch: Record<string, unknown>;
+  /** The opaque `sim` payload to broadcast this tick, or null to broadcast nothing (fully idle). */
+  sim: unknown;
+  /** True when the game is over; the engine ends it and stops the sim loop. */
+  over: boolean;
+}
+
 /** The result of resolving a guess phase: scores to apply and an optional final reveal. */
 export interface DecisionResult {
   scratch: Record<string, unknown>;
@@ -167,4 +183,23 @@ export interface GameModule {
 
   /** Final ranked standings when the game ends. */
   endGame(ctx: RoundContext): Standing[];
+
+  /**
+   * Live games only (spec 0044): step the continuously-running world once and return the snapshot to
+   * broadcast. Implementing this marks the game "live" - the engine runs a per-session sim loop that
+   * calls this on a fixed cadence and streams the returned `sim`, and does NOT drive the
+   * reveal/dispute/leaderboard turn cycle (the game sits in one live phase, accepting moves via
+   * {@link collectMove}, until `tick` reports `over`). Omitted by turn-based games, which are
+   * unaffected.
+   */
+  tick?(ctx: RoundContext): LiveTickResult;
+
+  /**
+   * Live games only (spec 0044): called by the engine when a live session ends (endGame / host exit /
+   * host restart) so the module can release its in-process world. A live module holds a per-session
+   * world outside the engine's Redis-backed state (a Matter.js world for Teeter); without this hook
+   * that world would leak once the session ends, and a restart would reuse the stale cached world
+   * instead of rebuilding from empty scratch. Turn-based games hold no such state and omit it.
+   */
+  disposeLive?(ctx: RoundContext): void;
 }

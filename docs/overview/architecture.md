@@ -37,7 +37,14 @@ nothing platform-specific leaks into those services.
   devices connect to it to push answers and stream back updates. One engine hosts all games for
   now, kept modular via a game registry so a game can later split into its own engine. At the
   end of each round it reports state and results to the control-plane; on game complete it
-  reports final standings for stars.
+  reports final standings for stars. Session state lives in Redis and modules are pure callbacks -
+  with one exception: a **live game** (spec 0044, e.g. Teeter Tower). A live module implements
+  `GameModule.tick` and streams a `sim` frame; the engine runs a per-session continuous sim loop
+  (~25 fps) that steps the module and broadcasts the snapshot, and the module holds an in-process
+  (non-Redis) world - a Matter.js physics world - outside the Redis-backed session state. A compact
+  scratch snapshot in Redis rebuilds that world after a reconnect/restart, and the engine calls the
+  module's `disposeLive` on end/exit/restart so the in-process world is released (no leak, and a
+  restart rebuilds from empty scratch rather than reusing the stale world).
 - **web** - the marketing site and the browser game client: lobby, the interactive layout
   (viewer left, remote right; stacked on small screens), in-game screens, profiles, and friend
   search/invite.

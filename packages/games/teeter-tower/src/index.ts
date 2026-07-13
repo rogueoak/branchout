@@ -1,41 +1,37 @@
-// Public surface of the Teeter Tower game package (spec 0043).
+// Public surface of the Teeter Tower game package (spec 0044 - live physics).
 
 export {
   createTeeterTowerGame,
   teeterTowerPlugin,
   validateConfig,
   TEETER_TOWER_GAME_ID,
-  DISPUTE_WINDOW_MS,
   type TeeterConfig,
 } from './teeter-tower';
-export { LEVELS, TOTAL_ROUNDS, type Level } from './levels';
+export { LEVELS, levelAt, TOTAL_ROUNDS, type Level } from './levels';
 export {
   makePiece,
-  simulateDrop,
-  buildWorld,
+  pieceForIndex,
+  createWorld,
+  stepWorld,
+  addPieceToWorld,
   evaluatePlacement,
   requiredDropHeight,
   overlapsScene,
-  towerHeight,
-  storedTowerHeight,
+  worldHeight,
   heightToScore,
   toBodyPayloads,
+  toStoredBodies,
+  toPiecePayload,
+  storedPieceFrom,
+  clampDropX,
+  clampDropY,
+  MAX_PLACED_BODIES,
+  heldBodyAt,
   STEP_MS,
-  TRACK_EVERY,
-  MAX_STEPS,
-  CALM_SPEED,
-  CALM_STEPS,
+  SUBSTEPS_PER_TICK,
+  type LiveWorld,
   type StoredBody,
+  type StoredPiece,
 } from './physics';
 export { createRng, deriveSeed, type SeededRng } from './rng';
-export type {
-  Vec2,
-  Eye,
-  Skin,
-  Body,
-  Piece,
-  Frame,
-  TeeterPrompt,
-  TeeterMove,
-  TeeterReveal,
-} from './types';
+export type { Vec2, Eye, Skin, Body, Piece, TeeterMove, TeeterSim } from './types';

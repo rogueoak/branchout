@@ -2,15 +2,17 @@ import { expect, test } from '@playwright/test';
 import { signUp } from '../lib/helpers';
 import { grantInsider } from '../lib/stack';
 
-// End-to-end proof of Teeter Tower (spec 0043): the insider-only, server-authoritative physics game.
-// It exercises what the unit tests cannot - the real browser -> control-plane -> game-engine (headless
-// Matter.js) -> browser loop: an insider picks the gated game, starts a solo room, and plays a full
-// drop cycle (spin -> lock angle -> choose drop -> the server simulates the settle -> the next piece
-// spawns). It also proves the gate: a non-insider never sees the game in the picker.
+// End-to-end proof of Teeter Tower (spec 0044): the insider-only, LIVE server-authoritative physics
+// game. It exercises what the unit tests cannot - the real browser -> control-plane -> game-engine
+// (headless Matter.js, continuously stepped + streamed) -> browser loop: an insider picks the gated
+// game, starts a solo room, and plays a drop directly on the single canvas (tap to lock the angle,
+// tap to drop); the engine drops the piece into the live world and streams it back, so the height and
+// score climb. It also proves the gate: a non-insider never sees the game in the picker.
 
-test('an insider starts a solo Teeter Tower room and plays a drop', async ({ page }) => {
-  // The drop is engine-simulated and the settle streams back before the next round, so this
-  // legitimately needs more than the default per-test budget.
+test('an insider starts a solo Teeter Tower room and drops a piece on the live board', async ({
+  page,
+}) => {
+  // The drop streams back from the engine's live sim, so this needs more than the default budget.
   test.setTimeout(120_000);
 
   // A fresh account, granted the insider role out-of-band (the documented mechanism), then reloaded
@@ -32,26 +34,28 @@ test('an insider starts a solo Teeter Tower room and plays a drop', async ({ pag
   // Start the game solo (the host is a viewer + a player, so the start gate is satisfied).
   await page.getByRole('button', { name: /start game/i }).click();
 
-  // The shared viewer renders the board, and the host's remote offers the aim UI on its turn.
-  await expect(page.getByRole('img', { name: /teeter tower board/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /lock the angle/i })).toBeVisible({
-    timeout: 30_000,
-  });
+  // The single interactive board appears with the level-1 target (600) and the aim prompt.
+  const board = page.locator('canvas').first();
+  await expect(board).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('/ 600 px')).toBeVisible();
+  await expect(page.getByText(/lock the angle/i)).toBeVisible();
 
-  // Aim: lock the spinning angle, nudge the drop position, and drop.
-  await page.getByRole('button', { name: /lock the angle/i }).click();
-  await page.getByLabel('Drop position').fill('410');
-  await page.getByRole('button', { name: /^drop$/i }).click();
+  // Aim + drop directly on the canvas. The first tap locks the spinning angle (-> "tap to drop").
+  // Then MOVE the pointer to a spot above the min-drop line and tap to drop there - the move both
+  // aims and arms the drop past the double-tap guard (a reflexive same-spot double-tap is swallowed).
+  // There is no slider and no re-aim - the drop is final.
+  await board.click();
+  await expect(page.getByText(/tap to drop/i)).toBeVisible();
+  const box = await board.boundingBox();
+  if (!box) throw new Error('board has no bounding box');
+  // Upper-third, centered: comfortably above the 25%-from-platform line, and a real move from center.
+  await board.click({ position: { x: box.width / 2, y: box.height * 0.32 } });
 
-  // The submission is accepted (not rejected) and the server simulates the settle.
-  await expect(page.getByText(/dropped - watch it settle/i)).toBeVisible();
+  // The engine dropped the piece into the live world and streamed it back: the score climbs above
+  // zero and a fresh piece is offered. This proves the full live-authoritative loop, not a freeze.
+  await expect(page.getByText(/[1-9]\d* pts/)).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('alert')).toHaveCount(0);
-
-  // The engine advances to the next piece: the aim UI returns for a fresh round. This proves the
-  // full authoritative loop ran (drop -> reveal/settle -> leaderboard -> next round).
-  await expect(page.getByRole('button', { name: /lock the angle/i })).toBeVisible({
-    timeout: 45_000,
-  });
+  await expect(page.getByText(/lock the angle/i)).toBeVisible({ timeout: 30_000 });
 });
 
 test('a non-insider never sees Teeter Tower in the game picker', async ({ page }) => {

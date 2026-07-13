@@ -1,7 +1,9 @@
-// The Teeter Tower browser UI module (spec 0043, spec 0023): the registration that plugs Teeter's
-// config panel, viewer, and remote into the generic game shell. Marked `visibility: 'insider'` so the
-// gating helper keeps it out of the public picker/pages/sitemap until it graduates. The browser is a
-// pure renderer - all physics is server-authoritative (the engine package @branchout/game-teeter-tower).
+// The Teeter Tower browser UI module (spec 0044, spec 0023): the registration that plugs Teeter into
+// the generic game shell. Teeter is a SINGLE interactive surface (`singleSurface: true`) - one live
+// canvas the player aims + drops on, streamed from the server; the shell renders only its Viewer and
+// passes `onMove` straight through, so the Remote is an unused null no-op. Marked `visibility:
+// 'insider'` so the gating helper keeps it out of the public picker/pages/sitemap until it graduates.
+// The browser is a pure renderer - all physics is server-authoritative (@branchout/game-teeter-tower).
 
 import { teeterTowerSvg } from '@branchout/brand/teeter-tower';
 import { TeeterViewer } from './Viewer';
@@ -25,6 +27,7 @@ export const teeterTowerGameUi: GameUiModule = {
     'Spin a wobbly, googly-eyed piece, lock its angle, and drop it. Build a tower that reaches the ' +
     'target line across three levels - without toppling the whole stack.',
   visibility: 'insider',
+  singleSurface: true,
   defaultConfig: () => ({}),
   validateConfig: () => ({ ok: true }),
   roundsOf: () => TEETER_TOTAL_ROUNDS,

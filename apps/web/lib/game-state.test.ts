@@ -142,6 +142,29 @@ describe('reduceGameState', () => {
     expect(clearRejected(seeded).rejected).toBeNull();
   });
 
+  it('replaces (never accumulates) the sim state across two frames (spec 0044)', () => {
+    // A live game streams a fresh full snapshot each tick; the reducer must REPLACE `sim`, not merge
+    // or append, so the client always renders the newest live tower and never a stale accumulation.
+    const first = reduceGameState(initialGameState(), {
+      v: 1,
+      type: 'sim',
+      room: ROOM,
+      game: GAME,
+      sim: { bodies: [{ id: 1 }], height: 10 },
+    });
+    expect(first.sim).toEqual({ bodies: [{ id: 1 }], height: 10 });
+
+    const second = reduceGameState(first, {
+      v: 1,
+      type: 'sim',
+      room: ROOM,
+      game: GAME,
+      sim: { bodies: [{ id: 2 }], height: 20 },
+    });
+    // The second frame wholly replaces the first - no merged bodies, no accumulated height.
+    expect(second.sim).toEqual({ bodies: [{ id: 2 }], height: 20 });
+  });
+
   it('folds the leaderboard standings', () => {
     const leaderboard: LeaderboardMessage = {
       v: 1,

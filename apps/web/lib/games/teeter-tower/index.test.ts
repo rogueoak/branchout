@@ -15,6 +15,12 @@ describe('teeterTowerGameUi module', () => {
     expect(isPublicGame(teeterTowerGameUi)).toBe(false);
   });
 
+  it('is a single-surface game (the viewer is the whole interactive surface)', () => {
+    expect(teeterTowerGameUi.singleSurface).toBe(true);
+    // The Remote is an unused null no-op for a single-surface game, but still a valid component.
+    expect(typeof teeterTowerGameUi.Remote).toBe('function');
+  });
+
   it('has a brand mark, tagline, and one-line summary', () => {
     expect(teeterTowerGameUi.icon).toContain('<svg');
     expect(teeterTowerGameUi.tagline.length).toBeGreaterThan(0);

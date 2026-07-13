@@ -95,9 +95,14 @@ export function GameStage({
   onControl,
 }: GameStageProps) {
   const ui = getGameUi(game);
+  // A single-surface game (Teeter Tower) is one interactive canvas: the viewer IS the surface every
+  // role sees, and the player acts on it directly. It has no separate remote pane and no two-column
+  // split. Branch on the flag, never on the game id, so adding another single-surface game is free.
+  const singleSurface = ui?.singleSurface === true;
   const isInteractivePlayer = role === 'player' && mode === 'interactive';
-  const remoteVisible = role === 'player' && (mode === 'remote' || mode === 'interactive');
-  const viewerVisible = role !== 'player' || isInteractivePlayer;
+  const remoteVisible =
+    !singleSurface && role === 'player' && (mode === 'remote' || mode === 'interactive');
+  const viewerVisible = singleSurface || role !== 'player' || isInteractivePlayer;
   const connectionNote = CONNECTION_LABEL[state.connection];
 
   // When a new answer round opens, bring the fresh question into view - otherwise the viewport can
@@ -146,14 +151,10 @@ export function GameStage({
       >
         {viewerVisible && ui ? (
           <div className="order-1">
-            {/* onAdvance is game-agnostic: the host viewer can advance the round, and a
-                continuous-play game (Teeter Tower) uses it to auto-spawn the next piece after its
-                settle animation. Other games ignore it. Undefined for a non-host. */}
-            <ui.Viewer
-              state={state}
-              me={me}
-              onAdvance={isHost ? () => onControl('advance') : undefined}
-            />
+            {/* onMove is game-agnostic: a single-surface game (Teeter Tower) is one interactive
+                canvas, so the shell passes the move action straight to its viewer and the player aims
+                + drops on it. Multi-surface game viewers ignore it (their moves come from the remote). */}
+            <ui.Viewer state={state} me={me} onMove={onMove} />
           </div>
         ) : null}
         {remoteVisible && ui ? (

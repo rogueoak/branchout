@@ -1,22 +1,27 @@
-// Physics-core tests: the ported legality rules (overlap + min-drop-line), scoring/height, piece
-// determinism, and the settle simulation. These target the pure functions in physics.ts directly,
-// where a held piece can be positioned at any (including illegal) transform - the exact placements
-// the prototype's overlapsScene / evaluatePlacement / requiredDropHeight guarded against.
+// Physics-core tests (spec 0044 - live physics). These target the pure/primitive functions in
+// physics.ts directly: the ported legality rules (overlap + min-drop-line), scoring/height, piece
+// determinism (seeded shapes), and the live world (create/step/add-piece/measure). The settle is now
+// real-time - the world runs continuously - so we assert it converges and culls, not a pure track.
 
 import { describe, expect, it } from 'vitest';
 import { createRng } from './rng';
 import {
-  buildWorld,
+  addPieceToWorld,
+  createWorld,
   evaluatePlacement,
   heightToScore,
   heldBodyAt,
   makePiece,
   overlapsScene,
+  pieceForIndex,
   requiredDropHeight,
-  simulateDrop,
-  storedTowerHeight,
+  stepWorld,
+  storedPieceFrom,
   toBodyPayloads,
-  towerHeight,
+  toStoredBodies,
+  clampDropY,
+  worldHeight,
+  type LiveWorld,
   type StoredBody,
 } from './physics';
 import { GROUND_TOP, LEVELS } from './levels';
@@ -38,9 +43,27 @@ function block(id: number, x: number, y: number, w: number, h: number): StoredBo
     x,
     y,
     angle: 0,
+    vx: 0,
+    vy: 0,
+    angularVelocity: 0,
     skin: { fill: '#fff', stroke: '#000' },
     eyes: [],
   };
+}
+
+/** A live world at level 0 with the given placed bodies (no pendulum). */
+function worldWith(bodies: StoredBody[], target = LEVELS[0]!.target, pendulum = false): LiveWorld {
+  return createWorld({
+    seed: 1,
+    levelIndex: 0,
+    bestHeight: 0,
+    totalScore: 0,
+    pieceIndex: 0,
+    bodies,
+    next: null,
+    target,
+    pendulum,
+  });
 }
 
 describe('requiredDropHeight (min-drop line, ported)', () => {
@@ -61,9 +84,9 @@ describe('requiredDropHeight (min-drop line, ported)', () => {
 describe('overlapsScene / evaluatePlacement (ported legality)', () => {
   it('flags a held piece that overlaps a tower body', () => {
     const target = LEVELS[0]!.target;
-    const tower = [block(1, 410, GROUND_TOP - 40, 120, 80)]; // sits on the platform
-    const world = buildWorld(tower, target, false);
-    const height = towerHeight(world.placed);
+    const world = worldWith([block(1, 410, GROUND_TOP - 40, 120, 80)]); // sits on the platform
+    const placed = world.placed.map((p) => p.body);
+    const height = worldHeight(world);
 
     // A held block placed at the same spot overlaps the tower body.
     const held = heldBodyAt(
@@ -79,23 +102,17 @@ describe('overlapsScene / evaluatePlacement (ported legality)', () => {
       GROUND_TOP - 40,
       0,
     );
-    expect(overlapsScene(held, world.platform, world.placed, world.pendulum)).toBe(true);
-    const verdict = evaluatePlacement(
-      held,
-      target,
-      height,
-      world.platform,
-      world.placed,
-      world.pendulum,
-    );
+    expect(overlapsScene(held, world.platform, placed, world.pendulum)).toBe(true);
+    const verdict = evaluatePlacement(held, target, height, world.platform, placed, world.pendulum);
     expect(verdict.ok).toBe(false);
     expect(verdict.reason).toBe('overlap');
   });
 
   it('flags a held piece dropped below the required min-drop line', () => {
     const target = LEVELS[0]!.target;
-    const world = buildWorld([], target, false); // empty tower, required line = 75
-    // A held piece whose bottom is well below the 75 line (near the platform) is illegal.
+    const world = worldWith([]); // empty tower, required line = 25% of target
+    const placed = world.placed.map((p) => p.body);
+    // A held piece whose bottom is near the platform is below the required line.
     const held = heldBodyAt(
       [
         [
@@ -106,24 +123,18 @@ describe('overlapsScene / evaluatePlacement (ported legality)', () => {
         ],
       ],
       410,
-      GROUND_TOP - 30, // bottom at GROUND_TOP-10, far below the 75 line at GROUND_TOP-75
+      GROUND_TOP - 30, // bottom at GROUND_TOP-10, far below the 25% line
       0,
     );
-    const verdict = evaluatePlacement(
-      held,
-      target,
-      0,
-      world.platform,
-      world.placed,
-      world.pendulum,
-    );
+    const verdict = evaluatePlacement(held, target, 0, world.platform, placed, world.pendulum);
     expect(verdict.ok).toBe(false);
     expect(verdict.reason).toBe('line');
   });
 
   it('accepts a clear piece placed above the line', () => {
     const target = LEVELS[0]!.target;
-    const world = buildWorld([], target, false);
+    const world = worldWith([]);
+    const placed = world.placed.map((p) => p.body);
     const held = heldBodyAt(
       [
         [
@@ -134,17 +145,10 @@ describe('overlapsScene / evaluatePlacement (ported legality)', () => {
         ],
       ],
       410,
-      GROUND_TOP - 200, // bottom at GROUND_TOP-180, well above the 75 line
+      GROUND_TOP - 200, // bottom at GROUND_TOP-180, above the 25% line
       0,
     );
-    const verdict = evaluatePlacement(
-      held,
-      target,
-      0,
-      world.platform,
-      world.placed,
-      world.pendulum,
-    );
+    const verdict = evaluatePlacement(held, target, 0, world.platform, placed, world.pendulum);
     expect(verdict.ok).toBe(true);
     expect(verdict.reason).toBeNull();
   });
@@ -163,11 +167,11 @@ describe('heightToScore (banded scoring, ported)', () => {
   });
 });
 
-describe('towerHeight / storedTowerHeight', () => {
+describe('worldHeight', () => {
   it('measures the tallest body top above the platform', () => {
-    const tower = [block(1, 410, GROUND_TOP - 50, 100, 100)]; // top at GROUND_TOP-100
-    expect(storedTowerHeight(tower)).toBe(100);
-    expect(storedTowerHeight([])).toBe(0);
+    const world = worldWith([block(1, 410, GROUND_TOP - 50, 100, 100)]); // top at GROUND_TOP-100
+    expect(worldHeight(world)).toBe(100);
+    expect(worldHeight(worldWith([]))).toBe(0);
   });
 });
 
@@ -175,7 +179,7 @@ describe('piece determinism', () => {
   it('the same seed yields identical piece geometry, skin, eyes, and spin', () => {
     const a = makePiece(createRng(12345));
     const b = makePiece(createRng(12345));
-    expect(toBodyPayloads([])).toEqual([]); // sanity: empty payload
+    expect(toBodyPayloads(worldWith([]))).toEqual([]); // sanity: empty payload
     expect(a.skin).toEqual(b.skin);
     expect(a.eyes).toEqual(b.eyes);
     expect(a.spinSeed).toBe(b.spinSeed);
@@ -183,6 +187,16 @@ describe('piece determinism', () => {
     expect(a.body.vertices.map((v) => [Math.round(v.x), Math.round(v.y)])).toEqual(
       b.body.vertices.map((v) => [Math.round(v.x), Math.round(v.y)]),
     );
+  });
+
+  it('pieceForIndex is deterministic per (seed, index) and varies across indices', () => {
+    const a = storedPieceFrom(0, pieceForIndex(999, 0));
+    const b = storedPieceFrom(0, pieceForIndex(999, 0));
+    expect(a).toEqual(b);
+    const c = storedPieceFrom(1, pieceForIndex(999, 1));
+    const differs =
+      JSON.stringify(a.verts) !== JSON.stringify(c.verts) || a.spinSeed !== c.spinSeed;
+    expect(differs).toBe(true);
   });
 
   it('different seeds generally yield different pieces', () => {
@@ -196,43 +210,70 @@ describe('piece determinism', () => {
   });
 });
 
-describe('simulateDrop', () => {
-  it('is a pure function of its inputs: identical runs produce identical towers and tracks', () => {
-    const piece = makePiece(createRng(42));
-    const drop = {
-      id: 1,
-      verts: [piece.body.vertices.map((v) => ({ x: v.x, y: v.y }))],
-      eyes: piece.eyes,
-      skin: piece.skin,
-      x: 410,
-      y: GROUND_TOP - 200,
-      angle: 0,
-    };
-    const target = LEVELS[0]!.target;
-    const a = simulateDrop([], drop, target, false);
-    const b = simulateDrop([], drop, target, false);
-    expect(a.tower).toEqual(b.tower);
-    expect(a.track).toEqual(b.track);
-    expect(a.height).toBe(b.height);
-    // The piece fell and rests on the platform (height > 0), and the track has a settle sequence.
-    expect(a.height).toBeGreaterThan(0);
-    expect(a.track.length).toBeGreaterThan(1);
+describe('the live world', () => {
+  it('steps a dropped piece down onto the platform (height grows, then settles)', () => {
+    const world = worldWith([]);
+    const piece = storedPieceFrom(1, pieceForIndex(42, 0));
+    addPieceToWorld(world, piece, 410, GROUND_TOP - 200, 0);
+    // Step the world enough ticks for the piece to fall and settle on the platform.
+    for (let i = 0; i < 120; i++) stepWorld(world);
+    expect(world.placed).toHaveLength(1);
+    expect(worldHeight(world)).toBeGreaterThan(0);
   });
 
   it('culls a body that falls past the death line off the platform edge', () => {
-    // A piece dropped far off the platform's edge tumbles off and is culled from the tower.
-    const piece = makePiece(createRng(7));
-    const drop = {
-      id: 1,
-      verts: [piece.body.vertices.map((v) => ({ x: v.x, y: v.y }))],
-      eyes: piece.eyes,
-      skin: piece.skin,
-      x: 410 + 900, // way off the right edge
-      y: GROUND_TOP - 200,
-      angle: 0,
-    };
-    const result = simulateDrop([], drop, LEVELS[0]!.target, false);
-    expect(result.tower).toHaveLength(0); // fell off, culled
-    expect(result.height).toBe(0);
+    const world = worldWith([]);
+    const piece = storedPieceFrom(1, pieceForIndex(7, 0));
+    addPieceToWorld(world, piece, 410 + 900, GROUND_TOP - 200, 0); // way off the right edge
+    for (let i = 0; i < 200; i++) stepWorld(world);
+    expect(world.placed).toHaveLength(0); // fell off, culled
+    expect(worldHeight(world)).toBe(0);
+  });
+
+  it('rebuilding from stored bodies reproduces the same tower height', () => {
+    const world = worldWith([]);
+    const piece = storedPieceFrom(1, pieceForIndex(42, 0));
+    addPieceToWorld(world, piece, 410, GROUND_TOP - 200, 0);
+    for (let i = 0; i < 120; i++) stepWorld(world);
+    const settledHeight = worldHeight(world);
+    // Snapshot the placed bodies and rebuild a fresh world from them.
+    const bodies: StoredBody[] = world.placed.map((p) => ({
+      id: p.id,
+      verts: p.verts,
+      x: p.body.position.x,
+      y: p.body.position.y,
+      angle: p.body.angle,
+      vx: p.body.velocity.x,
+      vy: p.body.velocity.y,
+      angularVelocity: p.body.angularVelocity,
+      skin: p.skin,
+      eyes: p.eyes,
+    }));
+    const rebuilt = worldWith(bodies);
+    expect(worldHeight(rebuilt)).toBe(settledHeight);
+  });
+
+  it('persists per-body velocity and restores it on rebuild (spec 0044)', () => {
+    // A body mid-fall carries velocity; toStoredBodies must persist it and createWorld restore it, so
+    // a rebuild resumes motion rather than re-settling from rest.
+    const world = worldWith([]);
+    const piece = storedPieceFrom(1, pieceForIndex(42, 0));
+    addPieceToWorld(world, piece, 410, GROUND_TOP - 300, 0);
+    for (let i = 0; i < 10; i++) stepWorld(world); // still falling: non-zero downward velocity
+    const stored = toStoredBodies(world);
+    expect(stored[0]!.vy).toBeGreaterThan(0);
+    const rebuilt = worldWith(stored);
+    // The rebuilt body resumes with (approximately) the stored velocity, not from rest.
+    expect(rebuilt.placed[0]!.body.velocity.y).toBeCloseTo(stored[0]!.vy, 2);
+  });
+});
+
+describe('clampDropY', () => {
+  it('clamps a finite y into the world range and passes an in-range y through', () => {
+    // Below the platform is clamped up to GROUND_TOP; far above the world is clamped to the ceiling;
+    // an in-range value is unchanged.
+    expect(clampDropY(GROUND_TOP + 500)).toBe(GROUND_TOP);
+    expect(clampDropY(-100000)).toBe(GROUND_TOP - 2000);
+    expect(clampDropY(GROUND_TOP - 300)).toBe(GROUND_TOP - 300);
   });
 });

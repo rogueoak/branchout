@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   GameCompleteReport,
   RoundReport,
@@ -964,5 +964,254 @@ describe('decision/guess phase (spec 0020)', () => {
       /no resolveDecision/,
     );
     expect((await engine.getState('r1', 'bad-decider'))?.phase).toBe('collecting');
+  });
+});
+
+// A live game (spec 0044): the engine runs a per-session sim loop calling `tick`, streams the
+// returned `sim`, ends the game when `tick` reports `over`, and does NOT drive reveal/leaderboard.
+const LIVE_GAME_ID = 'live-stub';
+
+/** Number of ticks the fake live game runs before it reports `over`. */
+const LIVE_TICKS_TO_END = 3;
+
+/**
+ * A minimal live module modeling the in-process-world lifecycle (spec 0044). It holds a per-session
+ * `worlds` Map keyed by room (the Matter-world analogue): `tick` gets-or-creates the world and
+ * streams the in-process piece count; `collectMove` "drops" a piece into it. `disposeLive` deletes
+ * the world and records the disposal, so a test can assert the engine calls it on
+ * endGame/exit/restart and that a restart rebuilds from empty scratch (a fresh, empty world).
+ *
+ * The world's piece count seeds from scratch when first (re)built, so a rebuild-from-snapshot
+ * resumes the tower - and a restart that did NOT dispose would reuse the stale world (old count).
+ */
+function liveStubGame(): {
+  module: GameModule;
+  worlds: Map<string, { pieces: number }>;
+  disposed: string[];
+} {
+  const t = (ctx: { scratch: Readonly<Record<string, unknown>> }): number =>
+    (ctx.scratch.t as number | undefined) ?? 0;
+  const worlds = new Map<string, { pieces: number }>();
+  const disposed: string[] = [];
+  const worldFor = (ctx: {
+    room: string;
+    scratch: Readonly<Record<string, unknown>>;
+  }): {
+    pieces: number;
+  } => {
+    let world = worlds.get(ctx.room);
+    if (!world) {
+      // Rebuild from the scratch snapshot (or empty on a fresh session/restart).
+      world = { pieces: (ctx.scratch.pieces as number | undefined) ?? 0 };
+      worlds.set(ctx.room, world);
+    }
+    return world;
+  };
+  const module: GameModule = {
+    id: LIVE_GAME_ID,
+    configure: () => ({ scratch: { t: 0, pieces: 0 }, rounds: 1, moveWindowMs: 0 }),
+    startRound: (ctx) => {
+      const world = worldFor(ctx);
+      return { scratch: { ...ctx.scratch, pieces: world.pieces }, prompt: { t: t(ctx) } };
+    },
+    collectMove: (ctx) => {
+      const world = worldFor(ctx);
+      world.pieces += 1;
+      return { scratch: { ...ctx.scratch, pieces: world.pieces } };
+    },
+    reveal: (ctx) => ({
+      scratch: ctx.scratch as Record<string, unknown>,
+      reveal: null,
+      scores: [],
+    }),
+    collectVote: (ctx) => ({ scratch: ctx.scratch as Record<string, unknown> }),
+    disputeWindow: (ctx) => ({ scratch: ctx.scratch as Record<string, unknown>, disputes: [] }),
+    disputeVote: (ctx) => ({ scratch: ctx.scratch as Record<string, unknown>, scores: [] }),
+    leaderboard: () => [],
+    advance: () => ({ done: true }),
+    endGame: (ctx) => [{ player: 'p1', nickname: 'Ada', score: t(ctx) * 10, rank: 1 }],
+    tick: (ctx) => {
+      const world = worldFor(ctx);
+      const next = t(ctx) + 1;
+      return {
+        scratch: { ...ctx.scratch, t: next, pieces: world.pieces },
+        sim: { t: next, pieces: world.pieces },
+        over: next >= LIVE_TICKS_TO_END,
+      };
+    },
+    disposeLive: (ctx) => {
+      worlds.delete(ctx.room);
+      disposed.push(ctx.room);
+    },
+  };
+  return { module, worlds, disposed };
+}
+
+describe('GameEngine live game (sim loop)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function liveHarness() {
+    const store = new InMemorySessionStore();
+    const pubsub = new InMemoryPubSub();
+    const reporter = new CapturingReporter();
+    const scheduler = new ManualScheduler();
+    const stub = liveStubGame();
+    const engine = new GameEngine({
+      registry: new GameRegistry([stub.module]),
+      store,
+      pubsub,
+      reporter,
+      scheduler,
+      logger: { error: () => {} },
+    });
+    return {
+      engine,
+      store,
+      pubsub,
+      reporter,
+      scheduler,
+      worlds: stub.worlds,
+      disposed: stub.disposed,
+    };
+  }
+
+  function liveHandoff(): StartHandoffRequest {
+    return {
+      v: PROTOCOL_VERSION,
+      room: 'r1',
+      game: LIVE_GAME_ID,
+      players: [{ player: 'p1', nickname: 'Ada' }],
+      config: {},
+    };
+  }
+
+  it('runs the sim loop on a timer, streaming sim frames and ending on tick.over', async () => {
+    const h = liveHarness();
+    const sims: unknown[] = [];
+    // Subscribe to capture every streamed frame; collect the sim payloads.
+    await h.pubsub.subscribe(streamChannel('r1', LIVE_GAME_ID), (frame) => {
+      if (frame.type === 'sim') sims.push((frame as { sim: unknown }).sim);
+    });
+
+    await h.engine.start(liveHandoff());
+    // Connect a device: the sim loop only streams/saves while at least one player is connected (the
+    // idle guard, spec 0044) - with no devices there is nobody to stream to and no move can land.
+    await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+    // The game sits in the live `collecting` phase (no reveal/leaderboard); no sim yet (loop armed).
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('collecting');
+
+    // Advance one tick: the loop fires, steps the world, and streams one sim frame.
+    await vi.advanceTimersByTimeAsync(40);
+    expect(sims).toEqual([{ t: 1, pieces: 0 }]);
+
+    // Two more ticks reach LIVE_TICKS_TO_END: tick reports over -> the engine ends the game.
+    await vi.advanceTimersByTimeAsync(80);
+    expect(sims).toEqual([
+      { t: 1, pieces: 0 },
+      { t: 2, pieces: 0 },
+      { t: 3, pieces: 0 },
+    ]);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('complete');
+
+    // The final standings came from endGame (score = t*10), and the completion was reported once.
+    expect(h.reporter.completes).toHaveLength(1);
+    expect(h.reporter.completes[0]?.standings[0]?.score).toBe(30);
+
+    // No sim frames stream after the game ended (the loop stopped).
+    await vi.advanceTimersByTimeAsync(200);
+    expect(sims).toEqual([
+      { t: 1, pieces: 0 },
+      { t: 2, pieces: 0 },
+      { t: 3, pieces: 0 },
+    ]);
+
+    // A live game never runs the turn cycle: no round report was ever produced.
+    expect(h.reporter.rounds).toHaveLength(0);
+  });
+
+  it('freezes the world on pause and resumes it, and a joiner catches up to the last sim', async () => {
+    const h = liveHarness();
+    await h.engine.start(liveHandoff());
+    // Connect the device so the sim loop actually steps + persists (the idle guard, spec 0044).
+    await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+
+    // One tick, then pause: the loop stops, so time passing streams no further sims.
+    await vi.advanceTimersByTimeAsync(40);
+    await h.engine.control('r1', LIVE_GAME_ID, 'pause');
+    expect((await h.engine.getSnapshot('r1', LIVE_GAME_ID))?.paused).toBe(true);
+
+    // A joiner mid-pause gets the last streamed sim in its catch-up frames.
+    const frames = await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+    const sim = frames.find((f) => f.type === 'sim') as { sim: unknown } | undefined;
+    expect(sim?.sim).toEqual({ t: 1, pieces: 0 });
+
+    // Time passes while paused: the world does not step (t stays 1 in scratch).
+    await vi.advanceTimersByTimeAsync(400);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.scratch.t).toBe(1);
+
+    // Resume: the loop restarts and the world steps again, ending the game.
+    await h.engine.control('r1', LIVE_GAME_ID, 'pause');
+    await vi.advanceTimersByTimeAsync(80);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('complete');
+  });
+
+  it('a host advance ends a live game rather than pushing it into reveal', async () => {
+    const h = liveHarness();
+    await h.engine.start(liveHandoff());
+    await h.engine.control('r1', LIVE_GAME_ID, 'advance');
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('complete');
+    // No reveal frame was streamed and no round was reported.
+    expect(h.reporter.rounds).toHaveLength(0);
+    expect(h.reporter.completes).toHaveLength(1);
+  });
+
+  it('disposes the in-process world on endGame (tick.over), so it does not leak', async () => {
+    const h = liveHarness();
+    await h.engine.start(liveHandoff());
+    await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+    // The world is built once the loop ticks; run to over (endGame).
+    await vi.advanceTimersByTimeAsync(40 * LIVE_TICKS_TO_END);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('complete');
+    // disposeLive fired for this session, and the in-process world was dropped (no leak).
+    expect(h.disposed).toContain('r1');
+    expect(h.worlds.has('r1')).toBe(false);
+  });
+
+  it('disposes the in-process world on host exit', async () => {
+    const h = liveHarness();
+    await h.engine.start(liveHandoff());
+    await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+    await vi.advanceTimersByTimeAsync(40); // build the world
+    expect(h.worlds.has('r1')).toBe(true);
+    await h.engine.control('r1', LIVE_GAME_ID, 'exit');
+    expect(h.disposed).toContain('r1');
+    expect(h.worlds.has('r1')).toBe(false);
+    // Exit drops the session entirely.
+    expect(await h.engine.getState('r1', LIVE_GAME_ID)).toBeNull();
+  });
+
+  it('restart disposes the stale world and rebuilds a fresh, empty tower', async () => {
+    const h = liveHarness();
+    await h.engine.start(liveHandoff());
+    await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+    // Drop two pieces into the live world, then let it tick so the count persists to scratch.
+    await h.engine.submitMove('r1', LIVE_GAME_ID, 'p1', 1, 'drop');
+    await h.engine.submitMove('r1', LIVE_GAME_ID, 'p1', 1, 'drop');
+    await vi.advanceTimersByTimeAsync(40);
+    expect(h.worlds.get('r1')?.pieces).toBe(2);
+
+    // Restart: the old world (2 pieces) must be disposed BEFORE the fresh configure/startRound, so the
+    // rebuilt world starts empty from fresh scratch - not the stale 2-piece tower.
+    await h.engine.control('r1', LIVE_GAME_ID, 'restart');
+    expect(h.disposed).toContain('r1');
+    // The fresh session's world (rebuilt by startRound) has zero pieces, and scratch reset too.
+    expect(h.worlds.get('r1')?.pieces).toBe(0);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.scratch.pieces).toBe(0);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('collecting');
   });
 });

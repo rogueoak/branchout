@@ -1,9 +1,10 @@
-// Teeter Tower's payload decoders for the game-pluggable client (spec 0023, spec 0043). The engine
-// carries `prompt`/`reveal` as opaque `unknown` (spec 0007); the browser is a pure renderer that
-// decodes them here at the client boundary. A shape the renderer does not understand is a null (a
-// skipped render), never a thrown one - the same "opaque payload, the game owns the shape" contract
-// the engine uses. These types mirror packages/games/teeter-tower/src/types.ts exactly; a drift here
-// breaks rendering, so they stay in lockstep with that authoritative wire contract.
+// Teeter Tower's live-snapshot decoder for the game-pluggable client (spec 0044, spec 0023). Teeter is
+// a LIVE game: the engine steps a continuously-running world and streams a `TeeterSim` on the `sim`
+// frame (~25x/sec). The web is a pure renderer that decodes that opaque `unknown` snapshot here at the
+// client boundary. A shape the renderer does not understand is a null (a skipped render), never a
+// thrown one - the same "opaque payload, the game owns the shape" contract the engine uses. These
+// types mirror packages/games/teeter-tower/src/types.ts exactly; a drift here breaks rendering, so
+// they stay in lockstep with that authoritative wire contract.
 
 /** A 2D point in the sim's world coordinates (y grows downward; the tower grows up). */
 export interface Vec2 {
@@ -25,9 +26,10 @@ export interface Skin {
 }
 
 /**
- * A settled body in the tower, in WORLD space. `verts` is one polygon loop per collision part (a
- * compound piece has several); each loop's points are in the body's LOCAL frame - the renderer
- * places them via `x`/`y`/`angle`.
+ * A body in the live tower, in WORLD space. `verts` is one polygon loop per collision part (a compound
+ * piece has several); each loop's points are in the body's LOCAL frame - the renderer places them via
+ * `x`/`y`/`angle`. Geometry rides in every `sim` snapshot, so a joiner renders the whole live tower
+ * from one frame.
  */
 export interface Body {
   id: number;
@@ -40,11 +42,12 @@ export interface Body {
 }
 
 /**
- * The piece currently being aimed. Geometry is LOCAL (centered on its own centroid); the renderer
- * spins it by `spinSeed` and lets the player choose the drop `angle`/`dropX`. `x`/`y` is its spawn
- * position in world space.
+ * The piece currently available to aim + drop. Geometry is LOCAL (centered on its own centroid); the
+ * client spins it by `spinSeed`, then lets the player choose the drop `angle`, `dropX`, and `dropY`.
+ * `x`/`y` is a suggested spawn position in world space.
  */
 export interface Piece {
+  id: number;
   verts: Vec2[][];
   eyes: Eye[];
   skin: Skin;
@@ -53,42 +56,35 @@ export interface Piece {
   spinSeed: number;
 }
 
-/** The per-round prompt: the current tower plus the piece to aim. */
-export interface TeeterPrompt {
-  round: number;
-  level: number;
-  target: number;
-  height: number;
-  activePlayer: string;
-  tower: Body[];
-  piece: Piece;
-}
-
-/** The move a client submits, as the `move` string: `JSON.stringify({ angle, dropX })`. */
+/** The move a client submits, as the `move` string: `JSON.stringify({ angle, dropX, dropY })`. */
 export interface TeeterMove {
   angle: number;
   dropX: number;
-}
-
-/** One recorded animation keyframe: every live body's transform at simulated time `t` (ms). */
-export interface Frame {
-  t: number;
-  bodies: { id: number; x: number; y: number; angle: number }[];
+  dropY: number;
 }
 
 /**
- * The per-drop reveal: the settle animation `track` the client plays back, the resulting `tower`
- * (final world-space transforms), the new `height`/`score`, the current `level`/`target`, and
- * whether this drop `cleared` the level.
+ * A live snapshot of the whole game, streamed each tick as the `sim` frame. The client REPLACES its
+ * state from the newest snapshot and interpolates between two of them for smooth sway.
  */
-export interface TeeterReveal {
-  track: Frame[];
-  tower: Body[];
+export interface TeeterSim {
+  bodies: Body[];
+  /** The piece the active player may aim + drop now, or null when the game is over. */
+  next: Piece | null;
+  /** Whose turn it is to drop (playerId); the client enables input only when this is the local player. */
+  activePlayer: string;
   height: number;
   score: number;
   level: number;
   target: number;
-  cleared: boolean;
+  /**
+   * The world-y the piece's bottom must be ABOVE to drop (the next line above the tower). Since y grows
+   * downward, a legal drop has its lowest point at `y < requiredLine`. The client draws this line and
+   * previews legality; the server is authoritative.
+   */
+  requiredLine: number;
+  /** True once the final level is cleared - the game is over. */
+  over: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -180,108 +176,67 @@ function asBodies(value: unknown): Body[] | null {
   return out;
 }
 
-/** Decode the piece being aimed, or null on any shape mismatch. */
+/** Decode the aim piece, or null on any shape mismatch. */
 function asPiece(value: unknown): Piece | null {
   if (!isRecord(value)) return null;
   const verts = asVertLoops(value.verts);
   const skin = asSkin(value.skin);
   const eyes = asEyes(value.eyes);
-  if (verts && eyes && skin && isNum(value.x) && isNum(value.y) && isNum(value.spinSeed)) {
-    return { verts, eyes, skin, x: value.x, y: value.y, spinSeed: value.spinSeed };
-  }
-  return null;
-}
-
-/** Decode one settle keyframe, or null. */
-function asFrame(value: unknown): Frame | null {
-  if (!isRecord(value) || !isNum(value.t) || !Array.isArray(value.bodies)) return null;
-  const bodies: Frame['bodies'] = [];
-  for (const item of value.bodies) {
-    if (
-      !isRecord(item) ||
-      !isNum(item.id) ||
-      !isNum(item.x) ||
-      !isNum(item.y) ||
-      !isNum(item.angle)
-    ) {
-      return null;
-    }
-    bodies.push({ id: item.id, x: item.x, y: item.y, angle: item.angle });
-  }
-  return { t: value.t, bodies };
-}
-
-/** Decode the settle track; returns null if any frame is malformed. */
-function asTrack(value: unknown): Frame[] | null {
-  if (!Array.isArray(value)) return null;
-  const out: Frame[] = [];
-  for (const item of value) {
-    const frame = asFrame(item);
-    if (!frame) return null;
-    out.push(frame);
-  }
-  return out;
-}
-
-/** Decode a `prompt` payload as a Teeter prompt, or null if it is not one. */
-export function asTeeterPrompt(value: unknown): TeeterPrompt | null {
-  if (!isRecord(value)) return null;
-  const tower = asBodies(value.tower);
-  const piece = asPiece(value.piece);
   if (
-    isNum(value.round) &&
-    isNum(value.level) &&
-    isNum(value.target) &&
-    isNum(value.height) &&
-    typeof value.activePlayer === 'string' &&
-    tower &&
-    piece
+    isNum(value.id) &&
+    verts &&
+    eyes &&
+    skin &&
+    isNum(value.x) &&
+    isNum(value.y) &&
+    isNum(value.spinSeed)
   ) {
     return {
-      round: value.round,
-      level: value.level,
-      target: value.target,
-      height: value.height,
-      activePlayer: value.activePlayer,
-      tower,
-      piece,
+      id: value.id,
+      verts,
+      eyes,
+      skin,
+      x: value.x,
+      y: value.y,
+      spinSeed: value.spinSeed,
     };
   }
   return null;
 }
 
-/** Decode a `reveal` payload as a Teeter reveal, or null if it is not one. */
-export function asTeeterReveal(value: unknown): TeeterReveal | null {
+/**
+ * Decode a `sim` payload as a Teeter live snapshot, or null if it is not one. `bodies` may be empty
+ * (a fresh tower) and `next` may be null (the game is over), so those are validated but not required
+ * to be non-empty.
+ */
+export function asTeeterSim(value: unknown): TeeterSim | null {
   if (!isRecord(value)) return null;
-  const track = asTrack(value.track);
-  const tower = asBodies(value.tower);
+  const bodies = asBodies(value.bodies);
+  // next is Piece | null: either a decodable piece or an explicit null.
+  const next = value.next === null ? null : asPiece(value.next);
+  const nextOk = value.next === null || next !== null;
   if (
-    track &&
-    tower &&
+    bodies &&
+    nextOk &&
+    typeof value.activePlayer === 'string' &&
     isNum(value.height) &&
     isNum(value.score) &&
     isNum(value.level) &&
     isNum(value.target) &&
-    typeof value.cleared === 'boolean'
+    isNum(value.requiredLine) &&
+    typeof value.over === 'boolean'
   ) {
     return {
-      track,
-      tower,
+      bodies,
+      next,
+      activePlayer: value.activePlayer,
       height: value.height,
       score: value.score,
       level: value.level,
       target: value.target,
-      cleared: value.cleared,
+      requiredLine: value.requiredLine,
+      over: value.over,
     };
-  }
-  return null;
-}
-
-/** The most recent Teeter reveal in the round's streamed reveals, or null. */
-export function pickTeeterReveal(reveals: readonly unknown[]): TeeterReveal | null {
-  for (let i = reveals.length - 1; i >= 0; i--) {
-    const decoded = asTeeterReveal(reveals[i]);
-    if (decoded) return decoded;
   }
   return null;
 }

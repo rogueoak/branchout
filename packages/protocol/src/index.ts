@@ -28,6 +28,7 @@ export {
   type ProtocolMessage,
   type PromptMessage,
   type RevealMessage,
+  type SimMessage,
   type ServerMessage,
   type StateMessage,
   type VoteMessage,

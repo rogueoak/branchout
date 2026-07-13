@@ -77,6 +77,7 @@ function asServerFrame(value: unknown): ServerMessage | { type: 'error'; message
   if (
     type === 'prompt' ||
     type === 'reveal' ||
+    type === 'sim' ||
     type === 'leaderboard' ||
     type === 'state' ||
     type === 'move_rejected'
