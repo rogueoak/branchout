@@ -318,6 +318,15 @@ Capture durable lessons as they emerge.
   `CO2`/`iPhone`), and the dispute vote remains the human fallback. A control that only makes sense
   with other participants (Dispute) gates on the live *connected* count from the roster the client
   already holds, not on the local player's state alone. (Feedback `0015`.)
+- **A continuously-stepped physics world must gate a measurement on "at rest", not sample it every
+  tick.** Teeter's tower height was `min(bounds.min.y)` over all placed bodies each tick, so a piece
+  still in free-fall counted at its airborne arc peak - dropping a piece above the goal line won it
+  instantly, and the min-drop line jumped around as the piece fell (score, level-clear, and the streamed
+  line all read that one height). The fix is one predicate: count a body only when its linear + angular
+  speed is below a small threshold, so transient motion never scores. A just-placed body has already
+  been stepped once under gravity before it is measured, so it is never mistaken for settled at its
+  release height. When a number drives a rule in a live sim, decide *when* it is valid to read, not just
+  what it measures. (Feedback `0025`, first flagged in `0024`.)
 
 ## Client-server contracts
 
