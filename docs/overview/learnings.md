@@ -346,6 +346,18 @@ Capture durable lessons as they emerge.
   route or a wire field exposes it, and an identity kept in an httpOnly cookie cannot be echoed by
   client code. When a server spec precedes its UI, budget a read surface for that UI. Building the
   Trivia web client on `0006`/`0007` surfaced four such gaps at once. (Feedback `0010`.)
+- **When one fact has a durable and an ephemeral representation, the return/reconnect path must
+  re-derive it from the durable one, not gate on the ephemeral.** A room's host is durable
+  (`rooms.host_account_id` in Postgres) but its roster row is ephemeral (Redis, 12h TTL), and the
+  client remembers its seat only in per-tab `sessionStorage` (cleared when the tab closes). A host
+  returning after a stretch was bounced to the join screen and "lost" host: `view()`/`members()`
+  gated purely on the Redis row, and the client rendered the join prompt without ever asking the
+  server whether the account already owned the room. The fix re-seats the durable host on read
+  (`resolveCaller`) and adds a `GET /rooms/:code/me` resume the client calls before falling back to
+  join. Rule: every place presence can expire needs a path that rebuilds it from the system of
+  record; and a state that lives only in `sessionStorage` is forgotten on tab close, not just after a
+  TTL - treat "the client forgot" and "the server expired" as two distinct recoveries. (Feedback
+  `0021`.)
 
 ## Deployment and infra
 
