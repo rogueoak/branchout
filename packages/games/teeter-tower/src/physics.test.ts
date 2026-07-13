@@ -4,13 +4,15 @@
 // real-time - the world runs continuously - so we assert it converges and culls, not a pure track.
 
 import { describe, expect, it } from 'vitest';
-import { createRng } from './rng';
+import { createRng, deriveSeed } from './rng';
 import {
+  TRAP_DENSITY_MULT,
   addPieceToWorld,
   createWorld,
   evaluatePlacement,
   heightToScore,
   heldBodyAt,
+  localVerts,
   makePiece,
   overlapsScene,
   pieceForIndex,
@@ -24,7 +26,7 @@ import {
   type LiveWorld,
   type StoredBody,
 } from './physics';
-import { GROUND_TOP, LEVELS } from './levels';
+import { GROUND_TOP, LEVELS, PIECE_DENSITY, PLATFORM_W } from './levels';
 
 /** A stored rectangle body, centered at (x, y-half..y+half), for building test scenes. */
 function block(id: number, x: number, y: number, w: number, h: number): StoredBody {
@@ -51,7 +53,7 @@ function block(id: number, x: number, y: number, w: number, h: number): StoredBo
   };
 }
 
-/** A live world at level 0 with the given placed bodies (no pendulum). */
+/** A live world at level 0 with the given placed bodies (no pendulum, open platform - no walls). */
 function worldWith(bodies: StoredBody[], target = LEVELS[0]!.target, pendulum = false): LiveWorld {
   return createWorld({
     seed: 1,
@@ -63,8 +65,43 @@ function worldWith(bodies: StoredBody[], target = LEVELS[0]!.target, pendulum = 
     next: null,
     target,
     pendulum,
+    platformWidth: PLATFORM_W,
+    walls: false,
   });
 }
+
+describe('heavy trapezoid (the special reinforcement piece)', () => {
+  const HEAVY = PIECE_DENSITY * TRAP_DENSITY_MULT;
+
+  /** Find the first piece index (in the deterministic stream) that yields a trapezoid. */
+  function firstTrapIndex(): number {
+    for (let i = 0; i < 300; i++) {
+      if (makePiece(createRng(deriveSeed(1, i))).body.density > PIECE_DENSITY * 1.5) return i;
+    }
+    return -1;
+  }
+
+  it('the trapezoid appears in the stream and is 4x denser than a normal piece', () => {
+    const i = firstTrapIndex();
+    expect(i).toBeGreaterThanOrEqual(0);
+    const trap = makePiece(createRng(deriveSeed(1, i)));
+    expect(trap.body.density).toBeCloseTo(HEAVY, 10);
+    // It is a single convex body (no compound parts) and near-black.
+    expect(trap.body.parts.length).toBe(1);
+    expect(trap.skin.fill.toLowerCase()).toMatch(/^#0/);
+  });
+
+  it('keeps its 4x weight through the store + rebuild round-trip', () => {
+    const trap = makePiece(createRng(deriveSeed(1, firstTrapIndex())));
+    const stored = storedPieceFrom(42, trap);
+    expect(stored.density).toBeCloseTo(HEAVY, 10);
+    // Drop it in and snapshot: the placed body (and its persisted snapshot) keep the heavy density,
+    // so a rebuild-from-snapshot does not silently make it light again.
+    const world = worldWith([]);
+    addPieceToWorld(world, stored, 410, GROUND_TOP - 200, 0);
+    expect(toStoredBodies(world)[0]!.density).toBeCloseTo(HEAVY, 10);
+  });
+});
 
 describe('requiredDropHeight (min-drop line, ported)', () => {
   it('returns the first unmet quarter line above the current height', () => {
@@ -207,6 +244,52 @@ describe('piece determinism', () => {
       JSON.stringify(a.skin) !== JSON.stringify(b.skin) ||
       a.body.vertices.length !== b.body.vertices.length;
     expect(differs).toBe(true);
+  });
+});
+
+describe('compound (ell) round-trip through bodyFromStored (spec 0023)', () => {
+  it('rebuilds the L with its arms spread, not collapsed onto the centroid', () => {
+    // Seed 8 yields an "ell" (a compound body: parts.length > 1). Snapshot it to local vertex loops
+    // and rebuild it via bodyFromStored (the reconnect / worker-restart path). The rebuilt collision
+    // shape must match the original - Matter re-centres each part on setVertices, so the rebuild has to
+    // restore each part's offset. If it collapses the arms onto (0,0), the collision shape drifts from
+    // the drawn shape (overlaps/gaps in play).
+    const original = makePiece(createRng(8)).body;
+    expect(original.parts.length).toBeGreaterThan(2); // parent + >= 2 arms => a genuine compound
+
+    const verts = localVerts(original);
+    expect(verts.length).toBeGreaterThan(1); // more than one collision loop
+
+    // Rebuild at a non-trivial transform via addPieceToWorld -> bodyFromStored, then read it back.
+    const world = worldWith([]);
+    const stored = storedPieceFrom(1, makePiece(createRng(8)));
+    addPieceToWorld(world, stored, 410, GROUND_TOP - 200, 0);
+    const rebuilt = world.placed[0]!.body;
+
+    // Same part count (parent + arms) survived the round-trip.
+    expect(rebuilt.parts.length).toBe(original.parts.length);
+
+    // Overall bounds (width/height) match within a small epsilon - the arms are NOT collapsed.
+    const w = (b: (typeof original)['bounds']): number => b.max.x - b.min.x;
+    const h = (b: (typeof original)['bounds']): number => b.max.y - b.min.y;
+    expect(w(rebuilt.bounds)).toBeCloseTo(w(original.bounds), 1);
+    expect(h(rebuilt.bounds)).toBeCloseTo(h(original.bounds), 1);
+
+    // The definitive signal: each arm keeps its offset from the compound centroid (a collapsed rebuild
+    // would put every arm at (0,0)). Compare the sorted per-part offsets of original vs rebuilt.
+    const offsets = (b: typeof original): { x: number; y: number }[] =>
+      b.parts
+        .slice(1)
+        .map((p) => ({ x: p.position.x - b.position.x, y: p.position.y - b.position.y }))
+        .sort((p, q) => p.x - q.x || p.y - q.y);
+    const oOff = offsets(original);
+    const rOff = offsets(rebuilt);
+    // At least one arm sits off the centroid (proves the arrangement, not a single blob at origin).
+    expect(oOff.some((o) => Math.hypot(o.x, o.y) > 1)).toBe(true);
+    for (let i = 0; i < oOff.length; i++) {
+      expect(rOff[i]!.x).toBeCloseTo(oOff[i]!.x, 1);
+      expect(rOff[i]!.y).toBeCloseTo(oOff[i]!.y, 1);
+    }
   });
 });
 

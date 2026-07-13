@@ -15,8 +15,13 @@ export const GROUND_TOP = 540;
 export const PLATFORM_W = 480;
 export const PLATFORM_H = 60;
 export const CENTER_X = VIEW_W / 2; // 410
-/** The horizontal half-range (from center) a drop position may occupy (mirrors DROP_HALF_RANGE). */
-export const DROP_HALF_RANGE = PLATFORM_W / 2 + 90;
+/** The drop half-range beyond the platform's own half-width (px each side; mirrors DROP_EDGE_MARGIN). */
+export const DROP_EDGE_MARGIN = 90;
+/** The horizontal half-range (from center) a drop position may occupy on the DEFAULT platform. */
+export const DROP_HALF_RANGE = PLATFORM_W / 2 + DROP_EDGE_MARGIN;
+/** Side-wall geometry for a walled (level 1) platform (mirrors WALL_THICKNESS / WALL_HEIGHT). */
+export const WALL_THICKNESS = 18;
+export const WALL_HEIGHT = 70;
 
 /** The chrome colors the renderer paints non-piece scenery with, resolved from theme tokens. */
 export interface ChromeColors {
@@ -56,10 +61,17 @@ export function resolveChrome(el: Element | null): ChromeColors {
   };
 }
 
-/** World headroom above the target line for the spinning aim piece + breathing room at the top. */
+/** World headroom above the fit reference for the spinning aim piece + breathing room at the top. */
 const AIM_HEADROOM = 130;
 /** World y just below the platform - the bottom edge of the view. */
 const VIEW_BOTTOM = GROUND_TOP + PLATFORM_H + 24;
+/**
+ * The FIXED reference tower height (px above the platform) the view fits, regardless of the level's
+ * actual target (feedback 0023). Fitting a constant height keeps the viewport size stable when the
+ * target moves (e.g. level 1's lower 450 target): the target line just slides within an unchanging
+ * view instead of zooming it. Chosen to comfortably contain the tallest target (620) plus headroom.
+ */
+export const VIEW_FIT_TARGET = 640;
 
 /** The world->screen mapping for a level: `screenX = worldX*scale + originX`, same for y. */
 export interface LevelView {
@@ -73,14 +85,15 @@ export interface LevelView {
 }
 
 /**
- * Fit the CURRENT LEVEL's full height - from just below the platform up to above the target line -
- * into the canvas, centered horizontally, at a uniform scale (pieces keep their aspect). The whole
- * level fits, so the tower fills the vertical space with no camera pan; a taller canvas simply scales
- * the level up. The tower is centered, so the platform's edges may fall outside the canvas width - the
- * action is always in the middle.
+ * Fit a FIXED reference height - from just below the platform up to above the VIEW_FIT_TARGET line -
+ * into the canvas, centered horizontally, at a uniform scale (pieces keep their aspect). The fit is
+ * INDEPENDENT of the level's actual target (feedback 0023): the target line just moves within an
+ * unchanging view rather than zooming it when the target changes. The tower fills the vertical space
+ * with no camera pan; a taller canvas simply scales the view up. The tower is centered, so the
+ * platform's edges may fall outside the canvas width - the action is always in the middle.
  */
-export function levelView(cssW: number, cssH: number, target: number): LevelView {
-  const top = GROUND_TOP - target - AIM_HEADROOM;
+export function levelView(cssW: number, cssH: number): LevelView {
+  const top = GROUND_TOP - VIEW_FIT_TARGET - AIM_HEADROOM;
   const bottom = VIEW_BOTTOM;
   const scale = cssH > 0 ? cssH / (bottom - top) : 1;
   return { scale, originX: cssW / 2 - CENTER_X * scale, originY: -top * scale, top, bottom };
@@ -120,14 +133,33 @@ export function drawSky(
   ctx.fillRect(0, 0, cssW, cssH);
 }
 
-/** Paint the static platform the tower stacks on. */
-export function drawPlatform(ctx: CanvasRenderingContext2D, chrome: ChromeColors): void {
+/**
+ * Paint the static platform the tower stacks on, at the level's width, plus its short side walls when
+ * the level is walled (level 1). The platform + walls are drawn from the sim's authoritative config so
+ * the client matches exactly what the server simulated (feedback 0023).
+ */
+export function drawPlatform(
+  ctx: CanvasRenderingContext2D,
+  chrome: ChromeColors,
+  platformWidth: number = PLATFORM_W,
+  walls = false,
+): void {
   ctx.fillStyle = chrome.platformFill;
   ctx.strokeStyle = chrome.platformStroke;
   ctx.lineWidth = 2;
-  const x = CENTER_X - PLATFORM_W / 2;
-  ctx.fillRect(x, GROUND_TOP, PLATFORM_W, PLATFORM_H);
-  ctx.strokeRect(x, GROUND_TOP, PLATFORM_W, PLATFORM_H);
+  const x = CENTER_X - platformWidth / 2;
+  ctx.fillRect(x, GROUND_TOP, platformWidth, PLATFORM_H);
+  ctx.strokeRect(x, GROUND_TOP, platformWidth, PLATFORM_H);
+  if (walls) {
+    const half = platformWidth / 2;
+    const wallY = GROUND_TOP - WALL_HEIGHT;
+    const leftX = CENTER_X - half;
+    const rightX = CENTER_X + half - WALL_THICKNESS;
+    for (const wx of [leftX, rightX]) {
+      ctx.fillRect(wx, wallY, WALL_THICKNESS, WALL_HEIGHT);
+      ctx.strokeRect(wx, wallY, WALL_THICKNESS, WALL_HEIGHT);
+    }
+  }
 }
 
 /** Paint the dashed score bands (25/50/75%) and the target line (100 pts), ported from the prototype. */
@@ -290,9 +322,14 @@ export function drawTower(ctx: CanvasRenderingContext2D, tower: Body[]): void {
   }
 }
 
-/** Clamp a drop x to the legal horizontal range around center (mirrors the engine's clampDropX). */
-export function clampDropX(x: number): number {
-  return Math.max(CENTER_X - DROP_HALF_RANGE, Math.min(CENTER_X + DROP_HALF_RANGE, x));
+/**
+ * Clamp a drop x to the legal horizontal range around center for a given platform width (mirrors the
+ * engine's clampDropX). The half-range derives from the level's platform (half its width plus the edge
+ * margin), so a wider level-1 platform lets a drop reach across it.
+ */
+export function clampDropX(x: number, platformWidth: number = PLATFORM_W): number {
+  const half = platformWidth / 2 + DROP_EDGE_MARGIN;
+  return Math.max(CENTER_X - half, Math.min(CENTER_X + half, x));
 }
 
 /**

@@ -85,6 +85,12 @@ export interface TeeterSim {
    * `y < requiredLine`. The client draws this line and previews legality; the server is authoritative.
    */
   requiredLine: number;
+  /**
+   * The current level's platform: its width (px) and whether it has short side walls. The client draws
+   * the platform + walls and derives the horizontal drop clamp from this (authoritative), so a
+   * per-level platform (level 1 is wider + walled) is honored without a hardcoded width on the client.
+   */
+  platform: { width: number; walls: boolean };
   /** True once the final level is cleared - the game is over. */
   over: boolean;
 }

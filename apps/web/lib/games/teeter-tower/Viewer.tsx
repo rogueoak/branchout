@@ -10,14 +10,15 @@
 // received sim snapshots by wall-clock time, so the ~25 fps stream looks smooth (the tower visibly
 // sways / settles / topples as the stream changes). A vertical camera pans up to follow the tower top.
 //
-// Aim -> lock -> drop (only when `me === sim.activePlayer` and `sim.next` exists):
-//   1. The next piece spins locally (spinSeed drives the rotation via rAF). Tap/click to LOCK the
-//      on-screen angle.
-//   2. After locking, the piece FOLLOWS THE POINTER (x and y), clamped so its bottom stays ABOVE the
-//      required line and its x within the platform range. It ghosts + turns red (drop blocked) when
-//      the pointer would put it below the line (client preview; the server re-checks).
-//   3. Tap/click again to DROP: onMove(round, JSON.stringify({ angle, dropX, dropY })). No re-aim -
-//      we wait for the stream to show it land and present the next piece (a new `sim.next` id).
+// Aim flow (feedback 0023), only when `me === sim.activePlayer` and `sim.next` exists. The CANVAS only
+// ever MOVES the piece (tap/drag sets the drop position); a top-right on-canvas button drives the phase:
+//   1. 'spinning': the piece spins locally (spinSeed via rAF) AND sits at the pointer - tap/drag the
+//      canvas to reposition it repeatedly. The top-right button reads "Stop spin".
+//   2. Tapping "Stop spin" LOCKS the current on-screen angle and switches to 'placing'. The piece keeps
+//      following the pointer (x and y), clamped so its bottom stays ABOVE the required line and its x
+//      within the platform range; it ghosts + turns red when the drop would be below the line.
+//   3. The top-right button now reads "Drop"; tapping it submits onMove(round, JSON.stringify({ angle,
+//      dropX, dropY })). No re-aim - we wait for the stream to land it and present the next piece.
 // Mobile-first (CLAUDE.md rule #1): the surface fills the viewport height and the canvas fits WIDTH
 // (a taller canvas shows more of the tower, no letterbox), reads well at ~360px wide, uses big tap
 // targets and pointer capture + touch-action:none so a drag never scrolls the page, and disables text
@@ -49,17 +50,15 @@ import {
 const LEVEL_NAMES = ['Warm-up', 'Reach for the sky', 'The Pendulum'];
 
 /**
- * Double-tap guard (spec 0044): lock-angle and drop are the SAME tap in the SAME spot, so a reflexive
- * double-tap would lock AND immediately drop an irreversible piece. After locking we do not arm the
- * drop until either the pointer has MOVED past `DROP_ARM_MOVE_PX` (world px) OR `DROP_ARM_MS` have
- * elapsed - so a fast double-tap cannot lock+drop in one motion, while a deliberate single tap after
- * aiming still drops.
+ * The local aim phase for the active player (feedback 0023): the piece is spinning (the canvas moves
+ * it while it spins) or its angle is locked and it is being placed. The top-right button transitions
+ * between them ("Stop spin" -> 'placing') and finally drops ("Drop"). The CANVAS never locks or drops -
+ * a tap/drag only moves the piece - so there is no double-tap-to-drop hazard to guard against.
  */
-const DROP_ARM_MS = 200;
-const DROP_ARM_MOVE_PX = 12;
-
-/** The local aim phase for the active player: the piece is spinning, or locked and being placed. */
 type AimPhase = 'spinning' | 'placing';
+
+/** The default world-y a fresh piece starts at (high + centered, so it reads clearly above the tower). */
+const DEFAULT_AIM_Y = GROUND_TOP - 300;
 
 /** Interpolate one transform between two snapshots at fraction `f` (0..1). */
 function lerp(a: number, b: number, f: number): number {
@@ -121,12 +120,14 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // The active player's local aim state. `angle` is the locked drop angle; `pointer` is the latest
-  // world-space pointer position while placing. A spinning piece has no locked angle yet.
+  // world-space pointer position the piece follows in BOTH phases. A spinning piece has no locked angle
+  // yet (the top-right "Stop spin" button locks it). The default sits high + centered so the fresh
+  // piece reads clearly above the tower before the player moves it.
   const [aim, setAim] = useState<AimPhase>('spinning');
   const [angle, setAngle] = useState(0);
   const [pointer, setPointer] = useState<{ x: number; y: number }>({
     x: CENTER_X,
-    y: GROUND_TOP - 100,
+    y: DEFAULT_AIM_Y,
   });
   // The `sim.next` id we last aimed at, so a new piece (new id) resets the aim UI to spinning.
   const [aimedPieceId, setAimedPieceId] = useState<number | null>(null);
@@ -145,7 +146,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
       setAim('spinning');
       setAngle(0);
       setDropped(false);
-      setPointer({ x: CENTER_X, y: GROUND_TOP - 100 });
+      setPointer({ x: CENTER_X, y: DEFAULT_AIM_Y });
     }
   }, [nextId, aimedPieceId]);
 
@@ -168,12 +169,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   droppedRef.current = dropped;
   // The turn/aim hint text the draw loop paints as a screen-space overlay (computed below from state).
   const hintRef = useRef('');
-  // The live spin angle the draw loop advances, so the angle a tap locks is exactly the one on screen.
+  // The live spin angle the draw loop advances, so the angle "Stop spin" locks is exactly the one on
+  // screen. Read by both the draw loop and the stop-spin handler.
   const spinAngleRef = useRef(0);
-  // Double-tap guard state: when the angle was locked (ms) and the pointer position at lock, so the
-  // drop only arms after a small move or a short debounce (see DROP_ARM_MS / DROP_ARM_MOVE_PX).
-  const lockedAtRef = useRef(0);
-  const lockPointerRef = useRef<{ x: number; y: number } | null>(null);
 
   // Fold each new sim snapshot into the interpolation buffer: keep the previous snapshot + its arrival
   // time so the draw loop can lerp between them by wall-clock. A brand-new object identity (the reducer
@@ -188,14 +186,17 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     }
   }, [sim]);
 
-  // Clamp the placing piece's centroid so its rotated bottom stays above the required line and its x
-  // stays in the platform range. Returns the drawable transform + whether the drop is currently legal.
+  // Clamp the aim piece's centroid at a given angle so its rotated bottom stays above the required line
+  // and its x stays in the platform range. Returns the drawable transform + whether the drop is legal.
+  // Used in BOTH phases (the spinning piece and the placing ghost both follow the pointer): pass the
+  // live spin angle while spinning, the locked angle while placing.
   function placedTransform(
     piece: Piece,
     live: TeeterSim,
+    angleAt: number,
   ): { x: number; y: number; legal: boolean; rawBottom: number } {
-    const span = rotatedYSpan(piece, angleRef.current);
-    const x = clampDropX(pointerRef.current.x);
+    const span = rotatedYSpan(piece, angleAt);
+    const x = clampDropX(pointerRef.current.x, live.platform.width);
     // The piece bottom (centroid y + rotated max) must be strictly above requiredLine (smaller y).
     const rawBottom = pointerRef.current.y + span.max;
     const legal = rawBottom < live.requiredLine;
@@ -232,9 +233,10 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             prev && span > 0 ? Math.max(0, Math.min(1, (now - simArrivedRef.current) / span)) : 1;
           const bodies = prev ? interpolateBodies(prev.bodies, live.bodies, f) : live.bodies;
 
-          // Fit the whole level's height into the canvas (platform -> above the target line), centered
-          // horizontally at a uniform scale, so the tower fills the vertical space with no camera pan.
-          const view = levelView(rect.width, rect.height, live.target);
+          // Fit a FIXED reference height into the canvas (feedback 0023), centered horizontally at a
+          // uniform scale, so the tower fills the vertical space with no camera pan AND lowering a
+          // level's target does not zoom the view - the target line just moves within an unchanging fit.
+          const view = levelView(rect.width, rect.height);
           const labelX = visibleLeftX(view) + 12;
 
           const chrome = resolveChrome(canvas);
@@ -243,56 +245,45 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           drawSky(ctx, chrome, rect.width, rect.height, dpr);
           applyLevelTransform(ctx, view, dpr);
           drawTargetBands(ctx, chrome, live.target, labelX);
-          drawPlatform(ctx, chrome);
+          drawPlatform(ctx, chrome, live.platform.width, live.platform.walls);
           drawTower(ctx, bodies);
 
-          // The aim overlay for the active player who has not yet dropped.
+          // The aim overlay for the active player who has not yet dropped. In BOTH phases the piece
+          // FOLLOWS THE POINTER (feedback 0023) - the canvas moves it; the top-right button changes the
+          // phase. Spinning advances the live angle; placing uses the locked angle. Both clamp above the
+          // required line + within the platform range so the piece always previews a droppable pose.
           if (isActiveRef.current && !droppedRef.current && live.next) {
             const piece = live.next;
-            // Draw the min-drop line + forbidden zone in BOTH phases (spinning and placing), so the
-            // "drop above this line" rule is visible from the first frame - not only once locked.
+            // Draw the min-drop line + forbidden zone in BOTH phases, so the "drop above this line" rule
+            // is visible from the first frame - not only once the spin is stopped.
             drawRequiredLine(ctx, chrome, live.requiredLine, labelX);
-            if (aimRef.current === 'spinning') {
-              spinAngleRef.current += piece.spinSeed;
-              // Spawn the spinning piece near the TOP of the view (just above the target line), so it
-              // always reads clearly ABOVE the tower and the required line no matter how tall the tower
-              // is - never the payload's fixed low position (which would hover inside a grown pile).
-              drawBody(
-                ctx,
-                piece.verts,
-                piece.eyes,
-                piece.skin,
-                CENTER_X,
-                view.top + 110,
-                spinAngleRef.current,
-                { x: 0, y: 0 },
-                0.9,
-              );
-            } else {
-              const t = placedTransform(piece, live);
-              const skin = t.legal ? piece.skin : { fill: '#c23b52', stroke: chrome.dropLine };
-              // A drop guide line from the piece down to the platform.
-              ctx.save();
-              ctx.strokeStyle = chrome.dropLine;
-              ctx.setLineDash([8, 8]);
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.moveTo(t.x, t.y);
-              ctx.lineTo(t.x, GROUND_TOP);
-              ctx.stroke();
-              ctx.restore();
-              drawBody(
-                ctx,
-                piece.verts,
-                piece.eyes,
-                skin,
-                t.x,
-                t.y,
-                angleRef.current,
-                { x: 0, y: 0 },
-                0.85,
-              );
-            }
+            const spinning = aimRef.current === 'spinning';
+            if (spinning) spinAngleRef.current += piece.spinSeed;
+            const drawAngle = spinning ? spinAngleRef.current : angleRef.current;
+            const t = placedTransform(piece, live, drawAngle);
+            const skin =
+              spinning || t.legal ? piece.skin : { fill: '#c23b52', stroke: chrome.dropLine };
+            // A drop guide line from the piece down to the platform, so the landing spot reads clearly.
+            ctx.save();
+            ctx.strokeStyle = chrome.dropLine;
+            ctx.setLineDash([8, 8]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(t.x, t.y);
+            ctx.lineTo(t.x, GROUND_TOP);
+            ctx.stroke();
+            ctx.restore();
+            drawBody(
+              ctx,
+              piece.verts,
+              piece.eyes,
+              skin,
+              t.x,
+              t.y,
+              drawAngle,
+              { x: 0, y: 0 },
+              spinning ? 0.9 : 0.85,
+            );
           }
 
           // Screen-space overlays (reset transform inside each helper): the compact level/height/score
@@ -322,36 +313,25 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     const rect = canvas.getBoundingClientRect();
     // A zero-sized rect (not laid out yet, e.g. jsdom) has no meaningful mapping; keep the last pointer.
     if (!(rect.width > 0 && rect.height > 0)) return pointerRef.current;
-    const view = levelView(rect.width, rect.height, simRef.current?.target ?? 600);
+    const view = levelView(rect.width, rect.height);
     return {
       x: (clientX - rect.left - view.originX) / view.scale,
       y: (clientY - rect.top - view.originY) / view.scale,
     };
   }
 
-  // Tap 1 locks the spin; tap 2 drops. Between them the pointer moves the piece.
+  // The CANVAS only MOVES the piece (feedback 0023): a tap or drag sets the drop position in BOTH
+  // phases. It never locks the angle or drops - the top-right button does both.
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>): void {
     if (!isActive || dropped) return;
     // Capture the pointer so a finger that drifts off a small (~360px) board mid-drag keeps tracking
     // (guarded: jsdom / older engines may not implement pointer capture).
     e.currentTarget.setPointerCapture?.(e.pointerId);
-    if (aim === 'spinning') {
-      const at = pointerToWorld(e.clientX, e.clientY);
-      setAngle(spinAngleRef.current);
-      setPointer(at);
-      setAim('placing');
-      // Record the lock time + position for the double-tap guard: the drop only arms after a small
-      // move OR a short debounce, so a reflexive double-tap cannot lock+drop in one motion. Date.now
-      // (a wall clock) is enough here - the guard is a coarse ~200ms debounce, not a render clock.
-      lockedAtRef.current = Date.now();
-      lockPointerRef.current = at;
-    } else {
-      drop();
-    }
+    setPointer(pointerToWorld(e.clientX, e.clientY));
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>): void {
-    if (!isActive || dropped || aim !== 'placing') return;
+    if (!isActive || dropped) return;
     setPointer(pointerToWorld(e.clientX, e.clientY));
   }
 
@@ -361,23 +341,34 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     }
   }
 
+  // The top-right button: 'spinning' -> STOP the spin (lock the current on-screen angle, switch to
+  // 'placing'); 'placing' -> DROP (submit the previewed pose). The server clamps + re-checks.
+  function handleAimButton(): void {
+    if (!isActive || dropped) return;
+    if (aim === 'spinning') {
+      // Lock the exact angle on screen this frame, then let the pointer keep moving the piece.
+      setAngle(spinAngleRef.current);
+      setAim('placing');
+      return;
+    }
+    drop();
+  }
+
   function drop(): void {
     const live = simRef.current;
     if (!live || !live.next || !isActive || aim !== 'placing') return;
-    // Double-tap guard: do not drop until the drop is armed - the pointer has moved past the
-    // threshold OR the debounce has elapsed since the lock. A fast lock+tap in the same spot is
-    // swallowed here (the piece stays aimable), so the irreversible drop needs a deliberate action.
-    const elapsed = Date.now() - lockedAtRef.current;
-    const lock = lockPointerRef.current;
-    const moved =
-      lock != null &&
-      Math.hypot(pointerRef.current.x - lock.x, pointerRef.current.y - lock.y) >= DROP_ARM_MOVE_PX;
-    if (elapsed < DROP_ARM_MS && !moved) return;
-    const t = placedTransform(live.next, live);
+    const t = placedTransform(live.next, live, angleRef.current);
     // Submit the piece's current transform. The server clamps + re-checks; we send our previewed pose.
     onMove?.(state.round, JSON.stringify({ angle: angleRef.current, dropX: t.x, dropY: t.y }));
     setDropped(true);
   }
+
+  // Whether the currently placed pose is above the required line (a legal drop preview). The server is
+  // authoritative; this only disables/annotates the Drop button + colors the ghost.
+  const dropLegal =
+    isActive && sim != null && sim.next != null && aim === 'placing'
+      ? placedTransform(sim.next, sim, angle).legal
+      : false;
 
   const level = sim?.level ?? 0;
   const target = sim?.target ?? 600;
@@ -405,13 +396,14 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
   const watchingName = sim && !isActive ? nicknameOf(state, sim.activePlayer) : null;
 
   // The SHORT turn/aim hint the draw loop paints as an on-canvas overlay (kept terse so it never
-  // squishes at ~360px). The full copy lives in the screen-reader status below.
+  // squishes at ~360px). The full copy lives in the screen-reader status below. It describes the new
+  // flow: the canvas moves the piece; the top-right button stops the spin, then drops (feedback 0023).
   const hint = isActive
     ? dropped
       ? 'Dropping...'
       : aim === 'spinning'
-        ? 'Tap to lock the angle'
-        : 'Aim, then tap to drop (final)'
+        ? 'Move the piece, then Stop spin'
+        : 'Move it into place, then Drop'
     : watchingName
       ? `Watching ${watchingName}`
       : '';
@@ -429,8 +421,8 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
       ? dropped
         ? 'Dropping the piece.'
         : aim === 'spinning'
-          ? 'Your turn: tap the board to lock the angle.'
-          : 'Your turn: move to aim, then tap to drop. The drop is final, no re-aim.'
+          ? 'Your turn: move the piece on the board, then Stop spin to lock the angle.'
+          : 'Your turn: move it into place, then Drop. The drop is final, no re-aim.'
       : watchingName
         ? `Watching ${watchingName} build the tower.`
         : '',
@@ -471,6 +463,26 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           role="img"
           className="block h-full w-full"
         />
+        {/* The aim action button (feedback 0023): a real, thumb-sized HTML button pinned top-right over
+            the canvas. 'spinning' -> "Stop spin" (lock the angle); 'placing' -> "Drop" (submit). It is
+            disabled while placing below the required line (the ghost also turns red); the server still
+            re-checks. stopPropagation keeps its taps from also moving the piece via the board handlers. */}
+        {isActive && !dropped ? (
+          <button
+            type="button"
+            aria-label={aim === 'spinning' ? 'Stop the spin and lock the angle' : 'Drop the piece'}
+            disabled={aim === 'placing' && !dropLegal}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAimButton();
+            }}
+            className="absolute right-2 top-2 min-h-11 min-w-24 rounded-lg bg-accent px-4 py-2 text-body-sm font-semibold text-black shadow-md disabled:opacity-50"
+          >
+            {aim === 'spinning' ? 'Stop spin' : dropLegal ? 'Drop' : 'Too low'}
+          </button>
+        ) : null}
         {state.rejected ? (
           <p
             role="alert"

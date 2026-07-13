@@ -35,9 +35,11 @@ function teeterSim(activePlayer: string, over = false) {
     height: 0,
     score: 0,
     level: 0,
-    target: 600,
+    target: 450,
     // requiredLine well below the piece so a drop at the default pointer is legal.
     requiredLine: 520,
+    // Level 1 is a wide, walled platform (feedback 0023); the client draws + clamps from this.
+    platform: { width: 760, walls: true },
     over,
   };
 }
@@ -79,56 +81,43 @@ describe('TeeterViewer single interactive surface', () => {
     render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={noop} />);
     const status = screen.getByRole('status');
     expect(status.textContent).toMatch(/Level 1, Warm-up/i);
-    expect(status.textContent).toMatch(/Tower 0 of 600 pixels, 0 points/i);
-    expect(status.textContent).toMatch(/Your turn: tap the board to lock/i);
+    expect(status.textContent).toMatch(/Tower 0 of 450 pixels, 0 points/i);
+    expect(status.textContent).toMatch(/move the piece on the board, then Stop spin/i);
   });
 
-  it('a tap to lock then a tap to drop (after the debounce) calls onMove with a JSON {angle,dropX,dropY}', () => {
-    vi.useFakeTimers();
-    try {
-      const onMove = vi.fn();
-      render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={onMove} />);
-      const board = screen.getByRole('img', { name: /aim and drop the piece/i })
-        .parentElement as HTMLElement;
-      // getBoundingClientRect is 0-sized in jsdom; pointerToWorld tolerates it and the drop still
-      // fires. Tap 1 locks the spin angle (the placing hint is now on-canvas, not in the DOM).
-      fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
-      // The double-tap guard: the drop is not armed until the debounce elapses. Advance past it so a
-      // deliberate second tap in the same spot drops.
-      vi.advanceTimersByTime(250);
-      // Tap 2 drops: onMove is called once with a JSON-encoded move for this round.
-      fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
-      expect(onMove).toHaveBeenCalledTimes(1);
-      const [round, moveString] = onMove.mock.calls[0]!;
-      expect(round).toBe(4);
-      const move = JSON.parse(moveString as string);
-      expect(move).toHaveProperty('angle');
-      expect(move).toHaveProperty('dropX');
-      expect(move).toHaveProperty('dropY');
-      expect(typeof move.dropX).toBe('number');
-      expect(typeof move.dropY).toBe('number');
-    } finally {
-      vi.useRealTimers();
-    }
+  it('the top-right button reads "Stop spin" while spinning and switches to "Drop" once stopped', () => {
+    render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={noop} />);
+    // Spinning: the aim button offers to stop the spin (a real HTML button, accessible by name).
+    const stop = screen.getByRole('button', { name: /stop the spin and lock the angle/i });
+    expect(stop).toBeDefined();
+    // Tapping it locks the angle and moves to placing; the status flips to the "then Drop" prompt.
+    fireEvent.click(stop);
+    expect(screen.getByRole('status').textContent).toMatch(/move it into place, then Drop/i);
+    // With the piece above the required line, the button now offers the Drop action.
+    expect(screen.getByRole('button', { name: /drop the piece/i })).toBeDefined();
   });
 
-  it('swallows a reflexive double-tap (lock+drop in the same spot with no delay does not drop)', () => {
-    vi.useFakeTimers();
-    try {
-      const onMove = vi.fn();
-      render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={onMove} />);
-      const board = screen.getByRole('img', { name: /aim and drop the piece/i })
-        .parentElement as HTMLElement;
-      // Two fast taps in the SAME spot with no debounce elapsed: the first locks, the second is
-      // swallowed by the guard, so the irreversible drop does not fire.
-      fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
-      fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
-      expect(onMove).not.toHaveBeenCalled();
-      // Still aimable - the piece was not committed, so the board keeps its interactive aim label.
-      expect(screen.getByRole('img', { name: /aim and drop the piece/i })).toBeDefined();
-    } finally {
-      vi.useRealTimers();
-    }
+  it('canvas moves the piece, then Stop spin + Drop calls onMove with a JSON {angle,dropX,dropY}', () => {
+    const onMove = vi.fn();
+    render(<TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={onMove} />);
+    const board = screen.getByRole('img', { name: /aim and drop the piece/i })
+      .parentElement as HTMLElement;
+    // The canvas only MOVES the piece now - a tap/drag never drops.
+    fireEvent.pointerDown(board, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(board, { pointerId: 1, clientX: 120, clientY: 90 });
+    expect(onMove).not.toHaveBeenCalled();
+    // Stop the spin (locks the angle), then Drop via the top-right button.
+    fireEvent.click(screen.getByRole('button', { name: /stop the spin and lock the angle/i }));
+    fireEvent.click(screen.getByRole('button', { name: /drop the piece/i }));
+    expect(onMove).toHaveBeenCalledTimes(1);
+    const [round, moveString] = onMove.mock.calls[0]!;
+    expect(round).toBe(4);
+    const move = JSON.parse(moveString as string);
+    expect(move).toHaveProperty('angle');
+    expect(move).toHaveProperty('dropX');
+    expect(move).toHaveProperty('dropY');
+    expect(typeof move.dropX).toBe('number');
+    expect(typeof move.dropY).toBe('number');
   });
 
   it('maps a server rejection reason to player-clear copy', () => {

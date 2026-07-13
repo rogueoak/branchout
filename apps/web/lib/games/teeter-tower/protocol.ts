@@ -83,6 +83,12 @@ export interface TeeterSim {
    * previews legality; the server is authoritative.
    */
   requiredLine: number;
+  /**
+   * The current level's platform: its width (px) and whether it has short side walls. The client draws
+   * the platform + walls and derives the horizontal drop clamp from this (authoritative), so a
+   * per-level platform (level 1 is wider + walled) is honored without a hardcoded width.
+   */
+  platform: { width: number; walls: boolean };
   /** True once the final level is cleared - the game is over. */
   over: boolean;
 }
@@ -204,6 +210,14 @@ function asPiece(value: unknown): Piece | null {
   return null;
 }
 
+/** Decode the platform config `{ width, walls }`, or null on any shape mismatch. */
+function asPlatform(value: unknown): { width: number; walls: boolean } | null {
+  if (!isRecord(value)) return null;
+  return isNum(value.width) && typeof value.walls === 'boolean'
+    ? { width: value.width, walls: value.walls }
+    : null;
+}
+
 /**
  * Decode a `sim` payload as a Teeter live snapshot, or null if it is not one. `bodies` may be empty
  * (a fresh tower) and `next` may be null (the game is over), so those are validated but not required
@@ -215,9 +229,11 @@ export function asTeeterSim(value: unknown): TeeterSim | null {
   // next is Piece | null: either a decodable piece or an explicit null.
   const next = value.next === null ? null : asPiece(value.next);
   const nextOk = value.next === null || next !== null;
+  const platform = asPlatform(value.platform);
   if (
     bodies &&
     nextOk &&
+    platform &&
     typeof value.activePlayer === 'string' &&
     isNum(value.height) &&
     isNum(value.score) &&
@@ -235,6 +251,7 @@ export function asTeeterSim(value: unknown): TeeterSim | null {
       level: value.level,
       target: value.target,
       requiredLine: value.requiredLine,
+      platform,
       over: value.over,
     };
   }

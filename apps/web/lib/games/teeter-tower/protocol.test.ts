@@ -28,6 +28,7 @@ function sim(overrides: Record<string, unknown> = {}) {
     level: 0,
     target: 600,
     requiredLine: 480,
+    platform: { width: 480, walls: false },
     over: false,
     ...overrides,
   };
@@ -43,6 +44,7 @@ describe('asTeeterSim', () => {
     expect(decoded?.next?.id).toBe(7);
     expect(decoded?.next?.spinSeed).toBe(0.02);
     expect(decoded?.requiredLine).toBe(480);
+    expect(decoded?.platform).toEqual({ width: 480, walls: false });
     expect(decoded?.over).toBe(false);
   });
 
@@ -68,6 +70,10 @@ describe('asTeeterSim', () => {
     expect(asTeeterSim(sim({ over: 'yes' }))).toBeNull();
     // next is Piece | null - an malformed object (not null) is rejected.
     expect(asTeeterSim(sim({ next: { id: 1 } }))).toBeNull();
+    // platform must be a { width:number, walls:boolean } object.
+    expect(asTeeterSim(sim({ platform: undefined }))).toBeNull();
+    expect(asTeeterSim(sim({ platform: { width: 480 } }))).toBeNull();
+    expect(asTeeterSim(sim({ platform: { width: 480, walls: 'yes' } }))).toBeNull();
   });
 
   it('rejects a body with a malformed vertex loop', () => {
