@@ -155,9 +155,11 @@ export function grantCredits(gamerTag: string, amount = 200): void {
     ],
     { cwd: repoRoot, env: composeEnv, encoding: 'utf8' },
   );
-  // psql prints "INSERT 0 <n>"; a 0-row insert means either the tag never landed or the top-up already
-  // ran (ON CONFLICT). A genuinely missing account is the failure we want to catch, so re-check it.
-  if (!/INSERT\s+0\s+[1-9]/.test(out) && !/INSERT\s+0\s+0/.test(out)) {
+  // psql prints "INSERT 0 <n>". A fresh unique account (just created by signUp) yields "INSERT 0 1";
+  // ON CONFLICT makes an accidental re-run a harmless no-op ("INSERT 0 0"). We only guard that the
+  // command ran (an INSERT line, not a psql error/typo) - a genuinely missing account is already caught
+  // loudly upstream by the grantInsider call on the same tag, so we do not re-check it here.
+  if (!/INSERT\s+0\s+\d+/.test(out)) {
     throw new Error(`grantCredits: unexpected psql output for ${gamerTag} (got: ${out.trim()})`);
   }
 }

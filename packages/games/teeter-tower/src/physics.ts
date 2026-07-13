@@ -327,6 +327,9 @@ function bodyFromStored(
         frictionStatic: PIECE_FRICTION_STATIC,
       });
     });
+    // `density` (via opts) applies at the COMPOUND level, not per-part. Fine today: the only heavy piece
+    // (the trapezoid) is single-body, so this branch always runs at PIECE_DENSITY. A future compound
+    // heavy piece would need per-part density here to restore its exact mass distribution.
     body = Body.create({ parts, ...opts });
   }
   Body.setPosition(body, { x, y });

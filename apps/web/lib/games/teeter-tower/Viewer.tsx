@@ -431,7 +431,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
         ? 'Dropping the piece.'
         : aim === 'spinning'
           ? 'Your turn: move the piece on the board, then Stop spin to lock the angle.'
-          : 'Your turn: move it into place, then Drop. The drop is final, no re-aim.'
+          : dropLegal
+            ? 'Your turn: move it into place, then Drop. The drop is final, no re-aim.'
+            : 'Your turn: the piece is below the line - move it higher before you can drop.'
       : watchingName
         ? `Watching ${watchingName} build the tower.`
         : '',
@@ -479,7 +481,13 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
         {isActive && !dropped ? (
           <button
             type="button"
-            aria-label={aim === 'spinning' ? 'Stop the spin and lock the angle' : 'Drop the piece'}
+            aria-label={
+              aim === 'spinning'
+                ? 'Stop the spin and lock the angle'
+                : dropLegal
+                  ? 'Drop the piece'
+                  : 'The piece is below the line - move it higher before dropping'
+            }
             disabled={aim === 'placing' && !dropLegal}
             onPointerDown={(e) => e.stopPropagation()}
             onPointerUp={(e) => e.stopPropagation()}
@@ -495,7 +503,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
         {state.rejected ? (
           <p
             role="alert"
-            className="absolute inset-x-0 top-0 m-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
+            // Sits BELOW the top-right aim button (top-14, clearing its 44px height + top-2 offset) so
+            // the rejection copy stays legible next to the button on a ~360px screen instead of under it.
+            className="absolute inset-x-0 top-14 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
           >
             {rejectionMessage(state.rejected)}
           </p>

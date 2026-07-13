@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   CENTER_X,
+  DROP_EDGE_MARGIN,
   DROP_HALF_RANGE,
   GROUND_TOP,
   PLATFORM_W,
   VIEW_H,
   VIEW_W,
+  WALL_HEIGHT,
+  WALL_THICKNESS,
   clampDropX,
   levelView,
   visibleLeftX,
@@ -25,7 +28,12 @@ describe('render world constants mirror the engine (packages/games/teeter-tower/
     expect(GROUND_TOP).toBe(540);
     expect(PLATFORM_W).toBe(480);
     expect(CENTER_X).toBe(410); // VIEW_W / 2
+    expect(DROP_EDGE_MARGIN).toBe(90);
     expect(DROP_HALF_RANGE).toBe(PLATFORM_W / 2 + 90); // 330
+    // Level-1 side-wall geometry: the drawn curbs must match the engine's simulated ones exactly, or
+    // pieces visually rest against a wall that isn't where collisions happen.
+    expect(WALL_THICKNESS).toBe(18);
+    expect(WALL_HEIGHT).toBe(70);
   });
 
   it('matches the engine TOTAL_ROUNDS (11 + 20 + 22 piece budgets)', () => {

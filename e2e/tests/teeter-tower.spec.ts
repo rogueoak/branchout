@@ -62,6 +62,10 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   // The engine dropped the piece into the live world and streamed it back: the tower now has non-zero
   // height and a fresh piece is offered. This proves the full live-authoritative loop, not a freeze.
   await expect(page.getByText(/tower [1-9]\d* of 450 pixels/i)).toBeVisible({ timeout: 30_000 });
+  // Explicitly still on level 1: a single drop should gain height, NOT clear the level. If a future
+  // fit/target/platform tweak pushed the drop position above target, this fails loudly rather than the
+  // "of 450 pixels" assertion silently passing on a level-2 board.
+  await expect(page.getByText(/Level 1, Warm-up/i)).toBeVisible();
   // No rejection surfaced. Scope to the game viewer: the page carries an always-present empty top-level
   // aria-live alert region, so the assertion targets the viewer's own rejection <p role="alert"> only.
   await expect(page.getByRole('region', { name: /game viewer/i }).getByRole('alert')).toHaveCount(

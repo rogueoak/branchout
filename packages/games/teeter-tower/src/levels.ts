@@ -34,6 +34,13 @@ export const WALL_THICKNESS = 18;
 export const WALL_HEIGHT = 70;
 
 /**
+ * Level 1's near-full-width platform (px). Wider than the default PLATFORM_W (480) and close to the
+ * VIEW_W (820) frame, so the warm-up gives pieces room to land; it also drives the drop-x clamp and the
+ * side-wall placement for the walled level.
+ */
+export const WIDE_PLATFORM_W = 760;
+
+/**
  * A level definition: target height (px above the platform), piece budget, optional pendulum, and the
  * platform config (its width + whether it has side walls). Level 1 is a wide, walled warm-up so pieces
  * do not slide off; levels 2/3 keep the narrower open platform.
@@ -53,7 +60,14 @@ export const LEVELS: readonly Level[] = [
   // Level 1's target is 450 (feedback 0023: 25% lower than the old 600) for an easier warm-up, on a
   // near-full-width walled platform so pieces do not slide off the edges. Levels 2/3 keep the narrower
   // open platform and the prototype's 620 target.
-  { name: 'Warm-up', target: 450, pieces: 11, pendulum: false, platformWidth: 760, walls: true },
+  {
+    name: 'Warm-up',
+    target: 450,
+    pieces: 11,
+    pendulum: false,
+    platformWidth: WIDE_PLATFORM_W,
+    walls: true,
+  },
   {
     name: 'Reach for the sky',
     target: 620,

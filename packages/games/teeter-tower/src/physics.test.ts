@@ -26,7 +26,16 @@ import {
   type LiveWorld,
   type StoredBody,
 } from './physics';
-import { GROUND_TOP, LEVELS, PIECE_DENSITY, PLATFORM_W } from './levels';
+import {
+  CENTER_X,
+  GROUND_TOP,
+  LEVELS,
+  PIECE_DENSITY,
+  PLATFORM_W,
+  WALL_HEIGHT,
+  WALL_THICKNESS,
+  WIDE_PLATFORM_W,
+} from './levels';
 
 /** A stored rectangle body, centered at (x, y-half..y+half), for building test scenes. */
 function block(id: number, x: number, y: number, w: number, h: number): StoredBody {
@@ -69,6 +78,70 @@ function worldWith(bodies: StoredBody[], target = LEVELS[0]!.target, pendulum = 
     walls: false,
   });
 }
+
+describe('level-1 side walls (feedback 0023: pieces do not slide off)', () => {
+  /** A live world at the walled level-1 platform (the only walled level). */
+  function walledWorld(): LiveWorld {
+    return createWorld({
+      seed: 1,
+      levelIndex: 0,
+      bestHeight: 0,
+      totalScore: 0,
+      pieceIndex: 0,
+      bodies: [],
+      next: null,
+      target: LEVELS[0]!.target,
+      pendulum: false,
+      platformWidth: WIDE_PLATFORM_W,
+      walls: true,
+    });
+  }
+
+  it('builds two static side curbs, inner faces flush with the platform edges', () => {
+    const world = walledWorld();
+    expect(world.walls).toHaveLength(2);
+    expect(world.walls.every((w) => w.isStatic)).toBe(true);
+    const xs = world.walls.map((w) => w.position.x).sort((a, b) => a - b);
+    // One curb left of centre, one right, each near the wide platform's edge.
+    expect(xs[0]!).toBeLessThan(CENTER_X);
+    expect(xs[1]!).toBeGreaterThan(CENTER_X);
+    expect(xs[1]! - xs[0]!).toBeCloseTo(WIDE_PLATFORM_W - WALL_THICKNESS, 5);
+  });
+
+  it('a piece at the platform edge is blocked ONLY because the wall is there', () => {
+    const world = walledWorld();
+    // A small box sitting at the right curb's centre - above the platform top (so it never touches the
+    // platform), overlapping only the wall. Without the walls the scene reads clear; with them, blocked.
+    const rightWallX = CENTER_X + WIDE_PLATFORM_W / 2 - WALL_THICKNESS / 2;
+    const held = heldBodyAt(
+      [
+        [
+          { x: -12, y: -12 },
+          { x: 12, y: -12 },
+          { x: 12, y: 12 },
+          { x: -12, y: 12 },
+        ],
+      ],
+      rightWallX,
+      GROUND_TOP - WALL_HEIGHT / 2,
+      0,
+    );
+    expect(overlapsScene(held, world.platform, [], world.pendulum, [])).toBe(false);
+    expect(overlapsScene(held, world.platform, [], world.pendulum, world.walls)).toBe(true);
+    // And the full placement verdict rejects it as an overlap (the server's authoritative gate).
+    const verdict = evaluatePlacement(
+      held,
+      LEVELS[0]!.target,
+      0,
+      world.platform,
+      [],
+      world.pendulum,
+      world.walls,
+    );
+    expect(verdict.ok).toBe(false);
+    expect(verdict.reason).toBe('overlap');
+  });
+});
 
 describe('heavy trapezoid (the special reinforcement piece)', () => {
   const HEAVY = PIECE_DENSITY * TRAP_DENSITY_MULT;
