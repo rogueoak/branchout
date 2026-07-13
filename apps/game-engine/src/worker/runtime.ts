@@ -67,7 +67,9 @@ export interface SessionRuntime {
 export interface GameRuntimeProvider {
   /**
    * The runtime for a session, keyed by `room:game`. Builds/initializes the worker (or in-process
-   * module) on first use; the `seed` makes a rebuild after a worker respawn deterministic (spec 0044).
+   * module) on first use; the `seed` keys the module's rng, so a worker respawned after a crash
+   * rebuilds the same procedural content (e.g. Teeter's piece stream). The world itself is rebuilt
+   * from the persisted `ctx.scratch` snapshot - a best-effort physics resume, not a bit-identical one.
    */
   runtime(key: string, game: string, seed: number): Promise<SessionRuntime>;
   /** Tear down a session's worker (on endGame/exit/restart). Safe if none exists. */

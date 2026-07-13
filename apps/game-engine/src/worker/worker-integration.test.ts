@@ -68,7 +68,7 @@ describe('game worker (real worker_thread)', () => {
     );
   }, 20_000);
 
-  it('respawns and rebuilds after the worker is torn down, transparently to the caller', async () => {
+  it('respawns and rebuilds the same procedural content after the worker is torn down', async () => {
     const provider = new WorkerRuntimeProvider(makeManager());
     const key = 'room1:teeter-tower';
 
@@ -82,8 +82,22 @@ describe('game worker (real worker_thread)', () => {
 
     const second = await provider.runtime(key, 'teeter-tower', 5);
     const after = await second.configure({}, [player]);
-    // Same seed + same config -> identical build, proving the deterministic rebuild after a respawn.
-    expect(after.rounds).toBe(before.rounds);
+    // Same seed -> byte-identical build (Teeter derives its piece-stream seed from the rng), proving
+    // the respawn replays the same procedural content, not just the same static round count.
+    expect(after).toEqual(before);
+  }, 30_000);
+
+  it('a different seed yields different procedural content (the seed genuinely drives the build)', async () => {
+    // Guards the test above from being vacuous: if the build ignored the seed, the equality would
+    // pass trivially. Two workers with different seeds must produce different scratch.
+    const provider = new WorkerRuntimeProvider(makeManager());
+    const a = await (
+      await provider.runtime('roomS1:teeter-tower', 'teeter-tower', 111)
+    ).configure({}, [player]);
+    const b = await (
+      await provider.runtime('roomS2:teeter-tower', 'teeter-tower', 222)
+    ).configure({}, [player]);
+    expect(a.scratch).not.toEqual(b.scratch);
   }, 30_000);
 
   it('keeps sessions isolated: disposing one worker leaves another serving', async () => {

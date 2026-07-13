@@ -7,10 +7,8 @@
 // module then rebuilds lazily from the ctx scratch on the next call.
 
 import { parentPort } from 'node:worker_threads';
-import { createFsAssetLoaderFactory, type GameModule, type GamePlugin } from '@branchout/game-sdk';
-import { triviaPlugin } from '@branchout/game-trivia';
-import { liarLiarPlugin } from '@branchout/game-liar-liar';
-import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { createFsAssetLoaderFactory, type GameModule } from '@branchout/game-sdk';
+import { PLUGINS } from '../games';
 import type {
   CallMessage,
   EngineToWorker,
@@ -18,9 +16,6 @@ import type {
   WorkerCapabilities,
   WorkerToEngine,
 } from './protocol';
-
-/** The plugin registry the worker builds its one module from - the same list the engine boots with. */
-const PLUGINS: readonly GamePlugin[] = [triviaPlugin, liarLiarPlugin, teeterTowerPlugin];
 
 /** A seeded, deterministic [0,1) rng (Mulberry32), so a build is reproducible from the init seed. */
 function seededRng(seed: number): () => number {

@@ -180,6 +180,47 @@ describe('WorkerManager', () => {
     });
   });
 
+  it('reopens a slot for a new session after one is disposed (the cap is a live count)', async () => {
+    const { manager } = managerWith([new FakeWorker({}), new FakeWorker({}), new FakeWorker({})], {
+      max: 2,
+    });
+
+    await manager.call('roomA:trivia', 'trivia', 1, 'startRound', payload);
+    await manager.call('roomB:trivia', 'trivia', 1, 'startRound', payload);
+    await expect(
+      manager.call('roomC:trivia', 'trivia', 1, 'startRound', payload),
+    ).rejects.toBeInstanceOf(WorkerCapError);
+
+    // Freeing a slot lets a new session spawn - the cap counts live workers, not a high-water mark.
+    await manager.dispose('roomA:trivia');
+    await expect(manager.call('roomC:trivia', 'trivia', 1, 'startRound', payload)).resolves.toEqual(
+      {
+        echoed: 1,
+      },
+    );
+    expect(manager.size()).toBe(2);
+  });
+
+  it('a hung session does not block a healthy neighbor while its call is outstanding', async () => {
+    const hung = new FakeWorker({ onCall: 'silent' }); // never replies - the call is left in flight
+    const healthy = new FakeWorker({});
+    const { manager } = managerWith([hung, healthy], { callTimeoutMs: 10_000 });
+
+    const stalled = manager.call('roomA:teeter', 'teeter-tower', 1, 'tick', payload);
+    const guard = stalled.catch(() => 'rejected'); // it eventually times out on dispose; absorb that
+
+    // The neighbor's worker answers immediately even though A's request is stuck - the hang is
+    // contained to A's thread and never occupies the main loop (the whole point of the spec).
+    await expect(manager.call('roomB:trivia', 'trivia', 1, 'startRound', payload)).resolves.toEqual(
+      {
+        echoed: 1,
+      },
+    );
+
+    await manager.dispose('roomA:teeter'); // clean up A's pending call + its timer
+    await expect(guard).resolves.toBe('rejected');
+  });
+
   it('contains a crash: rejects the in-flight call, drops the worker, respawns on the next call', async () => {
     const dead = new FakeWorker({ onCall: 'silent' }); // accepts the call but never replies...
     const fresh = new FakeWorker({}); // ...the respawn answers normally

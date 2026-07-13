@@ -1,5 +1,20 @@
 import { requireEnv } from '@branchout/service-runtime';
 
+/**
+ * Parse a positive-integer env var, falling back to `fallback` when unset, non-numeric, or <= 0.
+ * Guards the worker cap/timeout against a fail-open misconfig (e.g. `GAME_WORKER_MAX=abc` -> NaN ->
+ * `size >= NaN` is always false -> the cap silently disables). A bad value warns and uses the default.
+ */
+function positiveIntEnv(raw: string | undefined, fallback: number): number {
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    console.warn(`[game-engine] ignoring invalid config value "${raw}"; using ${fallback}`);
+    return fallback;
+  }
+  return Math.floor(n);
+}
+
 export interface ServiceConfig {
   port: number;
   redisUrl: string;
@@ -19,9 +34,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     redisUrl: requireEnv(env, 'REDIS_URL'),
     ...(controlPlaneUrl ? { controlPlaneUrl } : {}),
     // A generous default cap: one worker per concurrent room+game. Tune down under memory pressure.
-    workerMax: Number(env.GAME_WORKER_MAX ?? 64),
+    workerMax: positiveIntEnv(env.GAME_WORKER_MAX, 64),
     // 2s covers a slow module build (Trivia loads ~1600 questions) and a fat physics tick with wide
     // headroom over the 40ms cadence, while still killing a truly wedged worker within a beat.
-    workerCallTimeoutMs: Number(env.GAME_WORKER_CALL_TIMEOUT_MS ?? 2000),
+    workerCallTimeoutMs: positiveIntEnv(env.GAME_WORKER_CALL_TIMEOUT_MS, 2000),
   };
 }

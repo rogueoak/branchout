@@ -12,11 +12,7 @@ import type { WorkerHandle, WorkerSpawn } from './manager';
  * they are unused here. A Node `Worker` already satisfies {@link WorkerHandle} (postMessage/on/terminate).
  */
 export function createWorkerSpawn(workerUrl: URL, execArgv: string[] = []): WorkerSpawn {
-  return (): WorkerHandle =>
-    new Worker(workerUrl, {
-      execArgv,
-      // Surface the worker's own stdout/stderr on the engine's streams (crash stacks, native warnings).
-      stdout: false,
-      stderr: false,
-    }) as unknown as WorkerHandle;
+  // Node pipes a worker's stdout/stderr to the parent's by default, so crash stacks + native warnings
+  // already surface on the engine's streams; we pass only execArgv.
+  return (): WorkerHandle => new Worker(workerUrl, { execArgv }) as unknown as WorkerHandle;
 }

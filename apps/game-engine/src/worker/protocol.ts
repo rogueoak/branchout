@@ -47,7 +47,8 @@ export interface InitMessage {
   type: 'init';
   /** The game id this worker is dedicated to (resolves the plugin). */
   game: string;
-  /** The base seed for a reproducible rng, so a respawned worker rebuilds deterministically (spec 0044). */
+  /** The base seed for the module's rng, so a respawned worker rebuilds the same procedural content
+   * (piece stream / question pick). The world is rebuilt from the ctx scratch - a best-effort resume. */
   seed: number;
 }
 

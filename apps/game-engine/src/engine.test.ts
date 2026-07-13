@@ -8,7 +8,13 @@ import type {
 } from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import type { GameModule } from '@branchout/game-sdk';
-import { GameEngine, NoSessionError, UnknownPlayerError, AUTO_ADVANCE_MS } from './engine';
+import {
+  GameEngine,
+  NoSessionError,
+  UnknownPlayerError,
+  AUTO_ADVANCE_MS,
+  MAX_SIM_TICK_FAILURES,
+} from './engine';
 
 /** `join` returns the ordered catch-up frames; the authoritative `state` frame is the last one. */
 function stateFrame(frames: ServerMessage[]): StateMessage {
@@ -1213,5 +1219,68 @@ describe('GameEngine live game (sim loop)', () => {
     expect(h.worlds.get('r1')?.pieces).toBe(0);
     expect((await h.engine.getState('r1', LIVE_GAME_ID))?.scratch.pieces).toBe(0);
     expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('collecting');
+  });
+
+  // Under worker isolation (spec 0045) a live tick runs in a worker that can crash or be killed for
+  // hanging, surfacing as a rejected `tick`. The sim loop must swallow it (not end/error the game) and
+  // recover on a later tick, and must not respawn forever if the worker is persistently wedged. A tick
+  // that throws in the in-process module rejects the runtime's `tick`, standing in for that failure.
+
+  /** A live game whose `tick` throws its first `failCount` calls, then behaves normally. */
+  function flakyLiveHarness(failCount: number) {
+    const store = new InMemorySessionStore();
+    const pubsub = new InMemoryPubSub();
+    const reporter = new CapturingReporter();
+    const scheduler = new ManualScheduler();
+    const base = liveStubGame().module;
+    let ticks = 0;
+    const module: GameModule = {
+      ...base,
+      tick: (ctx) => {
+        ticks += 1;
+        if (ticks <= failCount) throw new Error('worker tick crashed');
+        return base.tick!(ctx);
+      },
+    };
+    const engine = new GameEngine({
+      runtimeProvider: new InProcessRuntimeProvider([module]),
+      store,
+      pubsub,
+      reporter,
+      scheduler,
+      logger: { error: () => {} },
+    });
+    return { engine, pubsub, ticksSoFar: () => ticks };
+  }
+
+  it('survives a few rejecting ticks and recovers streaming on a later tick', async () => {
+    const h = flakyLiveHarness(2); // two crashes, then healthy - under the stop threshold
+    const sims: unknown[] = [];
+    await h.pubsub.subscribe(streamChannel('r1', LIVE_GAME_ID), (frame) => {
+      if (frame.type === 'sim') sims.push((frame as { sim: unknown }).sim);
+    });
+    await h.engine.start(liveHandoff());
+    await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+
+    // The first two ticks reject: nothing streams, but the game stays live (not ended, no throw leaks).
+    await vi.advanceTimersByTimeAsync(80);
+    expect(sims).toEqual([]);
+    expect((await h.engine.getState('r1', LIVE_GAME_ID))?.phase).toBe('collecting');
+
+    // The next tick succeeds - the loop recovered and streams again.
+    await vi.advanceTimersByTimeAsync(40);
+    expect(sims.length).toBeGreaterThan(0);
+    expect(h.ticksSoFar()).toBeGreaterThanOrEqual(3);
+  });
+
+  it('stops the sim loop after too many consecutive tick failures (no respawn thrash)', async () => {
+    const h = flakyLiveHarness(Number.MAX_SAFE_INTEGER); // never recovers
+    await h.engine.start(liveHandoff());
+    await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada');
+
+    // Let far more than the failure budget of intervals elapse. The loop stops after the cap, so the
+    // tick count is exactly MAX_SIM_TICK_FAILURES - not attempted forever every 40ms.
+    await vi.advanceTimersByTimeAsync(40 * (MAX_SIM_TICK_FAILURES + 10));
+    expect(h.ticksSoFar()).toBe(MAX_SIM_TICK_FAILURES);
   });
 });

@@ -26,6 +26,7 @@ import type { ControlPlaneReporter } from './reporter';
 import { realScheduler, type Scheduler } from './scheduler';
 import { streamChannel, type PubSub } from './pubsub';
 import { sessionKey, type SessionState, type SessionStore } from './session';
+import { UnknownGameError } from './registry';
 import type { GameRuntimeProvider, SessionRuntime } from './worker/runtime';
 
 /** Host controls applied to a running session. */
@@ -44,6 +45,14 @@ export const AUTO_ADVANCE_MS = 2000;
  * in real time. Turn-based games have no tick and never start this loop.
  */
 export const TICK_MS = 40;
+
+/**
+ * Consecutive failed sim ticks (a crashed/hung worker that was killed) before the engine stops the
+ * loop for that session instead of respawning forever (spec 0045). A single transient crash recovers
+ * on the next tick (the counter resets on any success); only a persistently wedged worker trips this,
+ * halting the kill/respawn/rebuild thrash. A host pause/resume or reconnect re-arms the loop.
+ */
+export const MAX_SIM_TICK_FAILURES = 5;
 
 export class NoSessionError extends Error {
   constructor(room: string, game: string) {
@@ -87,6 +96,10 @@ export class GameEngine {
   private readonly locks = new Map<string, Promise<unknown>>();
   /** Per-session sim-loop interval handles for live games (spec 0044); absent when not looping. */
   private readonly simTimers = new Map<string, NodeJS.Timeout>();
+  /** Sessions with a sim tick in flight, so the interval drops a frame rather than queuing it (0045). */
+  private readonly simTicking = new Set<string>();
+  /** Consecutive failed sim ticks per session, to stop the loop after {@link MAX_SIM_TICK_FAILURES}. */
+  private readonly simFailures = new Map<string, number>();
   /** The most recent `sim` payload per session, so a joiner catches up to the live world at once. */
   private readonly lastSim = new Map<string, unknown>();
 
@@ -125,10 +138,15 @@ export class GameEngine {
    * round-trip. Always called inside `run()`, so a session's calls stay serialized.
    */
   private runtimeFor(state: SessionState): Promise<SessionRuntime> {
+    // Backfill a seed for a session persisted before spec 0045 (its `seed` is absent). The mutation
+    // is picked up by the next store.save; the shipped games never re-run `configure` on a resume, so
+    // this only matters for a future game that draws from rng after start.
+    if (typeof state.seed !== 'number') state.seed = this.newSeed();
     return this.runtimeProvider.runtime(sessionKey(state.room, state.game), state.game, state.seed);
   }
 
-  /** A fresh base seed for a session's worker rng, so a rebuilt worker is deterministic (spec 0045). */
+  /** A fresh base seed for a session's worker rng, so a rebuilt worker replays the same procedural
+   * content (Teeter's piece stream); the physics world resumes from the persisted scratch (spec 0045). */
   private newSeed(): number {
     return Math.floor(Math.random() * 0x7fffffff);
   }
@@ -142,6 +160,12 @@ export class GameEngine {
       // 0006 can re-hand-off the same game into a room without the session wedging forever.
       if (existing && existing.phase !== 'complete') {
         return { v: PROTOCOL_VERSION, room: req.room, game: req.game, status: 'running' };
+      }
+      // Reject an unknown game id here, before spawning a worker that would only fail to build (spec
+      // 0045) - a clean UnknownGameError (400) instead of a wasted spawn + opaque init error. Skipped
+      // when no manifests were injected (unit tests wire the runtime directly).
+      if (this.configSchemas && !this.configSchemas.has(req.game)) {
+        throw new UnknownGameError(req.game);
       }
       // Validate the opaque handoff config against the game's manifest schema at the boundary. It
       // throws on invalid config, which app.ts turns into a 400. The game's own configure() still
@@ -771,15 +795,20 @@ export class GameEngine {
     if (this.simTimers.has(key)) return;
     const { room, game } = state;
     const timer = setInterval(() => {
+      // Drop this frame if the prior tick is still in flight (a slow/hung worker) rather than queuing
+      // it behind - a fixed-cadence sim skips frames, it must not accumulate a backlog (spec 0045).
+      if (this.simTicking.has(key)) return;
+      this.simTicking.add(key);
       void this.run(key, async () => {
         // A timer can outlive the state it was armed for; bail on anything but a running live round.
         if (!this.simTimers.has(key)) return;
         const current = await this.store.load(room, game);
         if (!current || current.paused || current.phase === 'complete') return;
         // The tick runs in the session's worker (spec 0045) - the physics compute stays off the main
-        // event loop; the timer + streaming stay here. A crashed/hung worker rejects, and `run`'s
-        // guard swallows it, so a bad tick is skipped and the next tick respawns + rebuilds the world.
+        // event loop; the timer + streaming stay here. A crashed/hung worker rejects (handled below),
+        // so a bad tick is skipped and the next tick respawns + rebuilds the world.
         const result = await runtime.tick(this.context(current));
+        this.simFailures.delete(key); // a good tick clears the consecutive-failure count
         current.scratch = result.scratch;
         this.lastSim.set(key, result.sim);
         // Idle guard: with ZERO connected devices there is nobody to stream to and no move can land,
@@ -798,7 +827,22 @@ export class GameEngine {
           await this.endGame(current, runtime);
           await this.store.save(current);
         }
-      });
+      })
+        .catch((error: unknown) => {
+          // The tick rejected: the worker crashed or its call timed out and was killed. The next
+          // interval respawns it and rebuilds the world from scratch. Guard against thrash - if it
+          // keeps failing, stop the loop so we do not kill/respawn/rebuild forever (spec 0045).
+          const failures = (this.simFailures.get(key) ?? 0) + 1;
+          this.simFailures.set(key, failures);
+          if (failures >= MAX_SIM_TICK_FAILURES) {
+            this.logger.error(
+              `[game-engine] sim loop ${key} failed ${failures} ticks in a row; stopping it`,
+              error,
+            );
+            this.stopSimLoop(key);
+          }
+        })
+        .finally(() => this.simTicking.delete(key));
     }, TICK_MS);
     if (typeof timer === 'object' && 'unref' in timer) timer.unref();
     this.simTimers.set(key, timer);
@@ -809,6 +853,7 @@ export class GameEngine {
     const timer = this.simTimers.get(key);
     if (timer) clearInterval(timer);
     this.simTimers.delete(key);
+    this.simFailures.delete(key);
   }
 
   /** Freeze the answer countdown when the game pauses mid-`collecting` so it does not tick away. */
