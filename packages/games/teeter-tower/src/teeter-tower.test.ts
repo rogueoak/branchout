@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import type { LiveTickResult, RoundContext, SessionPlayer } from '@branchout/game-sdk';
 import { createTeeterTowerGame } from './teeter-tower';
 import { GROUND_TOP, LEVELS, levelAt, PAR_PENALTY, TOTAL_ROUNDS } from './levels';
-import { MAX_PLACED_BODIES, type StoredBody } from './physics';
+import { MAX_PLACED_BODIES, MAX_SETTLE_TICKS, type StoredBody } from './physics';
 import type { TeeterMove, TeeterSim } from './types';
 
 /** A fixed rng so `configure` derives a stable base seed. Returns a constant per game. */
@@ -102,7 +102,7 @@ describe('startRound', () => {
 });
 
 describe('collectMove (apply to the live world)', () => {
-  it('adds a dynamic body on a legal drop and advances the aim piece', () => {
+  it('adds a dynamic body on a legal drop and advances the piece index', () => {
     const game = createTeeterTowerGame(stubRng(0.5));
     const scratch = game.configure({}, players('p1')).scratch;
     const base = ctx({ scratch });
@@ -116,6 +116,63 @@ describe('collectMove (apply to the live world)', () => {
     const after = collected.scratch as { bodies: StoredBody[]; pieceIndex: number };
     expect(after.bodies).toHaveLength(1);
     expect(after.pieceIndex).toBe(1);
+  });
+
+  it('pauses between pieces: clears the aim piece on a drop, re-offers it once settled (feedback 0027)', () => {
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const scratch0 = game.configure({}, players('p1')).scratch;
+    const base = ctx({ scratch: scratch0 });
+    const started = game.startRound(base);
+    // The FIRST piece is offered immediately (empty/settled scene) - no start-of-game pause.
+    expect((started.prompt as TeeterSim).next).not.toBeNull();
+    // Drop it from up high so it falls for a while.
+    const dropped = game.collectMove(
+      { ...base, scratch: started.scratch },
+      'p1',
+      JSON.stringify(move(0, 410, GROUND_TOP - 350)),
+    );
+    expect(dropped.rejected).toBeUndefined();
+    // The aim piece is cleared immediately - nothing to aim while the last piece falls.
+    expect((dropped.scratch as { next: unknown }).next).toBeNull();
+
+    // Tick: `next` stays null while the piece is still moving, then re-appears once the tower settles
+    // (or the settle-wait cap). It must NOT come back on the very first tick - there is a real pause.
+    let cur = dropped.scratch;
+    let ticks = 0;
+    let next: unknown = null;
+    for (; ticks < MAX_SETTLE_TICKS + 20; ticks++) {
+      const t = game.tick!({ ...base, scratch: cur });
+      cur = t.scratch;
+      next = (t.sim as TeeterSim).next;
+      if (next) break;
+    }
+    expect(next).not.toBeNull(); // the next piece did re-appear (no soft-lock)
+    expect(ticks).toBeGreaterThan(1); // ...but only after a pause, not on the first tick
+  });
+
+  it('offers the next piece at the settle-wait cap even if the tower never settles (feedback 0027)', () => {
+    const game = createTeeterTowerGame(stubRng(0.5));
+    const scratch0 = game.configure({}, players('p1')).scratch;
+    const base = ctx({ scratch: scratch0 });
+    const started = game.startRound(base);
+    // Drop from the maximum release height so the piece is still airborne when the cap fires.
+    const dropped = game.collectMove(
+      { ...base, scratch: started.scratch },
+      'p1',
+      JSON.stringify(move(0, 410, GROUND_TOP - 2000)),
+    );
+    expect(dropped.rejected).toBeUndefined();
+    let cur = dropped.scratch;
+    let next: unknown = null;
+    for (let i = 0; i < MAX_SETTLE_TICKS; i++) {
+      const t = game.tick!({ ...base, scratch: cur });
+      cur = t.scratch;
+      next = (t.sim as TeeterSim).next;
+    }
+    // By the cap the next piece is offered even though the tall drop has not settled (stableHeight, the
+    // settled height, is still 0) - the pause is bounded so a never-resting scene can't soft-lock.
+    expect(next).not.toBeNull();
+    expect((cur as { stableHeight: number }).stableHeight).toBe(0);
   });
 
   it('subtracts points for each piece dropped beyond the round par (feedback 0026)', () => {

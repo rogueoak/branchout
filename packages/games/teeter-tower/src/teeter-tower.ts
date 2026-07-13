@@ -38,6 +38,7 @@ import {
   heightToScore,
   heldBodyAt,
   MAX_PLACED_BODIES,
+  MAX_SETTLE_TICKS,
   pieceForIndex,
   requiredDropHeight,
   sceneSettled,
@@ -351,8 +352,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         return { scratch: ctx.scratch as Record<string, unknown>, rejected: { reason } };
       }
 
-      // Success: add the piece as a DYNAMIC body, advance the piece index, and generate the next aim
-      // piece deterministically. No re-aim: once added it is in the live world.
+      // Success: add the piece as a DYNAMIC body, advance the piece index. No re-aim: once added it is
+      // in the live world.
       addPieceToWorld(world, piece, dropX, dropY, parsed.angle);
       world.pieceIndex += 1;
       // Over-par penalty (feedback 0026): once this round's drops exceed par, each further piece costs
@@ -360,7 +361,10 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       // DEATH_Y (it fell off) keeps its debit - you spent the drop - so this is not decremented on cull.
       world.piecesThisLevel += 1;
       if (world.piecesThisLevel > level.par) world.totalScore -= PAR_PENALTY;
-      world.next = storedPieceFrom(world.pieceIndex, pieceForIndex(world.seed, world.pieceIndex));
+      // Pause between pieces (feedback 0027): clear the aim piece; the tick offers the next one only once
+      // the tower settles (or the settle-wait cap), so a piece is never presented while the last falls.
+      world.next = null;
+      world.settleWaitTicks = 0;
 
       return { scratch: toRecord(snapshot(world)) };
     },
@@ -404,7 +408,14 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         }
       }
 
-      ensureNext(world);
+      // Pause between pieces (feedback 0027): while `next` is null (just after a drop) hold off offering
+      // the next piece until the tower has settled - or a max wait, so a never-resting scene (e.g. the
+      // pendulum) can't withhold it forever. An empty/settled scene (game start, fresh level) offers it
+      // at once. `advanceLevel` already reset the wait when the tower reset.
+      if (!world.next && !world.over) {
+        world.settleWaitTicks += 1;
+        if (sceneSettled(world) || world.settleWaitTicks >= MAX_SETTLE_TICKS) ensureNext(world);
+      }
       const scratch = snapshot(world);
       const sim = toSim(world, ctx.players);
       if (over) {
@@ -479,6 +490,7 @@ function advanceLevel(world: LiveWorld): void {
   // Fresh round: the tower is empty again, so the reported height and the per-round piece count reset.
   world.stableHeight = 0;
   world.piecesThisLevel = 0;
+  world.settleWaitTicks = 0;
   const level = levelAt(world.levelIndex);
   const fresh = createWorld({
     seed: world.seed,

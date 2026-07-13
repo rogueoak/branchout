@@ -70,21 +70,31 @@ const TAP_MAX_MOVE_PX = 12;
 const DEFAULT_AIM_Y = GROUND_TOP - 300;
 
 /**
- * While spinning, the piece hovers a FIXED gap (px) between its bottom and the required line (feedback
- * 0026): the pointer moves it left/right but not up/down, so it never bobs on the moving line. It may
- * end up above the finish line when the line is near the target - that is intended.
+ * While spinning, the piece's CENTRE hovers this fixed gap (px) above the required line (feedback
+ * 0026/0027): the pointer moves it left/right but not up/down, so it never bobs. Chosen large enough
+ * that even the tallest piece's rotated bottom stays clear of the line. It may sit above the finish
+ * line when the line is near the target - that is intended.
  */
-const SPIN_GAP = 80;
+const SPIN_GAP = 110;
 
 /**
- * The spinning piece's centroid world-y: `SPIN_GAP` above the required line, offset up by the piece's
- * rotated half-height (`spanMax`) so its BOTTOM (not its centre) sits the fixed gap above the line
- * (feedback 0026). Pure so the fixed-height-spin math is unit-testable (the transform runs in the
- * canvas draw loop, which jsdom cannot exercise).
+ * The spinning piece's centroid world-y: a FIXED gap above the required line, INDEPENDENT of the spin
+ * angle (feedback 0027). The earlier version (0026) subtracted the piece's ROTATED half-height, which
+ * changes every frame as the piece spins - so the centroid bobbed up and down. Pinning the CENTRE at a
+ * constant height lets the piece rotate in place with no vertical bob. Pure so it is unit-testable (the
+ * transform runs in the canvas draw loop, which jsdom cannot exercise).
  */
-export function spinGapY(requiredLine: number, spanMax: number): number {
-  return requiredLine - spanMax - SPIN_GAP;
+export function spinGapY(requiredLine: number): number {
+  return requiredLine - SPIN_GAP;
 }
+
+/**
+ * Cap (ms) on the interpolation window between two sim frames (feedback 0027). Frames stream ~40ms
+ * apart; after a pause the gap is the whole pause, so without this cap the tower would ease to its
+ * resumed position over that entire span (looking frozen). ~4 frames keeps normal sway smooth while
+ * recovering from a long gap within a couple of rendered frames.
+ */
+const MAX_INTERP_SPAN_MS = 160;
 
 /** Interpolate one transform between two snapshots at fraction `f` (0..1). */
 function lerp(a: number, b: number, f: number): number {
@@ -237,7 +247,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     const span = rotatedYSpan(piece, angleAt);
     const x = clampDropX(pointerRef.current.x, live.platform.width);
     if (spinning) {
-      const y = spinGapY(live.requiredLine, span.max);
+      // Angle-INDEPENDENT centroid height (feedback 0027): using span.max here made the piece bob as it
+      // spun, because the rotated half-height changes every frame. Pin the centre; let it rotate in place.
+      const y = spinGapY(live.requiredLine);
       return { x, y, legal: true, rawBottom: y + span.max };
     }
     // The piece bottom (centroid y + rotated max) must be strictly above requiredLine (smaller y).
@@ -269,9 +281,12 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
         if (ctx) {
           // Interpolate the tower between the previous and current snapshot by wall-clock time. The
           // stream is ~25 fps (40ms/frame); ease toward the newest over that window for smooth sway.
+          // CAP the span (feedback 0027): after a pause the gap between the last pre-pause frame and the
+          // first resumed frame is the whole pause duration, which would make `f` crawl and the tower
+          // look frozen mid-air on resume. Capping it recovers within a couple of frames instead.
           const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
           const prev = prevSimRef.current;
-          const span = simArrivedRef.current - prevArrivedRef.current;
+          const span = Math.min(simArrivedRef.current - prevArrivedRef.current, MAX_INTERP_SPAN_MS);
           const f =
             prev && span > 0 ? Math.max(0, Math.min(1, (now - simArrivedRef.current) / span)) : 1;
           const bodies = prev ? interpolateBodies(prev.bodies, live.bodies, f) : live.bodies;
@@ -521,7 +536,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     : 'Click to stop spin and drop';
 
   return (
-    <section aria-label="Game viewer" className="flex flex-col gap-3">
+    // Fill the height the single-surface stage gives us (feedback 0027) so the whole game fits the
+    // viewport without the page scrolling - a scrolling page under a drag-to-aim canvas breaks immersion.
+    <section aria-label="Game viewer" className="flex h-full min-h-0 flex-col gap-2">
       {/* The round/score + turn state as text for screen readers (the on-canvas HUD/hint are invisible
           to assistive tech and to automated tests). Visually hidden; announced politely. */}
       <p className="sr-only" role="status" aria-live="polite">
@@ -556,10 +573,11 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
           when a finger drifts off a small (~360px) board mid-drag; user-select/callout off stop iOS
           copy/paste while dragging to aim (mobile-first). `relative` anchors the overlays. */}
       <div
-        className="relative w-full overflow-hidden rounded-xl border border-border bg-bg"
+        className="relative w-full flex-1 overflow-hidden rounded-xl border border-border bg-bg"
         style={{
-          height: 'min(74svh, calc(100svh - 244px))',
-          minHeight: '300px',
+          // Fill the remaining stage height (flex-1); a small floor keeps it playable if a parent ever
+          // fails to hand down a height. Was a fixed svh calc, which overflowed the viewport (fb 0027).
+          minHeight: '240px',
           touchAction: 'none',
           userSelect: 'none',
           WebkitUserSelect: 'none',

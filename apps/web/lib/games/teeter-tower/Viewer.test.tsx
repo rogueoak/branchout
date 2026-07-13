@@ -319,15 +319,16 @@ describe('TeeterViewer single interactive surface', () => {
   });
 });
 
-describe('spinGapY (fixed-height spin math, feedback 0026)', () => {
-  it("puts the piece bottom SPIN_GAP above the line, offset up by the piece's rotated half-height", () => {
+describe('spinGapY (fixed-height spin math, feedback 0027)', () => {
+  it('pins the centroid a fixed gap above the line, INDEPENDENT of the spin angle (no bob)', () => {
     const requiredLine = 400;
-    const spanMax = 30;
-    const y = spinGapY(requiredLine, spanMax);
-    // Centroid sits above the line; the bottom (centroid + spanMax) is a fixed gap (80) above it.
+    const y = spinGapY(requiredLine);
+    // The centre sits a fixed gap above the line...
     expect(y).toBeLessThan(requiredLine);
-    expect(requiredLine - (y + spanMax)).toBe(80);
-    // A taller piece (bigger spanMax) hovers higher so its bottom keeps the same gap.
-    expect(spinGapY(requiredLine, 60)).toBeLessThan(y);
+    expect(requiredLine - y).toBe(110);
+    // ...and takes NO piece/angle argument, so as the piece spins (its rotated half-height changing
+    // every frame) the height never moves. It also tracks the line: a lower line lowers the piece by
+    // the same amount.
+    expect(spinGapY(500) - spinGapY(400)).toBe(100);
   });
 });
