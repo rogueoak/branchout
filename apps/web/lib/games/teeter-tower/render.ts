@@ -56,41 +56,68 @@ export function resolveChrome(el: Element | null): ChromeColors {
   };
 }
 
-/**
- * Set up the canvas transform so drawing happens in world coordinates, scaled to the element size and
- * panned by the vertical camera (`cameraY`). The camera shifts the visible world window up as the
- * tower grows (a smaller/negative `cameraY` reveals higher world-y-negative space), like the prototype.
- */
-export function withWorldTransform(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  dpr: number,
-  cameraY = 0,
-): void {
-  // Map the VIEW_W x VIEW_H world onto the device-pixel canvas, letterboxed to preserve aspect.
-  const scale = Math.min(width / VIEW_W, height / VIEW_H);
-  const offsetX = (width - VIEW_W * scale) / 2;
-  const offsetY = (height - VIEW_H * scale) / 2;
-  // cameraY is a world-space vertical pan: subtract it so a negative cameraY moves the world down on
-  // screen (revealing the upward-growing tower).
-  ctx.setTransform(
-    scale * dpr,
-    0,
-    0,
-    scale * dpr,
-    offsetX * dpr,
-    (offsetY - cameraY * scale) * dpr,
-  );
+/** World headroom above the target line for the spinning aim piece + breathing room at the top. */
+const AIM_HEADROOM = 130;
+/** World y just below the platform - the bottom edge of the view. */
+const VIEW_BOTTOM = GROUND_TOP + PLATFORM_H + 24;
+
+/** The world->screen mapping for a level: `screenX = worldX*scale + originX`, same for y. */
+export interface LevelView {
+  scale: number;
+  originX: number;
+  originY: number;
+  /** World y at the top edge of the view (a bit above the target line). */
+  top: number;
+  /** World y at the bottom edge of the view (just below the platform). */
+  bottom: number;
 }
 
-/** Paint the sky gradient behind everything. Drawn in screen space so it fills regardless of camera. */
-export function drawSky(ctx: CanvasRenderingContext2D, chrome: ChromeColors, cameraY = 0): void {
-  const g = ctx.createLinearGradient(0, cameraY, 0, cameraY + VIEW_H);
+/**
+ * Fit the CURRENT LEVEL's full height - from just below the platform up to above the target line -
+ * into the canvas, centered horizontally, at a uniform scale (pieces keep their aspect). The whole
+ * level fits, so the tower fills the vertical space with no camera pan; a taller canvas simply scales
+ * the level up. The tower is centered, so the platform's edges may fall outside the canvas width - the
+ * action is always in the middle.
+ */
+export function levelView(cssW: number, cssH: number, target: number): LevelView {
+  const top = GROUND_TOP - target - AIM_HEADROOM;
+  const bottom = VIEW_BOTTOM;
+  const scale = cssH > 0 ? cssH / (bottom - top) : 1;
+  return { scale, originX: cssW / 2 - CENTER_X * scale, originY: -top * scale, top, bottom };
+}
+
+/** Apply a {@link LevelView} to the canvas context (accounting for device pixel ratio). */
+export function applyLevelTransform(
+  ctx: CanvasRenderingContext2D,
+  v: LevelView,
+  dpr: number,
+): void {
+  ctx.setTransform(v.scale * dpr, 0, 0, v.scale * dpr, v.originX * dpr, v.originY * dpr);
+}
+
+/** The leftmost world x currently visible under a {@link LevelView} (for placing edge labels). */
+export function visibleLeftX(v: LevelView): number {
+  return -v.originX / v.scale;
+}
+
+/**
+ * Paint the sky gradient behind everything, in SCREEN space so it always fills the whole canvas
+ * regardless of the level fit. Resets to the device-pixel transform, then restores nothing (the caller
+ * sets the world transform next).
+ */
+export function drawSky(
+  ctx: CanvasRenderingContext2D,
+  chrome: ChromeColors,
+  cssW: number,
+  cssH: number,
+  dpr: number,
+): void {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const g = ctx.createLinearGradient(0, 0, 0, cssH);
   g.addColorStop(0, chrome.skyTop);
   g.addColorStop(1, chrome.skyBottom);
   ctx.fillStyle = g;
-  ctx.fillRect(0, cameraY, VIEW_W, VIEW_H);
+  ctx.fillRect(0, 0, cssW, cssH);
 }
 
 /** Paint the static platform the tower stacks on. */
@@ -108,6 +135,7 @@ export function drawTargetBands(
   ctx: CanvasRenderingContext2D,
   chrome: ChromeColors,
   target: number,
+  labelX = 10,
 ): void {
   ctx.save();
   ctx.lineWidth = 1;
@@ -122,7 +150,7 @@ export function drawTargetBands(
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = chrome.bandText;
-    ctx.fillText(`${i * 25} pts`, 10, y - 4);
+    ctx.fillText(`${i * 25} pts`, labelX, y - 4);
   }
 
   const ty = GROUND_TOP - target;
@@ -136,7 +164,7 @@ export function drawTargetBands(
   ctx.setLineDash([]);
   ctx.fillStyle = chrome.target;
   ctx.font = "bold 14px 'Trebuchet MS', system-ui, sans-serif";
-  ctx.fillText('TARGET - 100 pts', 10, ty - 8);
+  ctx.fillText('TARGET - 100 pts', labelX, ty - 8);
   ctx.restore();
 }
 
@@ -149,6 +177,7 @@ export function drawRequiredLine(
   ctx: CanvasRenderingContext2D,
   chrome: ChromeColors,
   requiredLine: number,
+  labelX = VIEW_W - 170,
 ): void {
   ctx.save();
   const grad = ctx.createLinearGradient(0, requiredLine, 0, requiredLine + 140);
@@ -166,7 +195,7 @@ export function drawRequiredLine(
   ctx.setLineDash([]);
   ctx.fillStyle = chrome.dropLine;
   ctx.font = "bold 13px 'Trebuchet MS', system-ui, sans-serif";
-  ctx.fillText('drop above this line', VIEW_W - 170, requiredLine + 18);
+  ctx.fillText('drop above this line', labelX, requiredLine + 18);
   ctx.restore();
 }
 
@@ -285,4 +314,88 @@ export function rotatedYSpan(piece: Piece, angle: number): { min: number; max: n
   }
   if (!Number.isFinite(min)) return { min: 0, max: 0 };
   return { min, max };
+}
+
+/** Stroke a rounded-rectangle path (helper for the screen-space HUD pill). */
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+/**
+ * Draw the compact level/height/score HUD as a screen-space pill in the top-left. Resets to the screen
+ * transform (undoing any world transform) so it stays pinned regardless of the camera. `text` holds 1-2
+ * short lines (e.g. `['Lv 1 - Warm-up', '258/600 px   50 pts']`).
+ */
+export function drawHudOverlay(
+  ctx: CanvasRenderingContext2D,
+  chrome: ChromeColors,
+  dpr: number,
+  text: string[],
+): void {
+  const lines = text.filter((t) => t.length > 0);
+  if (lines.length === 0) return;
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.font = "12px 'Trebuchet MS', system-ui, sans-serif";
+  ctx.textBaseline = 'middle';
+  let maxW = 0;
+  for (const line of lines) maxW = Math.max(maxW, ctx.measureText(line).width);
+  const padX = 10;
+  const padY = 7;
+  const lineH = 16;
+  const x = 8;
+  const y = 8;
+  const w = maxW + padX * 2;
+  const h = lines.length * lineH + padY * 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  roundRectPath(ctx, x, y, w, h, 8);
+  ctx.fill();
+  ctx.fillStyle = chrome.text;
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i]!, x + padX, y + padY + lineH * i + lineH / 2);
+  }
+  ctx.restore();
+}
+
+/**
+ * Draw the turn/aim hint as centered screen-space text near the top-center, with a text-shadow so it
+ * reads over the sky. Resets to the screen transform. `cssW`/`cssH` are the canvas CSS pixel size.
+ */
+export function drawHintOverlay(
+  ctx: CanvasRenderingContext2D,
+  chrome: ChromeColors,
+  dpr: number,
+  cssW: number,
+  cssH: number,
+  text: string,
+): void {
+  if (!text) return;
+  void cssH;
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.font = "600 13px 'Trebuchet MS', system-ui, sans-serif";
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.7)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = chrome.text;
+  // Top-RIGHT: clear of the top-left HUD pill (left) and the spinning aim piece (center), and out of
+  // the bottom thumb/tower-base zone. The hint is kept short so it never reaches back into the pill.
+  ctx.fillText(text, cssW - 14, 22, cssW / 2 - 8);
+  ctx.restore();
 }
