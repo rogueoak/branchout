@@ -57,9 +57,10 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
   const ledger = new CreditLedger(new InMemoryLedgerRepository(), new FreeTierProvider());
   const engine = new FakeEngineClient();
   const plays = new InMemoryPlaysRepository();
+  const membership = new InMemoryMembershipStore();
   const rooms = new RoomService(
     new InMemoryRoomRepository(),
-    new InMemoryMembershipStore(),
+    membership,
     ledger,
     engine,
     plays,
@@ -95,6 +96,8 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
     admins,
     adminSessions,
     adminRepo,
+    rooms,
+    membership,
   };
 }
 
@@ -677,6 +680,75 @@ describe('POST /rooms (create + share link)', () => {
       headers: { cookie: sessionCookie(join) },
     });
     expect(res.statusCode).toBe(403);
+    await app.close();
+  });
+});
+
+describe('GET /rooms/:code/me - returning host resume (feedback 0021)', () => {
+  it('re-seats a durable host whose roster row expired, instead of bouncing them to join', async () => {
+    const { app, membership } = makeApp();
+    const hostCookie = await withHost(app);
+    const hostSessionId = hostCookie.replace('branchout_session=', '');
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { room } = create.json();
+
+    // Simulate the Redis membership TTL evicting the host's roster row (host_account_id in Postgres
+    // still names them the host).
+    await membership.remove(room.id, hostSessionId);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/rooms/${room.code}/me`,
+      headers: { cookie: hostCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.room.code).toBe(room.code);
+    expect(body.membership).toMatchObject({ role: 'player', isHost: true });
+    expect(typeof body.membership.player).toBe('string');
+    await app.close();
+  });
+
+  it('404s a stranger who is not a member (the client shows the join prompt)', async () => {
+    const { app } = makeApp();
+    const hostCookie = await withHost(app);
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { room } = create.json();
+
+    const strangerSignup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { email: 'stranger@example.com', password: 'supersecret', gamerTag: 'Stranger' },
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/rooms/${room.code}/me`,
+      headers: { cookie: sessionCookie(strangerSignup) },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().code).toBe('not_member');
+    await app.close();
+  });
+
+  it('401s a request with no session', async () => {
+    const { app } = makeApp();
+    const hostCookie = await withHost(app);
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { room } = create.json();
+    const res = await app.inject({ method: 'GET', url: `/v1/rooms/${room.code}/me` });
+    expect(res.statusCode).toBe(401);
     await app.close();
   });
 });

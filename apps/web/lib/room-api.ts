@@ -205,6 +205,30 @@ export async function getRoom(code: string): Promise<RoomView> {
   return room;
 }
 
+/** The caller's own seat in a room, as `GET /rooms/:code/me` returns it: the room plus the fields
+ * the client needs to rebuild its per-tab membership. `player` is the caller's public engine
+ * `playerId`. */
+export interface ResumeResult {
+  room: RoomView;
+  membership: {
+    role: Role;
+    isHost: boolean;
+    mode?: Mode;
+    nickname: string;
+    player: string;
+  };
+}
+
+/**
+ * Rebuild the caller's seat after the tab forgot it (closed-tab `sessionStorage` is cleared). The
+ * control-plane re-seats a durable host whose ephemeral roster row expired, so a returning host is
+ * recovered here (feedback 0021); a genuine non-member throws `RoomApiError` with code `not_member`,
+ * which the room page reads as "show the join prompt".
+ */
+export async function resumeRoom(code: string): Promise<ResumeResult> {
+  return request<ResumeResult>(`/rooms/${encodeURIComponent(code)}/me`, { method: 'GET' });
+}
+
 /** List a room's members (caller must be a member; only the host sees session ids). */
 export async function listMembers(code: string): Promise<RoomMember[]> {
   const { members } = await request<{ members: RoomMember[] }>(

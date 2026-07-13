@@ -12,6 +12,7 @@ const hoisted = vi.hoisted(() => ({
   getRoom: vi.fn(),
   listMembers: vi.fn(),
   selectGame: vi.fn(),
+  resumeRoom: vi.fn(),
   replace: vi.fn(),
   recalled: null as Membership | null,
   // The engine state the mocked useGameClient returns - mutable so a test can drive a phase change.
@@ -37,6 +38,7 @@ vi.mock('../../../lib/room-api', async (importOriginal) => {
     getRoom: (code: string) => hoisted.getRoom(code),
     listMembers: (code: string) => hoisted.listMembers(code),
     selectGame: (...args: unknown[]) => hoisted.selectGame(...args),
+    resumeRoom: (code: string) => hoisted.resumeRoom(code),
   };
 });
 
@@ -125,6 +127,10 @@ beforeEach(() => {
   listMembers.mockResolvedValue([]);
   hoisted.selectGame.mockReset();
   hoisted.selectGame.mockResolvedValue(roomAt('lobby'));
+  hoisted.resumeRoom.mockReset();
+  // Default: the tab has no live seat to resume, so an absent recall falls through to the join
+  // prompt. Tests that exercise resume override this.
+  hoisted.resumeRoom.mockRejectedValue(new RoomApiError(404, 'not_member', 'Join the room.'));
   hoisted.gameState = {
     connection: 'connecting',
     joined: false,
@@ -159,6 +165,39 @@ describe('RoomClient non-host transitions on the room-status poll', () => {
     // Starts in the game (recalled `running`), then the poll observes the exit and returns.
     expect(screen.getByText('GAME_VIEW')).toBeDefined();
     await waitFor(() => expect(screen.getByText('LOBBY_VIEW')).toBeDefined());
+  });
+});
+
+describe('RoomClient resume when the tab forgot its membership (feedback 0021)', () => {
+  it('re-seats a returning host from the server instead of showing the join prompt', async () => {
+    hoisted.recalled = null;
+    hoisted.resumeRoom.mockResolvedValue({
+      room: roomAt('lobby'),
+      membership: {
+        role: 'player',
+        isHost: true,
+        mode: 'interactive',
+        nickname: 'Ada',
+        player: 'p1',
+      },
+    });
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(<RoomClient code="ABC12" viewer={{ signedIn: true }} />);
+
+    // The host lands straight in the lobby - no "Join room" prompt.
+    await waitFor(() => expect(screen.getByText('LOBBY_VIEW')).toBeDefined());
+    expect(screen.queryByRole('heading', { name: /join room/i })).toBeNull();
+    expect(hoisted.resumeRoom).toHaveBeenCalledWith('ABC12');
+  });
+
+  it('shows the join prompt when the server says the caller is not a member', async () => {
+    hoisted.recalled = null;
+    // resumeRoom rejects with not_member (the beforeEach default), so we fall through to join.
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+
+    expect(await screen.findByRole('heading', { name: /join room/i })).toBeDefined();
+    expect(screen.queryByText('LOBBY_VIEW')).toBeNull();
   });
 });
 

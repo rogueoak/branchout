@@ -22,6 +22,7 @@ import {
   controlGame,
   getRoom,
   listMembers,
+  resumeRoom,
   selectGame,
   setMode,
   startGame,
@@ -75,21 +76,56 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
   // the room URL never re-opens it). Distinct from the create-flow `step` above.
   const [changing, setChanging] = useState(false);
 
-  // Hydrate what the join step remembered about this player. Without it, this browser is not a
-  // known member of the room, so send them to the join screen. If the room already has a selected
-  // game (a reload, or the create flow's deep link that selected it first), seed the local game +
-  // config from it so the config panel and the selected-game card show the right game.
-  useEffect(() => {
-    const recalled = recallMembership(code);
-    setMembership(recalled ?? null);
-    setRoom(recalled?.room ?? null);
-    const selected = recalled?.room?.selectedGame;
-    const module = selected ? getGameUi(selected) : undefined;
+  // If the room already has a selected game (a reload, or the create flow's deep link that selected
+  // it first), seed the local game + config from it so the config panel and selected-game card show
+  // the right game.
+  const seedGameFrom = useCallback((view: RoomView | null | undefined) => {
+    const module = view?.selectedGame ? getGameUi(view.selectedGame) : undefined;
     if (module) {
       setGame(module.id);
       setConfig(module.defaultConfig());
     }
-  }, [code]);
+  }, []);
+
+  // Hydrate what the join step remembered about this player (per-tab sessionStorage). If the tab
+  // forgot it - a closed/reopened tab clears sessionStorage - ask the server who we are before
+  // giving up: a host still owns the room durably (and any member whose session cookie survived is
+  // still seated), so `resumeRoom` drops them back in without a re-join. Only a true non-member
+  // (`not_member`) or no session falls through to the join screen (feedback 0021).
+  useEffect(() => {
+    const recalled = recallMembership(code);
+    if (recalled) {
+      setMembership(recalled);
+      setRoom(recalled.room);
+      seedGameFrom(recalled.room);
+      return;
+    }
+    let active = true;
+    void (async () => {
+      try {
+        const { room: resumedRoom, membership: seat } = await resumeRoom(code);
+        if (!active) return;
+        const restored: Membership = {
+          role: seat.role,
+          isHost: seat.isHost,
+          ...(seat.mode ? { mode: seat.mode } : {}),
+          nickname: seat.nickname,
+          player: seat.player,
+          room: resumedRoom,
+        };
+        rememberMembership(code, restored);
+        setMembership(restored);
+        setRoom(resumedRoom);
+        seedGameFrom(resumedRoom);
+      } catch {
+        // No live seat (not a member, or no session) - show the join prompt.
+        if (active) setMembership(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [code, seedGameFrom]);
 
   const isHost = membership?.isHost ?? false;
   const running = room?.status === 'running';

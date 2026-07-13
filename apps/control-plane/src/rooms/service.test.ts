@@ -559,6 +559,80 @@ describe('room view (poll for status)', () => {
     const { room } = await h.service.createRoom(host);
     await expect(h.service.view(room.code, anon())).rejects.toThrow();
   });
+
+  it('re-seats the durable host when its ephemeral roster row has expired', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    const { room } = await h.service.createRoom(host);
+    // Simulate the Redis membership TTL expiring while host_account_id in Postgres endures.
+    await h.membership.remove(room.id, host.id);
+    expect(await h.membership.get(room.id, host.id)).toBeNull();
+
+    // The host polling past the TTL is silently restored rather than 403'd off its own room.
+    expect((await h.service.view(room.code, host)).code).toBe(room.code);
+    const seat = await h.membership.get(room.id, host.id);
+    expect(seat).toMatchObject({ role: 'player', isHost: true, nickname: 'Ada', connected: true });
+    // members() sees the re-seated host row (with its sessionId, since the caller is the host).
+    const roster = await h.service.members(room.code, host);
+    expect(roster.some((m) => m.isHost && m.sessionId === host.id)).toBe(true);
+  });
+});
+
+describe('resume (rebuild the caller seat after a forgotten tab)', () => {
+  it('returns the host row and re-seats a durable host whose row expired', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Ada', 'host_acct');
+    const { room, playerId } = await h.service.createRoom(host);
+    await h.membership.remove(room.id, host.id);
+
+    const resumed = await h.service.resume(room.code, host);
+    expect(resumed.room.code).toBe(room.code);
+    expect(resumed.membership).toMatchObject({ role: 'player', isHost: true, nickname: 'Ada' });
+    // A fresh playerId is minted on re-seat (matches join-after-expiry); it is a real id, not empty.
+    expect(resumed.membership.player).toBeTruthy();
+    expect(resumed.membership.player).not.toBe(playerId);
+    // The row is persisted, so a follow-up poll finds it without re-seating again.
+    const again = await h.service.resume(room.code, host);
+    expect(again.membership.player).toBe(resumed.membership.player);
+  });
+
+  it('returns a still-live non-host member without changing their seat', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await h.service.createRoom(host);
+    const player = anon('Sam');
+    const { playerId } = await h.service.join(room.code, player, {
+      role: 'player',
+      nickname: 'Sam',
+      mode: 'remote',
+    });
+
+    const resumed = await h.service.resume(room.code, player);
+    expect(resumed.membership).toMatchObject({
+      role: 'player',
+      isHost: false,
+      mode: 'remote',
+      nickname: 'Sam',
+      player: playerId,
+    });
+  });
+
+  it('rejects a genuine non-member with not_member (so the client shows the join prompt)', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await h.service.createRoom(host);
+    await expect(h.service.resume(room.code, anon())).rejects.toMatchObject({ code: 'not_member' });
+  });
+
+  it('does not re-seat a non-host whose row expired (a guest must re-join)', async () => {
+    const h = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await h.service.createRoom(host);
+    const player = anon('Sam');
+    await h.service.join(room.code, player, { role: 'player', nickname: 'Sam' });
+    await h.membership.remove(room.id, player.id);
+    await expect(h.service.resume(room.code, player)).rejects.toMatchObject({ code: 'not_member' });
+  });
 });
 
 describe('public preview (for link unfurls)', () => {
