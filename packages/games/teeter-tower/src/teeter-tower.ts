@@ -356,7 +356,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       addPieceToWorld(world, piece, dropX, dropY, parsed.angle);
       world.pieceIndex += 1;
       // Over-par penalty (feedback 0026): once this round's drops exceed par, each further piece costs
-      // PAR_PENALTY points. The running total can go negative.
+      // PAR_PENALTY points. The running total can go negative. Counted per DROP: a piece later culled at
+      // DEATH_Y (it fell off) keeps its debit - you spent the drop - so this is not decremented on cull.
       world.piecesThisLevel += 1;
       if (world.piecesThisLevel > level.par) world.totalScore -= PAR_PENALTY;
       world.next = storedPieceFrom(world.pieceIndex, pieceForIndex(world.seed, world.pieceIndex));

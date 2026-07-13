@@ -1,7 +1,7 @@
 import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
-import { TeeterViewer } from './Viewer';
+import { spinGapY, TeeterViewer } from './Viewer';
 
 // The single canvas draws with rAF + a 2D context. jsdom leaves getContext unimplemented (returns
 // null); the draw loop guards on a null context, so rendering is safe - stub getContext to keep the
@@ -299,10 +299,35 @@ describe('TeeterViewer single interactive surface', () => {
   });
 
   it('shows a final summary when the game is over', () => {
-    render(<TeeterViewer state={state({ sim: teeterSim('p1', true) })} me="p1" onMove={noop} />);
+    const sim = { ...teeterSim('p1', true), score: 175 };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
     expect(screen.getByText(/tower complete/i)).toBeDefined();
+    expect(screen.getByText(/stacked your way to 175 pts/i)).toBeDefined();
     // The over view shows a board-only canvas (no interactive aim surface).
     expect(screen.getByRole('img', { name: /teeter tower board/i })).toBeDefined();
     expect(screen.queryByRole('img', { name: /aim and drop the piece/i })).toBeNull();
+  });
+
+  it('softens the game-over copy when the score went negative (feedback 0026)', () => {
+    const sim = { ...teeterSim('p1', true), score: -30 };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
+    expect(screen.getByText(/tower complete/i)).toBeDefined();
+    // No mocking "-30 pts. Nice climbing." - a kinder sign-off instead.
+    expect(screen.getByText(/give it another go/i)).toBeDefined();
+    expect(screen.queryByText(/-30 pts/i)).toBeNull();
+    expect(screen.queryByText(/nice climbing/i)).toBeNull();
+  });
+});
+
+describe('spinGapY (fixed-height spin math, feedback 0026)', () => {
+  it("puts the piece bottom SPIN_GAP above the line, offset up by the piece's rotated half-height", () => {
+    const requiredLine = 400;
+    const spanMax = 30;
+    const y = spinGapY(requiredLine, spanMax);
+    // Centroid sits above the line; the bottom (centroid + spanMax) is a fixed gap (80) above it.
+    expect(y).toBeLessThan(requiredLine);
+    expect(requiredLine - (y + spanMax)).toBe(80);
+    // A taller piece (bigger spanMax) hovers higher so its bottom keeps the same gap.
+    expect(spinGapY(requiredLine, 60)).toBeLessThan(y);
   });
 });

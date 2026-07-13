@@ -76,6 +76,16 @@ const DEFAULT_AIM_Y = GROUND_TOP - 300;
  */
 const SPIN_GAP = 80;
 
+/**
+ * The spinning piece's centroid world-y: `SPIN_GAP` above the required line, offset up by the piece's
+ * rotated half-height (`spanMax`) so its BOTTOM (not its centre) sits the fixed gap above the line
+ * (feedback 0026). Pure so the fixed-height-spin math is unit-testable (the transform runs in the
+ * canvas draw loop, which jsdom cannot exercise).
+ */
+export function spinGapY(requiredLine: number, spanMax: number): number {
+  return requiredLine - spanMax - SPIN_GAP;
+}
+
 /** Interpolate one transform between two snapshots at fraction `f` (0..1). */
 function lerp(a: number, b: number, f: number): number {
   return a + (b - a) * f;
@@ -227,7 +237,7 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     const span = rotatedYSpan(piece, angleAt);
     const x = clampDropX(pointerRef.current.x, live.platform.width);
     if (spinning) {
-      const y = live.requiredLine - span.max - SPIN_GAP;
+      const y = spinGapY(live.requiredLine, span.max);
       return { x, y, legal: true, rawBottom: y + span.max };
     }
     // The piece bottom (centroid y + rotated max) must be strictly above requiredLine (smaller y).
@@ -447,7 +457,11 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
         <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4 text-center">
           <h2 className="text-h3 text-text">Tower complete</h2>
           <p className="text-body-sm text-text-muted">
-            You stacked your way to {score} pts. Nice climbing.
+            {/* The over-par penalty can drive the score negative (feedback 0026); keep the sign-off
+                encouraging rather than "you stacked your way to -30 pts. Nice climbing." */}
+            {score > 0
+              ? `You stacked your way to ${score} pts. Nice climbing.`
+              : 'The tower got the better of you this time - give it another go.'}
           </p>
           <p className="text-body-sm text-text-muted">
             The host can play again or head back to the lobby.

@@ -246,6 +246,7 @@ describe('tick (step the live world)', () => {
       bestHeight: 0,
       totalScore: 0,
       pieceIndex: 3,
+      piecesThisLevel: 5, // pieces used this round - must reset when the round advances (feedback 0026)
       bodies: [tallBlock(1, target + 40)], // top well above the target line
       next: null,
       over: false,
@@ -259,10 +260,18 @@ describe('tick (step the live world)', () => {
     expect(sim.target).toBe(LEVELS[1]!.target);
     expect(sim.bodies).toEqual([]); // tower reset for the new level
     expect(sim.score).toBe(100); // the cleared level banked 100
-    const after = ticked.scratch as { levelIndex: number; bodies: unknown[]; totalScore: number };
+    expect(sim.par).toBe(LEVELS[1]!.par); // the new round's par
+    expect(sim.pieces).toBe(0); // per-round piece count reset for the fresh round
+    const after = ticked.scratch as {
+      levelIndex: number;
+      bodies: unknown[];
+      totalScore: number;
+      piecesThisLevel: number;
+    };
     expect(after.levelIndex).toBe(1);
     expect(after.bodies).toHaveLength(0);
     expect(after.totalScore).toBe(100);
+    expect(after.piecesThisLevel).toBe(0);
   });
 
   it('flips over=true once the final level clears (no lose state)', () => {
@@ -367,15 +376,23 @@ describe('rebuild from scratch', () => {
     );
     let cur = collected.scratch;
     for (let i = 0; i < 40; i++) cur = gameA.tick!({ ...base, scratch: cur }).scratch;
-    const bodiesBefore = (cur as { bodies: StoredBody[] }).bodies;
-    expect(bodiesBefore.length).toBeGreaterThan(0);
+    const before = cur as { bodies: StoredBody[]; stableHeight: number; piecesThisLevel: number };
+    expect(before.bodies.length).toBeGreaterThan(0);
+    // The settled tower + per-round count are persisted in the snapshot (feedback 0026).
+    expect(before.piecesThisLevel).toBe(1);
+    expect(before.stableHeight).toBeGreaterThan(0);
 
-    // A fresh module has no in-memory world; ticking from `cur` must rebuild it from the snapshot.
+    // A fresh module has no in-memory world; ticking from `cur` must rebuild it from the snapshot -
+    // including stableHeight + piecesThisLevel, so the rebuilt world reports the same tower + par count.
     const gameB = createTeeterTowerGame(stubRng(0.9));
     const ticked = gameB.tick!({ ...base, scratch: cur });
     const sim = ticked.sim as TeeterSim;
-    expect(sim.bodies.length).toBe(bodiesBefore.length);
+    expect(sim.bodies.length).toBe(before.bodies.length);
     expect(sim.height).toBeGreaterThan(0);
+    expect(sim.pieces).toBe(1);
+    const afterSnap = ticked.scratch as { stableHeight: number; piecesThisLevel: number };
+    expect(afterSnap.piecesThisLevel).toBe(1);
+    expect(afterSnap.stableHeight).toBeGreaterThan(0);
   });
 });
 
