@@ -373,7 +373,8 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
       e.currentTarget.releasePointerCapture?.(e.pointerId);
     }
     // Double-tap detection: a quick press that barely moved is a tap; two taps close in time fire the
-    // aim button. A drag or long press breaks the pairing so aiming never trips the shortcut.
+    // aim button. A drag or long press breaks the pairing so aiming never trips the shortcut. (Each tap's
+    // pointerdown also repositioned the piece, so a double-tap-to-drop intentionally lands at the tap.)
     const start = pressStartRef.current;
     pressStartRef.current = null;
     if (!isActive || dropped || !start) return;

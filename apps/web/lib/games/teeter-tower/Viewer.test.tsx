@@ -165,6 +165,43 @@ describe('TeeterViewer single interactive surface', () => {
     expect(onMove).toHaveBeenCalledTimes(1);
   });
 
+  it('a double-tap does not drop when the pose is below the line (feedback 0025)', () => {
+    const onMove = vi.fn();
+    // A required line ABOVE the default pointer makes the pose illegal (the button reads "Too low" and
+    // is disabled). The double-tap shortcut reaches drop() directly, so it must honor that too.
+    const sim = { ...teeterSim('p1'), requiredLine: 100 };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={onMove} />);
+    const board = screen.getByRole('img', { name: /aim and drop the piece/i })
+      .parentElement as HTMLElement;
+    // Stop the spin (that is legal in any pose), then the placing pose is below the line.
+    tap(board, 100, 100, 1000);
+    tap(board, 100, 100, 1150);
+    const btn = screen.getByRole('button', { name: /below the line/i }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    // A double-tap must NOT submit an illegal (below-line) drop.
+    tap(board, 100, 100, 2000);
+    tap(board, 100, 100, 2150);
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it('shows the start-of-game gesture hint until a piece has landed (feedback 0025)', () => {
+    const { rerender } = render(
+      <TeeterViewer state={state({ sim: teeterSim('p1') })} me="p1" onMove={noop} />,
+    );
+    // At the very start (nothing landed: round 0, score 0, height 0) the onboarding overlay is shown
+    // (mouse copy in jsdom, which has no `pointer: coarse`).
+    expect(screen.getByText(/to stop spin and drop/i)).toBeDefined();
+    // Once a piece has settled (height > 0) the hint is gone.
+    rerender(
+      <TeeterViewer
+        state={state({ sim: { ...teeterSim('p1'), height: 40 } })}
+        me="p1"
+        onMove={noop}
+      />,
+    );
+    expect(screen.queryByText(/to stop spin and drop/i)).toBeNull();
+  });
+
   it('follows a press-drag but ignores a bare hover, so travelling to the button never re-aims (feedback 0023)', () => {
     // pointerToWorld ignores a zero-sized rect (jsdom's default) and keeps the last pointer, so give the
     // canvas a real rect to make the screen->world mapping live. Then a hover (pointer move with no press

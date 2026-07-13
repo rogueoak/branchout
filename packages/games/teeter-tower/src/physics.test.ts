@@ -294,6 +294,9 @@ describe('worldHeight', () => {
     addPieceToWorld(world, piece, CENTER_X, GROUND_TOP - 480, 0);
     let maxDuringFall = 0;
     let settled = 0;
+    // The gate is not monotonic: while the piece bounces to rest it flickers above/below the settle
+    // threshold, so the measured height flips 0 <-> real for a few ticks. 220 steps lands well past the
+    // last jitter (the piece rests ~step 70), so the final read is stable - keep the budget generous.
     for (let i = 0; i < 220; i++) {
       stepWorld(world);
       const h = worldHeight(world); // mirrors the tick: measured AFTER stepping
