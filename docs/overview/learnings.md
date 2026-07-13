@@ -318,15 +318,24 @@ Capture durable lessons as they emerge.
   `CO2`/`iPhone`), and the dispute vote remains the human fallback. A control that only makes sense
   with other participants (Dispute) gates on the live *connected* count from the roster the client
   already holds, not on the local player's state alone. (Feedback `0015`.)
-- **A continuously-stepped physics world must gate a measurement on "at rest", not sample it every
-  tick.** Teeter's tower height was `min(bounds.min.y)` over all placed bodies each tick, so a piece
-  still in free-fall counted at its airborne arc peak - dropping a piece above the goal line won it
-  instantly, and the min-drop line jumped around as the piece fell (score, level-clear, and the streamed
-  line all read that one height). The fix is one predicate: count a body only when its linear + angular
-  speed is below a small threshold, so transient motion never scores. A just-placed body has already
-  been stepped once under gravity before it is measured, so it is never mistaken for settled at its
-  release height. When a number drives a rule in a live sim, decide *when* it is valid to read, not just
-  what it measures. (Feedback `0025`, first flagged in `0024`.)
+- **A continuously-stepped physics world must gate a measurement on "at rest", and gate on the WHOLE
+  scene, not per body.** Teeter's tower height was `min(bounds.min.y)` over all placed bodies each tick,
+  so a piece in free-fall counted at its airborne arc peak - a drop above the goal line won instantly,
+  and the min-drop line jumped as it fell (score, level-clear, and the streamed line all read that
+  height). First fix (feedback `0025`): count a body only when its linear + angular speed is below a
+  threshold. That killed the airborne peak but not a TUMBLE - the settled subset itself changes as bodies
+  fall in and out of "at rest", so the height/line still jumped mid-tumble. Real fix (feedback `0026`):
+  keep a HELD `stableHeight` and refresh it only when the WHOLE scene is at rest (`every` body below the
+  threshold); everything reads the held value, so nothing resolves a new height until the tower actually
+  settles. A just-placed body is stepped once under gravity before the check, so it never settles the
+  height at its release point. Decide *when* a number is valid to read, and whether "settled" means one
+  body or the whole scene. (Feedback `0026`, first flagged in `0024`.)
+- **An input guard added for one layout becomes wrong when the layout changes.** Teeter added a
+  drag-guard (only re-aim on a press-drag, never a bare hover) because the aim button sat ON the canvas -
+  a mouse travelling to it dragged the piece to that corner (feedback `0023`). Once the button moved
+  ABOVE the canvas (feedback `0025`), a mouse leaving the board could no longer drag the piece, so the
+  guard only blocked the wanted behavior (hover-to-aim). Removing it restored mouse aiming (feedback
+  `0026`). When you move a control, revisit the guards that existed only to protect its old position.
 
 ## Client-server contracts
 

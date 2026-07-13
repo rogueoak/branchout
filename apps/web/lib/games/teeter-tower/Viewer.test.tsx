@@ -1,7 +1,7 @@
 import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
-import { TeeterViewer } from './Viewer';
+import { spinGapY, TeeterViewer } from './Viewer';
 
 // The single canvas draws with rAF + a 2D context. jsdom leaves getContext unimplemented (returns
 // null); the draw loop guards on a null context, so rendering is safe - stub getContext to keep the
@@ -36,6 +36,8 @@ function teeterSim(activePlayer: string, over = false) {
     score: 0,
     level: 0,
     target: 450,
+    par: 8,
+    pieces: 0,
     // requiredLine well below the piece so a drop at the default pointer is legal.
     requiredLine: 520,
     // Level 1 is a wide, walled platform (feedback 0023); the client draws + clamps from this.
@@ -202,12 +204,27 @@ describe('TeeterViewer single interactive surface', () => {
     expect(screen.queryByText(/to stop spin and drop/i)).toBeNull();
   });
 
-  it('follows a press-drag but ignores a bare hover, so travelling to the button never re-aims (feedback 0023)', () => {
+  it('reports the round par + pieces used in the aria-live status (feedback 0026)', () => {
+    const sim = { ...teeterSim('p1'), par: 8, pieces: 3, score: 25 };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
+    const status = screen.getByRole('status');
+    expect(status.textContent).toMatch(/3 of 8 par pieces used/i);
+    expect(status.textContent).not.toMatch(/over par/i);
+  });
+
+  it('warns over par and reports a negative score (feedback 0026)', () => {
+    const sim = { ...teeterSim('p1'), par: 8, pieces: 10, score: -20 };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
+    const status = screen.getByRole('status');
+    expect(status.textContent).toMatch(/-20 points/i);
+    expect(status.textContent).toMatch(/over par/i);
+  });
+
+  it('aims on a bare hover as well as a press-drag - the mouse moves the piece without clicking (feedback 0026)', () => {
     // pointerToWorld ignores a zero-sized rect (jsdom's default) and keeps the last pointer, so give the
-    // canvas a real rect to make the screen->world mapping live. Then a hover (pointer move with no press
-    // down) must be a no-op while a real press-drag moves the piece: this is the regression guard for the
-    // desktop bug where a mouse travelling up to the top-right Stop-spin/Drop button dragged the piece to
-    // that corner (a high drop that instantly cleared the level). Touch has no hover, so mobile was fine.
+    // canvas a real rect to make the screen->world mapping live. A hover (pointer move with NO press) now
+    // moves the piece just like a drag - the drag-guard was removed once the button moved off the canvas
+    // (feedback 0026), so a mouse aims without clicking.
     const rect = {
       left: 0,
       top: 0,
@@ -238,8 +255,7 @@ describe('TeeterViewer single interactive surface', () => {
         return move.dropX;
       };
 
-      // A legal, well-left-of-center spot (maps above the required line, so the Drop stays enabled). A
-      // mouse hovers across positions like this on its way up to the top-right button.
+      // A legal, well-left-of-center spot (maps above the required line, so the Drop stays enabled).
       const [x, y] = [60, 300];
       const baseline = dropXAfter(() => {}); // no board interaction -> default (centered) aim x
       const hovered = dropXAfter((b) => firePointer(b, 'pointerMove', x, y)); // hover only (no press)
@@ -248,9 +264,10 @@ describe('TeeterViewer single interactive surface', () => {
         firePointer(b, 'pointerMove', x, y);
       });
 
-      // A bare hover leaves the drop x at the centered default; only a real press-drag moves it.
-      expect(hovered).toBeCloseTo(baseline, 5);
+      // Both a bare hover and a press-drag move the piece off the centered default to the same spot.
+      expect(hovered).toBeLessThan(baseline - 50);
       expect(dragged).toBeLessThan(baseline - 50);
+      expect(hovered).toBeCloseTo(dragged, 5);
     } finally {
       rectSpy.mockRestore();
     }
@@ -282,10 +299,35 @@ describe('TeeterViewer single interactive surface', () => {
   });
 
   it('shows a final summary when the game is over', () => {
-    render(<TeeterViewer state={state({ sim: teeterSim('p1', true) })} me="p1" onMove={noop} />);
+    const sim = { ...teeterSim('p1', true), score: 175 };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
     expect(screen.getByText(/tower complete/i)).toBeDefined();
+    expect(screen.getByText(/stacked your way to 175 pts/i)).toBeDefined();
     // The over view shows a board-only canvas (no interactive aim surface).
     expect(screen.getByRole('img', { name: /teeter tower board/i })).toBeDefined();
     expect(screen.queryByRole('img', { name: /aim and drop the piece/i })).toBeNull();
+  });
+
+  it('softens the game-over copy when the score went negative (feedback 0026)', () => {
+    const sim = { ...teeterSim('p1', true), score: -30 };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
+    expect(screen.getByText(/tower complete/i)).toBeDefined();
+    // No mocking "-30 pts. Nice climbing." - a kinder sign-off instead.
+    expect(screen.getByText(/give it another go/i)).toBeDefined();
+    expect(screen.queryByText(/-30 pts/i)).toBeNull();
+    expect(screen.queryByText(/nice climbing/i)).toBeNull();
+  });
+});
+
+describe('spinGapY (fixed-height spin math, feedback 0026)', () => {
+  it("puts the piece bottom SPIN_GAP above the line, offset up by the piece's rotated half-height", () => {
+    const requiredLine = 400;
+    const spanMax = 30;
+    const y = spinGapY(requiredLine, spanMax);
+    // Centroid sits above the line; the bottom (centroid + spanMax) is a fixed gap (80) above it.
+    expect(y).toBeLessThan(requiredLine);
+    expect(requiredLine - (y + spanMax)).toBe(80);
+    // A taller piece (bigger spanMax) hovers higher so its bottom keeps the same gap.
+    expect(spinGapY(requiredLine, 60)).toBeLessThan(y);
   });
 });

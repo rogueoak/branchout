@@ -25,8 +25,9 @@ credits - there is no in-product path for that today. The e2e works around it wi
 
 ## 2. Airborne-peak scoring can clear a level before the tower settles
 
-**RESOLVED in feedback `0025` (round 3):** `worldHeight` now counts only settled (at-rest) bodies, so a
-piece still falling no longer contributes its airborne peak. See `0025` #1.
+**RESOLVED in feedback `0025` (round 3) and completed in `0026` (round 4):** `0025` gated the height on
+settled bodies (killing the airborne peak); `0026` replaced that with a scene-hold `stableHeight` that
+only refreshes when the whole tower is at rest, so a tumble no longer jumps it either. See `0026` #3.
 
 **Symptom.** A piece dropped high can score a height band - and even clear a level - that the resting
 tower never actually reaches. To a player this reads as luck or the game cheating.

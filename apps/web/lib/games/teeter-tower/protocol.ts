@@ -77,6 +77,9 @@ export interface TeeterSim {
   score: number;
   level: number;
   target: number;
+  /** The round's par (piece count it should take) and how many pieces dropped this round (feedback 0026). */
+  par: number;
+  pieces: number;
   /**
    * The world-y the piece's bottom must be ABOVE to drop (the next line above the tower). Since y grows
    * downward, a legal drop has its lowest point at `y < requiredLine`. The client draws this line and
@@ -239,6 +242,8 @@ export function asTeeterSim(value: unknown): TeeterSim | null {
     isNum(value.score) &&
     isNum(value.level) &&
     isNum(value.target) &&
+    isNum(value.par) &&
+    isNum(value.pieces) &&
     isNum(value.requiredLine) &&
     typeof value.over === 'boolean'
   ) {
@@ -250,6 +255,8 @@ export function asTeeterSim(value: unknown): TeeterSim | null {
       score: value.score,
       level: value.level,
       target: value.target,
+      par: value.par,
+      pieces: value.pieces,
       requiredLine: value.requiredLine,
       platform,
       over: value.over,

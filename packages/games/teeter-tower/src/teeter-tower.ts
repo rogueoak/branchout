@@ -28,7 +28,7 @@ import type {
   SessionPlayer,
   StartRoundResult,
 } from '@branchout/game-sdk';
-import { LEVELS, levelAt, TOTAL_ROUNDS } from './levels';
+import { LEVELS, levelAt, PAR_PENALTY, TOTAL_ROUNDS } from './levels';
 import {
   addPieceToWorld,
   clampDropX,
@@ -40,6 +40,7 @@ import {
   MAX_PLACED_BODIES,
   pieceForIndex,
   requiredDropHeight,
+  sceneSettled,
   stepWorld,
   storedPieceFrom,
   toBodyPayloads,
@@ -77,7 +78,11 @@ interface TeeterScratch {
   levelIndex: number;
   /** Best height reached this level (px above the platform) - the per-level scoring basis. */
   bestHeight: number;
-  /** Cumulative game score across levels (never resets; the HUD + standings read it). */
+  /** Last SETTLED tower height (px) - the reported height, refreshed only at rest (feedback 0026). */
+  stableHeight: number;
+  /** Pieces dropped this round (resets each level) - drives the over-par penalty (feedback 0026). */
+  piecesThisLevel: number;
+  /** Cumulative game score across levels (never resets; the HUD + standings read it). Can go negative. */
   totalScore: number;
   /** Monotonic index of the NEXT piece to spawn (also the next body id). */
   pieceIndex: number;
@@ -95,6 +100,8 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): TeeterScratch {
     seed: s.seed ?? 0,
     levelIndex: s.levelIndex ?? 0,
     bestHeight: s.bestHeight ?? 0,
+    stableHeight: s.stableHeight ?? 0,
+    piecesThisLevel: s.piecesThisLevel ?? 0,
     totalScore: s.totalScore ?? 0,
     pieceIndex: s.pieceIndex ?? 0,
     bodies: s.bodies ?? [],
@@ -164,6 +171,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       seed: scratch.seed,
       levelIndex: scratch.levelIndex,
       bestHeight: scratch.bestHeight,
+      stableHeight: scratch.stableHeight,
+      piecesThisLevel: scratch.piecesThisLevel,
       totalScore: scratch.totalScore,
       pieceIndex: scratch.pieceIndex,
       bodies: scratch.bodies,
@@ -200,6 +209,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
     seed: world.seed,
     levelIndex: world.levelIndex,
     bestHeight: world.bestHeight,
+    stableHeight: world.stableHeight,
+    piecesThisLevel: world.piecesThisLevel,
     totalScore: world.totalScore,
     pieceIndex: world.pieceIndex,
     bodies: toStoredBodies(world),
@@ -210,7 +221,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
   /** The streamable TeeterSim snapshot for the current world. */
   const toSim = (world: LiveWorld, players: readonly SessionPlayer[]): TeeterSim => {
     const level = levelAt(world.levelIndex);
-    const height = worldHeight(world);
+    // The reported height is the SETTLED height (feedback 0026), so the streamed line does not jump.
+    const height = world.stableHeight;
     return {
       bodies: toBodyPayloads(world),
       next: world.next ? toPiecePayload(world.next) : null,
@@ -219,6 +231,9 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       score: world.totalScore,
       level: world.levelIndex,
       target: level.target,
+      // Par + the pieces dropped this round drive the client's par HUD + the over-par penalty warning.
+      par: level.par,
+      pieces: world.piecesThisLevel,
       requiredLine: requiredLineY(level.target, height),
       // The client draws the platform + walls and clamps drop-x from this authoritative config, so a
       // per-level platform (level 1 is wider + walled) is honored client-side without a hardcoded width.
@@ -238,6 +253,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         seed,
         levelIndex: 0,
         bestHeight: 0,
+        stableHeight: 0,
+        piecesThisLevel: 0,
         totalScore: 0,
         pieceIndex: 0,
         bodies: [],
@@ -312,7 +329,9 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       // dropY are both clamped to the legal world range before the solver sees them (the client aims
       // the height; the clamp guards a malformed or wildly out-of-range value).
       const level = levelAt(world.levelIndex);
-      const height = worldHeight(world);
+      // Gate the drop against the SETTLED tower height (feedback 0026), so the min-drop line the player
+      // aimed at (the streamed, stable line) is the one the server enforces - not a mid-tumble value.
+      const height = world.stableHeight;
       const dropX = clampDropX(parsed.dropX, world.platformWidth);
       const dropY = clampDropY(parsed.dropY);
       const held = heldBodyAt(piece.verts, dropX, dropY, parsed.angle);
@@ -336,6 +355,11 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       // piece deterministically. No re-aim: once added it is in the live world.
       addPieceToWorld(world, piece, dropX, dropY, parsed.angle);
       world.pieceIndex += 1;
+      // Over-par penalty (feedback 0026): once this round's drops exceed par, each further piece costs
+      // PAR_PENALTY points. The running total can go negative. Counted per DROP: a piece later culled at
+      // DEATH_Y (it fell off) keeps its debit - you spent the drop - so this is not decremented on cull.
+      world.piecesThisLevel += 1;
+      if (world.piecesThisLevel > level.par) world.totalScore -= PAR_PENALTY;
       world.next = storedPieceFrom(world.pieceIndex, pieceForIndex(world.seed, world.pieceIndex));
 
       return { scratch: toRecord(snapshot(world)) };
@@ -350,10 +374,16 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
 
       stepWorld(world);
 
-      // Recompute height + score. The per-drop delta is this level's band gain (heightToScore of the
+      // Refresh the reported height ONLY when the whole scene is at rest (feedback 0026): while a piece
+      // falls or the tower tumbles, `stableHeight` holds its last settled value, so the height / score /
+      // level-clear / min-drop line never react to motion. A just-dropped body has been stepped once
+      // above, so it reads as moving here and cannot settle the height at its release point.
+      if (sceneSettled(world)) world.stableHeight = worldHeight(world);
+
+      // Score off the settled height. The per-drop delta is this level's band gain (heightToScore of the
       // new best minus the prior best); it accumulates into the cumulative total across levels.
       const level = levelAt(world.levelIndex);
-      const height = worldHeight(world);
+      const height = world.stableHeight;
       const priorScore = heightToScore(world.bestHeight, level.target);
       world.bestHeight = Math.max(world.bestHeight, height);
       const newScore = heightToScore(world.bestHeight, level.target);
@@ -446,11 +476,16 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
 function advanceLevel(world: LiveWorld): void {
   world.levelIndex += 1;
   world.bestHeight = 0;
+  // Fresh round: the tower is empty again, so the reported height and the per-round piece count reset.
+  world.stableHeight = 0;
+  world.piecesThisLevel = 0;
   const level = levelAt(world.levelIndex);
   const fresh = createWorld({
     seed: world.seed,
     levelIndex: world.levelIndex,
     bestHeight: 0,
+    stableHeight: 0,
+    piecesThisLevel: 0,
     totalScore: world.totalScore,
     pieceIndex: world.pieceIndex,
     bodies: [],
