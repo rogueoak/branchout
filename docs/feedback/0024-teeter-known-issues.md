@@ -25,6 +25,9 @@ credits - there is no in-product path for that today. The e2e works around it wi
 
 ## 2. Airborne-peak scoring can clear a level before the tower settles
 
+**RESOLVED in feedback `0025` (round 3):** `worldHeight` now counts only settled (at-rest) bodies, so a
+piece still falling no longer contributes its airborne peak. See `0025` #1.
+
 **Symptom.** A piece dropped high can score a height band - and even clear a level - that the resting
 tower never actually reaches. To a player this reads as luck or the game cheating.
 

@@ -283,6 +283,32 @@ describe('worldHeight', () => {
     expect(worldHeight(world)).toBe(100);
     expect(worldHeight(worldWith([]))).toBe(0);
   });
+
+  it('does not count a piece still in free-fall (feedback 0025: no airborne instant-win)', () => {
+    const world = worldWith([]);
+    const target = LEVELS[0]!.target; // 450
+    // Release a piece from well ABOVE the target line - its top starts ~500px up, over the 450 target.
+    // Before the settle-gate, worldHeight counted it at that release height and the level "cleared"
+    // instantly; now a still-moving body contributes nothing until it comes to rest.
+    const piece = storedPieceFrom(1, pieceForIndex(42, 0));
+    addPieceToWorld(world, piece, CENTER_X, GROUND_TOP - 480, 0);
+    let maxDuringFall = 0;
+    let settled = 0;
+    // The gate is not monotonic: while the piece bounces to rest it flickers above/below the settle
+    // threshold, so the measured height flips 0 <-> real for a few ticks. 220 steps lands well past the
+    // last jitter (the piece rests ~step 70), so the final read is stable - keep the budget generous.
+    for (let i = 0; i < 220; i++) {
+      stepWorld(world);
+      const h = worldHeight(world); // mirrors the tick: measured AFTER stepping
+      maxDuringFall = Math.max(maxDuringFall, h);
+      settled = h;
+    }
+    // It comes to rest on the platform, far below the release height, so the height is real (> 0) but
+    // never reached the target while airborne - the level would not have cleared on the drop.
+    expect(settled).toBeGreaterThan(0);
+    expect(settled).toBeLessThan(target);
+    expect(maxDuringFall).toBeLessThan(target);
+  });
 });
 
 describe('piece determinism', () => {

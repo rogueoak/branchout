@@ -112,6 +112,15 @@ const TYPE_BAG: readonly PieceType[] = [
 
 /** The heavy trapezoid's density multiplier vs a normal piece (4x heavier - reinforcement). */
 export const TRAP_DENSITY_MULT = 4;
+
+/**
+ * A placed body counts toward the tower height only once it is (near) at rest: linear speed below
+ * `SETTLE_SPEED` and angular speed below `SETTLE_ANGULAR` (feedback 0025). A piece under gravity
+ * (`gravity.y = 1`) picks up ~0.28 speed after a single step, so a still-falling piece is well above
+ * `SETTLE_SPEED` and never counts at its airborne release height; a resting piece sits near 0.
+ */
+export const SETTLE_SPEED = 0.16;
+export const SETTLE_ANGULAR = 0.12;
 /** The heavy trapezoid's cosmetics: near-black with a faint outline so it reads on the dark sky. */
 const TRAP_SKIN: Skin = { fill: '#0e0e16', stroke: '#4a4a5c' };
 
@@ -528,10 +537,19 @@ export function overlapsScene(
   return hits.some((h) => h.depth > 2);
 }
 
-/** The current tower height in px above the platform top (0 when empty). */
+/**
+ * The current tower height in px above the platform top (0 when empty). Counts ONLY settled bodies
+ * (feedback 0025): a piece still falling or bouncing is excluded until it comes to rest, so its airborne
+ * peak never inflates the height. This is read by scoring, level-clear, and the streamed min-drop line,
+ * so gating it here keeps all three from reacting to a piece mid-flight (no instant win, no jumping line).
+ */
 export function worldHeight(world: LiveWorld): number {
   let top = GROUND_TOP;
-  for (const p of world.placed) top = Math.min(top, p.body.bounds.min.y);
+  for (const p of world.placed) {
+    if (p.body.speed < SETTLE_SPEED && p.body.angularSpeed < SETTLE_ANGULAR) {
+      top = Math.min(top, p.body.bounds.min.y);
+    }
+  }
   return Math.max(0, Math.round(GROUND_TOP - top));
 }
 
