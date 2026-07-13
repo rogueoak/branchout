@@ -24,7 +24,7 @@ import {
   DECIDER_GAME_ID,
 } from '@branchout/game-sdk/testing';
 import { InMemoryPubSub, streamChannel } from './pubsub';
-import { GameRegistry } from './registry';
+import { InProcessRuntimeProvider } from './worker/runtime';
 import type { ControlPlaneReporter } from './reporter';
 import { InMemorySessionStore } from './session';
 
@@ -85,7 +85,7 @@ function harness(): Harness {
   const scheduler = new ManualScheduler();
   const clock = new ManualClock();
   const engine = new GameEngine({
-    registry: new GameRegistry([stubGame]),
+    runtimeProvider: new InProcessRuntimeProvider([stubGame]),
     store,
     pubsub,
     reporter,
@@ -433,7 +433,7 @@ describe('GameEngine lifecycle', () => {
     );
     const scheduler2 = new ManualScheduler();
     const engine2 = new GameEngine({
-      registry: new GameRegistry([stubGame]),
+      runtimeProvider: new InProcessRuntimeProvider([stubGame]),
       store: h.store,
       pubsub: h.pubsub,
       reporter: h.reporter,
@@ -738,7 +738,7 @@ describe('host-disconnect auto-pause (spec 0014)', () => {
 describe('config-schema boundary', () => {
   function engineWith(schema: (raw: unknown) => unknown): GameEngine {
     return new GameEngine({
-      registry: new GameRegistry([stubGame]),
+      runtimeProvider: new InProcessRuntimeProvider([stubGame]),
       // The manifest schema map the plugin runtime hands the engine (see registerPlugins).
       configSchemas: new Map([[STUB_GAME_ID, schema]]),
       store: new InMemorySessionStore(),
@@ -782,7 +782,7 @@ describe('decision/guess phase (spec 0020)', () => {
     const scheduler = new ManualScheduler();
     const clock = new ManualClock();
     const engine = new GameEngine({
-      registry: new GameRegistry([deciderGame]),
+      runtimeProvider: new InProcessRuntimeProvider([deciderGame]),
       store,
       pubsub,
       reporter,
@@ -945,7 +945,7 @@ describe('decision/guess phase (spec 0020)', () => {
       // no resolveDecision on purpose
     };
     const engine = new GameEngine({
-      registry: new GameRegistry([badGame]),
+      runtimeProvider: new InProcessRuntimeProvider([badGame]),
       store: new InMemorySessionStore(),
       pubsub: new InMemoryPubSub(),
       reporter: new CapturingReporter(),
@@ -1062,7 +1062,7 @@ describe('GameEngine live game (sim loop)', () => {
     const scheduler = new ManualScheduler();
     const stub = liveStubGame();
     const engine = new GameEngine({
-      registry: new GameRegistry([stub.module]),
+      runtimeProvider: new InProcessRuntimeProvider([stub.module]),
       store,
       pubsub,
       reporter,

@@ -13,6 +13,26 @@ export interface RegisteredPlugins {
 }
 
 /**
+ * The main-thread view of the registered games WITHOUT instantiating any module (spec 0045): the
+ * game ids and their config validators. Under worker isolation the modules are built inside each
+ * session's worker, so the engine's main thread only needs the manifests here - to know a game
+ * exists and to validate its handoff config at the `/sessions` boundary. Throws on a duplicate id.
+ */
+export function collectManifests(plugins: readonly GamePlugin[]): {
+  gameIds: string[];
+  configSchemas: Map<string, ConfigSchema<unknown>>;
+} {
+  const configSchemas = new Map<string, ConfigSchema<unknown>>();
+  for (const plugin of plugins) {
+    if (configSchemas.has(plugin.manifest.id)) {
+      throw new Error(`a game is already registered with id "${plugin.manifest.id}"`);
+    }
+    configSchemas.set(plugin.manifest.id, plugin.manifest.configSchema as ConfigSchema<unknown>);
+  }
+  return { gameIds: [...configSchemas.keys()], configSchemas };
+}
+
+/**
  * Instantiate each plugin with the injected services and build the registry. Throws if a plugin's
  * built module id does not match its manifest id, or (via {@link GameRegistry.register}) if two
  * plugins claim the same id.

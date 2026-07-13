@@ -7,8 +7,10 @@ import { RedisPubSub } from './pubsub';
 import { HttpControlPlaneReporter, NoopReporter, type ControlPlaneReporter } from './reporter';
 import { RedisSessionStore } from './session';
 import { attachGameSocket } from './socket';
-import { createGameServices } from './services';
-import { registerPlugins } from './plugins';
+import { collectManifests } from './plugins';
+import { WorkerManager } from './worker/manager';
+import { createWorkerSpawn } from './worker/spawn';
+import { WorkerRuntimeProvider } from './worker/runtime';
 import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
@@ -35,16 +37,25 @@ async function main(): Promise<void> {
   const cache = await pingRedis(redis);
   console.log(`[game-engine] startup check redis=${cache ? 'ok' : 'unreachable'}`);
 
-  // The plugin runtime: build the injected services, then instantiate each game plugin into the
-  // registry. Adding a game is adding its plugin to this list. A plugin's `create()` may load its
-  // data (e.g. the Trivia bank); a failure aborts boot via main().catch rather than serving a
-  // broken game.
-  const services = createGameServices();
-  const { registry, configSchemas } = await registerPlugins(
-    [triviaPlugin, liarLiarPlugin, teeterTowerPlugin],
-    services,
-  );
-  console.log(`[game-engine] registered games: ${registry.ids().join(', ')}`);
+  // Worker isolation (spec 0045): the main thread no longer instantiates any game module. It only
+  // records the manifests (ids + config validators) for handoff validation; each session's module is
+  // built inside its own worker_thread. Adding a game is adding its plugin to this list AND to the
+  // worker's PLUGINS list (apps/game-engine/src/worker/game-worker.ts).
+  const plugins = [triviaPlugin, liarLiarPlugin, teeterTowerPlugin];
+  const { gameIds, configSchemas } = collectManifests(plugins);
+  console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);
+
+  // Resolve the worker entry relative to THIS module: src/index.ts -> src/worker/game-worker.ts in dev
+  // (run the TS directly under tsx), dist/index.js -> dist/worker/game-worker.js in production. Both
+  // resolve as `./worker/game-worker.<ext>` from index's own url, so no build-vs-dev path branching.
+  const isTs = import.meta.url.endsWith('.ts');
+  const workerUrl = new URL(`./worker/game-worker.${isTs ? 'ts' : 'js'}`, import.meta.url);
+  const workerManager = new WorkerManager({
+    spawn: createWorkerSpawn(workerUrl, isTs ? ['--import', 'tsx'] : []),
+    max: config.workerMax,
+    callTimeoutMs: config.workerCallTimeoutMs,
+  });
+  const runtimeProvider = new WorkerRuntimeProvider(workerManager);
 
   const reporter: ControlPlaneReporter = config.controlPlaneUrl
     ? new HttpControlPlaneReporter({ baseUrl: config.controlPlaneUrl })
@@ -55,7 +66,7 @@ async function main(): Promise<void> {
 
   const pubsub = new RedisPubSub(redis, subscriber);
   const engine = new GameEngine({
-    registry,
+    runtimeProvider,
     configSchemas,
     store: new RedisSessionStore(redis),
     pubsub,
@@ -71,9 +82,13 @@ async function main(): Promise<void> {
 
   const shutdown = (signal: string) => {
     console.log(`[game-engine] ${signal} received, shutting down`);
-    void Promise.allSettled([sockets.close(), app.close(), redis.quit(), subscriber.quit()]).then(
-      () => process.exit(0),
-    );
+    void Promise.allSettled([
+      workerManager.disposeAll(),
+      sockets.close(),
+      app.close(),
+      redis.quit(),
+      subscriber.quit(),
+    ]).then(() => process.exit(0));
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));

@@ -13,6 +13,12 @@ export interface SessionState {
   game: string;
   /** Incremented each restart so report ids are unique per run (idempotency). */
   runId: number;
+  /**
+   * The base seed for this session's worker-built module (spec 0045). Persisted so that if the
+   * worker crashes and is respawned, it rebuilds the module with the same seeded rng and the world
+   * (rebuilt from `scratch`) is identical. Fixed at start; a restart re-rolls it for a fresh game.
+   */
+  seed: number;
   phase: Phase;
   paused: boolean;
   round: number;

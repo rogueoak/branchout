@@ -13,6 +13,7 @@ function makeState(overrides: Partial<SessionState> = {}): SessionState {
     room: 'r1',
     game: 'stub',
     runId: 1,
+    seed: 1,
     phase: 'collecting',
     paused: false,
     hostPaused: false,
