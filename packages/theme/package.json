@@ -26,7 +26,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@rogueoak/roots": "^0.4.0"
+    "@rogueoak/roots": "^0.10.0"
   },
   "devDependencies": {
     "@branchout/config": "workspace:*",

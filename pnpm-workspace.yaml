@@ -14,5 +14,5 @@ allowBuilds:
   style-dictionary: false
 
 minimumReleaseAgeExclude:
-  - '@rogueoak/canopy@0.4.0'
-  - '@rogueoak/roots@0.4.0'
+  - '@rogueoak/canopy'
+  - '@rogueoak/roots'
