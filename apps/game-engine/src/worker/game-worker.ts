@@ -7,8 +7,10 @@
 // module then rebuilds lazily from the ctx scratch on the next call.
 
 import { parentPort } from 'node:worker_threads';
-import { createFsAssetLoaderFactory, type GameModule } from '@branchout/game-sdk';
-import { PLUGINS } from '../games';
+import { createFsAssetLoaderFactory, type GameModule, type GamePlugin } from '@branchout/game-sdk';
+import { triviaPlugin } from '@branchout/game-trivia';
+import { liarLiarPlugin } from '@branchout/game-liar-liar';
+import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 import type {
   CallMessage,
   EngineToWorker,
@@ -16,6 +18,13 @@ import type {
   WorkerCapabilities,
   WorkerToEngine,
 } from './protocol';
+
+// The registered-games list is imported directly here (bare package specifiers), NOT from a shared
+// relative module: this file is a worker entry spawned via tsx in dev (`--import tsx`), and the tsx
+// worker loader does not resolve a relative *value* import without an extension (a bare/package import
+// resolves fine). So the list is intentionally duplicated with index.ts's boot list - keep the two in
+// sync when adding a game (index.ts records the manifest for handoff validation; this builds it).
+const PLUGINS: readonly GamePlugin[] = [triviaPlugin, liarLiarPlugin, teeterTowerPlugin];
 
 /** A seeded, deterministic [0,1) rng (Mulberry32), so a build is reproducible from the init seed. */
 function seededRng(seed: number): () => number {

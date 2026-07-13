@@ -8,10 +8,12 @@ import { HttpControlPlaneReporter, NoopReporter, type ControlPlaneReporter } fro
 import { RedisSessionStore } from './session';
 import { attachGameSocket } from './socket';
 import { collectManifests } from './plugins';
-import { PLUGINS } from './games';
 import { WorkerManager } from './worker/manager';
 import { createWorkerSpawn } from './worker/spawn';
 import { WorkerRuntimeProvider } from './worker/runtime';
+import { triviaPlugin } from '@branchout/game-trivia';
+import { liarLiarPlugin } from '@branchout/game-liar-liar';
+import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -37,9 +39,14 @@ async function main(): Promise<void> {
 
   // Worker isolation (spec 0045): the main thread no longer instantiates any game module. It only
   // records the manifests (ids + config validators) for handoff validation; each session's module is
-  // built inside its own worker_thread. The registered-games list lives in one place (./games), so
-  // the same PLUGINS drive both this manifest pass and the worker's module build.
-  const { gameIds, configSchemas } = collectManifests(PLUGINS);
+  // built inside its own worker_thread. This boot list must stay in sync with the worker's PLUGINS
+  // list (apps/game-engine/src/worker/game-worker.ts) - the worker can't share a relative module with
+  // us because it is spawned via tsx, whose worker loader won't resolve a relative value import.
+  const { gameIds, configSchemas } = collectManifests([
+    triviaPlugin,
+    liarLiarPlugin,
+    teeterTowerPlugin,
+  ]);
   console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);
 
   // Resolve the worker entry relative to THIS module: src/index.ts -> src/worker/game-worker.ts in dev
