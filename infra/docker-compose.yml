@@ -98,6 +98,11 @@ services:
       REDIS_URL: ${REDIS_URL}
       # The engine is a separate container; reach it by service name, not the localhost default.
       ENGINE_URL: http://game-engine:4001
+      # Host in-game feedback (spec 0048). Unset RESEND_API_KEY -> the endpoint returns a clear
+      # "not configured" response instead of sending; the per-IP cap knobs fall back to defaults.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      FEEDBACK_MAX_PER_IP: ${FEEDBACK_MAX_PER_IP:-5}
+      FEEDBACK_WINDOW_SECONDS: ${FEEDBACK_WINDOW_SECONDS:-600}
     ports:
       - '${CONTROL_PLANE_PORT:-4000}:4000'
     depends_on:

@@ -135,6 +135,24 @@ edge-sanitized header (else every client would share the proxy's IP). The fixed 
 Thresholds are env-tunable (`LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_SECONDS`, `SIGNUP_MAX_PER_IP`,
 `SIGNUP_WINDOW_SECONDS`); the limiter is reused by the admin login (spec `0037`).
 
+## Host in-game feedback (spec 0048)
+
+The host can send feedback from inside a live game. The web `FeedbackDialog` (canopy's
+`ResponsiveDialog` - a modal on desktop, a bottom sheet on a phone) POSTs `{ message, context }` to
+the control-plane `POST /v1/feedback`; the context (room code, game id, current game phase, that the
+sender is the host, a timestamp) is auto-captured from state `GameStage` already holds, never typed,
+and carries no session token or PII beyond what the recipient needs. The send is **server-side** so
+`RESEND_API_KEY` stays off the browser: `registerFeedbackRoutes` composes a plain-text body and sends
+via a `FeedbackMailer` - a `ResendMailer` that is a **direct `fetch` to Resend's REST API** (no new
+dependency), injectable so tests fake it. The from/to addresses live in one const module
+(`feedback/addresses.ts`), not scattered literals. The route validates the message (non-empty, capped
+at 5000), rate-limits per IP with the shared spec-0036 `RateLimiter` (tunable
+`FEEDBACK_MAX_PER_IP`/`FEEDBACK_WINDOW_SECONDS`), and - when `RESEND_API_KEY` is unset - returns a
+clear `503 { ok:false, error:'Feedback email is not configured yet.' }` and logs a warning rather than
+crashing, so the code ships before the secret is provisioned. An operator sets `RESEND_API_KEY` (wired
+through env.example, the control-plane config, compose, and `release.yml`) and must have `rogueoak.com`
+verified as a Resend sending domain for `branchout@rogueoak.com`.
+
 ## Design system and theme
 
 UI is built on rogueoak/canopy (`@rogueoak/canopy` components + `@rogueoak/roots` tokens).

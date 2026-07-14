@@ -11,6 +11,23 @@ vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 // draw loop guards on a null context, so stub getContext to null to keep the jsdom noise out.
 vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null as never);
 
+// The host-only Feedback affordance is a canopy ResponsiveDialog, which reads matchMedia; jsdom has
+// none. Stub it (desktop form) so the trigger mounts cleanly in the layout tests.
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  configurable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }),
+});
+
 const players = [
   { player: 'p1', nickname: 'Ada', connected: true },
   { player: 'p2', nickname: 'Bo', connected: true },
@@ -43,6 +60,7 @@ function renderStage(props: Partial<Parameters<typeof GameStage>[0]>) {
       state={collecting}
       me="p1"
       game="trivia"
+      code="ABC12"
       role="player"
       mode="interactive"
       isHost={false}
@@ -408,6 +426,40 @@ describe('GameStage host controls emphasis', () => {
     // The player's answer Submit stays the clear primary; the advance control is an outline button.
     const next = screen.getByRole('button', { name: 'Next' });
     expect(next.className).toMatch(/outline|border/);
+  });
+
+  it('renders the Feedback affordance only for the host (spec 0048)', () => {
+    const { rerender } = render(
+      <GameStage
+        state={collecting}
+        me="p1"
+        game="trivia"
+        code="ABC12"
+        role="player"
+        mode="interactive"
+        isHost={false}
+        onMove={noop}
+        onVote={noop}
+        onControl={noop}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Feedback' })).toBeNull();
+
+    rerender(
+      <GameStage
+        state={collecting}
+        me="p1"
+        game="trivia"
+        code="ABC12"
+        role="player"
+        mode="interactive"
+        isHost={true}
+        onMove={noop}
+        onVote={noop}
+        onControl={noop}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Feedback' })).toBeDefined();
   });
 });
 

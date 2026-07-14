@@ -234,6 +234,14 @@ What the product does for users, grouped by area. Each capability maps to one or
       update) until the admin console (spec `0037`) ships a toggle (spec `0035`). The account page
       shows an "Insider game previews" button that links to the surface, rendered only for insider
       accounts (spec `0039`).
+- [x] Host in-game feedback - a "Feedback" button, right-aligned in the host-controls row, opens a
+      ResponsiveDialog (a modal on desktop, a bottom sheet on a phone) where the host types a note at
+      any point during a game. Submitting emails it to feedback@rogueoak.com (from
+      branchout@rogueoak.com) via Resend, with auto-captured context attached (room code, game id,
+      current phase, that the sender is the host, a timestamp) so the note is actionable without a
+      back-and-forth. The control-plane endpoint (POST /v1/feedback) validates the message, caps
+      submissions per IP, and - until an operator provisions RESEND_API_KEY - returns a clear
+      "not configured" response rather than crashing (spec 0048).
 - [ ] Profile pages and friend search/invite.
 
 ## Future

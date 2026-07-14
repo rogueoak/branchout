@@ -5,11 +5,18 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { AccountService } from './accounts/service';
 import type { AdminService } from './admin/service';
 import type { AdminSessionStore } from './admin/session';
-import type { AdminCookieConfig, RateLimitConfig, SessionCookieConfig } from './config';
+import type {
+  AdminCookieConfig,
+  FeedbackRateLimitConfig,
+  RateLimitConfig,
+  SessionCookieConfig,
+} from './config';
+import type { FeedbackMailer } from './feedback/mailer';
 import type { RateLimiter } from './ratelimit/limiter';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
 import { registerEngineRoutes } from './routes/engine';
+import { registerFeedbackRoutes } from './routes/feedback';
 import { registerProfileRoutes } from './routes/profiles';
 import { registerRoomRoutes } from './routes/rooms';
 import type { ProfileService } from './profiles/service';
@@ -41,6 +48,10 @@ export interface AppDeps {
   limiter: RateLimiter;
   /** Auth rate-limit thresholds. */
   rateLimit: RateLimitConfig;
+  /** Host feedback email sender (spec 0048); undefined when RESEND_API_KEY is unset (inert). */
+  feedbackMailer?: FeedbackMailer;
+  /** Per-IP feedback rate-limit thresholds (spec 0048). */
+  feedbackRateLimit: FeedbackRateLimitConfig;
 }
 
 /**
@@ -116,6 +127,14 @@ export function createApp(deps: AppDeps): FastifyInstance {
       registerEngineRoutes(v1, {
         rooms: deps.rooms,
         internalToken: deps.internalToken,
+      });
+
+      // Host in-game feedback (spec 0048). `feedbackMailer` is undefined when RESEND_API_KEY is
+      // unset, and the route returns a clear "not configured" 503 in that case.
+      registerFeedbackRoutes(v1, {
+        ...(deps.feedbackMailer ? { mailer: deps.feedbackMailer } : {}),
+        limiter: deps.limiter,
+        rateLimit: deps.feedbackRateLimit,
       });
 
       done();

@@ -110,6 +110,10 @@ jobs:
           GITHUB_ACTOR_NAME: ${{ github.actor }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          # Host in-game feedback email via Resend (spec 0048). Optional: unset -> the endpoint returns
+          # a clear "not configured" response and never crashes, so a box with no key still boots. Set
+          # it AND verify rogueoak.com as a Resend sending domain to actually deliver.
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           # Root admin creds (spec 0037) are managed ON THE BOX only - never in GitHub. They live in the
           # host .env.prod and are PRESERVED across the rewrite below (not sourced from a secret). To
           # seed/rotate the break-glass root admin, edit ADMIN_ROOT_EMAIL/ADMIN_ROOT_PASSWORD in
@@ -135,6 +139,7 @@ jobs:
             printf 'export GHCR_ACTOR=%q\n' "$GITHUB_ACTOR_NAME"
             printf 'export POSTGRES_PASSWORD=%q\n' "$POSTGRES_PASSWORD"
             printf 'export SESSION_SECRET=%q\n' "$SESSION_SECRET"
+            printf 'export RESEND_API_KEY=%q\n' "$RESEND_API_KEY"
             cat <<'REMOTE'
           set -euo pipefail
           REPO="$HOME/branchout"
@@ -234,6 +239,9 @@ jobs:
           {
             printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
             printf 'SESSION_SECRET=%s\n' "$SESSION_SECRET"
+            # Host feedback email key (spec 0048). Empty when the secret is unset -> control-plane
+            # config leaves it unset and the endpoint stays inert (a clear "not configured" reply).
+            printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY"
             printf 'DATABASE_URL=postgres://branchout:%s@postgres:5432/branchout\n' "$POSTGRES_PASSWORD"
             printf 'REDIS_URL=redis://redis:6379\n'
             printf 'ENGINE_URL=http://game-engine:4001\n'
