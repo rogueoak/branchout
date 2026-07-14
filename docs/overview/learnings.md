@@ -531,6 +531,22 @@ Capture durable lessons as they emerge.
   rewrite-based subdomain with only a landing page has to bounce to the apex to do anything, so the
   room/join routes were mirrored under the gated `/insider` tree (thin re-exports of the surface-aware
   apex pages) - play now stays on the insider host end to end. (Feedback `0029`.)
+- **Surface-owned nav links stay on the host; only apex-only chrome crosses.** The first pass gave the
+  shared `TopNav` a single `linkOrigin` and applied it to *every* link, so once the insider surface
+  passed its apex origin (needed for the apex-only Log in / Sign up / Manage account), it also exiled
+  the surface's OWN content links (Games, the wordmark/home) to the apex - a tester browsing insider
+  games one tap off the surface. A "cross everything" helper is wrong both ways: leave the links
+  relative and the apex-only ones 404 into the gated tree; cross them all and the surface-owned ones
+  leave the surface. Give the component the surface flag (`insider`) and split: apex-only links use
+  `linkOrigin`; surface-owned links (home is `/`, Games is the surface's own games listing) stay
+  relative on the current host. `AccountMenu`/`Footer` carry only apex-only links, so they need no
+  split. (Feedback `0030`.)
+- **A "card as a link" wants its play CTA INSIDE the one link, not as a second interactive.** The
+  insider game card is already a single `<a>`; the visible "Play now" is an `aria-hidden` styled
+  `<span>` within it (the link carries the "Play <game> now" accessible name), so a screen reader
+  hears one action, not a link nested in a link. A short single-line label may use `buttonVariants()` -
+  the inherited `white-space: nowrap` only overflows a content-bearing wrapper (spec `0029`), never a
+  two-word pill. (Feedback `0030`.)
 
 ## Rate limiting and lockouts
 

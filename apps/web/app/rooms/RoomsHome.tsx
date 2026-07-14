@@ -115,6 +115,7 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
         viewer={viewer}
         label={surface.insider ? 'Insider' : undefined}
         linkOrigin={surface.linkOrigin || undefined}
+        insider={surface.insider}
       />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-4 py-16 sm:px-6">
         <header className="flex flex-col items-center gap-4 text-center">

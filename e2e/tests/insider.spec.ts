@@ -29,7 +29,7 @@ test.describe('insider surface (spec 0035)', () => {
     // Teeter Tower (spec 0043) is now a live insider game, so the surface lists it (the empty state
     // no longer shows). The card carries the game's mark and deep-links RELATIVELY (feedback 0029),
     // so starting stays on the insider surface instead of bouncing to the apex.
-    const card = page.getByRole('link', { name: /start a room to test teeter tower/i });
+    const card = page.getByRole('link', { name: /play teeter tower now/i });
     await expect(card).toBeVisible();
     expect(await card.getAttribute('href')).toBe('/rooms?game=teeter-tower');
     expect(await card.locator('svg').count()).toBeGreaterThan(0);
@@ -45,7 +45,7 @@ test.describe('insider surface (spec 0035)', () => {
     await page.goto(INSIDER_URL);
     // Tap the Teeter Tower card: the room-create deep link keeps the player on the insider host (the
     // rooms home, now hosted under the gated /insider tree). It never bounced to the apex.
-    await page.getByRole('link', { name: /start a room to test teeter tower/i }).click();
+    await page.getByRole('link', { name: /play teeter tower now/i }).click();
     await page.waitForURL(/insider\.localhost.*\/rooms\?game=teeter-tower/);
     // Create the room: the deep link pre-selects the insider game (allowed on this surface) and
     // skips straight to the invite step, still on the insider host.
