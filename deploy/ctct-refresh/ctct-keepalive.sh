@@ -104,12 +104,17 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 # Capture stdout; on a non-zero exit, `run_out` holds whatever was printed. `set -e` must not abort
-# here - we want to inspect the failure - so guard the assignment.
+# here - we want to inspect the failure - so guard the assignment. Capture stderr to a temp so a hard
+# failure's real cause (e.g. invalid_grant) reaches the log/alert; the CLI prints the OAuth error to
+# stderr and never echoes the token there, so a bounded snippet is safe to surface.
 run_rc=0
-run_out="$(docker run --rm --env-file "$ENV_FILE" "$IMAGE" refresh-token 2>/dev/null)" || run_rc=$?
+run_err="$(mktemp)"
+run_out="$(docker run --rm --env-file "$ENV_FILE" "$IMAGE" refresh-token 2>"$run_err")" || run_rc=$?
+run_err_txt="$(tail -c 500 "$run_err" 2>/dev/null | tr -d '\r')"
+rm -f "$run_err"
 
 if [ "$run_rc" -ne 0 ]; then
-  fail "ctct refresh-token exited $run_rc"
+  fail "ctct refresh-token exited $run_rc: ${run_err_txt:-no stderr}"
 fi
 
 # Parse the JSON with python3. Emit two lines: the `rotated` flag and the new refresh_token. If the
@@ -140,6 +145,10 @@ if [ "$rotated" = "true" ]; then
   # never leaves a half-written env-file). Do NOT print the token anywhere.
   backup="$ENV_FILE.bak.$(date -u +'%Y%m%dT%H%M%SZ')"
   cp -p "$ENV_FILE" "$backup"
+  # Each backup holds a live-at-the-time token; bound their growth by keeping only the 5 most recent
+  # (perms stay 0600 via cp -p). A rotation is rare, so this is plenty of recovery history.
+  # shellcheck disable=SC2012 # names are our own ISO-timestamp backups (no spaces/newlines), ls is safe
+  ls -1t "$ENV_FILE".bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
 
   tmp="$(mktemp "$(dirname "$ENV_FILE")/.env.prod.XXXXXX")"
   # Match the mode of the original so the rewritten file stays 0600.
