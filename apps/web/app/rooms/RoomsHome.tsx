@@ -115,6 +115,7 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
         viewer={viewer}
         label={surface.insider ? 'Insider' : undefined}
         linkOrigin={surface.linkOrigin || undefined}
+        insider={surface.insider}
       />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-4 py-16 sm:px-6">
         <header className="flex flex-col items-center gap-4 text-center">
@@ -163,6 +164,12 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
             <Input
               id="join-code"
               value={code}
+              // Never grab focus on mount (feedback 0031): auto-focusing the join-code field pops the
+              // mobile keyboard the instant "Play a game" opens, which is annoying and hides the
+              // primary "Create a room" action above it. Host is the primary path; the player taps the
+              // code field when they actually want to join. No code focuses it, so this is the explicit
+              // guard against any browser/agent that would autofocus the page's first empty text input.
+              autoFocus={false}
               autoComplete="off"
               placeholder="ABC12"
               onChange={(event) => setCode(event.target.value)}

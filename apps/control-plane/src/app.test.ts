@@ -7,7 +7,12 @@ import { InMemoryAdminRepository } from './admin/repository.memory';
 import { AdminService } from './admin/service';
 import { InMemoryAdminSessionStore } from './admin/session.store.memory';
 import { createApp } from './app';
-import type { AdminCookieConfig, FeedbackRateLimitConfig, SessionCookieConfig } from './config';
+import type {
+  AdminCookieConfig,
+  FeedbackRateLimitConfig,
+  SessionCookieConfig,
+  SubscribeConfig,
+} from './config';
 import type { FeedbackEmail, FeedbackMailer } from './feedback/mailer';
 import { ResendMailer } from './feedback/mailer';
 import { CreditLedger } from './credits/ledger';
@@ -52,6 +57,9 @@ const defaultRateLimit: RateLimitConfig = {
 
 /** Generous feedback cap so the non-feedback tests never trip it. */
 const defaultFeedbackRateLimit: FeedbackRateLimitConfig = { maxPerIp: 50, windowSeconds: 600 };
+
+/** Subscribe config with no CTCT secrets (the endpoint is inert); generous per-IP cap. Spec 0047. */
+const defaultSubscribe: SubscribeConfig = { maxPerIp: 50, windowSeconds: 600 };
 
 interface MakeAppOptions {
   /** A feedback mailer to wire; omit to simulate an unset RESEND_API_KEY (the "not configured" case). */
@@ -103,6 +111,7 @@ function makeApp(
     rateLimit,
     ...(feedbackMailer ? { feedbackMailer } : {}),
     feedbackRateLimit,
+    subscribe: defaultSubscribe,
   });
   return {
     app,
@@ -1038,6 +1047,7 @@ function makeAppWithToken(token: string) {
     limiter: new InMemoryRateLimiter(),
     rateLimit: defaultRateLimit,
     feedbackRateLimit: defaultFeedbackRateLimit,
+    subscribe: defaultSubscribe,
   });
   return { app };
 }

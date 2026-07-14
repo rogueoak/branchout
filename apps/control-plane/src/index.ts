@@ -160,6 +160,7 @@ async function main(): Promise<void> {
       maxPerIp: config.feedback.maxPerIp,
       windowSeconds: config.feedback.windowSeconds,
     },
+    subscribe: config.subscribe,
   });
 
   const shutdown = (signal: string) => {

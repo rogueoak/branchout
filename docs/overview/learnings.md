@@ -231,6 +231,14 @@ Capture durable lessons as they emerge.
   since the host could fix it by switching itself to Interactive. Make the blocked copy aware of the
   actor: when the caller is the one who can lift the gate, point at their own control instead of
   telling them to wait. (Review `0013`.)
+- **A "steals focus on mount" report with no `autoFocus` in the code is a browser heuristic, not a
+  bug to hunt - guard it explicitly.** The rooms join-code field popped the mobile keyboard on load,
+  but there was no `autoFocus` in `RoomsHome` and canopy's `Input` is a bare `forwardRef` `<input>`
+  with no default; a jsdom render confirmed the field is not focused on mount there. The cause is a
+  browser autofocusing the page's first/only empty text input. Don't chase a `focus()` call that does
+  not exist - reproduce (jsdom won't show it), then set `autoFocus={false}` explicitly with a
+  not-focused-on-mount test. (Feedback `0031`.)
+
 - **On a mobile-first surface with a desktop path, "follow the pointer" is not the same input on
   touch and mouse - gate press-drag vs. hover explicitly.** Teeter's canvas aim let the piece follow
   every `pointermove` over the board. On touch that is only ever a press-drag, so it played right on a
@@ -455,6 +463,21 @@ Capture durable lessons as they emerge.
   A deploy that wrote `.env.prod` to the repo root while `compose.site.yml` sat in `deploy/docker/`
   would have started every service with empty secrets. Write host-side env files next to their
   compose file. (Feedback `0011`.)
+- **An optional secret sourced from `env_file` must not also be interpolated in the compose
+  `environment:` block - `environment:` wins even when empty.** Compose merges an `environment:` key
+  over the same key from `env_file`, so listing `CTCT_CLIENT_ID: ${CTCT_CLIENT_ID:-}` next to
+  `env_file: .env.prod` would BLANK the value the env file provides whenever the runner shell lacks it
+  (the common case for an optional secret). Let optional secrets flow purely through `.env.prod`
+  (env_file) and only document them in a comment; reserve the `environment:` block for values you set
+  directly in the compose file (like `NODE_ENV`, `ENGINE_URL`). (Spec `0047`.)
+- **Ship a not-yet-provisioned integration INERT, keyed on config presence, not a 500.** The subscribe
+  endpoint reads three CTCT secrets; any unset returns a clear `503 "not configured"` (plus a warn log),
+  never a crash or a 500, so the code + env plumbing merge before the secrets exist and turn on when an
+  operator sets them. Make each credential OPTIONAL in the config parse (omit the key when unset, so a
+  `?.` read is `undefined`, not `''`) and branch on presence at the boundary - distinct from a *money*
+  endpoint, which must fail CLOSED. Match the "wire later" contract in the env plumbing too: write the
+  secret into `.env.prod` only when it is set, so an absent value leaves the endpoint cleanly inert.
+  (Spec `0047`.)
 - **Keep a tier off any network it has no need to reach - the web tier does not belong on the data
   network.** The web app reaches the API tier over the shared `edge` network, so joining it to the
   internal `db` network only hands a compromised web container direct TCP to Postgres and Redis.
@@ -523,6 +546,22 @@ Capture durable lessons as they emerge.
   rewrite-based subdomain with only a landing page has to bounce to the apex to do anything, so the
   room/join routes were mirrored under the gated `/insider` tree (thin re-exports of the surface-aware
   apex pages) - play now stays on the insider host end to end. (Feedback `0029`.)
+- **Surface-owned nav links stay on the host; only apex-only chrome crosses.** The first pass gave the
+  shared `TopNav` a single `linkOrigin` and applied it to *every* link, so once the insider surface
+  passed its apex origin (needed for the apex-only Log in / Sign up / Manage account), it also exiled
+  the surface's OWN content links (Games, the wordmark/home) to the apex - a tester browsing insider
+  games one tap off the surface. A "cross everything" helper is wrong both ways: leave the links
+  relative and the apex-only ones 404 into the gated tree; cross them all and the surface-owned ones
+  leave the surface. Give the component the surface flag (`insider`) and split: apex-only links use
+  `linkOrigin`; surface-owned links (home is `/`, Games is the surface's own games listing) stay
+  relative on the current host. `AccountMenu`/`Footer` carry only apex-only links, so they need no
+  split. (Feedback `0030`.)
+- **A "card as a link" wants its play CTA INSIDE the one link, not as a second interactive.** The
+  insider game card is already a single `<a>`; the visible "Play now" is an `aria-hidden` styled
+  `<span>` within it (the link carries the "Play <game> now" accessible name), so a screen reader
+  hears one action, not a link nested in a link. A short single-line label may use `buttonVariants()` -
+  the inherited `white-space: nowrap` only overflows a content-bearing wrapper (spec `0029`), never a
+  two-word pill. (Feedback `0030`.)
 
 ## Rate limiting and lockouts
 

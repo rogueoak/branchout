@@ -6,6 +6,8 @@
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
+import { heroLiarLiarSvg } from '@branchout/brand/hero-liarliar';
+import { heroTriviaSvg } from '@branchout/brand/hero-trivia';
 import { PUBLIC_GAME_CATALOG, featurePath, playHref } from '../lib/games/catalog';
 import type { Viewer } from '../lib/session';
 import { Footer } from './Footer';
@@ -37,6 +39,14 @@ function ArrowRightIcon() {
   );
 }
 
+// The wide hero illustration for each game teaser card, keyed by the catalog slug (spec 0046). Build-
+// time SVG strings from the brand package (not user input), inlined the same way the game marks are.
+// A slug with no hero (e.g. a future game) simply renders no illustration - the card still stands.
+const GAME_HERO: Record<string, string> = {
+  trivia: heroTriviaSvg,
+  'liar-liar': heroLiarLiarSvg,
+};
+
 // How it works: three steps from join code to playing.
 const HOW_IT_WORKS = [
   {
@@ -57,8 +67,10 @@ const HOW_IT_WORKS = [
 ];
 
 export function LandingContent({ viewer }: LandingContentProps) {
+  // Signed-in "Play now" points at /games so the player picks a game before creating a room (spec
+  // 0046); the signed-out "Sign up free" still goes to /signup.
   const primaryCta = viewer.signedIn
-    ? { label: 'Play now', href: '/rooms' }
+    ? { label: 'Play now', href: '/games' }
     : { label: 'Sign up free', href: '/signup' };
 
   return (
@@ -123,58 +135,73 @@ export function LandingContent({ viewer }: LandingContentProps) {
               "Start a game" CTA into the play path (spec 0030). The whole card is the tap target, and
               the marketing data comes from the shared catalog so the teaser never drifts from the
               feature page or the room picker. */}
-          {PUBLIC_GAME_CATALOG.map((game) => (
-            // The whole card links to the feature page (learn first). For a signed-in player who
-            // already knows the game, a secondary "Play" link below it skips the extra hop straight
-            // into the room deep link. Sibling links (not nested) so the markup stays valid.
-            <div key={game.slug} className="flex flex-col gap-2">
-              <a
-                href={featurePath(game.slug)}
-                aria-label={`Learn about ${game.name}`}
-                className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <Card className="h-full transition-colors hover:border-primary">
-                  <CardHeader>
-                    {/* Icon and title sit on one row: the game mark leads, the name beside it. The
+          {PUBLIC_GAME_CATALOG.map((game) => {
+            const hero = GAME_HERO[game.slug];
+            return (
+              // The whole card links to the feature page (learn first). For a signed-in player who
+              // already knows the game, a secondary "Play" link below it skips the extra hop straight
+              // into the room deep link. Sibling links (not nested) so the markup stays valid.
+              <div key={game.slug} className="flex flex-col gap-2">
+                <a
+                  href={featurePath(game.slug)}
+                  aria-label={`Learn about ${game.name}`}
+                  className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <Card className="h-full overflow-hidden transition-colors hover:border-primary">
+                    {/* Wide hero illustration (spec 0046): a build-time SVG string from the brand
+                      package (not user input), inlined like the game mark. The 16:9 box scales the
+                      art down cleanly on a phone; block + w-full on the SVG stops any intrinsic
+                      width leaking past the card and overflowing the 360px viewport. aria-hidden
+                      because the card title and the link's aria-label already name the game. */}
+                    {hero ? (
+                      <div
+                        aria-hidden="true"
+                        className="aspect-[16/9] w-full overflow-hidden bg-[#0d0a15] [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
+                        dangerouslySetInnerHTML={{ __html: hero }}
+                      />
+                    ) : null}
+                    <CardHeader>
+                      {/* Icon and title sit on one row: the game mark leads, the name beside it. The
                       mark is a build-time SVG string from the brand package (not user input),
                       inlined the same way the Wordmark renders the app icon. min-w-0 + break-words
                       so a long name cannot overflow the phone. aria-hidden because the card title
                       and the link's aria-label already name the game. */}
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span
-                        aria-hidden="true"
-                        className="inline-block h-12 w-12 shrink-0 overflow-hidden rounded-xl [&>svg]:h-full [&>svg]:w-full"
-                        dangerouslySetInnerHTML={{ __html: game.icon }}
-                      />
-                      <CardTitle asChild>
-                        <h3 className="break-words">{game.name}</h3>
-                      </CardTitle>
-                    </div>
-                    <Badge variant={game.badge.variant} className="mt-1 w-fit">
-                      {game.badge.label}
-                    </Badge>
-                    <CardDescription>{game.summary}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-body-sm text-text-muted">{game.categories.join(', ')}</p>
-                    <p className="text-body-sm mt-4 flex items-center gap-1.5 font-medium text-primary">
-                      Learn more
-                      <ArrowRightIcon />
-                    </p>
-                  </CardContent>
-                </Card>
-              </a>
-              {viewer.signedIn ? (
-                <a
-                  href={playHref(game.slug)}
-                  aria-label={`Play ${game.name} now`}
-                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                >
-                  Play now
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="inline-block h-12 w-12 shrink-0 overflow-hidden rounded-xl [&>svg]:h-full [&>svg]:w-full"
+                          dangerouslySetInnerHTML={{ __html: game.icon }}
+                        />
+                        <CardTitle asChild>
+                          <h3 className="break-words">{game.name}</h3>
+                        </CardTitle>
+                      </div>
+                      <Badge variant={game.badge.variant} className="mt-1 w-fit">
+                        {game.badge.label}
+                      </Badge>
+                      <CardDescription>{game.summary}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-body-sm text-text-muted">{game.categories.join(', ')}</p>
+                      <p className="text-body-sm mt-4 flex items-center gap-1.5 font-medium text-primary">
+                        Learn more
+                        <ArrowRightIcon />
+                      </p>
+                    </CardContent>
+                  </Card>
                 </a>
-              ) : null}
-            </div>
-          ))}
+                {viewer.signedIn ? (
+                  <a
+                    href={playHref(game.slug)}
+                    aria-label={`Play ${game.name} now`}
+                    className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                  >
+                    Play now
+                  </a>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
         <p className="mt-6 text-body-sm text-text-muted">More games on the way.</p>
       </section>

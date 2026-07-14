@@ -158,6 +158,40 @@ crashing, so the code ships before the secret is provisioned. An operator sets `
 through env.example, the control-plane config, compose, and `release.yml`) and must have `rogueoak.com`
 verified as a Resend sending domain for `branchout@rogueoak.com`.
 
+## Newsletter subscribe (spec 0047)
+
+A visitor can join the Constant Contact (CTCT) "Branch Out" mailing list from a "More games coming
+soon" banner on `/games`. The capture endpoint lives in the **control-plane** (`POST /v1/subscribe`,
+`/api/v1/subscribe` in prod), NOT the Next `web` app - branchout holds server secrets in the
+control-plane, so the CTCT OAuth credentials never reach the browser (unlike the sibling rogueoak
+single-app site, whose route owns them). The pure, unit-tested core (`apps/control-plane/src/subscribe/`)
+ports rogueoak's logic: the refresh-token -> access-token exchange, an in-memory access-token cache with
+a 60s skew (mint once, reuse across requests, share one in-flight mint on a cold-cache burst), a
+single-retry self-heal that clears the cache and re-mints on a stale-token 401, and the additive
+`sign_up_form` contact create (`create_source: "Contact"`, `list_memberships: [<CTCT_LIST_ID>]`). `fetch`
+and the clock are injected the way the rest of the service injects dependencies, so the network and
+expiry are mocked in tests. The route reuses the account email validator, drops a filled honeypot
+(`company`) silently, and rate-limits per IP with the **shared spec 0036 `RateLimiter`** the auth routes
+use (`subscribe:<ip>`, tunable via `SUBSCRIBE_MAX_PER_IP`/`SUBSCRIBE_WINDOW_SECONDS`, defaults 5 / 600s).
+Errors carry only an HTTP status, never the CTCT response body (which can echo the submitted email), so
+no PII lands in logs or the client response.
+
+The endpoint **fails inert, not closed-with-a-500**: `CTCT_CLIENT_ID`/`CTCT_REFRESH_TOKEN`/`CTCT_LIST_ID`
+are each optional in config, and any unset one returns `503 { ok:false, error:'Subscribe is not
+configured yet.' }` plus a warning log - so the code and env plumbing ship before the secrets exist and
+turn on when an operator provisions them (mint the refresh token via `ctct login`; find the list id via
+`ctct list list --name "Branch Out"`). **Go-live abuse gate:** because the endpoint lists an arbitrary
+third-party email and the honeypot + per-IP cap only deter naive bots, **confirmed (double) opt-in must
+be enabled on the "Branch Out" list before the secrets are provisioned** - so a distributed signup-bomb
+can at worst trigger one confirmation email to a victim, never a real (unconfirmed) subscription that
+would burn sender reputation. CAPTCHA/proof-of-work and a global rate cap are documented future
+hardening (spec 0047 "Abuse / go-live"). The secrets flow to prod through `.env.prod` (written by
+`release.yml` from GitHub secrets) and `env_file` in `compose.site.yml` - deliberately not listed in the
+compose `environment:` block, since an `environment:` key wins over `env_file` even when empty. The web
+`SubscribeForm` is a house-built canopy `Input`/`Button` form (branchout's canopy version has no
+`SubscribeForm` branch export) that posts to the same relative `/api` base the rest of the browser code
+uses (`NEXT_PUBLIC_CONTROL_PLANE_URL` + `V1_PREFIX`).
+
 ## Design system and theme
 
 UI is built on rogueoak/canopy (`@rogueoak/canopy` components + `@rogueoak/roots` tokens).
@@ -230,6 +264,16 @@ linkOrigin }`; the room pages pass it to the picker and the `?game=` deep-link g
 insider-only game appears (and its deep link is honored) only on the insider surface - never on the
 apex, even for an entitled insider. The shared chrome crosses its marketing/legal links back to the
 apex via `linkOrigin` while the flow's own relative links stay on the insider host.
+
+**Surface-owned nav links stay on the host** (feedback `0030`). `linkOrigin` alone is too blunt: it
+crosses *every* nav link, which drags the surface's own content links to the apex too. `TopNav` takes
+an explicit `insider` flag so it can split them - the apex-only links (Log in, Sign up, Manage
+account) cross via `linkOrigin`, while the **surface-owned** links stay relative on the current host:
+the wordmark/home is always `/` (the insider host rewrites `/` into the insider landing), and Games is
+`/` on the insider surface (the insider games live on the landing - there is no `/insider/games` page)
+and `/games` on the apex. `AccountMenu` and `Footer` carry only apex-only links, so they keep crossing
+unchanged. The insider landing itself leads with one centered welcome and gives each test-game card a
+"Play now" CTA inside its (single) card link.
 
 The insider room flow's credentialed browser calls reach the control-plane **same-origin** via `/api`
 (prod bakes `NEXT_PUBLIC_CONTROL_PLANE_URL=/api`; Caddy's `insider.` block re-serves `/api` per host,

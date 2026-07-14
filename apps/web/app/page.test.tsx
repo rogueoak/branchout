@@ -71,6 +71,19 @@ describe('home page - anonymous visitor', () => {
     expect(container.querySelectorAll('svg').length).toBeGreaterThanOrEqual(4);
   });
 
+  it('renders a wide hero illustration in each game teaser card (spec 0046)', () => {
+    render(<LandingContent viewer={{ signedIn: false }} />);
+    // The hero art is inlined inside the "Learn about <game>" card link, aria-hidden (the card title
+    // and the link name the game). It is the wide 800x450 scene, distinct from the compact 512 mark.
+    for (const name of ['Learn about Trivia', 'Learn about Liar Liar']) {
+      const card = screen.getByRole('link', { name: new RegExp(name, 'i') });
+      const heroSvg = card.querySelector('svg[viewBox="0 0 800 450"]');
+      expect(heroSvg, `${name} hero illustration`).not.toBeNull();
+      // The gold-root rule holds in the hero art (spec 0046 / BRAND.md).
+      expect(card.innerHTML).toContain('#d2a463');
+    }
+  });
+
   it('links each game card to its feature page (learn first, spec 0030)', () => {
     render(<LandingContent viewer={{ signedIn: false }} />);
     const trivia = screen.getByRole('link', { name: /learn about trivia/i });
@@ -115,10 +128,14 @@ describe('home page - anonymous visitor', () => {
 });
 
 describe('home page - signed-in visitor', () => {
-  it('shows "Play now" instead of "Sign up free"', () => {
+  it('shows the primary "Play now" CTA linking to /games instead of "Sign up free" (spec 0046)', () => {
     render(<LandingContent viewer={{ signedIn: true, gamerTag: 'CoolCat' }} />);
     expect(screen.queryByRole('link', { name: 'Sign up free' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Play now' })).toBeDefined();
+    // The hero primary CTA is the first "Play now" link; it points at /games so the player picks a
+    // game before creating a room (the per-card "Play <game> now" links deep-link into /rooms).
+    const heroCta = screen.getAllByRole('link', { name: 'Play now' })[0];
+    expect(heroCta).toHaveProperty('href', expect.stringContaining('/games'));
+    expect(heroCta?.getAttribute('href')).not.toContain('/rooms');
   });
 
   it('still links the game cards to the feature pages when signed in (learn first, spec 0030)', () => {

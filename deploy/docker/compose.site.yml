@@ -119,6 +119,13 @@ services:
       # "not configured" response and never crashes. These per-IP cap knobs are inert defaults.
       FEEDBACK_MAX_PER_IP: ${FEEDBACK_MAX_PER_IP:-5}
       FEEDBACK_WINDOW_SECONDS: ${FEEDBACK_WINDOW_SECONDS:-600}
+      # Newsletter subscribe / Constant Contact (spec 0047) reaches control-plane through `.env.prod`
+      # (env_file above), written by the release workflow when the operator sets the GitHub secrets:
+      #   CTCT_CLIENT_ID, CTCT_REFRESH_TOKEN, CTCT_LIST_ID (mint the token via `ctct login`; list id
+      #   via `ctct list list --name "Branch Out"`), plus optional SUBSCRIBE_MAX_PER_IP /
+      #   SUBSCRIBE_WINDOW_SECONDS. They are NOT listed here so an unset value never blanks the
+      #   env_file entry (an `environment:` key wins over env_file even when empty). While unset,
+      #   POST /v1/subscribe stays inert (a clear "not configured" response, never a crash).
     healthcheck:
       test: ['CMD-SHELL', 'curl -fsS http://localhost:4000/health -o /dev/null || exit 1']
       interval: 10s

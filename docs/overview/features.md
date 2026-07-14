@@ -144,11 +144,14 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 ## Web
 
-- [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, Trivia games
-      teaser (the whole card is a link into the play path - signup when anonymous, rooms when
-      signed in), footer. Dark theme by default; pricing/tier content is dropped for now.
-      Signed-in visitors see "Play now" instead of "Sign up free" via a server-side session
-      check; graceful fallback to anonymous view if the control plane is unreachable (spec `0005`).
+- [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, games teaser, footer.
+      Dark theme by default; pricing/tier content is dropped for now. Each teaser card carries a wide
+      on-brand hero illustration (per-game 800x450 scene from `@branchout/brand`, gold-root rule kept)
+      above the title and is a link into the feature page; a signed-in player also gets a per-card
+      "Play <game> now" deep link into the room flow. Signed-in visitors see "Play now" (pointing at
+      `/games` so they pick a game before hosting) instead of "Sign up free" via a server-side session
+      check; graceful fallback to anonymous view if the control plane is unreachable (specs `0005`,
+      `0046`).
 - [x] Game client shell - the browser client for Trivia (spec `0010`). A rooms home to create a
       room (host) or join by code, and the `/join?code=ABC12` share-link route where a player picks
       a nickname, player/observer, and interactive/remote (minting an anonymous session if needed).
@@ -233,15 +236,28 @@ What the product does for users, grouped by area. Each capability maps to one or
       empty-state index of test games (games added later). The role is granted out-of-band (a DB
       update) until the admin console (spec `0037`) ships a toggle (spec `0035`). The account page
       shows an "Insider game previews" button that links to the surface, rendered only for insider
-      accounts (spec `0039`).
+      accounts (spec `0039`). The nav's Games link and the wordmark/home are **surface-owned**: on
+      the insider host they stay relative (Games reaches the insider games on the landing, the
+      wordmark returns to the insider landing), and only the genuinely apex-only chrome (Log in /
+      Sign up / Manage account, footer legal) crosses to the apex; the landing leads with one
+      centered welcome and each test-game card carries a "Play now" CTA (feedback `0030`).
 - [x] Host in-game feedback - a "Feedback" button, right-aligned in the host-controls row, opens a
       ResponsiveDialog (a modal on desktop, a bottom sheet on a phone) where the host types a note at
       any point during a game. Submitting emails it to feedback@rogueoak.com (from
       branchout@rogueoak.com) via Resend, with auto-captured context attached (room code, game id,
       current phase, that the sender is the host, a timestamp) so the note is actionable without a
-      back-and-forth. The control-plane endpoint (POST /v1/feedback) validates the message, caps
-      submissions per IP, and - until an operator provisions RESEND_API_KEY - returns a clear
-      "not configured" response rather than crashing (spec 0048).
+      back-and-forth. The control-plane endpoint (POST /v1/feedback) is cookie-authenticated and
+      host-verified, validates the message, caps submissions per IP, and - until an operator provisions
+      RESEND_API_KEY - returns a clear "not configured" response rather than crashing (spec 0048).
+- [x] Newsletter subscribe - a "More games coming soon" banner on `/games` with a "Subscribe for
+      updates" button that reveals an on-theme, mobile-first subscribe form. Submitting posts the email
+      to the control-plane's `POST /v1/subscribe`, which adds the visitor to the Constant Contact
+      "Branch Out" list (OAuth refresh-token -> access-token exchange with an in-memory cache + 60s skew
+      + single-retry self-heal on a stale-token 401; `sign_up_form` opt-in). A hidden honeypot
+      (`company`) drops naive bots and the endpoint is rate-limited per IP; failures return generic
+      messages and never echo a subscriber's email. The endpoint ships INERT - a clear "Subscribe is not
+      configured yet." 503 until an operator provisions `CTCT_CLIENT_ID`/`CTCT_REFRESH_TOKEN`/
+      `CTCT_LIST_ID` (spec `0047`).
 - [ ] Profile pages and friend search/invite.
 
 ## Future

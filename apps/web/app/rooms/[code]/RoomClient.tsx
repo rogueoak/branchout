@@ -349,6 +349,7 @@ export function RoomClient({
       viewer={viewer}
       label={surface.insider ? 'Insider' : undefined}
       linkOrigin={surface.linkOrigin || undefined}
+      insider={surface.insider}
     />
   );
 

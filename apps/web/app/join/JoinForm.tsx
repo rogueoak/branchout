@@ -100,6 +100,7 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
         viewer={viewer}
         label={surface.insider ? 'Insider' : undefined}
         linkOrigin={surface.linkOrigin || undefined}
+        insider={surface.insider}
       />
       <form
         onSubmit={onSubmit}

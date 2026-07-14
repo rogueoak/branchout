@@ -50,6 +50,17 @@ To add a game mark, copy an existing `game-*.svg` as the skeleton, reshape the b
 gold root, then export it from `packages/brand` (`src/<id>.ts` + `brand.ts`) and add it to the
 raster script if it needs a share card.
 
+## Hero illustrations
+
+Some surfaces want a wider "scene" than the compact 512 mark - the home teaser cards use one
+(spec `0046`). A hero lives in `assets/hero-<game>.svg` at an 800x450 (~16:9) viewBox and is the
+same family as the mark, just composed wide: the radial-glow dark tile, the two-pass spark strokes,
+party leaf nodes, and **the single gold root `#d2a463`** (the gold-root rule applies to heroes too).
+The branch motif (Trivia's question mark, Liar Liar's mask) sits to one side with a system-font
+wordmark + tagline beside it (the `-apple-system, ... , sans-serif` stack, since no fonts are
+embedded). Export a hero from `packages/brand` the same way as a mark (`src/hero-<game>.ts` +
+`tsup.config.ts` entry + `package.json` export + `brand.ts`).
+
 ## Do not restyle the mark ad hoc
 
 The SVGs in `assets/` are the source of truth. Do not:

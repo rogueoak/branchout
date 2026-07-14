@@ -7,6 +7,8 @@ export default defineConfig({
     'src/logo.ts',
     'src/trivia.ts',
     'src/liarliar.ts',
+    'src/hero-trivia.ts',
+    'src/hero-liarliar.ts',
     'src/teeter-tower.ts',
     'src/brand.ts',
     'src/avatar-ids.ts',
