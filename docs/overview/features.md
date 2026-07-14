@@ -132,8 +132,11 @@ What the product does for users, grouped by area. Each capability maps to one or
       physics is **server-authoritative** - Matter.js runs headless in the engine, one piece-drop is
       one round, and the settle is streamed to every client as a keyframe track so all viewers see
       the identical tower; the browser is a pure renderer (`@branchout/game-teeter-tower`, spec
-      `0043`). Gated to insiders via a game `visibility: 'insider'` flag: hidden from the public
-      picker/pages/sitemap, surfaced on the insider home (a card deep-links into a solo room).
+      `0043`). Gated by SURFACE, not entitlement (feedback `0029`): a game `visibility: 'insider'`
+      flag hides it from the public picker/pages/sitemap, and the room picker offers it only on the
+      insider surface (`getSurface()` reads the request host), so it never shows on the apex even to
+      an insider. The insider home card deep-links into a room RELATIVELY, and the room/join flow is
+      mirrored under the gated `/insider` tree, so play stays on the insider host end to end.
       Playable solo now; the turn abstraction (active player = `round % players`) is built for
       multiplayer later.
 

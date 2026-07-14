@@ -201,7 +201,7 @@ describe('RoomClient resume when the tab forgot its membership (feedback 0021)',
   });
 });
 
-describe('RoomClient top nav (spec 0028)', () => {
+describe('RoomClient top nav (spec 0029)', () => {
   it('shows the shared site nav in the lobby', async () => {
     hoisted.recalled = nonHostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
@@ -233,6 +233,36 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     expect(await screen.findByRole('heading', { name: /pick a game/i })).toBeDefined();
     // The wizard replaces the lobby, not layers on top of it.
     expect(screen.queryByText('LOBBY_VIEW')).toBeNull();
+  });
+
+  it('HIDES the insider-only game from the picker on the apex surface (feedback 0029)', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    // Default surface is the apex: even though the picker renders, the insider-only Teeter Tower
+    // must not be an option, while public games still are.
+    render(
+      <RoomClient code="ABC12" viewer={{ signedIn: true, insider: true }} initialStep="pick" />,
+    );
+
+    expect(await screen.findByRole('button', { name: /pick trivia/i })).toBeDefined();
+    expect(screen.queryByRole('button', { name: /pick teeter tower/i })).toBeNull();
+  });
+
+  it('SHOWS the insider-only game in the picker on the insider surface (feedback 0029)', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+
+    render(
+      <RoomClient
+        code="ABC12"
+        viewer={{ signedIn: true, insider: true }}
+        initialStep="pick"
+        surface={{ insider: true, linkOrigin: 'https://branchout.games' }}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: /pick teeter tower/i })).toBeDefined();
   });
 
   it('shows the invite step (room code) to a host at ?step=invite', async () => {

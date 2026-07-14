@@ -12,6 +12,7 @@ import { trackRoomJoined } from '../../lib/analytics';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import type { Viewer } from '../../lib/session';
+import { APEX_SURFACE, type Surface } from '../../lib/surface';
 import { defaultMode } from '../../lib/default-mode';
 import { rememberMembership } from '../../lib/membership';
 import {
@@ -24,11 +25,14 @@ import {
 
 interface JoinFormProps {
   initialCode: string;
-  /** The signed-in identity for the shared top nav (spec 0028), read server-side to avoid a flash. */
+  /** The signed-in identity for the shared top nav (spec 0029), read server-side to avoid a flash. */
   viewer: Viewer;
+  /** The surface this page is served on (feedback 0029): crosses the shared chrome's links back to
+   * the apex when on the insider subdomain. Defaults to apex. */
+  surface?: Surface;
 }
 
-export function JoinForm({ initialCode, viewer }: JoinFormProps) {
+export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFormProps) {
   const router = useRouter();
   const [code, setCode] = useState(initialCode);
   const [nickname, setNickname] = useState('');
@@ -92,7 +96,11 @@ export function JoinForm({ initialCode, viewer }: JoinFormProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-text">
-      <TopNav viewer={viewer} />
+      <TopNav
+        viewer={viewer}
+        label={surface.insider ? 'Insider' : undefined}
+        linkOrigin={surface.linkOrigin || undefined}
+      />
       <form
         onSubmit={onSubmit}
         className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-12 sm:px-6"
@@ -172,7 +180,7 @@ export function JoinForm({ initialCode, viewer }: JoinFormProps) {
           Back
         </a>
       </form>
-      <Footer />
+      <Footer linkOrigin={surface.linkOrigin || undefined} />
     </div>
   );
 }
