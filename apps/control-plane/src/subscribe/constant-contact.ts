@@ -183,7 +183,12 @@ export function createTokenCache(now: () => number = Date.now): TokenCache {
       return inflight;
     },
     clear() {
+      // Reset BOTH the cached token and any in-flight mint. Dropping only `cached` would let the
+      // 401 self-heal reuse the very refresh that produced the stale token: if a mint is still in
+      // flight, `getAccessToken` would return that same `inflight` promise (the stale token) instead
+      // of dialing a fresh one. Nulling `inflight` forces the next call to start a new refresh.
       cached = null;
+      inflight = null;
     },
   };
 }

@@ -128,5 +128,32 @@ as GitHub Actions secrets (`release.yml` writes them into `.env.prod`):
 
 Optional tunables `SUBSCRIBE_MAX_PER_IP` (default 5) and `SUBSCRIBE_WINDOW_SECONDS` (default 600) set
 the per-IP rate limit.
-</content>
-</invoke>
+
+## Abuse / go-live
+
+This endpoint adds an arbitrary third-party email to the "Branch Out" CTCT list. The honeypot and the
+per-IP rate limit only deter *naive* bots: a distributed signup-bomb from a proxy pool can still list
+victims who never asked to subscribe, which both harms those people and burns our sender reputation
+(spam complaints from addresses that never opted in). The endpoint ships **inert** (no CTCT secrets),
+so nothing lists anyone until an operator turns it on - which is exactly the moment this must be
+handled.
+
+**Required before go-live (a hard gate on provisioning the CTCT secrets):**
+
+- **Enable Confirmed (double) opt-in on the "Branch Out" Constant Contact list.** With confirmed
+  opt-in, a `sign_up_form` submission only sends a confirmation email; the address does **not** join
+  the list until the recipient clicks the confirmation link. So a signup-bomb can, at worst, cause one
+  confirmation email to a victim (annoying but not a subscription, and not counted as an opt-in), and
+  our list stays clean of unconfirmed addresses. Do NOT provision `CTCT_CLIENT_ID` /
+  `CTCT_REFRESH_TOKEN` / `CTCT_LIST_ID` until confirmed opt-in is on for that list.
+
+**Stronger future hardening (not built now - deliberately deferred to keep this change small):**
+
+- A challenge on the form (CAPTCHA or a proof-of-work token) to blunt automated submissions before
+  they ever reach CTCT.
+- A **global** rate cap (not just per-IP) on the endpoint, so a distributed attack across many IPs is
+  still bounded in total confirmation emails per hour.
+
+The subscribe route carries a short comment at its CTCT-call site pointing at this decision, so the
+next reader sees that confirmed opt-in is the accepted mitigation, not an oversight.
+

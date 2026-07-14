@@ -99,6 +99,11 @@ export function registerSubscribeRoutes(app: FastifyInstance, deps: SubscribeDep
 
     // 6. Submit to CTCT (refresh-cached token -> sign_up_form). A failure returns a generic message;
     //    the thrown error carries only a status, never the CTCT response body (which can echo PII).
+    //    ABUSE NOTE (spec 0047 "Abuse / go-live"): the honeypot + per-IP cap only deter naive bots;
+    //    a distributed signup-bomb could still list victims and burn our sender reputation. The
+    //    accepted mitigation is CONFIRMED (double) OPT-IN on the "Branch Out" list, which must be
+    //    enabled BEFORE the CTCT secrets are provisioned - so an unconfirmed signup never actually
+    //    joins. CAPTCHA/proof-of-work + a global rate cap are documented stronger future hardening.
     try {
       await submitSubscription(
         {

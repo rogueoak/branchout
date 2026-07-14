@@ -95,6 +95,36 @@ describe('createTokenCache', () => {
     expect([a, b, c]).toEqual(['tok-A', 'tok-A', 'tok-A']);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
+
+  it('clear() drops an IN-FLIGHT mint too, so the next call dials a fresh token (not the stale one)', async () => {
+    // Gate the first mint on a deferred so it is still in flight when we call clear(). If clear()
+    // reset only `cached`, the second getAccessToken would return the same in-flight (stale) promise.
+    let releaseFirst!: (r: Response) => void;
+    const firstMint = new Promise<Response>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let call = 0;
+    const fetchImpl = vi.fn(async () => {
+      call += 1;
+      return call === 1
+        ? firstMint
+        : jsonResponse(200, { access_token: 'tok-fresh', expires_in: 3600 });
+    });
+    const cache = createTokenCache(() => 0);
+
+    // Start the first mint (still pending), then clear the cache before it resolves.
+    const stalePromise = cache.getAccessToken(creds, fetchImpl as never);
+    cache.clear();
+
+    // A call after clear() must NOT reuse the in-flight stale mint - it dials a brand-new one.
+    const freshToken = await cache.getAccessToken(creds, fetchImpl as never);
+    expect(freshToken).toBe('tok-fresh');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+    // Let the original (stale) mint resolve so no unhandled promise lingers.
+    releaseFirst(jsonResponse(200, { access_token: 'tok-stale', expires_in: 3600 }));
+    await expect(stalePromise).resolves.toBe('tok-stale');
+  });
 });
 
 describe('addContactToList', () => {

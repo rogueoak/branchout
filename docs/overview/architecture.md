@@ -157,7 +157,12 @@ The endpoint **fails inert, not closed-with-a-500**: `CTCT_CLIENT_ID`/`CTCT_REFR
 are each optional in config, and any unset one returns `503 { ok:false, error:'Subscribe is not
 configured yet.' }` plus a warning log - so the code and env plumbing ship before the secrets exist and
 turn on when an operator provisions them (mint the refresh token via `ctct login`; find the list id via
-`ctct list list --name "Branch Out"`). The secrets flow to prod through `.env.prod` (written by
+`ctct list list --name "Branch Out"`). **Go-live abuse gate:** because the endpoint lists an arbitrary
+third-party email and the honeypot + per-IP cap only deter naive bots, **confirmed (double) opt-in must
+be enabled on the "Branch Out" list before the secrets are provisioned** - so a distributed signup-bomb
+can at worst trigger one confirmation email to a victim, never a real (unconfirmed) subscription that
+would burn sender reputation. CAPTCHA/proof-of-work and a global rate cap are documented future
+hardening (spec 0047 "Abuse / go-live"). The secrets flow to prod through `.env.prod` (written by
 `release.yml` from GitHub secrets) and `env_file` in `compose.site.yml` - deliberately not listed in the
 compose `environment:` block, since an `environment:` key wins over `env_file` even when empty. The web
 `SubscribeForm` is a house-built canopy `Input`/`Button` form (branchout's canopy version has no
