@@ -16,7 +16,10 @@ describe('InsiderHome (spec 0035)', () => {
   it('renders a single centered welcome that carries the insider identity (feedback 0030)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
     // One combined welcome heading + message, replacing the old bare "Insider" heading.
-    expect(screen.getByRole('heading', { name: /branch out games for insiders/i })).toBeDefined();
+    const heading = screen.getByRole('heading', { name: /branch out games for insiders/i });
+    expect(heading).toBeDefined();
+    // The welcome is centered (feedback 0030): assert the class so a regression cannot stay green.
+    expect(heading.className).toContain('text-center');
     expect(screen.getByText(/unreleased games still in testing/i)).toBeDefined();
     expect(screen.getByText(/your feedback shapes what ships/i)).toBeDefined();
     // The nav still carries the "Insider" surface badge.
