@@ -2,6 +2,7 @@ import { ProtocolError, V1_PREFIX, parseStartHandoff } from '@branchout/protocol
 import Fastify, { type FastifyInstance } from 'fastify';
 import { GameEngine, NoSessionError, type HostAction } from './engine';
 import { UnknownGameError } from './registry';
+import { WorkerCapError } from './worker/manager';
 
 /** Injected liveness probe so the app is testable without a real Redis. */
 export interface HealthChecks {
@@ -57,6 +58,13 @@ export function createApp(checks: HealthChecks, engine: GameEngine): FastifyInst
           const response = await engine.start(handoff);
           return reply.code(200).send(response);
         } catch (error) {
+          // At the worker cap (spec 0045) this is an overload condition, not a bad request: answer
+          // 503 so the control-plane backs off/retries rather than permanently failing the start, and
+          // log a warning so an operator can see the engine is saturated.
+          if (error instanceof WorkerCapError) {
+            request.log.warn({ err: error }, '[game-engine] at worker capacity; refusing start');
+            return reply.code(503).send({ error: error.message });
+          }
           // Unknown game id or a game rejecting its opaque config are both client errors, not faults.
           if (error instanceof UnknownGameError || error instanceof ProtocolError) {
             return reply.code(400).send({ error: error.message });

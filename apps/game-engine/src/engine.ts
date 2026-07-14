@@ -21,12 +21,13 @@ import {
   type ScoreEvent,
 } from '@branchout/protocol';
 import type { ConfigSchema } from '@branchout/game-sdk';
-import type { GameModule, RoundContext } from './lifecycle';
-import type { GameRegistry } from './registry';
+import type { RoundContext } from './lifecycle';
 import type { ControlPlaneReporter } from './reporter';
 import { realScheduler, type Scheduler } from './scheduler';
 import { streamChannel, type PubSub } from './pubsub';
 import { sessionKey, type SessionState, type SessionStore } from './session';
+import { UnknownGameError } from './registry';
+import type { GameRuntimeProvider, SessionRuntime } from './worker/runtime';
 
 /** Host controls applied to a running session. */
 export type HostAction = 'pause' | 'advance' | 'restart' | 'exit';
@@ -45,10 +46,13 @@ export const AUTO_ADVANCE_MS = 2000;
  */
 export const TICK_MS = 40;
 
-/** True when a module runs a continuous world the engine streams (implements `tick`), spec 0044. */
-function isLiveModule(module: GameModule): boolean {
-  return typeof module.tick === 'function';
-}
+/**
+ * Consecutive failed sim ticks (a crashed/hung worker that was killed) before the engine stops the
+ * loop for that session instead of respawning forever (spec 0045). A single transient crash recovers
+ * on the next tick (the counter resets on any success); only a persistently wedged worker trips this,
+ * halting the kill/respawn/rebuild thrash. A host pause/resume or reconnect re-arms the loop.
+ */
+export const MAX_SIM_TICK_FAILURES = 5;
 
 export class NoSessionError extends Error {
   constructor(room: string, game: string) {
@@ -65,7 +69,8 @@ export class UnknownPlayerError extends Error {
 }
 
 export interface EngineDeps {
-  registry: GameRegistry;
+  /** Supplies each session's game runtime (a worker in production, in-process in tests), spec 0045. */
+  runtimeProvider: GameRuntimeProvider;
   store: SessionStore;
   pubsub: PubSub;
   reporter: ControlPlaneReporter;
@@ -79,7 +84,7 @@ export interface EngineDeps {
 }
 
 export class GameEngine {
-  private readonly registry: GameRegistry;
+  private readonly runtimeProvider: GameRuntimeProvider;
   private readonly store: SessionStore;
   private readonly pubsub: PubSub;
   private readonly reporter: ControlPlaneReporter;
@@ -91,11 +96,15 @@ export class GameEngine {
   private readonly locks = new Map<string, Promise<unknown>>();
   /** Per-session sim-loop interval handles for live games (spec 0044); absent when not looping. */
   private readonly simTimers = new Map<string, NodeJS.Timeout>();
+  /** Sessions with a sim tick in flight, so the interval drops a frame rather than queuing it (0045). */
+  private readonly simTicking = new Set<string>();
+  /** Consecutive failed sim ticks per session, to stop the loop after {@link MAX_SIM_TICK_FAILURES}. */
+  private readonly simFailures = new Map<string, number>();
   /** The most recent `sim` payload per session, so a joiner catches up to the live world at once. */
   private readonly lastSim = new Map<string, unknown>();
 
   constructor(deps: EngineDeps) {
-    this.registry = deps.registry;
+    this.runtimeProvider = deps.runtimeProvider;
     this.store = deps.store;
     this.pubsub = deps.pubsub;
     this.reporter = deps.reporter;
@@ -123,6 +132,25 @@ export class GameEngine {
     return next;
   }
 
+  /**
+   * The session's game runtime (spec 0045): the async facade over its worker-hosted module. Cheap to
+   * fetch repeatedly - once a session's worker is up, this resolves from cached capabilities without a
+   * round-trip. Always called inside `run()`, so a session's calls stay serialized.
+   */
+  private runtimeFor(state: SessionState): Promise<SessionRuntime> {
+    // Backfill a seed for a session persisted before spec 0045 (its `seed` is absent). The mutation
+    // is picked up by the next store.save; the shipped games never re-run `configure` on a resume, so
+    // this only matters for a future game that draws from rng after start.
+    if (typeof state.seed !== 'number') state.seed = this.newSeed();
+    return this.runtimeProvider.runtime(sessionKey(state.room, state.game), state.game, state.seed);
+  }
+
+  /** A fresh base seed for a session's worker rng, so a rebuilt worker replays the same procedural
+   * content (Teeter's piece stream); the physics world resumes from the persisted scratch (spec 0045). */
+  private newSeed(): number {
+    return Math.floor(Math.random() * 0x7fffffff);
+  }
+
   /** Start (or idempotently rejoin) a session from a control-plane handoff. */
   async start(req: StartHandoffRequest): Promise<StartHandoffResponse> {
     const key = sessionKey(req.room, req.game);
@@ -133,12 +161,21 @@ export class GameEngine {
       if (existing && existing.phase !== 'complete') {
         return { v: PROTOCOL_VERSION, room: req.room, game: req.game, status: 'running' };
       }
-      const module = this.registry.resolve(req.game);
+      // Reject an unknown game id here, before spawning a worker that would only fail to build (spec
+      // 0045) - a clean UnknownGameError (400) instead of a wasted spawn + opaque init error. Skipped
+      // when no manifests were injected (unit tests wire the runtime directly).
+      if (this.configSchemas && !this.configSchemas.has(req.game)) {
+        throw new UnknownGameError(req.game);
+      }
       // Validate the opaque handoff config against the game's manifest schema at the boundary. It
       // throws on invalid config, which app.ts turns into a 400. The game's own configure() still
       // runs below and remains the source of rounds/scratch.
       const schema = this.configSchemas?.get(req.game);
       if (schema) schema(req.config);
+      // Spin up (or reuse) this session's worker and build its module; a fresh seed makes a later
+      // respawn rebuild deterministically. A finished session's worker was disposed, so this is new.
+      const seed = existing?.seed ?? this.newSeed();
+      const runtime = await this.runtimeProvider.runtime(key, req.game, seed);
       const players = req.players.map((p) => ({
         player: p.player,
         nickname: p.nickname,
@@ -146,7 +183,7 @@ export class GameEngine {
         // Absent flag defaults to false (additive handoff field, spec 0014).
         isHost: p.isHost ?? false,
       }));
-      const cfg = module.configure(req.config, players);
+      const cfg = await runtime.configure(req.config, players);
       if (!Number.isInteger(cfg.rounds) || cfg.rounds < 1) {
         throw new Error(`game "${req.game}" configured an invalid round count: ${cfg.rounds}`);
       }
@@ -154,6 +191,7 @@ export class GameEngine {
         room: req.room,
         game: req.game,
         runId: 1,
+        seed,
         phase: 'configuring',
         paused: false,
         hostPaused: false,
@@ -172,7 +210,7 @@ export class GameEngine {
         pendingRounds: [],
         completeReported: false,
       };
-      await this.startRoundInto(state, module);
+      await this.startRoundInto(state, runtime);
       await this.store.save(state);
       return { v: PROTOCOL_VERSION, room: req.room, game: req.game, status: 'started' };
     });
@@ -210,16 +248,16 @@ export class GameEngine {
       if (existing.isHost && state.hostPaused) {
         state.paused = false;
         state.hostPaused = false;
-        const module = this.registry.resolve(state.game);
+        const runtime = await this.runtimeFor(state);
         if (state.phase === 'guessing') {
-          this.resumeDecisionWindow(state, module);
+          await this.resumeDecisionWindow(state, runtime);
         } else if (state.phase === 'disputing' || state.phase === 'voting') {
-          this.armWindow(state, module, state.phase);
+          this.armWindow(state, state.phase);
         } else {
           // Continue the answer countdown from where the host's drop froze it (spec 0017).
-          this.resumeMoveWindow(state, module);
+          await this.resumeMoveWindow(state, runtime);
           // Restart a live game's world where the host disconnect froze it (spec 0044).
-          this.startSimLoop(state, module);
+          this.startSimLoop(state, runtime);
         }
       }
       await this.store.save(state);
@@ -273,8 +311,8 @@ export class GameEngine {
       // one the round was waiting on. Re-check and arm the grace timer, or the round would hang
       // until a host tap (feedback 0015). Skipped when the disconnect paused the game (host drop).
       if (state.phase === 'collecting' && !state.paused) {
-        const module = this.registry.resolve(state.game);
-        if (module.allSubmitted?.(this.context(state))) this.armAutoAdvance(state, module);
+        const runtime = await this.runtimeFor(state);
+        if (await runtime.allSubmitted(this.context(state))) this.armAutoAdvance(state);
       }
     });
   }
@@ -298,8 +336,8 @@ export class GameEngine {
       if (!state || state.paused || state.phase !== 'collecting' || state.round !== round) {
         return {}; // stale or out-of-phase submission: ignore
       }
-      const module = this.registry.resolve(state.game);
-      const result = module.collectMove(this.context(state), player, move);
+      const runtime = await this.runtimeFor(state);
+      const result = await runtime.collectMove(this.context(state), player, move);
       // A rejected submission is refused wholesale: no scratch write, no timer re-arm, no broadcast -
       // just a private reply to the sender. The round state is exactly as it was before the attempt.
       if (result.rejected) {
@@ -311,9 +349,9 @@ export class GameEngine {
       // the persisted deadline with nothing to fire it. Re-arming on a submit (a duplicate the
       // deadline self-correction neutralizes) makes a live round close on time again after a restart.
       if (state.moveDeadline !== undefined) {
-        this.armMoveWindow(state, module, state.moveDeadline - this.clock());
+        this.armMoveWindow(state, state.moveDeadline - this.clock());
       }
-      if (module.allSubmitted?.(this.context(state))) this.armAutoAdvance(state, module);
+      if (await runtime.allSubmitted(this.context(state))) this.armAutoAdvance(state);
       return {};
     });
   }
@@ -334,14 +372,14 @@ export class GameEngine {
       if (!state || state.paused || !votingPhase || state.round !== round) {
         return;
       }
-      const module = this.registry.resolve(state.game);
-      const result = module.collectVote(this.context(state), { player, target, agree });
+      const runtime = await this.runtimeFor(state);
+      const result = await runtime.collectVote(this.context(state), { player, target, agree });
       state.scratch = result.scratch;
       await this.store.save(state);
       // A guess round auto-closes once every connected player has guessed, mirroring the all-answered
       // early close of the collecting phase (spec 0020).
-      if (state.phase === 'guessing' && module.allDecided?.(this.context(state))) {
-        this.armAutoAdvance(state, module, 'guessing');
+      if (state.phase === 'guessing' && (await runtime.allDecided(this.context(state)))) {
+        this.armAutoAdvance(state, 'guessing');
       }
     });
   }
@@ -351,36 +389,36 @@ export class GameEngine {
     const key = sessionKey(room, game);
     await this.run(key, async () => {
       const state = await this.requireState(room, game);
-      const module = this.registry.resolve(state.game);
+      const runtime = await this.runtimeFor(state);
       switch (action) {
         case 'pause':
           state.paused = !state.paused;
           // Hold or continue the answer countdown across the pause so it never ticks while stopped
           // and a resume continues from the time left, not a fresh window (spec 0017).
           if (state.paused) this.freezeMoveWindow(state);
-          else this.resumeMoveWindow(state, module);
+          else await this.resumeMoveWindow(state, runtime);
           // A live game's world freezes on pause and resumes on unpause (spec 0044): stop/start the
           // sim loop in the exact spots the move window is frozen/resumed.
           if (state.paused) this.stopSimLoop(sessionKey(state.room, state.game));
-          else this.startSimLoop(state, module);
+          else this.startSimLoop(state, runtime);
           await this.store.save(state);
           await this.publish(state, this.stateMessage(state));
           // Resuming inside a timed dispute/vote/guess window re-arms it, so a paused window does not
           // strand the round waiting for a manual advance.
           if (!state.paused && state.phase === 'guessing') {
-            this.resumeDecisionWindow(state, module);
+            await this.resumeDecisionWindow(state, runtime);
           } else if (!state.paused && (state.phase === 'disputing' || state.phase === 'voting')) {
-            this.armWindow(state, module, state.phase);
+            this.armWindow(state, state.phase);
           }
           return;
         case 'advance':
-          await this.advanceLocked(state, module);
+          await this.advanceLocked(state, runtime);
           return;
         case 'restart':
-          await this.restart(state, module);
+          await this.restart(state, runtime);
           return;
         case 'exit':
-          await this.exit(state, module);
+          await this.exit(state, runtime);
           return;
       }
     });
@@ -432,8 +470,8 @@ export class GameEngine {
     state.roundScores.push(...events);
   }
 
-  private async startRoundInto(state: SessionState, module: GameModule): Promise<void> {
-    const result = module.startRound(this.context(state));
+  private async startRoundInto(state: SessionState, runtime: SessionRuntime): Promise<void> {
+    const result = await runtime.startRound(this.context(state));
     state.scratch = result.scratch;
     state.phase = 'collecting';
     // Persist the current prompt for join catch-up; a new round clears the prior reveal/standings
@@ -443,33 +481,33 @@ export class GameEngine {
     state.standings = undefined;
     // A live game (spec 0044) sits in `collecting` and never opens a move window or auto-advances -
     // the sim loop drives streaming and game end. A turn-based game opens its answer window as usual.
-    const live = isLiveModule(module);
+    const live = runtime.live;
     state.moveRemainingMs = undefined;
     state.moveDeadline =
       !live && state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
     await this.publish(state, this.stateMessage(state));
-    if (state.moveDeadline !== undefined) this.armMoveWindow(state, module, state.moveWindowMs);
+    if (state.moveDeadline !== undefined) this.armMoveWindow(state, state.moveWindowMs);
     // Start (or self-heal) the per-session sim loop for a live game once the round is open.
-    if (live) this.startSimLoop(state, module);
+    if (live) this.startSimLoop(state, runtime);
   }
 
   /** One phase transition. Saves once at the end and (re)arms the dispute-window timer. */
-  private async advanceLocked(state: SessionState, module: GameModule): Promise<void> {
+  private async advanceLocked(state: SessionState, runtime: SessionRuntime): Promise<void> {
     if (state.paused) return;
     // A live game (spec 0044) has no reveal/dispute/leaderboard cycle - the sim loop drives it and
     // ends it via tick.over. A host `advance` must never push it into `reveal`; treat it as "end now".
-    if (isLiveModule(module) && state.phase === 'collecting') {
-      await this.endGame(state, module);
+    if (runtime.live && state.phase === 'collecting') {
+      await this.endGame(state, runtime);
       await this.store.save(state);
       return;
     }
     switch (state.phase) {
       case 'configuring':
-        await this.startRoundInto(state, module);
+        await this.startRoundInto(state, runtime);
         break;
       case 'collecting': {
-        const result = module.reveal(this.context(state));
+        const result = await runtime.reveal(this.context(state));
         state.scratch = result.scratch;
         this.applyScores(state, result.scores);
         state.reveal = result.reveal;
@@ -482,7 +520,7 @@ export class GameEngine {
           // dispute path. Trivia and every dispute game omit `decision` and fall through below.
           // Fail fast at the declaration site: a game that opens a guess phase must resolve it, or
           // the `guessing` case would throw a bare TypeError inside the scheduler after streaming.
-          if (!module.resolveDecision) {
+          if (!runtime.hasResolveDecision) {
             throw new Error(
               `game "${state.game}" returned a decision phase but implements no resolveDecision`,
             );
@@ -491,61 +529,61 @@ export class GameEngine {
           state.decisionWindowMs = result.decision.windowMs ?? 0;
           await this.publish(state, this.revealMessage(state, result.reveal));
           await this.publish(state, this.stateMessage(state));
-          this.armWindow(state, module, 'guessing');
+          this.armWindow(state, 'guessing');
         } else {
           state.phase = 'disputing';
           await this.publish(state, this.revealMessage(state, result.reveal));
           await this.publish(state, this.stateMessage(state));
-          this.armWindow(state, module, 'disputing');
+          this.armWindow(state, 'disputing');
         }
         break;
       }
       case 'disputing': {
-        const result = module.disputeWindow(this.context(state));
+        const result = await runtime.disputeWindow(this.context(state));
         state.scratch = result.scratch;
         state.disputes = result.disputes;
         if (result.disputes.length === 0) {
-          await this.finalizeRound(state, module);
+          await this.finalizeRound(state, runtime);
         } else {
           state.phase = 'voting';
           await this.publish(state, this.stateMessage(state));
-          this.armWindow(state, module, 'voting');
+          this.armWindow(state, 'voting');
         }
         break;
       }
       case 'voting': {
-        const result = module.disputeVote(this.context(state));
+        const result = await runtime.disputeVote(this.context(state));
         state.scratch = result.scratch;
         this.applyScores(state, result.scores);
         if (result.reveal !== undefined) {
           state.reveal = result.reveal;
           await this.publish(state, this.revealMessage(state, result.reveal));
         }
-        await this.finalizeRound(state, module);
+        await this.finalizeRound(state, runtime);
         break;
       }
       case 'guessing': {
         // The guess window closed (all-decided or the timer): score the guesses and finalize. A game
         // that reaches this phase declared a `decision` at reveal, so it implements resolveDecision.
-        const result = module.resolveDecision!(this.context(state));
+        const result = await runtime.resolveDecision(this.context(state));
         state.scratch = result.scratch;
         this.applyScores(state, result.scores);
         if (result.reveal !== undefined) {
           state.reveal = result.reveal;
           await this.publish(state, this.revealMessage(state, result.reveal));
         }
-        await this.finalizeRound(state, module);
+        await this.finalizeRound(state, runtime);
         break;
       }
       case 'leaderboard': {
-        const result = module.advance(this.context(state));
+        const result = await runtime.advance(this.context(state));
         if (result.done || state.round >= state.rounds) {
-          await this.endGame(state, module);
+          await this.endGame(state, runtime);
         } else {
           state.round += 1;
           state.roundScores = [];
           state.disputes = [];
-          await this.startRoundInto(state, module);
+          await this.startRoundInto(state, runtime);
         }
         break;
       }
@@ -556,9 +594,9 @@ export class GameEngine {
   }
 
   /** Close out a round: publish the leaderboard and report the round result (idempotent). */
-  private async finalizeRound(state: SessionState, module: GameModule): Promise<void> {
+  private async finalizeRound(state: SessionState, runtime: SessionRuntime): Promise<void> {
     state.phase = 'leaderboard';
-    const standings = module.leaderboard(this.context(state));
+    const standings = await runtime.leaderboard(this.context(state));
     state.standings = standings;
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
@@ -597,21 +635,23 @@ export class GameEngine {
     state.pendingRounds = remaining;
   }
 
-  private async endGame(state: SessionState, module: GameModule): Promise<void> {
+  private async endGame(state: SessionState, runtime: SessionRuntime): Promise<void> {
     // A live game's sim loop must stop before the game ends (spec 0044); clear its cached frame too,
     // and let the module release its in-process world (endGame path, spec 0044) so it does not leak.
     const key = sessionKey(state.room, state.game);
     this.stopSimLoop(key);
     this.lastSim.delete(key);
-    module.disposeLive?.(this.context(state));
+    await runtime.disposeLive(this.context(state));
     state.phase = 'complete';
-    const standings = module.endGame(this.context(state));
+    const standings = await runtime.endGame(this.context(state));
     state.standings = standings;
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
     // Drain any straggler round reports before the completion report.
     await this.flushPendingRounds(state);
     await this.reportComplete(state, standings);
+    // The game is over; tear down its worker so the thread + its in-process world are freed (spec 0045).
+    await this.runtimeProvider.dispose(key);
   }
 
   private async reportComplete(state: SessionState, standings: Standing[]): Promise<void> {
@@ -627,15 +667,19 @@ export class GameEngine {
     if (sent) state.completeReported = true;
   }
 
-  private async restart(state: SessionState, module: GameModule): Promise<void> {
+  private async restart(state: SessionState, runtime: SessionRuntime): Promise<void> {
     // Stop any live sim loop and clear its cached frame; startRoundInto restarts a fresh one below.
     const key = sessionKey(state.room, state.game);
     this.stopSimLoop(key);
     this.lastSim.delete(key);
-    // Release the old in-process world BEFORE the fresh configure/startRound (spec 0044), so a live
-    // game rebuilds from empty scratch instead of reusing the stale cached world (its old tower/score).
-    module.disposeLive?.(this.context(state));
-    const cfg = module.configure(state.config, state.players);
+    // A restart is a brand new game: tear down the old worker entirely (freeing its in-process world,
+    // spec 0045) and rebuild in a fresh worker with a new seed, so nothing of the old tower/score
+    // survives. `runtime` was the old worker's; the fresh one below drives the rest of the restart.
+    await runtime.disposeLive(this.context(state));
+    await this.runtimeProvider.dispose(key);
+    state.seed = this.newSeed();
+    const fresh = await this.runtimeProvider.runtime(key, state.game, state.seed);
+    const cfg = await fresh.configure(state.config, state.players);
     state.runId += 1;
     state.round = 1;
     state.rounds = cfg.rounds;
@@ -649,25 +693,27 @@ export class GameEngine {
     state.disputes = [];
     state.completeReported = false;
     for (const player of state.players) state.scores[player.player] = 0;
-    await this.startRoundInto(state, module);
+    await this.startRoundInto(state, fresh);
     await this.store.save(state);
   }
 
-  private async exit(state: SessionState, module: GameModule): Promise<void> {
+  private async exit(state: SessionState, runtime: SessionRuntime): Promise<void> {
     // Stop a live game's sim loop, drop its cached frame, and release its in-process world before
     // ending (spec 0044) so the host-exit path does not leak the world.
     const key = sessionKey(state.room, state.game);
     this.stopSimLoop(key);
     this.lastSim.delete(key);
-    module.disposeLive?.(this.context(state));
+    await runtime.disposeLive(this.context(state));
     // End the game now, report final standings, then drop the session so the room can reset.
-    const standings = module.endGame(this.context(state));
+    const standings = await runtime.endGame(this.context(state));
     state.phase = 'complete';
     state.standings = standings;
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
     await this.reportComplete(state, standings);
     await this.store.delete(state.room, state.game);
+    // The session is gone; tear down its worker so the thread is freed (spec 0045).
+    await this.runtimeProvider.dispose(key);
   }
 
   /**
@@ -676,11 +722,7 @@ export class GameEngine {
    * advances first, a pause, or a new round all cancel it harmlessly; re-arming on each late submit
    * is safe because a stale timer finds a changed phase/round and no-ops. Skipped while paused.
    */
-  private armAutoAdvance(
-    state: SessionState,
-    module: GameModule,
-    phase: SessionState['phase'] = 'collecting',
-  ): void {
+  private armAutoAdvance(state: SessionState, phase: SessionState['phase'] = 'collecting'): void {
     if (state.paused) return;
     const { room, game, round, runId } = state;
     this.scheduler.schedule(AUTO_ADVANCE_MS, () => {
@@ -699,7 +741,7 @@ export class GameEngine {
         ) {
           return;
         }
-        await this.advanceLocked(current, module);
+        await this.advanceLocked(current, await this.runtimeFor(current));
       });
     });
   }
@@ -710,7 +752,7 @@ export class GameEngine {
    * (everyone answered), a host advance, a pause, or a new round all cancel it harmlessly. No-op
    * while paused or when there is no timer.
    */
-  private armMoveWindow(state: SessionState, module: GameModule, delayMs: number): void {
+  private armMoveWindow(state: SessionState, delayMs: number): void {
     if (state.paused || state.moveWindowMs <= 0) return;
     const { room, game, round, runId } = state;
     this.scheduler.schedule(Math.max(0, delayMs), () => {
@@ -731,10 +773,10 @@ export class GameEngine {
         // close the round early. Only when the deadline has truly passed do we advance.
         const remaining = current.moveDeadline - this.clock();
         if (remaining > 0) {
-          this.armMoveWindow(current, module, remaining);
+          this.armMoveWindow(current, remaining);
           return;
         }
-        await this.advanceLocked(current, module);
+        await this.advanceLocked(current, await this.runtimeFor(current));
       });
     });
   }
@@ -747,18 +789,26 @@ export class GameEngine {
    * ends the game when `tick` reports `over`. The interval is `unref`d so a pending timer never keeps
    * the process alive on its own.
    */
-  private startSimLoop(state: SessionState, module: GameModule): void {
-    if (!isLiveModule(module)) return;
+  private startSimLoop(state: SessionState, runtime: SessionRuntime): void {
+    if (!runtime.live) return;
     const key = sessionKey(state.room, state.game);
     if (this.simTimers.has(key)) return;
     const { room, game } = state;
     const timer = setInterval(() => {
+      // Drop this frame if the prior tick is still in flight (a slow/hung worker) rather than queuing
+      // it behind - a fixed-cadence sim skips frames, it must not accumulate a backlog (spec 0045).
+      if (this.simTicking.has(key)) return;
+      this.simTicking.add(key);
       void this.run(key, async () => {
         // A timer can outlive the state it was armed for; bail on anything but a running live round.
         if (!this.simTimers.has(key)) return;
         const current = await this.store.load(room, game);
         if (!current || current.paused || current.phase === 'complete') return;
-        const result = module.tick!(this.context(current));
+        // The tick runs in the session's worker (spec 0045) - the physics compute stays off the main
+        // event loop; the timer + streaming stay here. A crashed/hung worker rejects (handled below),
+        // so a bad tick is skipped and the next tick respawns + rebuilds the world.
+        const result = await runtime.tick(this.context(current));
+        this.simFailures.delete(key); // a good tick clears the consecutive-failure count
         current.scratch = result.scratch;
         this.lastSim.set(key, result.sim);
         // Idle guard: with ZERO connected devices there is nobody to stream to and no move can land,
@@ -774,10 +824,25 @@ export class GameEngine {
         }
         if (result.over) {
           this.stopSimLoop(key);
-          await this.endGame(current, module);
+          await this.endGame(current, runtime);
           await this.store.save(current);
         }
-      });
+      })
+        .catch((error: unknown) => {
+          // The tick rejected: the worker crashed or its call timed out and was killed. The next
+          // interval respawns it and rebuilds the world from scratch. Guard against thrash - if it
+          // keeps failing, stop the loop so we do not kill/respawn/rebuild forever (spec 0045).
+          const failures = (this.simFailures.get(key) ?? 0) + 1;
+          this.simFailures.set(key, failures);
+          if (failures >= MAX_SIM_TICK_FAILURES) {
+            this.logger.error(
+              `[game-engine] sim loop ${key} failed ${failures} ticks in a row; stopping it`,
+              error,
+            );
+            this.stopSimLoop(key);
+          }
+        })
+        .finally(() => this.simTicking.delete(key));
     }, TICK_MS);
     if (typeof timer === 'object' && 'unref' in timer) timer.unref();
     this.simTimers.set(key, timer);
@@ -788,6 +853,7 @@ export class GameEngine {
     const timer = this.simTimers.get(key);
     if (timer) clearInterval(timer);
     this.simTimers.delete(key);
+    this.simFailures.delete(key);
   }
 
   /** Freeze the answer countdown when the game pauses mid-`collecting` so it does not tick away. */
@@ -798,17 +864,17 @@ export class GameEngine {
   }
 
   /** Continue a frozen answer countdown from the time left and re-arm the force-close timer. */
-  private resumeMoveWindow(state: SessionState, module: GameModule): void {
+  private async resumeMoveWindow(state: SessionState, runtime: SessionRuntime): Promise<void> {
     if (state.phase !== 'collecting' || state.paused) return;
     if (state.moveWindowMs > 0) {
       const remaining = state.moveRemainingMs ?? state.moveWindowMs;
       state.moveDeadline = this.clock() + remaining;
       state.moveRemainingMs = undefined;
-      this.armMoveWindow(state, module, remaining);
+      this.armMoveWindow(state, remaining);
     }
     // The pause also cancelled the all-answered 2s grace, so if the table had already finished, the
     // round would otherwise wait out the full window on resume. Re-arm it (feedback 0015).
-    if (module.allSubmitted?.(this.context(state))) this.armAutoAdvance(state, module);
+    if (await runtime.allSubmitted(this.context(state))) this.armAutoAdvance(state);
   }
 
   /**
@@ -818,10 +884,10 @@ export class GameEngine {
    * would strand until a manual advance - the `guessing` analogue of {@link resumeMoveWindow}'s
    * all-answered re-arm (feedback 0015).
    */
-  private resumeDecisionWindow(state: SessionState, module: GameModule): void {
+  private async resumeDecisionWindow(state: SessionState, runtime: SessionRuntime): Promise<void> {
     if (state.phase !== 'guessing' || state.paused) return;
-    this.armWindow(state, module, 'guessing');
-    if (module.allDecided?.(this.context(state))) this.armAutoAdvance(state, module, 'guessing');
+    this.armWindow(state, 'guessing');
+    if (await runtime.allDecided(this.context(state))) this.armAutoAdvance(state, 'guessing');
   }
 
   /** The timed-window duration for a phase: the guess window for `guessing`, else the dispute window. */
@@ -830,7 +896,7 @@ export class GameEngine {
   }
 
   /** Arm the dispute/guess-window timer; a no-op when the window is manual (0) or paused. */
-  private armWindow(state: SessionState, module: GameModule, phase: SessionState['phase']): void {
+  private armWindow(state: SessionState, phase: SessionState['phase']): void {
     const ms = this.windowMsFor(state, phase);
     if (ms <= 0 || state.paused) return;
     const room = state.room;
@@ -840,7 +906,7 @@ export class GameEngine {
         const current = await this.store.load(room, game);
         // Only fire if the window is still open on the same phase and not paused.
         if (!current || current.paused || current.phase !== phase) return;
-        await this.advanceLocked(current, module);
+        await this.advanceLocked(current, await this.runtimeFor(current));
       });
     });
   }

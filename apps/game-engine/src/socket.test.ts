@@ -5,7 +5,7 @@ import WebSocket from 'ws';
 import { PROTOCOL_VERSION, type ServerMessage } from '@branchout/protocol';
 import { GameEngine } from './engine';
 import { InMemoryPubSub } from './pubsub';
-import { GameRegistry } from './registry';
+import { InProcessRuntimeProvider } from './worker/runtime';
 import { NoopReporter } from './reporter';
 import { InMemorySessionStore } from './session';
 import { attachGameSocket } from './socket';
@@ -19,7 +19,7 @@ describe('game-engine websocket', () => {
   beforeEach(async () => {
     const pubsub = new InMemoryPubSub();
     engine = new GameEngine({
-      registry: new GameRegistry([stubGame]),
+      runtimeProvider: new InProcessRuntimeProvider([stubGame]),
       store: new InMemorySessionStore(),
       pubsub,
       reporter: new NoopReporter(),

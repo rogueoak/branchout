@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import { createApp } from './app';
 import { GameEngine } from './engine';
-import { GameRegistry } from './registry';
+import { InProcessRuntimeProvider } from './worker/runtime';
 import { NoopReporter } from './reporter';
 import { InMemoryPubSub } from './pubsub';
 import { InMemorySessionStore } from './session';
@@ -10,7 +10,7 @@ import { stubGame, STUB_GAME_ID } from '@branchout/game-sdk/testing';
 
 function buildEngine() {
   return new GameEngine({
-    registry: new GameRegistry([stubGame]),
+    runtimeProvider: new InProcessRuntimeProvider([stubGame]),
     store: new InMemorySessionStore(),
     pubsub: new InMemoryPubSub(),
     reporter: new NoopReporter(),
