@@ -79,6 +79,33 @@ describe('loadConfig rate limiting (spec 0036)', () => {
   });
 });
 
+describe('loadConfig feedback (spec 0048)', () => {
+  it('leaves the Resend key unset and uses the default per-IP cap when no env is given', () => {
+    const { feedback } = loadConfig({ ...base });
+    // Unset key -> the "not configured" state; the object must not carry `resendApiKey: undefined`.
+    expect('resendApiKey' in feedback).toBe(false);
+    expect(feedback.maxPerIp).toBe(5);
+    expect(feedback.windowSeconds).toBe(600);
+  });
+
+  it('reads the key and tunable per-IP thresholds from the environment', () => {
+    const { feedback } = loadConfig({
+      ...base,
+      RESEND_API_KEY: 're_live_key',
+      FEEDBACK_MAX_PER_IP: '3',
+      FEEDBACK_WINDOW_SECONDS: '900',
+    });
+    expect(feedback.resendApiKey).toBe('re_live_key');
+    expect(feedback.maxPerIp).toBe(3);
+    expect(feedback.windowSeconds).toBe(900);
+  });
+
+  it('falls back to the default on a garbage cap (a NaN cap would fail open)', () => {
+    const { feedback } = loadConfig({ ...base, FEEDBACK_MAX_PER_IP: 'abc' });
+    expect(feedback.maxPerIp).toBe(5);
+  });
+});
+
 describe('loadConfig subscribe / Constant Contact (spec 0047)', () => {
   it('leaves the CTCT credentials unset by default (the endpoint ships inert)', () => {
     const { subscribe } = loadConfig({ ...base });

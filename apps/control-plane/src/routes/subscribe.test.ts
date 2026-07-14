@@ -108,6 +108,9 @@ function makeApp(opts: { subscribe: SubscribeConfig; subscribeFetch?: typeof fet
     webOrigins: ['http://localhost:3000'],
     limiter: new InMemoryRateLimiter(),
     rateLimit,
+    // Feedback (spec 0048) is not exercised here; wire only the required per-IP cap so createApp's
+    // AppDeps is satisfied (the feedback mailer stays unset, which is the inert "not configured" state).
+    feedbackRateLimit: { maxPerIp: 50, windowSeconds: 600 },
     subscribe: opts.subscribe,
     ...(opts.subscribeFetch ? { subscribeFetch: opts.subscribeFetch } : {}),
   });

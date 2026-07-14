@@ -114,6 +114,11 @@ services:
       # The engine is a separate container on `edge`; reach it by service name (the config
       # default is localhost, which would hit the control-plane's own port in a split deploy).
       ENGINE_URL: http://game-engine:4001
+      # Host in-game feedback (spec 0048). RESEND_API_KEY is written to .env.prod by release.yml
+      # (loaded via env_file); until an operator provisions it the endpoint returns a clear
+      # "not configured" response and never crashes. These per-IP cap knobs are inert defaults.
+      FEEDBACK_MAX_PER_IP: ${FEEDBACK_MAX_PER_IP:-5}
+      FEEDBACK_WINDOW_SECONDS: ${FEEDBACK_WINDOW_SECONDS:-600}
       # Newsletter subscribe / Constant Contact (spec 0047) reaches control-plane through `.env.prod`
       # (env_file above), written by the release workflow when the operator sets the GitHub secrets:
       #   CTCT_CLIENT_ID, CTCT_REFRESH_TOKEN, CTCT_LIST_ID (mint the token via `ctct login`; list id

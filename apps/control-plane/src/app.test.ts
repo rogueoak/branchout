@@ -7,7 +7,14 @@ import { InMemoryAdminRepository } from './admin/repository.memory';
 import { AdminService } from './admin/service';
 import { InMemoryAdminSessionStore } from './admin/session.store.memory';
 import { createApp } from './app';
-import type { AdminCookieConfig, SessionCookieConfig, SubscribeConfig } from './config';
+import type {
+  AdminCookieConfig,
+  FeedbackRateLimitConfig,
+  SessionCookieConfig,
+  SubscribeConfig,
+} from './config';
+import type { FeedbackEmail, FeedbackMailer } from './feedback/mailer';
+import { ResendMailer } from './feedback/mailer';
 import { CreditLedger } from './credits/ledger';
 import { InMemoryLedgerRepository } from './credits/repository.memory';
 import { FreeTierProvider } from './credits/tiers';
@@ -48,10 +55,26 @@ const defaultRateLimit: RateLimitConfig = {
   signupWindowSeconds: 3600,
 };
 
+/** Generous feedback cap so the non-feedback tests never trip it. */
+const defaultFeedbackRateLimit: FeedbackRateLimitConfig = { maxPerIp: 50, windowSeconds: 600 };
+
 /** Subscribe config with no CTCT secrets (the endpoint is inert); generous per-IP cap. Spec 0047. */
 const defaultSubscribe: SubscribeConfig = { maxPerIp: 50, windowSeconds: 600 };
 
-function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => number) {
+interface MakeAppOptions {
+  /** A feedback mailer to wire; omit to simulate an unset RESEND_API_KEY (the "not configured" case). */
+  feedbackMailer?: FeedbackMailer;
+  /** Override the feedback per-IP cap for a rate-limit test. */
+  feedbackRateLimit?: FeedbackRateLimitConfig;
+}
+
+function makeApp(
+  rateLimit: RateLimitConfig = defaultRateLimit,
+  now?: () => number,
+  options: MakeAppOptions = {},
+) {
+  const feedbackRateLimit = options.feedbackRateLimit ?? defaultFeedbackRateLimit;
+  const feedbackMailer = options.feedbackMailer;
   const repo = new InMemoryAccountRepository();
   const accounts = new AccountService(repo, fakeHasher);
   const sessions = new InMemorySessionStore(3600_000);
@@ -86,6 +109,8 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
     webOrigins: ['http://localhost:3000'],
     limiter,
     rateLimit,
+    ...(feedbackMailer ? { feedbackMailer } : {}),
+    feedbackRateLimit,
     subscribe: defaultSubscribe,
   });
   return {
@@ -1021,6 +1046,7 @@ function makeAppWithToken(token: string) {
     internalToken: token,
     limiter: new InMemoryRateLimiter(),
     rateLimit: defaultRateLimit,
+    feedbackRateLimit: defaultFeedbackRateLimit,
     subscribe: defaultSubscribe,
   });
   return { app };
@@ -1529,5 +1555,216 @@ describe('admin console API (spec 0037)', () => {
     });
     expect(locked.statusCode).toBe(429);
     await t.app.close();
+  });
+});
+
+/** A recording fake mailer: captures each send so a test can assert the from/to/body it produced. */
+class RecordingMailer implements FeedbackMailer {
+  readonly sent: FeedbackEmail[] = [];
+  async send(email: FeedbackEmail): Promise<void> {
+    this.sent.push(email);
+  }
+}
+
+describe('control-plane POST /v1/feedback (spec 0048)', () => {
+  /** Sign up a host and create a room; returns the host cookie and the room code for the context. */
+  async function hostWithRoom(app: ReturnType<typeof makeApp>['app']) {
+    const cookie = await withHost(app);
+    const create = await app.inject({ method: 'POST', url: '/v1/rooms', headers: { cookie } });
+    const { room } = create.json();
+    return { cookie, code: room.code as string };
+  }
+
+  it('sends the message + context via the mailer when a key is configured', async () => {
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { cookie, code } = await hostWithRoom(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie },
+      payload: {
+        message: 'The drop button is hard to reach on a phone.',
+        context: {
+          code,
+          game: 'teeter-tower',
+          phase: 'collecting',
+          isHost: true,
+          at: '2026-07-14T12:00:00.000Z',
+        },
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ ok: true });
+    expect(mailer.sent).toHaveLength(1);
+    // The recipient is fixed and the body carries the message + every context field it needs to act.
+    const sent = mailer.sent[0];
+    if (!sent) throw new Error('expected a sent email');
+    const { text } = sent;
+    expect(text).toContain('The drop button is hard to reach on a phone.');
+    expect(text).toContain(`room code: ${code}`);
+    expect(text).toContain('game: teeter-tower');
+    expect(text).toContain('phase: collecting');
+    expect(text).toContain('host: yes');
+    expect(text).toContain('submitted at: 2026-07-14T12:00:00.000Z');
+    await app.close();
+  });
+
+  it('the mailer targets feedback@rogueoak.com from branchout@rogueoak.com', async () => {
+    // Assert the from/to at the Resend REST boundary, not just the interface, so the addresses are
+    // pinned where they actually go on the wire.
+    const calls: Array<{ from: string; to: string; subject: string; text: string }> = [];
+    const fakeFetch = (async (_url: string | URL, init?: RequestInit) => {
+      calls.push(JSON.parse(String(init?.body)));
+      return new Response('{}', { status: 200 });
+    }) as unknown as typeof fetch;
+    const mailer = new ResendMailer('re_test_key', fakeFetch);
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { cookie, code } = await hostWithRoom(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie },
+      payload: { message: 'Nice game.', context: { code } },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(calls).toHaveLength(1);
+    const call = calls[0];
+    if (!call) throw new Error('expected a Resend request');
+    expect(call.from).toBe('branchout@rogueoak.com');
+    expect(call.to).toBe('feedback@rogueoak.com');
+    expect(call.text).toContain('Nice game.');
+    await app.close();
+  });
+
+  it('refuses an unauthenticated caller with 401 and never sends', async () => {
+    // The endpoint spends money on Resend, so an anonymous internet caller must not reach it.
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      payload: { message: 'Hi', context: { code: 'ABC12' } },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(mailer.sent).toHaveLength(0);
+    await app.close();
+  });
+
+  it('refuses a signed-in non-host of the named room with 403 and never sends', async () => {
+    // A signed-in player who is not the host of the room in the context cannot send host feedback for
+    // it - isHost is server-verified against the room, not trusted from the body.
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { code } = await hostWithRoom(app);
+    // A second account that is not a member of the host's room.
+    const strangerSignup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { email: 'stranger@example.com', password: 'supersecret', gamerTag: 'Stranger' },
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie: sessionCookie(strangerSignup) },
+      // A hostile body claiming isHost: true must not fool the server.
+      payload: { message: 'let me in', context: { code, isHost: true } },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(mailer.sent).toHaveLength(0);
+    await app.close();
+  });
+
+  it('rejects an empty message with 400 and never sends', async () => {
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { cookie, code } = await hostWithRoom(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie },
+      payload: { message: '   ', context: { code } },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ ok: false });
+    expect(mailer.sent).toHaveLength(0);
+    await app.close();
+  });
+
+  it('rejects a message over the 5000-char cap with 400 and never sends', async () => {
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { cookie, code } = await hostWithRoom(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie },
+      payload: { message: 'x'.repeat(5001), context: { code } },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ ok: false });
+    expect(mailer.sent).toHaveLength(0);
+    await app.close();
+  });
+
+  it('returns a clear "not configured" 503 when no mailer is wired (RESEND_API_KEY unset)', async () => {
+    // No feedbackMailer -> the wire-the-secret-later state. It must not crash.
+    const { app } = makeApp();
+    const { cookie, code } = await hostWithRoom(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie },
+      payload: { message: 'Hi', context: { code } },
+    });
+    expect(res.statusCode).toBe(503);
+    expect(res.json()).toEqual({ ok: false, error: 'Feedback email is not configured yet.' });
+    await app.close();
+  });
+
+  it('caps the per-IP rate on every processed path, including the not-configured 503', async () => {
+    // No mailer wired: the request is authenticated + processed (503) but must still count against
+    // the cap, so the not-configured path cannot be hammered without limit.
+    const { app } = makeApp(defaultRateLimit, undefined, {
+      feedbackRateLimit: { maxPerIp: 2, windowSeconds: 600 },
+    });
+    const { cookie, code } = await hostWithRoom(app);
+    const submit = () =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/feedback',
+        headers: { cookie, 'x-forwarded-for': '198.51.100.9' },
+        payload: { message: 'again', context: { code } },
+      });
+    expect((await submit()).statusCode).toBe(503);
+    expect((await submit()).statusCode).toBe(503);
+    const blocked = await submit();
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.headers['retry-after']).toBeDefined();
+    await app.close();
+  });
+
+  it('rate-limits per IP with a 429 + Retry-After', async () => {
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, {
+      feedbackMailer: mailer,
+      feedbackRateLimit: { maxPerIp: 2, windowSeconds: 600 },
+    });
+    const { cookie, code } = await hostWithRoom(app);
+    const submit = () =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/feedback',
+        headers: { cookie, 'x-forwarded-for': '198.51.100.7' },
+        payload: { message: 'again', context: { code } },
+      });
+    expect((await submit()).statusCode).toBe(200);
+    expect((await submit()).statusCode).toBe(200);
+    const blocked = await submit();
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.headers['retry-after']).toBeDefined();
+    // Only the two allowed submissions sent; the blocked one did not reach the mailer.
+    expect(mailer.sent).toHaveLength(2);
+    await app.close();
   });
 });

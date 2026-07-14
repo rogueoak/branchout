@@ -33,6 +33,26 @@ export interface RateLimitConfig {
 }
 
 /**
+ * Host in-game feedback config (spec 0048). The Resend API key is optional: unset means feedback
+ * email is not configured yet (the endpoint returns a clear 503, never crashes), so the code ships
+ * before the secret does. The per-IP cap reuses the spec 0036 limiter to blunt inbox flooding.
+ */
+export interface FeedbackConfig {
+  /** Resend API key. Unset -> the endpoint replies "not configured" and sends nothing. */
+  resendApiKey?: string;
+  /** Feedback submissions per client IP within the window before a 429. */
+  maxPerIp: number;
+  /** Fixed-window length for the per-IP cap, in seconds. */
+  windowSeconds: number;
+}
+
+/** The per-IP rate-limit knobs the feedback route consumes (the subset it needs from FeedbackConfig). */
+export interface FeedbackRateLimitConfig {
+  maxPerIp: number;
+  windowSeconds: number;
+}
+
+/**
  * The admin session cookie (spec 0037). Deliberately its OWN cookie, distinct from the player
  * `SessionCookieConfig`: a different name and - critically - NO `domain`, so the admin session is
  * host-only to `admin.branchout.games` and never spans the apex/subdomains the player cookie does.
@@ -81,6 +101,8 @@ export interface ServiceConfig {
   membershipTtlSeconds: number;
   /** Auth rate-limiting / lockout thresholds. */
   rateLimit: RateLimitConfig;
+  /** Host in-game feedback (spec 0048): Resend key + per-IP cap. */
+  feedback: FeedbackConfig;
   /** Newsletter subscribe / Constant Contact config (spec 0047). */
   subscribe: SubscribeConfig;
 }
@@ -99,6 +121,10 @@ const DEFAULT_LOGIN_MAX_ATTEMPTS = 5;
 const DEFAULT_LOGIN_WINDOW = 60 * 15;
 const DEFAULT_SIGNUP_MAX_PER_IP = 10;
 const DEFAULT_SIGNUP_WINDOW = 60 * 60;
+
+/** Feedback per-IP defaults: 5 submissions / 10 minutes (spec 0048). */
+const DEFAULT_FEEDBACK_MAX_PER_IP = 5;
+const DEFAULT_FEEDBACK_WINDOW = 60 * 10;
 
 /** Subscribe rate-limit defaults (spec 0047): 5 subscribes / 10 min per IP. */
 const DEFAULT_SUBSCRIBE_MAX_PER_IP = 5;
@@ -177,6 +203,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
       loginWindowSeconds: parsePositiveInt(env.LOGIN_WINDOW_SECONDS, DEFAULT_LOGIN_WINDOW),
       signupMaxPerIp: parsePositiveInt(env.SIGNUP_MAX_PER_IP, DEFAULT_SIGNUP_MAX_PER_IP),
       signupWindowSeconds: parsePositiveInt(env.SIGNUP_WINDOW_SECONDS, DEFAULT_SIGNUP_WINDOW),
+    },
+    feedback: {
+      // Omit the key entirely when unset so nothing downstream sees `resendApiKey: undefined` as
+      // "configured with an empty value" - unset means feedback email is not configured yet.
+      ...(env.RESEND_API_KEY ? { resendApiKey: env.RESEND_API_KEY } : {}),
+      maxPerIp: parsePositiveInt(env.FEEDBACK_MAX_PER_IP, DEFAULT_FEEDBACK_MAX_PER_IP),
+      windowSeconds: parsePositiveInt(env.FEEDBACK_WINDOW_SECONDS, DEFAULT_FEEDBACK_WINDOW),
     },
     subscribe: {
       // Each credential is optional so a missing one is detectable at the route (a clear

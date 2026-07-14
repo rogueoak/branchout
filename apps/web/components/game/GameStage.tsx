@@ -12,6 +12,7 @@ import type { Role, Mode } from '../../lib/room-api';
 import type { ConnectionStatus, GameState } from '../../lib/game-state';
 import { isComplete } from '../../lib/game-state';
 import { getGameUi } from '../../lib/games/registry';
+import { FeedbackDialog } from './FeedbackDialog';
 
 /** Every host control the browser can issue, including `advance` (proxied by the control-plane). */
 export type HostControl = 'advance' | 'pause' | 'restart' | 'exit';
@@ -21,6 +22,8 @@ interface GameStageProps {
   me: string;
   /** The selected game id (matches the engine plugin id); resolves the UI module to render. */
   game: string;
+  /** The room join code, attached as feedback context (spec 0048). */
+  code: string;
   role: Role;
   /** The player's chosen mode (the host is a player, so it has one too); absent for observers. */
   mode?: Mode;
@@ -40,9 +43,13 @@ const CONNECTION_LABEL: Record<ConnectionStatus, string | null> = {
 
 function HostControls({
   state,
+  game,
+  code,
   onControl,
 }: {
   state: GameState;
+  game: string;
+  code: string;
   onControl: (action: HostControl) => void;
 }) {
   const done = isComplete(state);
@@ -53,6 +60,8 @@ function HostControls({
   return (
     <div className="flex flex-col gap-2 border-t border-border pt-4">
       <p className="text-body-sm font-medium text-text-muted">Host controls</p>
+      {/* The controls stay left; the Feedback affordance sits at the right edge (ml-auto spacer).
+          The row still wraps at 360px - Feedback drops onto its own line rather than overflow. */}
       <div className="flex flex-wrap items-center gap-2">
         {done ? (
           <Button type="button" variant="primary" onClick={() => onControl('exit')}>
@@ -78,6 +87,9 @@ function HostControls({
             </Button>
           </>
         )}
+        <div className="ml-auto">
+          <FeedbackDialog context={{ code, game, phase: state.phase, isHost: true }} />
+        </div>
       </div>
     </div>
   );
@@ -87,6 +99,7 @@ export function GameStage({
   state,
   me,
   game,
+  code,
   role,
   mode,
   isHost,
@@ -178,7 +191,7 @@ export function GameStage({
         ) : null}
       </div>
 
-      {isHost ? <HostControls state={state} onControl={onControl} /> : null}
+      {isHost ? <HostControls state={state} game={game} code={code} onControl={onControl} /> : null}
     </div>
   );
 }

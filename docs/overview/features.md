@@ -241,6 +241,14 @@ What the product does for users, grouped by area. Each capability maps to one or
       wordmark returns to the insider landing), and only the genuinely apex-only chrome (Log in /
       Sign up / Manage account, footer legal) crosses to the apex; the landing leads with one
       centered welcome and each test-game card carries a "Play now" CTA (feedback `0030`).
+- [x] Host in-game feedback - a "Feedback" button, right-aligned in the host-controls row, opens a
+      ResponsiveDialog (a modal on desktop, a bottom sheet on a phone) where the host types a note at
+      any point during a game. Submitting emails it to feedback@rogueoak.com (from
+      branchout@rogueoak.com) via Resend, with auto-captured context attached (room code, game id,
+      current phase, that the sender is the host, a timestamp) so the note is actionable without a
+      back-and-forth. The control-plane endpoint (POST /v1/feedback) is cookie-authenticated and
+      host-verified, validates the message, caps submissions per IP, and - until an operator provisions
+      RESEND_API_KEY - returns a clear "not configured" response rather than crashing (spec 0048).
 - [x] Newsletter subscribe - a "More games coming soon" banner on `/games` with a "Subscribe for
       updates" button that reveals an on-theme, mobile-first subscribe form. Submitting posts the email
       to the control-plane's `POST /v1/subscribe`, which adds the visitor to the Constant Contact

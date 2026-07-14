@@ -7,6 +7,7 @@ import { AdminService } from './admin/service';
 import { type AdminSessionRedis, RedisAdminSessionStore } from './admin/session';
 import { createApp } from './app';
 import { loadConfig } from './config';
+import { ResendMailer } from './feedback/mailer';
 import { CreditLedger } from './credits/ledger';
 import { PostgresLedgerRepository } from './credits/repository';
 import { FreeTierProvider } from './credits/tiers';
@@ -128,6 +129,15 @@ async function main(): Promise<void> {
   );
   const profiles = new ProfileService(accounts, plays);
 
+  // Host in-game feedback (spec 0048): a Resend mailer only when the key is set. Unset leaves it
+  // undefined and the route replies "not configured" (503) - the code ships before the secret does.
+  const feedbackMailer = config.feedback.resendApiKey
+    ? new ResendMailer(config.feedback.resendApiKey)
+    : undefined;
+  if (!feedbackMailer) {
+    console.warn('[control-plane] RESEND_API_KEY unset - host feedback email is not configured');
+  }
+
   const app = createApp({
     checks: {
       checkPostgres: () => pingPostgres(pool),
@@ -145,6 +155,11 @@ async function main(): Promise<void> {
     ...(config.internalToken ? { internalToken: config.internalToken } : {}),
     limiter,
     rateLimit: config.rateLimit,
+    ...(feedbackMailer ? { feedbackMailer } : {}),
+    feedbackRateLimit: {
+      maxPerIp: config.feedback.maxPerIp,
+      windowSeconds: config.feedback.windowSeconds,
+    },
     subscribe: config.subscribe,
   });
 

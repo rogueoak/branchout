@@ -434,6 +434,7 @@ export function RoomClient({
                 state={state}
                 me={me}
                 game={room?.selectedGame ?? game}
+                code={code}
                 role={membership.role}
                 mode={membership.mode}
                 isHost={isHost}

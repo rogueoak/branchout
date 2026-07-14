@@ -7,14 +7,17 @@ import type { AdminService } from './admin/service';
 import type { AdminSessionStore } from './admin/session';
 import type {
   AdminCookieConfig,
+  FeedbackRateLimitConfig,
   RateLimitConfig,
   SessionCookieConfig,
   SubscribeConfig,
 } from './config';
+import type { FeedbackMailer } from './feedback/mailer';
 import type { RateLimiter } from './ratelimit/limiter';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
 import { registerEngineRoutes } from './routes/engine';
+import { registerFeedbackRoutes } from './routes/feedback';
 import { registerProfileRoutes } from './routes/profiles';
 import { registerRoomRoutes } from './routes/rooms';
 import { registerSubscribeRoutes } from './routes/subscribe';
@@ -48,6 +51,10 @@ export interface AppDeps {
   limiter: RateLimiter;
   /** Auth rate-limit thresholds. */
   rateLimit: RateLimitConfig;
+  /** Host feedback email sender (spec 0048); undefined when RESEND_API_KEY is unset (inert). */
+  feedbackMailer?: FeedbackMailer;
+  /** Per-IP feedback rate-limit thresholds (spec 0048). */
+  feedbackRateLimit: FeedbackRateLimitConfig;
   /** Newsletter subscribe / Constant Contact config (spec 0047). */
   subscribe: SubscribeConfig;
   /**
@@ -132,6 +139,18 @@ export function createApp(deps: AppDeps): FastifyInstance {
       registerEngineRoutes(v1, {
         rooms: deps.rooms,
         internalToken: deps.internalToken,
+      });
+
+      // Host in-game feedback (spec 0048). Cookie-authenticated + host-verified like the room routes.
+      // `feedbackMailer` is undefined when RESEND_API_KEY is unset - the route then returns a clear
+      // "not configured" 503.
+      registerFeedbackRoutes(v1, {
+        ...(deps.feedbackMailer ? { mailer: deps.feedbackMailer } : {}),
+        limiter: deps.limiter,
+        rateLimit: deps.feedbackRateLimit,
+        sessions: deps.sessions,
+        cookie: deps.cookie,
+        rooms: deps.rooms,
       });
 
       registerSubscribeRoutes(v1, {
