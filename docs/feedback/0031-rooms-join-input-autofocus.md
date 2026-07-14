@@ -1,4 +1,4 @@
-# 0030 - The rooms "Join a room" code input autofocuses on mobile
+# 0031 - The rooms "Join a room" code input autofocuses on mobile
 
 ## Symptom
 

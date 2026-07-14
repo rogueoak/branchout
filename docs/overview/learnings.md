@@ -237,7 +237,7 @@ Capture durable lessons as they emerge.
   with no default; a jsdom render confirmed the field is not focused on mount there. The cause is a
   browser autofocusing the page's first/only empty text input. Don't chase a `focus()` call that does
   not exist - reproduce (jsdom won't show it), then set `autoFocus={false}` explicitly with a
-  not-focused-on-mount test. (Feedback `0030`.)
+  not-focused-on-mount test. (Feedback `0031`.)
 
 - **On a mobile-first surface with a desktop path, "follow the pointer" is not the same input on
   touch and mouse - gate press-drag vs. hover explicitly.** Teeter's canvas aim let the piece follow
