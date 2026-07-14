@@ -370,12 +370,16 @@ Capture durable lessons as they emerge.
   rebuild ignored the seed entirely. Assert a *seed-dependent* output is byte-identical across the
   respawn AND differs for a different seed - otherwise the determinism guarantee is untested and the
   equality is vacuous. (Spec `0045`.)
-- **To make physics pieces "stickier", `frictionStatic` is the lever - not `friction`.** Matter's
-  KINETIC `friction` saturates near 1.0 (raising it past that barely changes a sliding contact), and
-  `restitution` only controls bounce. What keeps a landed piece from skating/toppling off is
-  `frictionStatic` (the force to break it free from rest) plus a little `frictionAir` to damp landing
-  skitter. When "make it grippier" is the ask, reach for static friction + air damping and leave kinetic
-  friction alone. (Feedback `0028`.)
+- **To make physics pieces "stickier" ON IMPACT, KINETIC `friction` is the lever - and Matter honors
+  friction > 1.** First attempt raised `frictionStatic` (6 -> 20) on a code comment's claim that kinetic
+  `friction` "saturates near 1.0" - and it barely changed the feel, because `frictionStatic` only holds
+  a piece that is ALREADY at rest; the pieces were sliding/toppling while still moving on landing, which
+  is governed by kinetic `friction`. Matter does NOT clamp friction to 1.0 (the tangent impulse is capped
+  at `friction * normalImpulse`), so raising it past 1 (to ~3) is what actually grips a sliding contact.
+  Distinguish the two regimes: static friction = "won't start sliding from rest", kinetic friction =
+  "won't keep sliding once moving". Pair it with a lower `MAX_FALL_SPEED` (softer landing = less energy to
+  slide) and `frictionAir` (bleeds slide energy). Don't trust a "saturates" comment - test the lever.
+  (Feedback `0028`.)
 
 ## Client-server contracts
 

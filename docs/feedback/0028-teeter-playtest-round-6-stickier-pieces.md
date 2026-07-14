@@ -35,3 +35,18 @@ the base course hold the first pieces.
 - Manual: on the insider site, drop a piece off-centre and confirm it grabs and holds instead of
   sliding off; the tower is meaningfully easier to build. Tune further (or soften landings via
   `MAX_FALL_SPEED`) if it is still too hard.
+
+## Round 2 - "it needs to be way stickier" (still too hard after round 1)
+
+Round 1 (frictionStatic 6 -> 20) barely changed the feel. Wrong lever: `frictionStatic` only holds a
+piece that is ALREADY at rest, but the pieces slide/topple while still MOVING on landing - that contact
+is governed by KINETIC `PIECE_FRICTION`, which round 1 left at 1.0 on the (incorrect) ported comment
+that Matter's friction "saturates near 1.0". Matter does not clamp friction to 1.0 - the tangent impulse
+is capped at `friction * normalImpulse` - so friction > 1 genuinely grips a sliding contact.
+
+Round 2 hits the impact regime directly:
+
+- `PIECE_FRICTION` (kinetic): `1.0 -> 3.0`. The real grip on the sliding landing contact.
+- `PIECE_FRICTION_STATIC`: `20 -> 30`. Keeps a settled piece pinned.
+- `PIECE_FRICTION_AIR`: `0.05 -> 0.08`. Bleeds off horizontal slide energy faster.
+- `MAX_FALL_SPEED`: `9 -> 6`. Softer landing, so a piece knocks the tower around less.
