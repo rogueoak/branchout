@@ -129,12 +129,16 @@ export function createApp(deps: AppDeps): FastifyInstance {
         internalToken: deps.internalToken,
       });
 
-      // Host in-game feedback (spec 0048). `feedbackMailer` is undefined when RESEND_API_KEY is
-      // unset, and the route returns a clear "not configured" 503 in that case.
+      // Host in-game feedback (spec 0048). Cookie-authenticated + host-verified like the room routes.
+      // `feedbackMailer` is undefined when RESEND_API_KEY is unset - the route then returns a clear
+      // "not configured" 503.
       registerFeedbackRoutes(v1, {
         ...(deps.feedbackMailer ? { mailer: deps.feedbackMailer } : {}),
         limiter: deps.limiter,
         rateLimit: deps.feedbackRateLimit,
+        sessions: deps.sessions,
+        cookie: deps.cookie,
+        rooms: deps.rooms,
       });
 
       done();

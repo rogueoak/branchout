@@ -53,26 +53,41 @@ modal on desktop and a bottom sheet on a phone with no extra work; the message `
 required and the Submit button reflects idle/submitting/success/error.
 
 **Control-plane.** `registerFeedbackRoutes(app, deps)` mounts `POST /feedback` inside the existing
-`/v1` block in `app.ts` (same shape as `registerAuthRoutes`). It:
-- validates the message (non-empty after trim, capped at 5000 chars) - 400 otherwise;
+`/v1` block in `app.ts` (same shape as `registerAuthRoutes`). It is browser-facing and
+cookie-authenticated like the room routes. It:
+- **requires a valid session** (the same cookie read the room routes use) - `401` otherwise, so an
+  anonymous internet caller cannot make the service spend money on Resend or spam the inbox (the
+  per-IP cap is only trustworthy behind Caddy, spec 0038);
+- **verifies the caller is the host** of the room named in `context.code` by reusing
+  `rooms.resume(code, session)` (which re-seats a durable host and rejects a non-member) - a
+  non-host or non-member gets `403`, so `isHost` is server-verified, not trusted from the body. When
+  the context has no `code`, an authenticated session is the minimum;
+- validates the message (non-empty after trim, capped at 5000 chars) - 400 otherwise; each untrusted
+  context string (code/game/phase/at) is sliced to 200 chars so it cannot balloon the email;
 - rate-limits per client IP using the existing `RateLimiter` (`feedback:<ip>`, tunable
   `FEEDBACK_MAX_PER_IP` / `FEEDBACK_WINDOW_SECONDS`, defaults 5 / 600s), returning 429 +
-  `Retry-After` when over;
+  `Retry-After` when over, and **records the hit on every processed path** (503/502 included) so no
+  path is unlimited;
 - if `RESEND_API_KEY` is unset, returns `503 { ok:false, error:'Feedback email is not configured
   yet.' }` and logs a warning - never a crash (the "wire the secret later" behavior);
 - otherwise composes a plain-text body (message + context lines) and sends via Resend. The send is a
-  direct `fetch` to `https://api.resend.com/emails` (no new dependency), injected as a `FeedbackMailer`
-  so tests mock it and assert the `from`/`to` and that the body includes the message + context.
+  direct `fetch` to `https://api.resend.com/emails` (no new dependency, with a ~10s abort timeout so a
+  hung Resend cannot hang the request), injected as a `FeedbackMailer` so tests mock it and assert the
+  `from`/`to` and that the body includes the message + context.
 
 The from/to addresses live in one small const module (`feedback/addresses.ts`) so they are not
 scattered literals. Success is `{ ok: true }`.
 
 Key decisions / trade-offs:
+- **Authenticated + host-verified, not open.** The endpoint spends money (Resend) and writes to a
+  human inbox, so it is not anonymous. The host is always signed in and the browser already sends the
+  session cookie; verifying host-of-the-room reuses `rooms.resume` (no new code path) and makes the
+  reported `isHost` trustworthy.
 - **Direct fetch over the `resend` npm package.** Avoids a new dependency for one POST; the mailer
   is an injectable interface so the network call is faked in tests, mirroring the repo's in-memory
   fake style.
 - **Reuse `RateLimiter`** rather than add a new limiter - same store-plus-fake shape the auth routes
-  use, IP-anchored (best-effort; abuse of a feedback form is low-stakes vs. auth).
+  use. Authentication is the primary gate; the IP cap is defence-in-depth (best-effort behind Caddy).
 - **No persistence.** Email is the delivery; a DB table is out of scope until volume warrants it.
 
 ## Acceptance
@@ -81,13 +96,16 @@ Key decisions / trade-offs:
       overflow at 360px.
 - [ ] The dialog requires a message, disables Submit while empty/submitting, shows success then
       closes, and shows an error on failure.
-- [ ] `POST /v1/feedback` with a valid message and the key set sends via Resend (mocked): asserts
-      `from: branchout@rogueoak.com`, `to: feedback@rogueoak.com`, and a body containing the message
-      and the context (room code, game id, phase, host, timestamp).
-- [ ] Empty message -> 400.
+- [ ] `POST /v1/feedback` as the host with a valid message and the key set sends via Resend (mocked):
+      asserts `from: branchout@rogueoak.com`, `to: feedback@rogueoak.com`, and a body containing the
+      message and the context (room code, game id, phase, host, timestamp).
+- [ ] No session -> 401 (and no send).
+- [ ] A signed-in non-host of the named room -> 403 (and no send), even if the body claims
+      `isHost: true`.
+- [ ] Empty message -> 400; message over 5000 chars -> 400.
 - [ ] `RESEND_API_KEY` unset -> 503 `{ ok:false, error:'Feedback email is not configured yet.' }`,
       a logged warning, no crash.
-- [ ] Over the per-IP limit -> 429 with `Retry-After`.
+- [ ] Over the per-IP limit -> 429 with `Retry-After`, on every processed path (503 included).
 - [ ] `RESEND_API_KEY`, `FEEDBACK_MAX_PER_IP`, `FEEDBACK_WINDOW_SECONDS` are in env.example, the
       control-plane config, compose, and release.yml.
 - [ ] `pnpm build && typecheck && lint && format:check && test` are green.

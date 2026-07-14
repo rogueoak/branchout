@@ -1557,21 +1557,32 @@ class RecordingMailer implements FeedbackMailer {
 }
 
 describe('control-plane POST /v1/feedback (spec 0048)', () => {
-  const context = {
-    code: 'ABC12',
-    game: 'teeter-tower',
-    phase: 'collecting',
-    isHost: true,
-    at: '2026-07-14T12:00:00.000Z',
-  };
+  /** Sign up a host and create a room; returns the host cookie and the room code for the context. */
+  async function hostWithRoom(app: ReturnType<typeof makeApp>['app']) {
+    const cookie = await withHost(app);
+    const create = await app.inject({ method: 'POST', url: '/v1/rooms', headers: { cookie } });
+    const { room } = create.json();
+    return { cookie, code: room.code as string };
+  }
 
   it('sends the message + context via the mailer when a key is configured', async () => {
     const mailer = new RecordingMailer();
     const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { cookie, code } = await hostWithRoom(app);
     const res = await app.inject({
       method: 'POST',
       url: '/v1/feedback',
-      payload: { message: 'The drop button is hard to reach on a phone.', context },
+      headers: { cookie },
+      payload: {
+        message: 'The drop button is hard to reach on a phone.',
+        context: {
+          code,
+          game: 'teeter-tower',
+          phase: 'collecting',
+          isHost: true,
+          at: '2026-07-14T12:00:00.000Z',
+        },
+      },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true });
@@ -1581,7 +1592,7 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
     if (!sent) throw new Error('expected a sent email');
     const { text } = sent;
     expect(text).toContain('The drop button is hard to reach on a phone.');
-    expect(text).toContain('room code: ABC12');
+    expect(text).toContain(`room code: ${code}`);
     expect(text).toContain('game: teeter-tower');
     expect(text).toContain('phase: collecting');
     expect(text).toContain('host: yes');
@@ -1599,10 +1610,12 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
     }) as unknown as typeof fetch;
     const mailer = new ResendMailer('re_test_key', fakeFetch);
     const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { cookie, code } = await hostWithRoom(app);
     const res = await app.inject({
       method: 'POST',
       url: '/v1/feedback',
-      payload: { message: 'Nice game.', context },
+      headers: { cookie },
+      payload: { message: 'Nice game.', context: { code } },
     });
     expect(res.statusCode).toBe(200);
     expect(calls).toHaveLength(1);
@@ -1614,13 +1627,69 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
     await app.close();
   });
 
-  it('rejects an empty message with 400 and never sends', async () => {
+  it('refuses an unauthenticated caller with 401 and never sends', async () => {
+    // The endpoint spends money on Resend, so an anonymous internet caller must not reach it.
     const mailer = new RecordingMailer();
     const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
     const res = await app.inject({
       method: 'POST',
       url: '/v1/feedback',
-      payload: { message: '   ', context },
+      payload: { message: 'Hi', context: { code: 'ABC12' } },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(mailer.sent).toHaveLength(0);
+    await app.close();
+  });
+
+  it('refuses a signed-in non-host of the named room with 403 and never sends', async () => {
+    // A signed-in player who is not the host of the room in the context cannot send host feedback for
+    // it - isHost is server-verified against the room, not trusted from the body.
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { code } = await hostWithRoom(app);
+    // A second account that is not a member of the host's room.
+    const strangerSignup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { email: 'stranger@example.com', password: 'supersecret', gamerTag: 'Stranger' },
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie: sessionCookie(strangerSignup) },
+      // A hostile body claiming isHost: true must not fool the server.
+      payload: { message: 'let me in', context: { code, isHost: true } },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(mailer.sent).toHaveLength(0);
+    await app.close();
+  });
+
+  it('rejects an empty message with 400 and never sends', async () => {
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { cookie, code } = await hostWithRoom(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie },
+      payload: { message: '   ', context: { code } },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ ok: false });
+    expect(mailer.sent).toHaveLength(0);
+    await app.close();
+  });
+
+  it('rejects a message over the 5000-char cap with 400 and never sends', async () => {
+    const mailer = new RecordingMailer();
+    const { app } = makeApp(defaultRateLimit, undefined, { feedbackMailer: mailer });
+    const { cookie, code } = await hostWithRoom(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/feedback',
+      headers: { cookie },
+      payload: { message: 'x'.repeat(5001), context: { code } },
     });
     expect(res.statusCode).toBe(400);
     expect(res.json()).toMatchObject({ ok: false });
@@ -1631,13 +1700,37 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
   it('returns a clear "not configured" 503 when no mailer is wired (RESEND_API_KEY unset)', async () => {
     // No feedbackMailer -> the wire-the-secret-later state. It must not crash.
     const { app } = makeApp();
+    const { cookie, code } = await hostWithRoom(app);
     const res = await app.inject({
       method: 'POST',
       url: '/v1/feedback',
-      payload: { message: 'Hi', context },
+      headers: { cookie },
+      payload: { message: 'Hi', context: { code } },
     });
     expect(res.statusCode).toBe(503);
     expect(res.json()).toEqual({ ok: false, error: 'Feedback email is not configured yet.' });
+    await app.close();
+  });
+
+  it('caps the per-IP rate on every processed path, including the not-configured 503', async () => {
+    // No mailer wired: the request is authenticated + processed (503) but must still count against
+    // the cap, so the not-configured path cannot be hammered without limit.
+    const { app } = makeApp(defaultRateLimit, undefined, {
+      feedbackRateLimit: { maxPerIp: 2, windowSeconds: 600 },
+    });
+    const { cookie, code } = await hostWithRoom(app);
+    const submit = () =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/feedback',
+        headers: { cookie, 'x-forwarded-for': '198.51.100.9' },
+        payload: { message: 'again', context: { code } },
+      });
+    expect((await submit()).statusCode).toBe(503);
+    expect((await submit()).statusCode).toBe(503);
+    const blocked = await submit();
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.headers['retry-after']).toBeDefined();
     await app.close();
   });
 
@@ -1647,12 +1740,13 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
       feedbackMailer: mailer,
       feedbackRateLimit: { maxPerIp: 2, windowSeconds: 600 },
     });
+    const { cookie, code } = await hostWithRoom(app);
     const submit = () =>
       app.inject({
         method: 'POST',
         url: '/v1/feedback',
-        headers: { 'x-forwarded-for': '198.51.100.7' },
-        payload: { message: 'again', context },
+        headers: { cookie, 'x-forwarded-for': '198.51.100.7' },
+        payload: { message: 'again', context: { code } },
       });
     expect((await submit()).statusCode).toBe(200);
     expect((await submit()).statusCode).toBe(200);

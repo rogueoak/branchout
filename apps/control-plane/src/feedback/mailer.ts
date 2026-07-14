@@ -16,6 +16,9 @@ export interface FeedbackMailer {
   send(email: FeedbackEmail): Promise<void>;
 }
 
+/** How long to wait on the Resend API before aborting, so a hung service can't hang the request. */
+const SEND_TIMEOUT_MS = 10_000;
+
 /** Raised when Resend rejects the send, so the route can map it to a 502 rather than a bare 500. */
 export class MailerError extends Error {
   constructor(message: string) {
@@ -33,6 +36,7 @@ export class ResendMailer implements FeedbackMailer {
   constructor(
     private readonly apiKey: string,
     private readonly fetchImpl: typeof fetch = fetch,
+    private readonly timeoutMs: number = SEND_TIMEOUT_MS,
   ) {}
 
   async send(email: FeedbackEmail): Promise<void> {
@@ -50,6 +54,9 @@ export class ResendMailer implements FeedbackMailer {
           subject: email.subject,
           text: email.text,
         }),
+        // Bound the wait so a hung Resend aborts (and surfaces as a MailerError -> 502) rather than
+        // holding the request open indefinitely.
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (error) {
       throw new MailerError(`Resend request failed: ${String(error)}`);
