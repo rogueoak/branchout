@@ -242,6 +242,16 @@ insider-only game appears (and its deep link is honored) only on the insider sur
 apex, even for an entitled insider. The shared chrome crosses its marketing/legal links back to the
 apex via `linkOrigin` while the flow's own relative links stay on the insider host.
 
+**Surface-owned nav links stay on the host** (feedback `0030`). `linkOrigin` alone is too blunt: it
+crosses *every* nav link, which drags the surface's own content links to the apex too. `TopNav` takes
+an explicit `insider` flag so it can split them - the apex-only links (Log in, Sign up, Manage
+account) cross via `linkOrigin`, while the **surface-owned** links stay relative on the current host:
+the wordmark/home is always `/` (the insider host rewrites `/` into the insider landing), and Games is
+`/` on the insider surface (the insider games live on the landing - there is no `/insider/games` page)
+and `/games` on the apex. `AccountMenu` and `Footer` carry only apex-only links, so they keep crossing
+unchanged. The insider landing itself leads with one centered welcome and gives each test-game card a
+"Play now" CTA inside its (single) card link.
+
 The insider room flow's credentialed browser calls reach the control-plane **same-origin** via `/api`
 (prod bakes `NEXT_PUBLIC_CONTROL_PLANE_URL=/api`; Caddy's `insider.` block re-serves `/api` per host,
 so there is no cross-origin call and the `.branchout.games` session cookie flows). Dev/e2e has no

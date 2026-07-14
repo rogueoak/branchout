@@ -3,6 +3,7 @@
 // The async session read stays in the parent Server Component (page.tsx).
 'use client';
 
+import { buttonVariants } from '@rogueoak/canopy';
 import { Card, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
 import type { Viewer } from '../../lib/session';
 import type { Surface } from '../../lib/surface';
@@ -28,18 +29,21 @@ export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surf
     // insider app inherits the site look and feel. The "Insider" badge in the nav marks the
     // surface (spec 0035).
     <div className="flex min-h-screen flex-col bg-bg text-text">
-      <TopNav viewer={viewer} label="Insider" linkOrigin={apexOrigin || undefined} />
+      <TopNav viewer={viewer} label="Insider" linkOrigin={apexOrigin || undefined} insider />
 
       <section
         aria-labelledby="insider-heading"
         className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 sm:py-16"
       >
-        <h1 id="insider-heading" className="text-h2 text-text">
-          Insider
+        {/* One centered welcome that carries the insider identity and the invitation (feedback 0030),
+            good at 360px: the heading and message are centered, the message capped to a readable
+            measure and centered in the column. */}
+        <h1 id="insider-heading" className="text-h2 text-text text-center">
+          Branch Out Games for Insiders
         </h1>
-        <p className="text-body text-text-muted mt-2 max-w-xl">
-          Early access to games we are still building. Try them out and tell us what breaks - your
-          feedback shapes what ships.
+        <p className="text-body text-text-muted mt-2 mx-auto max-w-xl text-center">
+          Welcome. Here you will find unreleased games still in testing. Give them a while, then
+          tell us what breaks - your feedback shapes what ships.
         </p>
 
         {INSIDER_GAMES.length === 0 ? (
@@ -59,14 +63,29 @@ export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surf
               // The whole card links to the room-create deep link for the game, so an insider starts
               // a room in one tap. The link is RELATIVE (feedback 0029): the insider host now hosts
               // the room flow (rewritten into /insider/rooms), so play stays on the insider surface
-              // instead of bouncing to the apex.
+              // instead of bouncing to the apex. The visible "Play now" is the card's PRIMARY
+              // affordance (feedback 0030) - a styled <span>, not a nested <a>/<button>, so the card
+              // stays one interactive element (no interactive-in-interactive a11y issue) and the CTA
+              // stays on-theme via the button recipe on a SHORT label (the nowrap overflow only bit a
+              // content-bearing wrapper, spec 0029). Hover/focus on the card lifts the whole card.
               <a
                 key={game.id}
                 href={playHref(game.id)}
-                aria-label={`Start a room to test ${game.name}`}
-                className="rounded-xl transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                aria-label={`Play ${game.name} now`}
+                className="flex flex-col rounded-xl transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <GameCard game={game} />
+                {/* The CTA is a short single-line label, so buttonVariants() is right here (the
+                    nowrap it inherits only bites a content-bearing wrapper, spec 0029). aria-hidden +
+                    a plain <span> keeps the card ONE interactive element - the wrapping <a> already
+                    carries the "Play <game> now" accessible name, so a screen reader hears the action
+                    once, not a link inside a link. */}
+                <span
+                  aria-hidden="true"
+                  className={`${buttonVariants({ variant: 'primary', size: 'sm' })} mt-3 self-start`}
+                >
+                  Play now
+                </span>
               </a>
             ))}
           </div>

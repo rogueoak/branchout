@@ -69,4 +69,40 @@ describe('TopNav', () => {
     render(<TopNav viewer={{ signedIn: false }} />);
     expect(screen.queryByText('Insider')).toBeNull();
   });
+
+  it('on the insider surface: Games and the wordmark stay on the host, apex-only links cross (feedback 0030)', () => {
+    // The insider surface passes its apex origin (for the apex-only links) plus `insider` (so the
+    // surface-owned home + Games links stay relative on the insider host, where the insider games
+    // live on the landing).
+    render(
+      <TopNav
+        viewer={{ signedIn: false }}
+        label="Insider"
+        linkOrigin="https://branchout.games"
+        insider
+      />,
+    );
+    // Surface-owned: Games points at the insider landing (relative `/`), NOT the apex public games.
+    const games = screen.getByRole('link', { name: 'Games' });
+    expect(games.getAttribute('href')).toBe('/');
+    expect(games.getAttribute('href')).not.toContain('branchout.games');
+    // Surface-owned: the wordmark/home points at the insider landing (relative `/`), not apex home.
+    const home = screen.getByRole('link', { name: /branch out games home/i });
+    expect(home.getAttribute('href')).toBe('/');
+    // Apex-only: Log in / Sign up still cross to the apex origin (they have no insider page).
+    expect(screen.getByRole('link', { name: 'Log in' }).getAttribute('href')).toBe(
+      'https://branchout.games/login',
+    );
+    expect(screen.getByRole('link', { name: 'Sign up' }).getAttribute('href')).toBe(
+      'https://branchout.games/signup',
+    );
+  });
+
+  it('on the apex: Games points at the public games index and home stays relative', () => {
+    render(<TopNav viewer={{ signedIn: false }} />);
+    expect(screen.getByRole('link', { name: 'Games' }).getAttribute('href')).toBe('/games');
+    expect(screen.getByRole('link', { name: /branch out games home/i }).getAttribute('href')).toBe(
+      '/',
+    );
+  });
 });

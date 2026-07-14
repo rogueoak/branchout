@@ -4,6 +4,8 @@ import { faviconSvg } from '../favicon.js';
 import { logoSvg } from '../logo.js';
 import { triviaSvg } from '../trivia.js';
 import { liarLiarSvg } from '../liarliar.js';
+import { heroTriviaSvg } from '../hero-trivia.js';
+import { heroLiarLiarSvg } from '../hero-liarliar.js';
 import { palette, goldRootRule, safeArea, sparkGradient } from '../brand-notes.js';
 
 describe('SVG exports', () => {
@@ -31,6 +33,20 @@ describe('SVG exports', () => {
       expect(svg).toMatch(/^<svg /);
       expect(svg).toContain('viewBox="0 0 512 512"');
       // Every mark in the family carries the single gold root node.
+      expect(svg).toContain('#d2a463');
+    },
+  );
+
+  it.each([
+    ['heroTriviaSvg', heroTriviaSvg],
+    ['heroLiarLiarSvg', heroLiarLiarSvg],
+  ])(
+    '%s is a wide 800x450 hero illustration that keeps the gold root (spec 0046)',
+    (_name, svg) => {
+      expect(svg).toMatch(/^<svg /);
+      // The hero is a wider "scene" (roughly 16:9), not the compact 512 mark.
+      expect(svg).toContain('viewBox="0 0 800 450"');
+      // The gold-root rule holds for the hero art too.
       expect(svg).toContain('#d2a463');
     },
   );
