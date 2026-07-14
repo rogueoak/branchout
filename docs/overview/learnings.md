@@ -370,6 +370,12 @@ Capture durable lessons as they emerge.
   rebuild ignored the seed entirely. Assert a *seed-dependent* output is byte-identical across the
   respawn AND differs for a different seed - otherwise the determinism guarantee is untested and the
   equality is vacuous. (Spec `0045`.)
+- **To make physics pieces "stickier", `frictionStatic` is the lever - not `friction`.** Matter's
+  KINETIC `friction` saturates near 1.0 (raising it past that barely changes a sliding contact), and
+  `restitution` only controls bounce. What keeps a landed piece from skating/toppling off is
+  `frictionStatic` (the force to break it free from rest) plus a little `frictionAir` to damp landing
+  skitter. When "make it grippier" is the ask, reach for static friction + air damping and leave kinetic
+  friction alone. (Feedback `0028`.)
 
 ## Client-server contracts
 
