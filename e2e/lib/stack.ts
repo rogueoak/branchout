@@ -17,8 +17,14 @@ const GAME_ENGINE_PORT = Number(process.env.E2E_GAME_ENGINE_PORT ?? 4101);
 export const ADMIN_PORT = Number(process.env.E2E_ADMIN_PORT ?? 3102);
 
 export const BASE_URL = `http://localhost:${WEB_PORT}`;
+/** The insider surface (spec 0035) is the same web process on the `insider.` subdomain; `*.localhost`
+ * resolves to 127.0.0.1, so this reaches the same app through the host-aware middleware. */
+export const INSIDER_URL = `http://insider.localhost:${WEB_PORT}`;
 /** The admin console (spec 0037) is its own service on a shifted port. */
 export const ADMIN_URL = `http://localhost:${ADMIN_PORT}`;
+
+/** The session cookie name (must match the web app's SESSION_COOKIE_NAME / control-plane config). */
+export const SESSION_COOKIE = 'branchout_session';
 
 // Docker binary is `docker` on PATH by default; override with DOCKER_BIN for a non-standard install
 // (e.g. a Colima setup where the CLI is not symlinked).

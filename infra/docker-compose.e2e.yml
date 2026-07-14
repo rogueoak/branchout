@@ -5,9 +5,18 @@
 # ports here - dropping them avoids a clash on 5432/6379. The app services keep their published
 # ports, shifted to 3100/4100/4101 via env from the harness.
 services:
-  # The e2e web app is published on a shifted port (WEB_PORT, default 3100) to avoid clashing with
-  # a dev stack. The control-plane's CORS allow-list must match that browser origin, or credentialed
-  # calls (signup, create, join) are blocked. (The dev stack works on the default 3000 by luck.)
+  # The e2e web app points the BROWSER at a same-origin `/api` (feedback 0028), matching prod (where
+  # Caddy re-serves /api per host, apex AND `insider.`). The dev overlay's next.config proxies /api to
+  # the server-side CONTROL_PLANE_URL. This is what lets the insider-subdomain room flow authenticate:
+  # a cross-origin call from `insider.localhost` to the control-plane port cannot carry the session
+  # over http (SameSite + `*.localhost` are cross-site), but a same-origin `/api` call can. SSR keeps
+  # using the server-only CONTROL_PLANE_URL (set in the dev overlay), unaffected.
+  web:
+    environment:
+      NEXT_PUBLIC_CONTROL_PLANE_URL: /api
+
+  # With the browser calling same-origin /api, the control-plane needs no cross-origin allow-list for
+  # the app hosts; WEB_ORIGIN stays the apex only (its default), matching prod's CORS-free surfaces.
   control-plane:
     environment:
       WEB_ORIGIN: http://localhost:${WEB_PORT}

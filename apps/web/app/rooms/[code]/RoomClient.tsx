@@ -15,6 +15,7 @@ import { Lobby } from '../../../components/game/Lobby';
 import { ShareLink } from '../../../components/game/ShareLink';
 import { TopNav } from '../../../components/TopNav';
 import type { Viewer } from '../../../lib/session';
+import type { Surface } from '../../../lib/surface';
 import { ENGINE_WS_URL } from '../../../lib/engine';
 import { recallMembership, rememberMembership, type Membership } from '../../../lib/membership';
 import {
@@ -54,9 +55,21 @@ interface RoomClientProps {
   /** The signed-in identity for the shared top nav (spec 0028); shown in the lobby/setup, hidden in
    * a running game. Server-passed so the nav renders without an auth flash. */
   viewer: Viewer;
+  /** The surface this room is served on (feedback 0028): decides which games the picker offers
+   * (insider-only games only on the insider surface) and crosses the shared nav's links back to the
+   * apex when on the insider subdomain. Defaults to the apex surface when unset. */
+  surface?: Surface;
 }
 
-export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
+export function RoomClient({
+  code,
+  initialStep,
+  viewer,
+  // Defaults to the apex surface (public games, relative chrome) when unset - the safe default,
+  // matching the codebase's "assume non-insider unless told otherwise" stance. The page always
+  // passes the host-derived surface, so this default only ever stands in for a bare render (tests).
+  surface = { insider: false, linkOrigin: '' },
+}: RoomClientProps) {
   const router = useRouter();
   // `undefined` means "still hydrating from session storage"; `null` means "hydrated, not a member
   // of this room". Distinguishing them avoids flashing the join prompt to a valid member on load.
@@ -329,12 +342,22 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
     [code],
   );
 
+  // One nav for every non-in-game surface (feedback 0028): carries the surface marker + apex
+  // link-origin so it is consistent across the loading, join-prompt, and lobby/setup branches.
+  const nav = (
+    <TopNav
+      viewer={viewer}
+      label={surface.insider ? 'Insider' : undefined}
+      linkOrigin={surface.linkOrigin || undefined}
+    />
+  );
+
   // These pre-lobby states are not the running game, so they carry the shared nav too - only the
   // running game omits it. Keeps "every non-in-game surface has the nav" a rule, not a per-branch call.
   if (membership === undefined) {
     return (
       <>
-        <TopNav viewer={viewer} />
+        {nav}
         <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
           <p className="text-body text-text-muted" role="status">
             Loading room {code.toUpperCase()}...
@@ -347,7 +370,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
   if (!membership || !room) {
     return (
       <>
-        <TopNav viewer={viewer} />
+        {nav}
         <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8 bg-bg text-text">
           <h1 className="text-h2">Join room {code.toUpperCase()}</h1>
           <p className="text-body text-text-muted">
@@ -374,7 +397,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
     >
       {/* The shared top nav (spec 0028) shows in the lobby and setup wizard, but NOT once the game is
           running - the in-game stage keeps its own compact room-code/leave header, chrome-free. */}
-      {!running ? <TopNav viewer={viewer} /> : null}
+      {!running ? nav : null}
       <div
         className={
           fitViewport
@@ -446,7 +469,7 @@ export function RoomClient({ code, initialStep, viewer }: RoomClientProps) {
               selected={game}
               onSelect={onPickGame}
               disabled={picking}
-              insider={viewer.insider ?? false}
+              insider={surface.insider}
             />
             {changing ? (
               <Button

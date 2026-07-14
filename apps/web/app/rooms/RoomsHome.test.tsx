@@ -71,6 +71,37 @@ describe('RoomsHome create flow', () => {
     expect(roomApi.selectGame).not.toHaveBeenCalled();
   });
 
+  it('IGNORES an insider-only game deep link on the apex, even for an insider (feedback 0028)', async () => {
+    // An insider viewer, but the surface is the apex (default): the insider-only game must not be
+    // pre-selected, so it never starts on the main site. The host falls back to the pick step.
+    render(
+      <RoomsHome
+        viewer={{ signedIn: true, insider: true }}
+        initialGame="teeter-tower"
+        surface={{ insider: false, linkOrigin: '' }}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
+    await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=pick'));
+    expect(roomApi.selectGame).not.toHaveBeenCalled();
+  });
+
+  it('pre-selects an insider-only game deep link on the insider surface (feedback 0028)', async () => {
+    vi.mocked(roomApi.selectGame).mockResolvedValue({ ...room, selectedGame: 'teeter-tower' });
+    render(
+      <RoomsHome
+        viewer={{ signedIn: true, insider: true }}
+        initialGame="teeter-tower"
+        surface={{ insider: true, linkOrigin: 'https://branchout.games' }}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
+    await waitFor(() =>
+      expect(roomApi.selectGame).toHaveBeenCalledWith('ABC12', 'teeter-tower', expect.anything()),
+    );
+    await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=invite'));
+  });
+
   it('renders the shared footer with privacy and terms links (spec 0031)', async () => {
     render(<RoomsHome viewer={{ signedIn: false }} />);
     const footer = await screen.findByRole('contentinfo');

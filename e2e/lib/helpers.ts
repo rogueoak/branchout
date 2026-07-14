@@ -1,4 +1,28 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type BrowserContext, type Page } from '@playwright/test';
+import { SESSION_COOKIE } from './stack';
+
+/**
+ * Copy the signed-in session cookie (set on `localhost` by {@link signUp}) onto the `insider.`
+ * host, standing in for prod's parent-domain (`Domain=.branchout.games`) cookie so the same session
+ * reaches `insider.localhost`. Chromium does not span a `Domain=localhost` cookie across
+ * `*.localhost`, and the e2e stack has no same-origin proxy to set one, so the test plants it - a
+ * faithful stand-in that still exercises OUR middleware + layout + role gate.
+ */
+export async function spanSessionToInsider(context: BrowserContext): Promise<void> {
+  const session = (await context.cookies()).find((c) => c.name === SESSION_COOKIE);
+  if (!session) throw new Error('no session cookie after signup - login did not set one');
+  await context.addCookies([
+    {
+      name: SESSION_COOKIE,
+      value: session.value,
+      domain: 'insider.localhost',
+      path: '/',
+      httpOnly: true,
+      secure: false, // e2e serves plain http (COOKIE_SECURE=false)
+      sameSite: 'Lax',
+    },
+  ]);
+}
 
 /** A unique-per-run account so repeated runs (or a kept stack) never hit a duplicate-email 409. */
 export function uniqueAccount() {

@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
-import { signUp } from '../lib/helpers';
-import { grantCredits, grantInsider } from '../lib/stack';
+import { signUp, spanSessionToInsider } from '../lib/helpers';
+import { INSIDER_URL, WEB_PORT, grantCredits, grantInsider } from '../lib/stack';
 
 // End-to-end proof of Teeter Tower (spec 0044): the insider-only, LIVE server-authoritative physics
 // game. It exercises what the unit tests cannot - the real browser -> control-plane -> game-engine
 // (headless Matter.js, continuously stepped + streamed) -> browser loop: an insider picks the gated
 // game, starts a solo room, and plays a drop on the single canvas (feedback 0023: move the piece on
 // the board, then the top-right button stops the spin and drops); the engine drops the piece into the
-// live world and streams it back, so the height and score climb. It also proves the gate: a
-// non-insider never sees the game in the picker.
+// live world and streams it back, so the height and score climb. It also proves the gate (feedback
+// 0028): the game lives ONLY on the insider surface - a non-insider never sees it, and an insider on
+// the apex never sees it either; the whole flow runs on the insider host.
 
 test('an insider starts a solo Teeter Tower room and drops a piece on the live board', async ({
   page,
@@ -16,18 +17,22 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   // The drop streams back from the engine's live sim, so this needs more than the default budget.
   test.setTimeout(120_000);
 
-  // A fresh account, granted the insider role out-of-band (the documented mechanism), then reloaded
-  // so the picker reads the new role from /auth/me.
+  // A fresh account, granted the insider role out-of-band (the documented mechanism). The session is
+  // spanned to the insider host, where the game now lives (feedback 0028), so the whole flow - create,
+  // pick, start, play - runs on `insider.localhost`, never the apex.
   const account = await signUp(page);
+  await spanSessionToInsider(page.context());
   grantInsider(account.gamerTag);
   // A live game reserves its full round budget to start (Teeter is ~53), well over the free-tier daily
   // grant (10), so fund the account or the start silently no-ops and the board never appears.
   grantCredits(account.gamerTag);
-  await page.goto('/rooms');
+  await page.goto(`${INSIDER_URL}/rooms`);
 
-  // Create a room and pick the insider-only game (visible now that the account is an insider).
+  // Create a room and pick the insider-only game (visible on the insider surface).
   await page.getByRole('button', { name: /create a room/i }).click();
   await page.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=pick/);
+  // The whole flow stays on the insider host - it never bounced to the apex.
+  expect(new URL(page.url()).host).toBe(`insider.localhost:${WEB_PORT}`);
   const code = page.url().match(/\/rooms\/([A-Z2-9]{5})/)?.[1];
   if (!code) throw new Error(`could not read room code from ${page.url()}`);
   await page.getByRole('button', { name: /pick teeter tower/i }).click();
@@ -76,7 +81,7 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
 });
 
 test('a non-insider never sees Teeter Tower in the game picker', async ({ page }) => {
-  // A normal account (no insider grant) walks the create flow; the insider-only game is filtered out.
+  // A normal account (no insider grant) walks the apex create flow; the insider-only game is filtered.
   await signUp(page);
   await page.goto('/rooms');
   await page.getByRole('button', { name: /create a room/i }).click();
@@ -84,5 +89,32 @@ test('a non-insider never sees Teeter Tower in the game picker', async ({ page }
 
   // The public games are offered, but the insider-only game is not.
   await expect(page.getByRole('button', { name: /pick trivia/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /pick teeter tower/i })).toHaveCount(0);
+});
+
+test('an INSIDER never sees Teeter Tower in the APEX picker (feedback 0028)', async ({ page }) => {
+  // Visibility follows the surface, not the entitlement: an insider on the main site must not see
+  // the insider-only game. It exists only on the insider surface.
+  const account = await signUp(page);
+  grantInsider(account.gamerTag);
+  await page.goto('/rooms');
+  await page.getByRole('button', { name: /create a room/i }).click();
+  await page.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=pick/);
+
+  await expect(page.getByRole('button', { name: /pick trivia/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /pick teeter tower/i })).toHaveCount(0);
+});
+
+test('an insider deep-linking Teeter Tower on the apex is dropped to the picker (feedback 0028)', async ({
+  page,
+}) => {
+  // The `?game=` deep link is honored only on the insider surface. On the apex the insider-only
+  // pre-select is dropped, so the host lands on the pick step (with the game filtered out) rather
+  // than starting the insider game on the main site.
+  const account = await signUp(page);
+  grantInsider(account.gamerTag);
+  await page.goto('/rooms?game=teeter-tower');
+  await page.getByRole('button', { name: /create a room/i }).click();
+  await page.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=pick/);
   await expect(page.getByRole('button', { name: /pick teeter tower/i })).toHaveCount(0);
 });

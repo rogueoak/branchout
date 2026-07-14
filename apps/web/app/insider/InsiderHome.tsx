@@ -3,23 +3,18 @@
 // The async session read stays in the parent Server Component (page.tsx).
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
+import { Card, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
 import type { Viewer } from '../../lib/session';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
+import { GameCard } from '../../components/game/GameCard';
 import { INSIDER_GAME_UI_LIST } from '../../lib/games/registry';
 import { playHref } from '../../lib/games/catalog';
 
 // The games available to try on the insider surface (spec 0043): every registry module marked
-// insider-only. Each card links to the apex room-create deep link for that game, so an insider can
-// start a solo room in one tap. Falls back to a friendly empty state when no test games are live.
-const INSIDER_GAMES: { slug: string; name: string; summary: string; tagline: string }[] =
-  INSIDER_GAME_UI_LIST.map((module) => ({
-    slug: module.id,
-    name: module.name,
-    summary: module.summary,
-    tagline: module.tagline,
-  }));
+// insider-only. The reusable GameCard renders the game's mark so the card matches the room picker;
+// a friendly empty state stands in when no test games are live.
+const INSIDER_GAMES = INSIDER_GAME_UI_LIST;
 
 export function InsiderHome({ viewer }: { viewer: Viewer }) {
   // The apex origin. The shared nav/footer link to apex pages (/games, /privacy, ...), but this
@@ -60,24 +55,17 @@ export function InsiderHome({ viewer }: { viewer: Viewer }) {
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {INSIDER_GAMES.map((game) => (
-              // The whole card links to the apex room-create deep link for the game, so an insider
-              // starts a solo room in one tap. The deep link crosses back to the apex origin (this
-              // surface lives on the insider subdomain), reusing the apexOrigin pattern above.
+              // The whole card links to the room-create deep link for the game, so an insider starts
+              // a room in one tap. The link is RELATIVE (feedback 0028): the insider host now hosts
+              // the room flow (rewritten into /insider/rooms), so play stays on the insider surface
+              // instead of bouncing to the apex.
               <a
-                key={game.slug}
-                href={`${apexOrigin}${playHref(game.slug)}`}
+                key={game.id}
+                href={playHref(game.id)}
                 aria-label={`Start a room to test ${game.name}`}
-                className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="rounded-xl transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
-                <Card className="h-full transition-colors hover:border-primary">
-                  <CardHeader>
-                    <CardTitle>{game.name}</CardTitle>
-                    <CardDescription>{game.tagline}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-body-sm text-text-muted">{game.summary}</p>
-                  </CardContent>
-                </Card>
+                <GameCard game={game} />
               </a>
             ))}
           </div>

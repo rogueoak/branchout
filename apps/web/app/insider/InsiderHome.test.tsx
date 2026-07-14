@@ -17,15 +17,20 @@ describe('InsiderHome (spec 0035)', () => {
     expect(screen.getAllByText('Insider').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('lists the insider test games, each linking into a solo room on the apex (spec 0043)', () => {
+  it('lists the insider test games, each linking into a room on the SAME surface (feedback 0028)', () => {
+    // The apex origin is set, but the game card link must NOT use it: play stays on the insider
+    // subdomain (the insider host now hosts the room flow), so the deep link is relative.
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://branchout.games');
     try {
       render(<InsiderHome viewer={viewer} />);
       // Teeter Tower (the first insider-only game) is offered, not the empty state.
       expect(screen.queryByText(/no test games yet/i)).toBeNull();
       const card = screen.getByRole('link', { name: /start a room to test teeter tower/i });
-      // The card deep-links into the apex room-create flow with the game pre-selected.
-      expect(card.getAttribute('href')).toBe('https://branchout.games/rooms?game=teeter-tower');
+      // Relative deep link: on the insider host it rewrites into /insider/rooms, keeping the player
+      // on the insider surface instead of bouncing to the apex.
+      expect(card.getAttribute('href')).toBe('/rooms?game=teeter-tower');
+      // The card carries the game's mark (via the shared GameCard) - not just a bare title.
+      expect(card.querySelector('svg')).not.toBeNull();
     } finally {
       vi.unstubAllEnvs();
     }

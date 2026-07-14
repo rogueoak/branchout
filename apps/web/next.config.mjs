@@ -17,15 +17,29 @@ const nextConfig = {
   // posthog-js posts to no-trailing-slash paths (/ingest/e/, /ingest/flags), so no global
   // skipTrailingSlashRedirect is needed - keeping trailing-slash normalization on for the real pages.
   async rewrites() {
-    return [
-      {
-        source: '/ingest/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
-      },
-      // Catch-all for ingestion + config endpoints (/e, /flags, etc.); PostHog uses /flags now, and
-      // this covers whatever path the client SDK hits without a redundant per-endpoint rule.
-      { source: '/ingest/:path*', destination: 'https://us.i.posthog.com/:path*' },
-    ];
+    // Same-origin `/api` proxy (feedback 0028): in prod the browser calls a relative `/api` and Caddy
+    // re-serves it same-origin per host (apex AND `insider.`), stripping `/api` -> control-plane's
+    // `/v1/*`. Dev/e2e has no Caddy, so when a server-side CONTROL_PLANE_URL is present this rewrite
+    // stands in for that hop - letting the browser call `/api` same-origin on the insider subdomain
+    // too (a cross-origin call there cannot carry the session over http). Inert in prod: Caddy handles
+    // `/api` before a request ever reaches Next. Guarded so a build without the server URL never emits
+    // an `undefined/...` destination.
+    const controlPlane = process.env.CONTROL_PLANE_URL;
+    const apiProxy = controlPlane
+      ? [{ source: '/api/:path*', destination: `${controlPlane.replace(/\/$/, '')}/:path*` }]
+      : [];
+    return {
+      beforeFiles: apiProxy,
+      afterFiles: [
+        {
+          source: '/ingest/static/:path*',
+          destination: 'https://us-assets.i.posthog.com/static/:path*',
+        },
+        // Catch-all for ingestion + config endpoints (/e, /flags, etc.); PostHog uses /flags now, and
+        // this covers whatever path the client SDK hits without a redundant per-endpoint rule.
+        { source: '/ingest/:path*', destination: 'https://us.i.posthog.com/:path*' },
+      ],
+    };
   },
 };
 

@@ -15,6 +15,7 @@ import { getGameUi, isPublicGame } from '../../lib/games/registry';
 import { rememberMembership } from '../../lib/membership';
 import { RoomApiError, createRoom, fetchIdentity, selectGame, setMode } from '../../lib/room-api';
 import type { Viewer } from '../../lib/session';
+import type { Surface } from '../../lib/surface';
 
 interface RoomsHomeProps {
   /** The `?game=<slug>` deep link from a feature-page "Start a game" CTA (spec 0030): create a room
@@ -22,9 +23,16 @@ interface RoomsHomeProps {
   initialGame?: string;
   /** The signed-in identity for the shared top nav (spec 0028), read server-side to avoid a flash. */
   viewer: Viewer;
+  /** The surface this page is served on (feedback 0028): gates the insider-only deep link and crosses
+   * the shared chrome's links back to the apex when on the insider subdomain. Defaults to apex. */
+  surface?: Surface;
 }
 
-export function RoomsHome({ initialGame, viewer }: RoomsHomeProps) {
+export function RoomsHome({
+  initialGame,
+  viewer,
+  surface = { insider: false, linkOrigin: '' },
+}: RoomsHomeProps) {
   const router = useRouter();
   const [isAccount, setIsAccount] = useState<boolean | null>(null);
   const [hostName, setHostName] = useState('Host');
@@ -61,12 +69,12 @@ export function RoomsHome({ initialGame, viewer }: RoomsHomeProps) {
 
       // Deep link (spec 0029): if the "Start a game" CTA named a known game, select it now and skip
       // the pick step, landing the host straight on invite. Otherwise the host picks a game first.
-      // Insider gate (spec 0043): a non-insider deep-linking an insider-only game is ignored (the
-      // pre-select is dropped and they fall back to the picker), so an insider game never starts for
-      // someone without the entitlement.
+      // Insider gate (spec 0043 / feedback 0028): an insider-only game is only pre-selected on the
+      // insider surface. On the apex the pre-select is dropped (they fall back to the picker), so an
+      // insider game never starts on the main site - even for an insider.
       const candidate = initialGame ? getGameUi(initialGame) : undefined;
       const preselected =
-        candidate && (isPublicGame(candidate) || viewer.insider) ? candidate : undefined;
+        candidate && (isPublicGame(candidate) || surface.insider) ? candidate : undefined;
       let roomToStore = room;
       if (preselected) {
         try {
@@ -107,7 +115,11 @@ export function RoomsHome({ initialGame, viewer }: RoomsHomeProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-text">
-      <TopNav viewer={viewer} />
+      <TopNav
+        viewer={viewer}
+        label={surface.insider ? 'Insider' : undefined}
+        linkOrigin={surface.linkOrigin || undefined}
+      />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-4 py-16 sm:px-6">
         <header className="flex flex-col items-center gap-4 text-center">
           <h1 className="text-display text-text">Play a game</h1>
@@ -168,7 +180,7 @@ export function RoomsHome({ initialGame, viewer }: RoomsHomeProps) {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer linkOrigin={surface.linkOrigin || undefined} />
     </div>
   );
 }

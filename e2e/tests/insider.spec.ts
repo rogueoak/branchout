@@ -1,40 +1,13 @@
-import { type BrowserContext, expect, test } from '@playwright/test';
-import { signUp } from '../lib/helpers';
-import { BASE_URL, WEB_PORT, grantInsider } from '../lib/stack';
+import { expect, test } from '@playwright/test';
+import { signUp, spanSessionToInsider } from '../lib/helpers';
+import { BASE_URL, INSIDER_URL, SESSION_COOKIE, WEB_PORT, grantInsider } from '../lib/stack';
 
 // End-to-end proof of the insider surface (spec 0035). The surface lives on the `insider`
 // subdomain, served by the same `web` process via host-aware middleware; `*.localhost` resolves to
 // 127.0.0.1, so `insider.localhost` reaches the same web app. The risk this guards is
 // authorization, so it exercises the gate from every side: insider in, non-insider out (403),
-// anonymous out (apex login), and no apex path leak.
-//
-// Cross-subdomain session: in prod one login spans the apex + `insider.` because the cookie is
-// scoped `Domain=.branchout.games`. That Domain-spanning is browser behaviour on a real registrable
-// domain and is NOT reproducible on `localhost` (Chromium does not span a `Domain=localhost` cookie
-// across `*.localhost`), and the dev/e2e stack has no same-origin proxy to even set it. So the test
-// plants the just-created session cookie onto the insider host directly - a faithful stand-in that
-// exercises OUR middleware + layout + role gate. The Domain-setting itself is unit-tested in the
-// control-plane config/auth suites.
-const SESSION_COOKIE = 'branchout_session';
-const INSIDER_URL = `http://insider.localhost:${WEB_PORT}`;
-
-/** Copy the signed-in session cookie (set on localhost by signUp) onto the insider host, standing
- * in for prod's parent-domain cookie so the same session reaches `insider.localhost`. */
-async function spanSessionToInsider(context: BrowserContext): Promise<void> {
-  const session = (await context.cookies()).find((c) => c.name === SESSION_COOKIE);
-  if (!session) throw new Error('no session cookie after signup - login did not set one');
-  await context.addCookies([
-    {
-      name: SESSION_COOKIE,
-      value: session.value,
-      domain: 'insider.localhost',
-      path: '/',
-      httpOnly: true,
-      secure: false, // e2e serves plain http (COOKIE_SECURE=false)
-      sameSite: 'Lax',
-    },
-  ]);
-}
+// anonymous out (apex login), and no apex path leak. The session-spanning stand-in for prod's
+// parent-domain cookie lives in `spanSessionToInsider` (helpers).
 
 test.describe('insider surface (spec 0035)', () => {
   test('a non-insider is forbidden; the same account sees the surface once granted', async ({
@@ -54,10 +27,36 @@ test.describe('insider surface (spec 0035)', () => {
     await page.goto(INSIDER_URL);
     await expect(page.getByRole('heading', { name: 'Insider' })).toBeVisible();
     // Teeter Tower (spec 0043) is now a live insider game, so the surface lists it (the empty state
-    // no longer shows). Each game card links into a solo room on the apex.
-    await expect(
-      page.getByRole('link', { name: /start a room to test teeter tower/i }),
-    ).toBeVisible();
+    // no longer shows). The card carries the game's mark and deep-links RELATIVELY (feedback 0028),
+    // so starting stays on the insider surface instead of bouncing to the apex.
+    const card = page.getByRole('link', { name: /start a room to test teeter tower/i });
+    await expect(card).toBeVisible();
+    expect(await card.getAttribute('href')).toBe('/rooms?game=teeter-tower');
+    expect(await card.locator('svg').count()).toBeGreaterThan(0);
+  });
+
+  test('starting an insider game from its card stays on the insider host (feedback 0028)', async ({
+    page,
+  }) => {
+    const account = await signUp(page);
+    await spanSessionToInsider(page.context());
+    grantInsider(account.gamerTag);
+
+    await page.goto(INSIDER_URL);
+    // Tap the Teeter Tower card: the room-create deep link keeps the player on the insider host (the
+    // rooms home, now hosted under the gated /insider tree). It never bounced to the apex.
+    await page.getByRole('link', { name: /start a room to test teeter tower/i }).click();
+    await page.waitForURL(/insider\.localhost.*\/rooms\?game=teeter-tower/);
+    // Create the room: the deep link pre-selects the insider game (allowed on this surface) and
+    // skips straight to the invite step, still on the insider host.
+    await page.getByRole('button', { name: /create a room/i }).click();
+    await page.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=invite/);
+    // The URL never left the insider subdomain - hosting an insider game stays on the insider
+    // surface, proving both the relative deep link and the room flow mirrored under /insider.
+    expect(new URL(page.url()).host).toBe(`insider.localhost:${WEB_PORT}`);
+    // The deep link pre-selected the insider game and skipped to invite, proving the picker allowed
+    // it on this surface (the authenticated create ran same-origin against /api).
+    await expect(page.getByRole('heading', { name: /invite your friends/i })).toBeVisible();
   });
 
   test('a signed-out visitor is sent to the apex login (never the gated host)', async ({

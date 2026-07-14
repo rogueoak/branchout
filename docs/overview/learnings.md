@@ -481,6 +481,15 @@ Capture durable lessons as they emerge.
   relative. And a gate that redirects across hosts must carry an **origin-validated** return target
   (`?next=`) and never build an absolute redirect from the inbound `Host` header - strip-only-the-label
   on an untrusted `Host` is a latent open redirect. (Review `0035`, feedback `0019`.)
+- **A surface-scoped game's visibility must be gated by the SURFACE (the host), not the viewer's
+  entitlement.** The insider-only game was hidden from the room picker with `viewer.insider`, so an
+  insider carried the private game onto the *apex* (the public site) - it should not exist there at
+  all. Gate on "which site am I on" (`getSurface()` reads the request `Host`), so even an entitled
+  user sees the game only on the insider surface; the `?game=` deep-link guard uses the surface too.
+  And "keep the player on this surface" requires the surface to actually HOST the flow: a
+  rewrite-based subdomain with only a landing page has to bounce to the apex to do anything, so the
+  room/join routes were mirrored under the gated `/insider` tree (thin re-exports of the surface-aware
+  apex pages) - play now stays on the insider host end to end. (Feedback `0028`.)
 
 ## Rate limiting and lockouts
 

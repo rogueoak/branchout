@@ -194,6 +194,25 @@ signed in -> apex login; signed in but not an insider -> `forbidden()` (a real 4
 `authInterrupts` + `app/forbidden.tsx`). The apex cannot reach the tree by path - middleware 404s any
 `/insider*` request that is not on the insider host.
 
+**The room/join flow is mirrored into the insider tree** (feedback `0028`) so an insider-only game is
+played on the insider surface, not bounced to the apex. `app/insider/rooms`, `.../rooms/[code]`, and
+`app/insider/join` are thin re-exports of the surface-aware apex pages; the insider host rewrites
+`/rooms...` and `/join` into them, so hosting and playing stay on `insider.` end to end (and remain
+behind the layout gate). Which games a picker offers is decided by the **surface**, not the viewer's
+entitlement: `lib/surface.ts` `getSurface()` reads the request `Host` and returns `{ insider,
+linkOrigin }`; the room pages pass it to the picker and the `?game=` deep-link guard, so an
+insider-only game appears (and its deep link is honored) only on the insider surface - never on the
+apex, even for an entitled insider. The shared chrome crosses its marketing/legal links back to the
+apex via `linkOrigin` while the flow's own relative links stay on the insider host.
+
+The insider room flow's credentialed browser calls reach the control-plane **same-origin** via `/api`
+(prod bakes `NEXT_PUBLIC_CONTROL_PLANE_URL=/api`; Caddy's `insider.` block re-serves `/api` per host,
+so there is no cross-origin call and the `.branchout.games` session cookie flows). Dev/e2e has no
+Caddy, so the web app's `next.config` proxies `/api` -> the server-side `CONTROL_PLANE_URL` (inert in
+prod, where Caddy intercepts `/api` before Next); the e2e overlay points the browser at `/api` so the
+insider subdomain authenticates over http (a cross-origin call to the control-plane port cannot -
+`*.localhost` is cross-site for SameSite). SSR keeps using the server-only `CONTROL_PLANE_URL`.
+
 The gate reads an account-level **`insider`** flag: a boolean column on `accounts` (migration 6),
 carried on `PublicAccount` -> `GET /auth/me` -> the web `Viewer`. It is granted out-of-band (a DB
 update) until the admin console (spec `0037`) ships a toggle. Because insider are ordinary players who
@@ -372,8 +391,9 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   SYNCHRONOUSLY inside the engine's per-session lock on the single-threaded event loop, so a settle
   head-of-line-blocks other rooms/games - the worker-thread/queue offload (out-of-scope follow-up) is
   the escape hatch. A game may declare `manifest.visibility: 'insider'`; the web registry hides such games
-  from the public picker/pages/sitemap and surfaces them only to insiders (a follow-up should add the
-  matching control-plane start guard for defence in depth).
+  from the public picker/pages/sitemap and surfaces them only on the insider SURFACE (feedback `0028`:
+  gated by host via `getSurface()`, not by the viewer's entitlement, so an insider on the apex never
+  sees them). A follow-up should add the matching control-plane start guard for defence in depth.
 - **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for
   the life of a game, recovered on reconnect. It also persists the current phase's streamed frames
   (prompt/reveal/standings) so `join` can replay them as ordered catch-up - pub/sub only reaches
