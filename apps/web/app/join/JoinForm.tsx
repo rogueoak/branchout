@@ -12,7 +12,7 @@ import { trackRoomJoined } from '../../lib/analytics';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import type { Viewer } from '../../lib/session';
-import type { Surface } from '../../lib/surface';
+import { APEX_SURFACE, type Surface } from '../../lib/surface';
 import { defaultMode } from '../../lib/default-mode';
 import { rememberMembership } from '../../lib/membership';
 import {
@@ -32,11 +32,7 @@ interface JoinFormProps {
   surface?: Surface;
 }
 
-export function JoinForm({
-  initialCode,
-  viewer,
-  surface = { insider: false, linkOrigin: '' },
-}: JoinFormProps) {
+export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFormProps) {
   const router = useRouter();
   const [code, setCode] = useState(initialCode);
   const [nickname, setNickname] = useState('');

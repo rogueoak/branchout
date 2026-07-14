@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getViewer } from '../../lib/session';
+import { getSurface } from '../../lib/surface';
 import { InsiderHome } from './InsiderHome';
 
 // The insider surface index (spec 0035): a list of in-development games a beta tester can try.
@@ -12,6 +13,6 @@ export const metadata: Metadata = {
 };
 
 export default async function InsiderPage() {
-  const viewer = await getViewer();
-  return <InsiderHome viewer={viewer} />;
+  const [viewer, surface] = await Promise.all([getViewer(), getSurface()]);
+  return <InsiderHome viewer={viewer} surface={surface} />;
 }

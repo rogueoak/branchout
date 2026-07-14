@@ -15,7 +15,7 @@ import { getGameUi, isPublicGame } from '../../lib/games/registry';
 import { rememberMembership } from '../../lib/membership';
 import { RoomApiError, createRoom, fetchIdentity, selectGame, setMode } from '../../lib/room-api';
 import type { Viewer } from '../../lib/session';
-import type { Surface } from '../../lib/surface';
+import { APEX_SURFACE, type Surface } from '../../lib/surface';
 
 interface RoomsHomeProps {
   /** The `?game=<slug>` deep link from a feature-page "Start a game" CTA (spec 0030): create a room
@@ -28,11 +28,7 @@ interface RoomsHomeProps {
   surface?: Surface;
 }
 
-export function RoomsHome({
-  initialGame,
-  viewer,
-  surface = { insider: false, linkOrigin: '' },
-}: RoomsHomeProps) {
+export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: RoomsHomeProps) {
   const router = useRouter();
   const [isAccount, setIsAccount] = useState<boolean | null>(null);
   const [hostName, setHostName] = useState('Host');

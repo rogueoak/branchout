@@ -59,6 +59,19 @@ test.describe('insider surface (spec 0035)', () => {
     await expect(page.getByRole('heading', { name: /invite your friends/i })).toBeVisible();
   });
 
+  test('the mirrored insider room routes are gated to insiders (feedback 0028)', async ({
+    page,
+  }) => {
+    // A signed-up NON-insider whose session is spanned to the insider host. `/rooms` is public on the
+    // apex, but on the insider host it rewrites into the gated /insider tree - so the layout must 403
+    // it: the room flow mirrored under /insider must not leak to a non-insider on the insider surface.
+    await signUp(page);
+    await spanSessionToInsider(page.context());
+    const denied = await page.goto(`${INSIDER_URL}/rooms`);
+    expect(denied?.status()).toBe(403);
+    await expect(page.getByRole('heading', { name: /insider only/i })).toBeVisible();
+  });
+
   test('a signed-out visitor is sent to the apex login (never the gated host)', async ({
     browser,
   }) => {

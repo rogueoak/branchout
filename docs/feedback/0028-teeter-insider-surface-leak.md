@@ -43,10 +43,12 @@ but three gaps let it cross onto the apex and made its insider surface feel brok
   prod hit `/api` same-origin (Caddy re-serves it per host - apex AND `insider.`). Dev/e2e had the
   browser call an absolute cross-origin control-plane URL, which cannot carry the session from
   `insider.localhost` over http (SameSite + `*.localhost` are cross-site). The web app's `next.config`
-  now proxies `/api` -> the server-side `CONTROL_PLANE_URL` (inert in prod, where Caddy handles `/api`
-  before Next), and the e2e overlay points the browser at `/api` - so the e2e stack faithfully mirrors
-  prod and the insider room flow (create/select/start + the live Teeter engine loop) is proven on the
-  insider host.
+  now proxies `/api` -> the server-side `CONTROL_PLANE_URL`, emitted only when
+  `NODE_ENV !== 'production'` (prod's `web` sets `CONTROL_PLANE_URL` for SSR too, so guarding on that
+  alone would ship the proxy in prod and expose the internal `/api/v1/engine/*` endpoint on the web
+  tier; Caddy owns `/api` in prod). The e2e overlay points the browser at `/api` - so the e2e stack
+  faithfully mirrors prod and the insider room flow (create/select/start + the live Teeter engine
+  loop) is proven on the insider host.
 
 ## Intended consequence
 

@@ -208,10 +208,13 @@ apex via `linkOrigin` while the flow's own relative links stay on the insider ho
 The insider room flow's credentialed browser calls reach the control-plane **same-origin** via `/api`
 (prod bakes `NEXT_PUBLIC_CONTROL_PLANE_URL=/api`; Caddy's `insider.` block re-serves `/api` per host,
 so there is no cross-origin call and the `.branchout.games` session cookie flows). Dev/e2e has no
-Caddy, so the web app's `next.config` proxies `/api` -> the server-side `CONTROL_PLANE_URL` (inert in
-prod, where Caddy intercepts `/api` before Next); the e2e overlay points the browser at `/api` so the
-insider subdomain authenticates over http (a cross-origin call to the control-plane port cannot -
-`*.localhost` is cross-site for SameSite). SSR keeps using the server-only `CONTROL_PLANE_URL`.
+Caddy, so the web app's `next.config` proxies `/api` -> the server-side `CONTROL_PLANE_URL`. The
+proxy is emitted only when `NODE_ENV !== 'production'` (dev/e2e run `next dev`): prod's `web` also
+sets `CONTROL_PLANE_URL` for SSR, so guarding on that alone would emit the proxy in prod and expose
+the internal-only `/api/v1/engine/*` money endpoint on the web tier - Caddy owns `/api` in prod and
+Next must never proxy it. The e2e overlay points the browser at `/api` so the insider subdomain
+authenticates over http (a cross-origin call to the control-plane port cannot - `*.localhost` is
+cross-site for SameSite). SSR keeps using the server-only `CONTROL_PLANE_URL`.
 
 The gate reads an account-level **`insider`** flag: a boolean column on `accounts` (migration 6),
 carried on `PublicAccount` -> `GET /auth/me` -> the web `Viewer`. It is granted out-of-band (a DB

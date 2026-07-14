@@ -5,6 +5,7 @@
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
 import type { Viewer } from '../../lib/session';
+import type { Surface } from '../../lib/surface';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import { GameCard } from '../../components/game/GameCard';
@@ -16,18 +17,18 @@ import { playHref } from '../../lib/games/catalog';
 // a friendly empty state stands in when no test games are live.
 const INSIDER_GAMES = INSIDER_GAME_UI_LIST;
 
-export function InsiderHome({ viewer }: { viewer: Viewer }) {
-  // The apex origin. The shared nav/footer link to apex pages (/games, /privacy, ...), but this
-  // surface lives on the insider subdomain where middleware rewrites every path into the /insider
-  // tree - so those links must cross back to the apex or they 404. Falls back to relative when the
-  // origin is unset (local dev on one host). (spec 0035)
-  const apexOrigin = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '');
+export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surface }) {
+  // This surface lives on the insider subdomain, where middleware rewrites every path into the
+  // /insider tree - so the shared nav/footer's apex links (/games, /privacy, ...) must cross back to
+  // the apex or they 404. `surface.linkOrigin` (the host-derived apex origin, feedback 0028) is that
+  // cross-origin; the game cards' own play links stay relative so play stays on this surface.
+  const apexOrigin = surface.linkOrigin;
   return (
     // Same shell as the main surfaces (flex column, shared footer pinned via mt-auto) so the
     // insider app inherits the site look and feel. The "Insider" badge in the nav marks the
     // surface (spec 0035).
     <div className="flex min-h-screen flex-col bg-bg text-text">
-      <TopNav viewer={viewer} label="Insider" linkOrigin={apexOrigin} />
+      <TopNav viewer={viewer} label="Insider" linkOrigin={apexOrigin || undefined} />
 
       <section
         aria-labelledby="insider-heading"

@@ -31,6 +31,14 @@ describe('getSurface (feedback 0028)', () => {
     expect(await getSurface()).toEqual({ insider: true, linkOrigin: 'http://localhost:3100' });
   });
 
+  it('strips a trailing slash from the site URL so linkOrigin is a bare origin', async () => {
+    // A trailing-slashed NEXT_PUBLIC_SITE_URL must not double the slash when chrome builds
+    // `${linkOrigin}/games` - the strip is load-bearing, so pin it.
+    hostHolder.value = 'insider.branchout.games';
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://branchout.games/');
+    expect(await getSurface()).toEqual({ insider: true, linkOrigin: 'https://branchout.games' });
+  });
+
   it('never carries a link origin on the apex, even when the site URL is set', async () => {
     hostHolder.value = 'branchout.games';
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://branchout.games');

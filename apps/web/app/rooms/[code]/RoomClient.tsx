@@ -15,7 +15,7 @@ import { Lobby } from '../../../components/game/Lobby';
 import { ShareLink } from '../../../components/game/ShareLink';
 import { TopNav } from '../../../components/TopNav';
 import type { Viewer } from '../../../lib/session';
-import type { Surface } from '../../../lib/surface';
+import { APEX_SURFACE, type Surface } from '../../../lib/surface';
 import { ENGINE_WS_URL } from '../../../lib/engine';
 import { recallMembership, rememberMembership, type Membership } from '../../../lib/membership';
 import {
@@ -68,7 +68,7 @@ export function RoomClient({
   // Defaults to the apex surface (public games, relative chrome) when unset - the safe default,
   // matching the codebase's "assume non-insider unless told otherwise" stance. The page always
   // passes the host-derived surface, so this default only ever stands in for a bare render (tests).
-  surface = { insider: false, linkOrigin: '' },
+  surface = APEX_SURFACE,
 }: RoomClientProps) {
   const router = useRouter();
   // `undefined` means "still hydrating from session storage"; `null` means "hydrated, not a member
@@ -487,7 +487,12 @@ export function RoomClient({
             <header className="flex flex-col gap-2">
               <h1 className="text-h2 text-text">Invite your friends</h1>
               <p className="text-body text-text-muted">
-                Share the room code or link. Anyone can join - no account needed.
+                {surface.insider
+                  ? // On the insider surface the share link resolves to the gated insider host, so
+                    // only fellow insiders can open it - promising "anyone can join" would be a
+                    // dead-end for a non-insider friend (feedback 0028).
+                    'Share the room code or link with other insiders to test together.'
+                  : 'Share the room code or link. Anyone can join - no account needed.'}
               </p>
             </header>
             <div className="flex flex-col gap-2 rounded-xl bg-surface-raised p-4">
