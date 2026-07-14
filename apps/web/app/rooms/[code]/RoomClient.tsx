@@ -52,10 +52,10 @@ interface RoomClientProps {
   code: string;
   /** The `?step=` query the create flow set (server-passed from the page), seeding the setup step. */
   initialStep?: string;
-  /** The signed-in identity for the shared top nav (spec 0028); shown in the lobby/setup, hidden in
+  /** The signed-in identity for the shared top nav (spec 0029); shown in the lobby/setup, hidden in
    * a running game. Server-passed so the nav renders without an auth flash. */
   viewer: Viewer;
-  /** The surface this room is served on (feedback 0028): decides which games the picker offers
+  /** The surface this room is served on (feedback 0029): decides which games the picker offers
    * (insider-only games only on the insider surface) and crosses the shared nav's links back to the
    * apex when on the insider subdomain. Defaults to the apex surface when unset. */
   surface?: Surface;
@@ -342,7 +342,7 @@ export function RoomClient({
     [code],
   );
 
-  // One nav for every non-in-game surface (feedback 0028): carries the surface marker + apex
+  // One nav for every non-in-game surface (feedback 0029): carries the surface marker + apex
   // link-origin so it is consistent across the loading, join-prompt, and lobby/setup branches.
   const nav = (
     <TopNav
@@ -395,7 +395,7 @@ export function RoomClient({
           : 'min-h-screen bg-bg text-text'
       }
     >
-      {/* The shared top nav (spec 0028) shows in the lobby and setup wizard, but NOT once the game is
+      {/* The shared top nav (spec 0029) shows in the lobby and setup wizard, but NOT once the game is
           running - the in-game stage keeps its own compact room-code/leave header, chrome-free. */}
       {!running ? nav : null}
       <div
@@ -490,7 +490,7 @@ export function RoomClient({
                 {surface.insider
                   ? // On the insider surface the share link resolves to the gated insider host, so
                     // only fellow insiders can open it - promising "anyone can join" would be a
-                    // dead-end for a non-insider friend (feedback 0028).
+                    // dead-end for a non-insider friend (feedback 0029).
                     'Share the room code or link with other insiders to test together.'
                   : 'Share the room code or link. Anyone can join - no account needed.'}
               </p>

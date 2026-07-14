@@ -1,4 +1,4 @@
-# 0028 - Teeter Tower leaks onto the main site (insider surface gaps)
+# 0029 - Teeter Tower leaks onto the main site (insider surface gaps)
 
 Captured from playtesting the insider surface. Teeter Tower is an insider-only game (spec 0043),
 but three gaps let it cross onto the apex and made its insider surface feel broken.

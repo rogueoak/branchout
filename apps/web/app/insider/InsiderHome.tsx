@@ -20,7 +20,7 @@ const INSIDER_GAMES = INSIDER_GAME_UI_LIST;
 export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surface }) {
   // This surface lives on the insider subdomain, where middleware rewrites every path into the
   // /insider tree - so the shared nav/footer's apex links (/games, /privacy, ...) must cross back to
-  // the apex or they 404. `surface.linkOrigin` (the host-derived apex origin, feedback 0028) is that
+  // the apex or they 404. `surface.linkOrigin` (the host-derived apex origin, feedback 0029) is that
   // cross-origin; the game cards' own play links stay relative so play stays on this surface.
   const apexOrigin = surface.linkOrigin;
   return (
@@ -57,7 +57,7 @@ export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surf
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {INSIDER_GAMES.map((game) => (
               // The whole card links to the room-create deep link for the game, so an insider starts
-              // a room in one tap. The link is RELATIVE (feedback 0028): the insider host now hosts
+              // a room in one tap. The link is RELATIVE (feedback 0029): the insider host now hosts
               // the room flow (rewritten into /insider/rooms), so play stays on the insider surface
               // instead of bouncing to the apex.
               <a

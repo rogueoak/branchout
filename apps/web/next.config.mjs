@@ -17,7 +17,7 @@ const nextConfig = {
   // posthog-js posts to no-trailing-slash paths (/ingest/e/, /ingest/flags), so no global
   // skipTrailingSlashRedirect is needed - keeping trailing-slash normalization on for the real pages.
   async rewrites() {
-    // Same-origin `/api` proxy (feedback 0028): in prod the browser calls a relative `/api` and Caddy
+    // Same-origin `/api` proxy (feedback 0029): in prod the browser calls a relative `/api` and Caddy
     // re-serves it same-origin per host (apex AND `insider.`), stripping `/api` -> control-plane's
     // `/v1/*`. Dev/e2e has no Caddy, so this rewrite stands in for that hop - letting the browser call
     // `/api` same-origin on the insider subdomain too (a cross-origin call there cannot carry the

@@ -5,7 +5,7 @@
 # ports here - dropping them avoids a clash on 5432/6379. The app services keep their published
 # ports, shifted to 3100/4100/4101 via env from the harness.
 services:
-  # The e2e web app points the BROWSER at a same-origin `/api` (feedback 0028), matching prod (where
+  # The e2e web app points the BROWSER at a same-origin `/api` (feedback 0029), matching prod (where
   # Caddy re-serves /api per host, apex AND `insider.`). The dev overlay's next.config proxies /api to
   # the server-side CONTROL_PLANE_URL. This is what lets the insider-subdomain room flow authenticate:
   # a cross-origin call from `insider.localhost` to the control-plane port cannot carry the session

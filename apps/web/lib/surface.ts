@@ -1,4 +1,4 @@
-// The surface a request is being served on (spec 0035 / feedback 0028): the apex or the insider
+// The surface a request is being served on (spec 0035 / feedback 0029): the apex or the insider
 // subdomain. Read from the request `Host` header server-side, so a page renders the same on the
 // apex and, when the insider host rewrites it into the `/insider` tree, adapts to that surface
 // without a separate component. Visibility of an insider-only game (spec 0043) follows the SURFACE,

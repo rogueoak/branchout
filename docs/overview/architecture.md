@@ -44,7 +44,10 @@ nothing platform-specific leaks into those services.
   (non-Redis) world - a Matter.js physics world - outside the Redis-backed session state. A compact
   scratch snapshot in Redis rebuilds that world after a reconnect/restart, and the engine calls the
   module's `disposeLive` on end/exit/restart so the in-process world is released (no leak, and a
-  restart rebuilds from empty scratch rather than reusing the stale world).
+  restart rebuilds from empty scratch rather than reusing the stale world). Every session's module -
+  including that live physics world and its ~25 fps tick - runs in its **own Node worker_thread**
+  (spec 0045), so game CPU stays off the main event loop and a hung/crashed game is contained and
+  auto-recovered without touching other rooms.
 - **web** - the marketing site and the browser game client: lobby, the interactive layout
   (viewer left, remote right; stacked on small screens), in-game screens, profiles, and friend
   search/invite.
@@ -194,7 +197,7 @@ signed in -> apex login; signed in but not an insider -> `forbidden()` (a real 4
 `authInterrupts` + `app/forbidden.tsx`). The apex cannot reach the tree by path - middleware 404s any
 `/insider*` request that is not on the insider host.
 
-**The room/join flow is mirrored into the insider tree** (feedback `0028`) so an insider-only game is
+**The room/join flow is mirrored into the insider tree** (feedback `0029`) so an insider-only game is
 played on the insider surface, not bounced to the apex. `app/insider/rooms`, `.../rooms/[code]`, and
 `app/insider/join` are thin re-exports of the surface-aware apex pages; the insider host rewrites
 `/rooms...` and `/join` into them, so hosting and playing stay on `insider.` end to end (and remain
@@ -390,13 +393,13 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   as one round - `collectMove` takes `{ angle, dropX }`, `reveal` simulates the drop once and streams
   the settle as a keyframe **track** so every client renders the identical tower (the browser runs no
   physics). Determinism (seeded PRNG, fixed timestep, capped steps) keeps the single server sim
-  reproducible. Scaling seam: `module.reveal` runs the settle (up to `MAX_STEPS=300` fixed steps)
-  SYNCHRONOUSLY inside the engine's per-session lock on the single-threaded event loop, so a settle
-  head-of-line-blocks other rooms/games - the worker-thread/queue offload (out-of-scope follow-up) is
-  the escape hatch. A game may declare `manifest.visibility: 'insider'`; the web registry hides such games
-  from the public picker/pages/sitemap and surfaces them only on the insider SURFACE (feedback `0028`:
-  gated by host via `getSurface()`, not by the viewer's entitlement, so an insider on the apex never
-  sees them). A follow-up should add the matching control-plane start guard for defence in depth.
+  reproducible. **Worker isolation (spec 0045)** closed the original head-of-line-blocking seam: each
+  session's module compute now runs in a dedicated worker_thread (see the live-game note above), so a
+  heavy settle or physics tick no longer stalls the main event loop or other rooms. A game may declare
+  `manifest.visibility: 'insider'`; the web registry hides such games from the public
+  picker/pages/sitemap and surfaces them only on the insider SURFACE (feedback `0029`: gated by host
+  via `getSurface()`, not by the viewer's entitlement, so an insider on the apex never sees them). A
+  follow-up should add the matching control-plane start guard for defence in depth.
 - **Session state in Redis** keyed by room + game (phase, players, scores, per-game scratch) for
   the life of a game, recovered on reconnect. It also persists the current phase's streamed frames
   (prompt/reveal/standings) so `join` can replay them as ordered catch-up - pub/sub only reaches

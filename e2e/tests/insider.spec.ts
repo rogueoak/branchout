@@ -27,7 +27,7 @@ test.describe('insider surface (spec 0035)', () => {
     await page.goto(INSIDER_URL);
     await expect(page.getByRole('heading', { name: 'Insider' })).toBeVisible();
     // Teeter Tower (spec 0043) is now a live insider game, so the surface lists it (the empty state
-    // no longer shows). The card carries the game's mark and deep-links RELATIVELY (feedback 0028),
+    // no longer shows). The card carries the game's mark and deep-links RELATIVELY (feedback 0029),
     // so starting stays on the insider surface instead of bouncing to the apex.
     const card = page.getByRole('link', { name: /start a room to test teeter tower/i });
     await expect(card).toBeVisible();
@@ -35,7 +35,7 @@ test.describe('insider surface (spec 0035)', () => {
     expect(await card.locator('svg').count()).toBeGreaterThan(0);
   });
 
-  test('starting an insider game from its card stays on the insider host (feedback 0028)', async ({
+  test('starting an insider game from its card stays on the insider host (feedback 0029)', async ({
     page,
   }) => {
     const account = await signUp(page);
@@ -59,7 +59,7 @@ test.describe('insider surface (spec 0035)', () => {
     await expect(page.getByRole('heading', { name: /invite your friends/i })).toBeVisible();
   });
 
-  test('the mirrored insider room routes are gated to insiders (feedback 0028)', async ({
+  test('the mirrored insider room routes are gated to insiders (feedback 0029)', async ({
     page,
   }) => {
     // A signed-up NON-insider whose session is spanned to the insider host. `/rooms` is public on the

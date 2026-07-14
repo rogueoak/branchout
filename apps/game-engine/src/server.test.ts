@@ -5,7 +5,7 @@ import { V1_PREFIX } from '@branchout/protocol';
 import { createApp } from './app';
 import { GameEngine } from './engine';
 import { InMemoryPubSub } from './pubsub';
-import { GameRegistry } from './registry';
+import { InProcessRuntimeProvider } from './worker/runtime';
 import { NoopReporter } from './reporter';
 import { InMemorySessionStore } from './session';
 import { attachGameSocket } from './socket';
@@ -16,7 +16,7 @@ import { stubGame } from '@branchout/game-sdk/testing';
 describe('game-engine Fastify + websocket integration', () => {
   const pubsub = new InMemoryPubSub();
   const engine = new GameEngine({
-    registry: new GameRegistry([stubGame]),
+    runtimeProvider: new InProcessRuntimeProvider([stubGame]),
     store: new InMemorySessionStore(),
     pubsub,
     reporter: new NoopReporter(),

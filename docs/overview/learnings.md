@@ -347,6 +347,39 @@ Capture durable lessons as they emerge.
   the denominator explodes and `f` crawls - the tower looks frozen on resume even though the server is
   streaming again. Cap the span to a few frame-times so a long gap (pause, dropped frames) recovers in
   a couple of rendered frames instead of over the entire gap. (Feedback `0027`.)
+- **A fixed-cadence loop that `await`s across a boundary must DROP frames, not queue them.** Moving the
+  ~25 fps sim tick into a worker made each tick an awaited round-trip; the `setInterval` still fired
+  every 40 ms and each fire chained onto the per-session lock, so a tick slower than the interval piled
+  up a backlog of stale frames rather than skipping. Guard with an in-flight flag and skip the frame
+  while one is running - a real-time sim drops frames, it never accumulates them. (Spec `0045`.)
+- **Containment without a backoff can amplify the very load it contains.** Killing a hung worker and
+  respawning on the next tick means a *persistently* wedged worker enters a kill -> respawn -> rebuild
+  loop that costs more than the stall it replaced (a respawn rebuilds the whole physics world). Count
+  consecutive failures and stop after N; a single transient crash still self-heals (the counter resets
+  on any success). A recovery mechanism needs a circuit breaker, not just a retry. (Spec `0045`.)
+- **A capacity/overload refusal is not a bad request.** The worker cap threw an error that fell through
+  to a catch-all HTTP 400, telling the control-plane "malformed" when the truth was "at capacity, retry
+  later" (503). Map an overload condition to a retryable status so the caller backs off instead of
+  permanently failing the start - and log it so an operator can see saturation. (Spec `0045`.)
+- **`Number(env)` fails OPEN for a cap.** `GAME_WORKER_MAX=abc` -> `NaN`, and `size >= NaN` is always
+  false, so a typo silently *disables* the cap (unbounded workers). Parse operator env through a helper
+  that rejects non-positive/NaN and falls back to the default with a warning; a guard that protects a
+  limit must not evaporate on a bad value. (Spec `0045`.)
+- **"Deterministic rebuild" is a claim to test, not assert in a comment.** The respawn test only checked
+  the round count (a static config output, identical for any seed), so it would have passed even if the
+  rebuild ignored the seed entirely. Assert a *seed-dependent* output is byte-identical across the
+  respawn AND differs for a different seed - otherwise the determinism guarantee is untested and the
+  equality is vacuous. (Spec `0045`.)
+- **To make physics pieces "stickier" ON IMPACT, KINETIC `friction` is the lever - and Matter honors
+  friction > 1.** First attempt raised `frictionStatic` (6 -> 20) on a code comment's claim that kinetic
+  `friction` "saturates near 1.0" - and it barely changed the feel, because `frictionStatic` only holds
+  a piece that is ALREADY at rest; the pieces were sliding/toppling while still moving on landing, which
+  is governed by kinetic `friction`. Matter does NOT clamp friction to 1.0 (the tangent impulse is capped
+  at `friction * normalImpulse`), so raising it past 1 (to ~3) is what actually grips a sliding contact.
+  Distinguish the two regimes: static friction = "won't start sliding from rest", kinetic friction =
+  "won't keep sliding once moving". Pair it with a lower `MAX_FALL_SPEED` (softer landing = less energy to
+  slide) and `frictionAir` (bleeds slide energy). Don't trust a "saturates" comment - test the lever.
+  (Feedback `0028`.)
 
 ## Client-server contracts
 
@@ -489,7 +522,7 @@ Capture durable lessons as they emerge.
   And "keep the player on this surface" requires the surface to actually HOST the flow: a
   rewrite-based subdomain with only a landing page has to bounce to the apex to do anything, so the
   room/join routes were mirrored under the gated `/insider` tree (thin re-exports of the surface-aware
-  apex pages) - play now stays on the insider host end to end. (Feedback `0028`.)
+  apex pages) - play now stays on the insider host end to end. (Feedback `0029`.)
 
 ## Rate limiting and lockouts
 

@@ -10,7 +10,7 @@ vi.mock('next/navigation', () => ({
 describe('InsiderHome (spec 0035)', () => {
   const viewer = { signedIn: true, gamerTag: 'CoolCat', nickname: 'Cat', insider: true };
   // The insider surface the page always renders on: insider host + the apex link origin its chrome
-  // crosses back to (feedback 0028). The page (server component) derives this via getSurface().
+  // crosses back to (feedback 0029). The page (server component) derives this via getSurface().
   const surface = { insider: true, linkOrigin: 'https://branchout.games' };
 
   it('renders the Insider heading and the nav surface label', () => {
@@ -20,7 +20,7 @@ describe('InsiderHome (spec 0035)', () => {
     expect(screen.getAllByText('Insider').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('lists the insider test games, each linking into a room on the SAME surface (feedback 0028)', () => {
+  it('lists the insider test games, each linking into a room on the SAME surface (feedback 0029)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
     // Teeter Tower (the first insider-only game) is offered, not the empty state.
     expect(screen.queryByText(/no test games yet/i)).toBeNull();

@@ -21,9 +21,9 @@ interface RoomsHomeProps {
   /** The `?game=<slug>` deep link from a feature-page "Start a game" CTA (spec 0030): create a room
    * pre-selected to this game and skip the pick step. Ignored if it is not a known game id. */
   initialGame?: string;
-  /** The signed-in identity for the shared top nav (spec 0028), read server-side to avoid a flash. */
+  /** The signed-in identity for the shared top nav (spec 0029), read server-side to avoid a flash. */
   viewer: Viewer;
-  /** The surface this page is served on (feedback 0028): gates the insider-only deep link and crosses
+  /** The surface this page is served on (feedback 0029): gates the insider-only deep link and crosses
    * the shared chrome's links back to the apex when on the insider subdomain. Defaults to apex. */
   surface?: Surface;
 }
@@ -65,7 +65,7 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
 
       // Deep link (spec 0029): if the "Start a game" CTA named a known game, select it now and skip
       // the pick step, landing the host straight on invite. Otherwise the host picks a game first.
-      // Insider gate (spec 0043 / feedback 0028): an insider-only game is only pre-selected on the
+      // Insider gate (spec 0043 / feedback 0029): an insider-only game is only pre-selected on the
       // insider surface. On the apex the pre-select is dropped (they fall back to the picker), so an
       // insider game never starts on the main site - even for an insider.
       const candidate = initialGame ? getGameUi(initialGame) : undefined;

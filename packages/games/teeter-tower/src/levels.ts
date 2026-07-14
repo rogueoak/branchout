@@ -13,14 +13,18 @@ export const CENTER_X = VIEW_W / 2; // 410
 /** Pieces that fall past this world-y are culled (lost off the bottom). */
 export const DEATH_Y = GROUND_TOP + 260;
 
-// Grip and fall tuning, ported verbatim from the prototype. Matter's friction saturates near 1.0,
-// so stability comes from stable piece shapes + soft landings, not big numbers here.
-export const PIECE_FRICTION = 1.0;
-export const PIECE_FRICTION_STATIC = 6;
-export const PIECE_FRICTION_AIR = 0.03;
+// Grip and fall tuning (feedback 0028 round 2). The pieces slide/topple off ON IMPACT, which is
+// governed by KINETIC `PIECE_FRICTION` - NOT by `frictionStatic` (which only holds a piece already at
+// rest). Matter honors friction > 1 (the tangent impulse is capped at `friction * normalImpulse`, not
+// clamped to 1), so kinetic friction is raised well past 1 for real grip on the sliding landing contact.
+// `PIECE_FRICTION_AIR` bleeds off horizontal slide energy, and a lower `MAX_FALL_SPEED` softens the
+// landing so a piece knocks the tower around less. `frictionStatic` stays high to pin a settled piece.
+export const PIECE_FRICTION = 3.0;
+export const PIECE_FRICTION_STATIC = 30;
+export const PIECE_FRICTION_AIR = 0.08;
 export const PIECE_DENSITY = 0.0016;
-/** Caps drop velocity so a piece can't slam the tower off center. */
-export const MAX_FALL_SPEED = 9;
+/** Caps drop velocity so a piece lands soft and can't slam the tower off center. */
+export const MAX_FALL_SPEED = 6;
 
 /** The default horizontal drop half-range beyond the platform's own half-width (px each side). */
 export const DROP_EDGE_MARGIN = 90;

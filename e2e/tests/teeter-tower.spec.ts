@@ -8,7 +8,7 @@ import { INSIDER_URL, WEB_PORT, grantCredits, grantInsider } from '../lib/stack'
 // game, starts a solo room, and plays a drop on the single canvas (feedback 0023: move the piece on
 // the board, then the top-right button stops the spin and drops); the engine drops the piece into the
 // live world and streams it back, so the height and score climb. It also proves the gate (feedback
-// 0028): the game lives ONLY on the insider surface - a non-insider never sees it, and an insider on
+// 0029): the game lives ONLY on the insider surface - a non-insider never sees it, and an insider on
 // the apex never sees it either; the whole flow runs on the insider host.
 
 test('an insider starts a solo Teeter Tower room and drops a piece on the live board', async ({
@@ -18,7 +18,7 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   test.setTimeout(120_000);
 
   // A fresh account, granted the insider role out-of-band (the documented mechanism). The session is
-  // spanned to the insider host, where the game now lives (feedback 0028), so the whole flow - create,
+  // spanned to the insider host, where the game now lives (feedback 0029), so the whole flow - create,
   // pick, start, play - runs on `insider.localhost`, never the apex.
   const account = await signUp(page);
   await spanSessionToInsider(page.context());
@@ -92,7 +92,7 @@ test('a non-insider never sees Teeter Tower in the game picker', async ({ page }
   await expect(page.getByRole('button', { name: /pick teeter tower/i })).toHaveCount(0);
 });
 
-test('an INSIDER never sees Teeter Tower in the APEX picker (feedback 0028)', async ({ page }) => {
+test('an INSIDER never sees Teeter Tower in the APEX picker (feedback 0029)', async ({ page }) => {
   // Visibility follows the surface, not the entitlement: an insider on the main site must not see
   // the insider-only game. It exists only on the insider surface.
   const account = await signUp(page);
@@ -105,7 +105,7 @@ test('an INSIDER never sees Teeter Tower in the APEX picker (feedback 0028)', as
   await expect(page.getByRole('button', { name: /pick teeter tower/i })).toHaveCount(0);
 });
 
-test('an insider deep-linking Teeter Tower on the apex is dropped to the picker (feedback 0028)', async ({
+test('an insider deep-linking Teeter Tower on the apex is dropped to the picker (feedback 0029)', async ({
   page,
 }) => {
   // The `?game=` deep link is honored only on the insider surface. On the apex the insider-only

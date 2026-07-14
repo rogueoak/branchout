@@ -25,9 +25,9 @@ import {
 
 interface JoinFormProps {
   initialCode: string;
-  /** The signed-in identity for the shared top nav (spec 0028), read server-side to avoid a flash. */
+  /** The signed-in identity for the shared top nav (spec 0029), read server-side to avoid a flash. */
   viewer: Viewer;
-  /** The surface this page is served on (feedback 0028): crosses the shared chrome's links back to
+  /** The surface this page is served on (feedback 0029): crosses the shared chrome's links back to
    * the apex when on the insider subdomain. Defaults to apex. */
   surface?: Surface;
 }

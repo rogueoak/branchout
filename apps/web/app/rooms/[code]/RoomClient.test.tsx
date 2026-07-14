@@ -201,7 +201,7 @@ describe('RoomClient resume when the tab forgot its membership (feedback 0021)',
   });
 });
 
-describe('RoomClient top nav (spec 0028)', () => {
+describe('RoomClient top nav (spec 0029)', () => {
   it('shows the shared site nav in the lobby', async () => {
     hoisted.recalled = nonHostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
@@ -235,7 +235,7 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     expect(screen.queryByText('LOBBY_VIEW')).toBeNull();
   });
 
-  it('HIDES the insider-only game from the picker on the apex surface (feedback 0028)', async () => {
+  it('HIDES the insider-only game from the picker on the apex surface (feedback 0029)', async () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
@@ -249,7 +249,7 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     expect(screen.queryByRole('button', { name: /pick teeter tower/i })).toBeNull();
   });
 
-  it('SHOWS the insider-only game in the picker on the insider surface (feedback 0028)', async () => {
+  it('SHOWS the insider-only game in the picker on the insider surface (feedback 0029)', async () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 

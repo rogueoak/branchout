@@ -71,7 +71,7 @@ describe('RoomsHome create flow', () => {
     expect(roomApi.selectGame).not.toHaveBeenCalled();
   });
 
-  it('IGNORES an insider-only game deep link on the apex, even for an insider (feedback 0028)', async () => {
+  it('IGNORES an insider-only game deep link on the apex, even for an insider (feedback 0029)', async () => {
     // An insider viewer, but the surface is the apex (default): the insider-only game must not be
     // pre-selected, so it never starts on the main site. The host falls back to the pick step.
     render(
@@ -86,7 +86,7 @@ describe('RoomsHome create flow', () => {
     expect(roomApi.selectGame).not.toHaveBeenCalled();
   });
 
-  it('pre-selects an insider-only game deep link on the insider surface (feedback 0028)', async () => {
+  it('pre-selects an insider-only game deep link on the insider surface (feedback 0029)', async () => {
     vi.mocked(roomApi.selectGame).mockResolvedValue({ ...room, selectedGame: 'teeter-tower' });
     render(
       <RoomsHome
