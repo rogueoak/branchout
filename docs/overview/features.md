@@ -144,11 +144,14 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 ## Web
 
-- [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, Trivia games
-      teaser (the whole card is a link into the play path - signup when anonymous, rooms when
-      signed in), footer. Dark theme by default; pricing/tier content is dropped for now.
-      Signed-in visitors see "Play now" instead of "Sign up free" via a server-side session
-      check; graceful fallback to anonymous view if the control plane is unreachable (spec `0005`).
+- [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, games teaser, footer.
+      Dark theme by default; pricing/tier content is dropped for now. Each teaser card carries a wide
+      on-brand hero illustration (per-game 800x450 scene from `@branchout/brand`, gold-root rule kept)
+      above the title and is a link into the feature page; a signed-in player also gets a per-card
+      "Play <game> now" deep link into the room flow. Signed-in visitors see "Play now" (pointing at
+      `/games` so they pick a game before hosting) instead of "Sign up free" via a server-side session
+      check; graceful fallback to anonymous view if the control plane is unreachable (specs `0005`,
+      `0046`).
 - [x] Game client shell - the browser client for Trivia (spec `0010`). A rooms home to create a
       room (host) or join by code, and the `/join?code=ABC12` share-link route where a player picks
       a nickname, player/observer, and interactive/remote (minting an anonymous session if needed).

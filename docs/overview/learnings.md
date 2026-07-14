@@ -231,6 +231,14 @@ Capture durable lessons as they emerge.
   since the host could fix it by switching itself to Interactive. Make the blocked copy aware of the
   actor: when the caller is the one who can lift the gate, point at their own control instead of
   telling them to wait. (Review `0013`.)
+- **A "steals focus on mount" report with no `autoFocus` in the code is a browser heuristic, not a
+  bug to hunt - guard it explicitly.** The rooms join-code field popped the mobile keyboard on load,
+  but there was no `autoFocus` in `RoomsHome` and canopy's `Input` is a bare `forwardRef` `<input>`
+  with no default; a jsdom render confirmed the field is not focused on mount there. The cause is a
+  browser autofocusing the page's first/only empty text input. Don't chase a `focus()` call that does
+  not exist - reproduce (jsdom won't show it), then set `autoFocus={false}` explicitly with a
+  not-focused-on-mount test. (Feedback `0031`.)
+
 - **On a mobile-first surface with a desktop path, "follow the pointer" is not the same input on
   touch and mouse - gate press-drag vs. hover explicitly.** Teeter's canvas aim let the piece follow
   every `pointermove` over the board. On touch that is only ever a press-drag, so it played right on a

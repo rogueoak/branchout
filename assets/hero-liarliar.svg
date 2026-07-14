@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Branch out Liar Liar">
+  <defs>
+    <linearGradient id="hll-spark" gradientUnits="userSpaceOnUse" x1="360" y1="380" x2="620" y2="120">
+      <stop offset="0"    stop-color="#FBBF24"/>
+      <stop offset="0.5"  stop-color="#EC4899"/>
+      <stop offset="1"    stop-color="#7C3AED"/>
+    </linearGradient>
+    <radialGradient id="hll-bg" cx="0.55" cy="0.4" r="0.85">
+      <stop offset="0" stop-color="#221836"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="hll-glow" cx="0.62" cy="0.36" r="0.5">
+      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hll-face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#37244f"/>
+      <stop offset="1" stop-color="#1a1230"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#hll-bg)"/>
+  <circle cx="510" cy="190" r="290" fill="url(#hll-glow)"/>
+  <!-- The stick the mask is held on: a branch stem down to the gold root (two-pass spark stroke). -->
+  <g stroke-linecap="round" fill="none" stroke="url(#hll-spark)">
+    <path d="M510 232 L510 404" stroke-width="18" opacity="0.16"/>
+    <path d="M510 232 L510 404" stroke-width="8"/>
+  </g>
+  <!-- Masquerade mask body with two eye cutouts (evenodd = true holes); the spark rim outlines it. -->
+  <path fill-rule="evenodd" fill="url(#hll-face)" stroke="url(#hll-spark)" stroke-width="7" stroke-linejoin="round"
+        transform="translate(254 -24)"
+        d="M256 176 C236 150 196 140 158 148 C118 156 100 190 108 220 C116 250 150 266 196 262 C226 260 244 250 256 236 C268 250 286 260 316 262 C362 266 396 250 404 220 C412 190 394 156 354 148 C316 140 276 150 256 176 Z
+           M150 205 Q185 182 222 205 Q185 228 150 205 Z
+           M290 209 Q324 223 358 209 Q324 217 290 209 Z"/>
+  <!-- left pupil (open eye); the right eye is the thin winking slit above - the tell -->
+  <circle cx="440" cy="181" r="8" fill="#F9A8D4"/>
+  <!-- decorative jewels along the mask's top edge -->
+  <g opacity="0.20">
+    <circle cx="372" cy="172" r="22" fill="#A78BFA"/>
+    <circle cx="438" cy="126" r="22" fill="#FDE047"/>
+    <circle cx="590" cy="126" r="22" fill="#4ADE80"/>
+    <circle cx="658" cy="176" r="22" fill="#22D3EE"/>
+    <circle cx="510" cy="404" r="22" fill="#d2a463"/>
+  </g>
+  <circle cx="372" cy="172" r="13" fill="#A78BFA"/>
+  <circle cx="438" cy="126" r="13" fill="#FDE047"/>
+  <!-- the right jewel is dimmed: the node that is lying -->
+  <circle cx="590" cy="126" r="13" fill="#4ADE80" opacity="0.45"/>
+  <circle cx="658" cy="176" r="13" fill="#22D3EE"/>
+  <circle cx="510" cy="152" r="7" fill="#c9d2da"/>
+  <g fill="#ffffff" opacity="0.55">
+    <circle cx="368" cy="168" r="5"/> <circle cx="434" cy="122" r="5"/>
+    <circle cx="654" cy="172" r="5"/>
+  </g>
+  <!-- gold root node: the base of the mask's stick -->
+  <circle cx="510" cy="404" r="12" fill="#d2a463"/>
+  <!-- Wordmark, in the system-font stack (the sharp pipeline embeds no fonts). -->
+  <text x="60" y="235" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="72" font-weight="700" fill="#f4f1fb">Liar Liar</text>
+  <text x="62" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="26" font-weight="500" fill="#b9b2cf">Bluff your friends. Spot the truth.</text>
+</svg>

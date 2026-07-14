@@ -30,6 +30,14 @@
       "types": "./dist/liarliar.d.ts",
       "import": "./dist/liarliar.js"
     },
+    "./hero-trivia": {
+      "types": "./dist/hero-trivia.d.ts",
+      "import": "./dist/hero-trivia.js"
+    },
+    "./hero-liarliar": {
+      "types": "./dist/hero-liarliar.d.ts",
+      "import": "./dist/hero-liarliar.js"
+    },
     "./teeter-tower": {
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
