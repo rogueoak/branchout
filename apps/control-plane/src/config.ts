@@ -44,6 +44,23 @@ export interface AdminCookieConfig {
   ttlSeconds: number;
 }
 
+/**
+ * Newsletter subscribe / Constant Contact config (spec 0047). The three `ctct*` credentials are each
+ * OPTIONAL: the endpoint ships inert and returns a clear "not configured" response when any is unset,
+ * so it never crashes before an operator provisions the secrets (mint the refresh token via `ctct
+ * login`; find the "Branch Out" list id via `ctct list list --name "Branch Out"`). The two rate-limit
+ * knobs cap subscribe attempts per client IP.
+ */
+export interface SubscribeConfig {
+  ctctClientId?: string;
+  ctctRefreshToken?: string;
+  ctctListId?: string;
+  /** Subscribe attempts per client IP within the window before a 429. */
+  maxPerIp: number;
+  /** Fixed-window length for the per-IP subscribe cap, in seconds. */
+  windowSeconds: number;
+}
+
 export interface ServiceConfig {
   port: number;
   databaseUrl: string;
@@ -64,6 +81,8 @@ export interface ServiceConfig {
   membershipTtlSeconds: number;
   /** Auth rate-limiting / lockout thresholds. */
   rateLimit: RateLimitConfig;
+  /** Newsletter subscribe / Constant Contact config (spec 0047). */
+  subscribe: SubscribeConfig;
 }
 
 /** One week, in seconds - the default session lifetime. */
@@ -80,6 +99,10 @@ const DEFAULT_LOGIN_MAX_ATTEMPTS = 5;
 const DEFAULT_LOGIN_WINDOW = 60 * 15;
 const DEFAULT_SIGNUP_MAX_PER_IP = 10;
 const DEFAULT_SIGNUP_WINDOW = 60 * 60;
+
+/** Subscribe rate-limit defaults (spec 0047): 5 subscribes / 10 min per IP. */
+const DEFAULT_SUBSCRIBE_MAX_PER_IP = 5;
+const DEFAULT_SUBSCRIBE_WINDOW = 60 * 10;
 
 function parseBool(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined) {
@@ -154,6 +177,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
       loginWindowSeconds: parsePositiveInt(env.LOGIN_WINDOW_SECONDS, DEFAULT_LOGIN_WINDOW),
       signupMaxPerIp: parsePositiveInt(env.SIGNUP_MAX_PER_IP, DEFAULT_SIGNUP_MAX_PER_IP),
       signupWindowSeconds: parsePositiveInt(env.SIGNUP_WINDOW_SECONDS, DEFAULT_SIGNUP_WINDOW),
+    },
+    subscribe: {
+      // Each credential is optional so a missing one is detectable at the route (a clear
+      // "not configured" 503), never a boot-time throw. Omit the key entirely when unset so a
+      // `?.` read stays undefined rather than an empty string.
+      ...(env.CTCT_CLIENT_ID ? { ctctClientId: env.CTCT_CLIENT_ID } : {}),
+      ...(env.CTCT_REFRESH_TOKEN ? { ctctRefreshToken: env.CTCT_REFRESH_TOKEN } : {}),
+      ...(env.CTCT_LIST_ID ? { ctctListId: env.CTCT_LIST_ID } : {}),
+      maxPerIp: parsePositiveInt(env.SUBSCRIBE_MAX_PER_IP, DEFAULT_SUBSCRIBE_MAX_PER_IP),
+      windowSeconds: parsePositiveInt(env.SUBSCRIBE_WINDOW_SECONDS, DEFAULT_SUBSCRIBE_WINDOW),
     },
   };
 }

@@ -145,6 +145,7 @@ async function main(): Promise<void> {
     ...(config.internalToken ? { internalToken: config.internalToken } : {}),
     limiter,
     rateLimit: config.rateLimit,
+    subscribe: config.subscribe,
   });
 
   const shutdown = (signal: string) => {

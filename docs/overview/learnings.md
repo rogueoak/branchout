@@ -455,6 +455,21 @@ Capture durable lessons as they emerge.
   A deploy that wrote `.env.prod` to the repo root while `compose.site.yml` sat in `deploy/docker/`
   would have started every service with empty secrets. Write host-side env files next to their
   compose file. (Feedback `0011`.)
+- **An optional secret sourced from `env_file` must not also be interpolated in the compose
+  `environment:` block - `environment:` wins even when empty.** Compose merges an `environment:` key
+  over the same key from `env_file`, so listing `CTCT_CLIENT_ID: ${CTCT_CLIENT_ID:-}` next to
+  `env_file: .env.prod` would BLANK the value the env file provides whenever the runner shell lacks it
+  (the common case for an optional secret). Let optional secrets flow purely through `.env.prod`
+  (env_file) and only document them in a comment; reserve the `environment:` block for values you set
+  directly in the compose file (like `NODE_ENV`, `ENGINE_URL`). (Spec `0047`.)
+- **Ship a not-yet-provisioned integration INERT, keyed on config presence, not a 500.** The subscribe
+  endpoint reads three CTCT secrets; any unset returns a clear `503 "not configured"` (plus a warn log),
+  never a crash or a 500, so the code + env plumbing merge before the secrets exist and turn on when an
+  operator sets them. Make each credential OPTIONAL in the config parse (omit the key when unset, so a
+  `?.` read is `undefined`, not `''`) and branch on presence at the boundary - distinct from a *money*
+  endpoint, which must fail CLOSED. Match the "wire later" contract in the env plumbing too: write the
+  secret into `.env.prod` only when it is set, so an absent value leaves the endpoint cleanly inert.
+  (Spec `0047`.)
 - **Keep a tier off any network it has no need to reach - the web tier does not belong on the data
   network.** The web app reaches the API tier over the shared `edge` network, so joining it to the
   internal `db` network only hands a compromised web container direct TCP to Postgres and Redis.

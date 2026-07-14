@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ComingSoonBanner } from '../../components/ComingSoonBanner';
 import { TopNav } from '../../components/TopNav';
 import { PUBLIC_GAME_CATALOG, featurePath } from '../../lib/games/catalog';
 import { getViewer } from '../../lib/session';
@@ -32,6 +33,8 @@ export default async function GamesIndexPage() {
             Fast, phone-first party games. Pick one to learn how it plays, then start a room.
           </p>
         </header>
+
+        <ComingSoonBanner />
 
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2" role="list">
           {PUBLIC_GAME_CATALOG.map((game) => (

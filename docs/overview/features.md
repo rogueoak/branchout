@@ -234,6 +234,15 @@ What the product does for users, grouped by area. Each capability maps to one or
       update) until the admin console (spec `0037`) ships a toggle (spec `0035`). The account page
       shows an "Insider game previews" button that links to the surface, rendered only for insider
       accounts (spec `0039`).
+- [x] Newsletter subscribe - a "More games coming soon" banner on `/games` with a "Subscribe for
+      updates" button that reveals an on-theme, mobile-first subscribe form. Submitting posts the email
+      to the control-plane's `POST /v1/subscribe`, which adds the visitor to the Constant Contact
+      "Branch Out" list (OAuth refresh-token -> access-token exchange with an in-memory cache + 60s skew
+      + single-retry self-heal on a stale-token 401; `sign_up_form` opt-in). A hidden honeypot
+      (`company`) drops naive bots and the endpoint is rate-limited per IP; failures return generic
+      messages and never echo a subscriber's email. The endpoint ships INERT - a clear "Subscribe is not
+      configured yet." 503 until an operator provisions `CTCT_CLIENT_ID`/`CTCT_REFRESH_TOKEN`/
+      `CTCT_LIST_ID` (spec `0047`).
 - [ ] Profile pages and friend search/invite.
 
 ## Future

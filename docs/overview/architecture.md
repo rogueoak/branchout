@@ -135,6 +135,35 @@ edge-sanitized header (else every client would share the proxy's IP). The fixed 
 Thresholds are env-tunable (`LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_SECONDS`, `SIGNUP_MAX_PER_IP`,
 `SIGNUP_WINDOW_SECONDS`); the limiter is reused by the admin login (spec `0037`).
 
+## Newsletter subscribe (spec 0047)
+
+A visitor can join the Constant Contact (CTCT) "Branch Out" mailing list from a "More games coming
+soon" banner on `/games`. The capture endpoint lives in the **control-plane** (`POST /v1/subscribe`,
+`/api/v1/subscribe` in prod), NOT the Next `web` app - branchout holds server secrets in the
+control-plane, so the CTCT OAuth credentials never reach the browser (unlike the sibling rogueoak
+single-app site, whose route owns them). The pure, unit-tested core (`apps/control-plane/src/subscribe/`)
+ports rogueoak's logic: the refresh-token -> access-token exchange, an in-memory access-token cache with
+a 60s skew (mint once, reuse across requests, share one in-flight mint on a cold-cache burst), a
+single-retry self-heal that clears the cache and re-mints on a stale-token 401, and the additive
+`sign_up_form` contact create (`create_source: "Contact"`, `list_memberships: [<CTCT_LIST_ID>]`). `fetch`
+and the clock are injected the way the rest of the service injects dependencies, so the network and
+expiry are mocked in tests. The route reuses the account email validator, drops a filled honeypot
+(`company`) silently, and rate-limits per IP with the **shared spec 0036 `RateLimiter`** the auth routes
+use (`subscribe:<ip>`, tunable via `SUBSCRIBE_MAX_PER_IP`/`SUBSCRIBE_WINDOW_SECONDS`, defaults 5 / 600s).
+Errors carry only an HTTP status, never the CTCT response body (which can echo the submitted email), so
+no PII lands in logs or the client response.
+
+The endpoint **fails inert, not closed-with-a-500**: `CTCT_CLIENT_ID`/`CTCT_REFRESH_TOKEN`/`CTCT_LIST_ID`
+are each optional in config, and any unset one returns `503 { ok:false, error:'Subscribe is not
+configured yet.' }` plus a warning log - so the code and env plumbing ship before the secrets exist and
+turn on when an operator provisions them (mint the refresh token via `ctct login`; find the list id via
+`ctct list list --name "Branch Out"`). The secrets flow to prod through `.env.prod` (written by
+`release.yml` from GitHub secrets) and `env_file` in `compose.site.yml` - deliberately not listed in the
+compose `environment:` block, since an `environment:` key wins over `env_file` even when empty. The web
+`SubscribeForm` is a house-built canopy `Input`/`Button` form (branchout's canopy version has no
+`SubscribeForm` branch export) that posts to the same relative `/api` base the rest of the browser code
+uses (`NEXT_PUBLIC_CONTROL_PLANE_URL` + `V1_PREFIX`).
+
 ## Design system and theme
 
 UI is built on rogueoak/canopy (`@rogueoak/canopy` components + `@rogueoak/roots` tokens).
