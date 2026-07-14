@@ -478,6 +478,24 @@ Capture durable lessons as they emerge.
   endpoint, which must fail CLOSED. Match the "wire later" contract in the env plumbing too: write the
   secret into `.env.prod` only when it is set, so an absent value leaves the endpoint cleanly inert.
   (Spec `0047`.)
+- **A secret that the running system rotates on the box must be PRESERVED across a from-secrets env
+  rewrite, not clobbered by the stale seed.** The deploy rewrites `.env.prod` fresh from GitHub secrets
+  every run, but the CTCT keepalive cron can rotate `CTCT_REFRESH_TOKEN` in place on the box - so writing
+  the secret each deploy would overwrite the live token with the stale seed and break subscribe. When a
+  credential can be mutated by the box (rotation, or a break-glass edit like `ADMIN_ROOT_*`), read its
+  current value from the existing `.env.prod` BEFORE truncating and prefer it, falling back to the secret
+  only as a first-time seed (`PREV=$(grep ...); VALUE="${PREV:-$SECRET}"`). Source from the secret each
+  deploy only the values that are truly stable (here `CTCT_CLIENT_ID` / `CTCT_LIST_ID`). The box is the
+  source of truth for anything the box writes. (Spec `0049`.)
+- **When cron work needs a runtime the box lacks, run the versioned CLI as a container and let a thin
+  host wrapper own the side effects.** The droplet has no Node, so the CTCT refresh runs as
+  `docker run --rm --env-file ... ghcr.io/mattmaynes/ctct-cli refresh-token` - one tested implementation
+  shared with the cohosted rogueoak site, not a hand-rolled `curl`. The CLI is stateless (prints JSON,
+  writes nothing); the wrapper owns persistence (atomic temp-file + `mv` + backup on a rotation), the
+  Resend alert on failure, and keeping the token out of the log. Install the wrapper OUTSIDE the git
+  checkout (`~/ctct-refresh/`) so a deploy `git reset --hard` never disturbs it or its logs, and flag a
+  rare rotation for an operator rather than auto-recreating a container (an unexpected blip is worse than
+  a logged manual step). (Spec `0049`.)
 - **Keep a tier off any network it has no need to reach - the web tier does not belong on the data
   network.** The web app reaches the API tier over the shared `edge` network, so joining it to the
   internal `db` network only hands a compromised web container direct TCP to Postgres and Redis.

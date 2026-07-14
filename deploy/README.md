@@ -213,16 +213,20 @@ brings up Caddy and the full site.
 
 Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branchout repo:
 
-| Secret                | Value                                                                                                        |
-| --------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet) |
-| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                         |
-| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                               |
-| `DEPLOY_USER`         | `deploy`                                                                                                     |
-| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                     |
-| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                         |
-| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                              |
-| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)         |
+| Secret                | Value                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet)                |
+| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                                        |
+| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                                              |
+| `DEPLOY_USER`         | `deploy`                                                                                                                    |
+| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                                    |
+| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                                        |
+| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                                             |
+| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)                        |
+| `RESEND_API_KEY`      | Resend API key for host feedback email (spec 0048) and the CTCT keepalive alert (spec 0049); optional                       |
+| `CTCT_CLIENT_ID`      | Constant Contact app client_id (spec 0047); stable, sourced from this secret each deploy                                    |
+| `CTCT_REFRESH_TOKEN`  | CTCT refresh token; the **initial seed** only - the keepalive rotates it on the box and the deploy preserves it (spec 0049) |
+| `CTCT_LIST_ID`        | The "Branch Out Games" CTCT list id (spec 0047); stable, sourced from this secret each deploy                               |
 
 Generate strong values with:
 
@@ -244,6 +248,94 @@ gh variable set NEXT_PUBLIC_POSTHOG_KEY -b 'phc_...'   # Settings -> Secrets and
 Unset -> the bundle builds with analytics disabled (a safe no-op, same as dev/e2e). The browser sends
 analytics to the same-origin `/ingest` path (first-party); Next rewrites it to PostHog (US), and the
 Caddy edge routes `/ingest` to `web` like any non-`/api`/`/ws` path - no proxy change needed.
+
+## CTCT token keepalive (spec 0049)
+
+The newsletter subscribe endpoint (spec 0047) mints a Constant Contact access token lazily from a
+long-lived refresh token in `.env.prod`. A CTCT device-flow refresh token can **rotate and expire when
+left idle**, and the subscribe route only exercises it on a real subscribe - so on a quiet site the
+token can die with no warning (the first person to subscribe after that hits a 500). A daily host cron
+prevents it by exercising the token out-of-band and emailing on failure. This mirrors the cohosted
+rogueoak keepalive (its spec 0009).
+
+The refresh logic lives in the `ctct` CLI's `refresh-token` command, run as a container (the box has no
+Node runtime); the wrapper `deploy/ctct-refresh/ctct-keepalive.sh` handles logging, atomic persistence
+of a rotated token, and the Resend alert. It reads `CTCT_CLIENT_ID` / `CTCT_REFRESH_TOKEN` (and, for
+alerts, `RESEND_API_KEY`) from `.env.prod`. Dependencies on the box: `docker` and `python3` (both
+present).
+
+**Install (once, on the host, as the `deploy` user):**
+
+```sh
+docker pull ghcr.io/mattmaynes/ctct-cli:latest
+mkdir -p ~/ctct-refresh
+install -m 0755 ~/branchout/deploy/ctct-refresh/ctct-keepalive.sh ~/ctct-refresh/ctct-keepalive.sh
+```
+
+The wrapper is installed to `~/ctct-refresh/` (outside the git checkout) so a deploy `git reset --hard`
+never disturbs it or its logs. Re-run the `install` line after a change lands in the repo, and
+`docker pull ...` again after a new CLI release.
+
+**Schedule the daily cron (deploy user):** pick a fixed UTC time, offset from the rogueoak keepalive so
+the two never fire in the same minute, and send stderr to `~/ctct-refresh/cron.err`:
+
+```sh
+( crontab -l 2>/dev/null; \
+  echo '27 8 * * * /home/deploy/ctct-refresh/ctct-keepalive.sh /home/deploy/branchout/deploy/docker/.env.prod branchout.games >> /home/deploy/ctct-refresh/cron.err 2>&1' \
+) | crontab -
+```
+
+**Secrets.** `CTCT_CLIENT_ID`, `CTCT_REFRESH_TOKEN`, and `CTCT_LIST_ID` are GitHub Actions secrets
+(table above), written into `.env.prod` on each deploy. `CTCT_CLIENT_ID` and `CTCT_LIST_ID` are stable
+and always sourced from the secret. `CTCT_REFRESH_TOKEN` is only the **initial seed**: the keepalive can
+rotate it on the box, so `release.yml` reads the box's existing value and **preserves it** across
+deploys (falling back to the secret only on a first-time box) - exactly like the root admin creds. When
+CTCT does rotate the token, the wrapper backs up `.env.prod`, rewrites the `CTCT_REFRESH_TOKEN=` line
+atomically, and logs LOUDLY that `control-plane` must be recreated to load it (it does **not**
+auto-recreate - a rotation is rare and a force-recreate would cause an unexpected blip):
+
+```sh
+cd ~/branchout && docker compose -f deploy/docker/compose.site.yml up -d --force-recreate control-plane
+```
+
+**Health check.** Run the wrapper by hand and expect `OK token refreshed` in the log:
+
+```sh
+~/ctct-refresh/ctct-keepalive.sh ~/branchout/deploy/docker/.env.prod branchout.games
+tail -n 3 ~/ctct-refresh/keepalive.log
+```
+
+The wrapper never prints the token; it logs status/error only. Alert to/from default to
+`feedback@rogueoak.com` / `branchout@rogueoak.com` and can be overridden with `CTCT_ALERT_TO` /
+`CTCT_ALERT_FROM` in `.env.prod`. If `RESEND_API_KEY` is unset the wrapper logs instead of emailing and
+never fails the cron on a missing alert channel.
+
+### Bootstrap or re-mint the refresh token (device flow)
+
+Seed the initial `CTCT_REFRESH_TOKEN` secret (and re-mint it if the token ever truly dies - the
+keepalive log shows `invalid_grant`) via the CTCT **device flow**. The app is a device-flow public
+client (no redirect URI, no secret), so the easiest path is the
+[`ctct`](https://github.com/mattmaynes/ctct-cli) CLI:
+
+```sh
+ctct init --client-id <constant-contact-app-client-id>
+ctct login   # approve the printed verification URL in a browser, then read the stored refresh token
+```
+
+Or by hand: POST `client_id` + `scope=contact_data offline_access` to
+`https://authz.constantcontact.com/oauth2/default/v1/device/authorize`, approve the returned
+`verification_uri_complete` in a browser, then poll
+`https://authz.constantcontact.com/oauth2/default/v1/token` with
+`grant_type=urn:ietf:params:oauth:grant-type:device_code` until it returns a `refresh_token`. Put the
+value in the `CTCT_REFRESH_TOKEN` GitHub secret (the seed) and, on the box, in `.env.prod`; recreate
+`control-plane` so it re-reads env.
+
+### Go-live: enable confirmed (double) opt-in
+
+**Before go-live, enable confirmed (double) opt-in on the "Branch Out Games" CTCT list.** This is the
+spec 0047 abuse mitigation: the public subscribe endpoint can be POSTed with arbitrary emails, so a
+confirmation email (the subscriber must click to confirm) ensures a real, consenting recipient before
+they receive newsletter mail. Set it in the Constant Contact console on the list's settings.
 
 ## Rollback
 
