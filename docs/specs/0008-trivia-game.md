@@ -23,8 +23,12 @@ In (the game logic and its contract):
   - **Category**: one of `Nature, Food, Animals, Science, People, Places, Things, History`, or
     `Random` (draw from all categories).
   - **Rounds**: integer 1 to 100, default 10. Reject out of range.
-  - **Difficulty**: integer 1 to 10, default 5. Controls the blend of easy/medium/hard questions
-    drawn (table below).
+  - **Difficulty range**: a min-max band on the 1-10 obscurity scale (`difficultyMin` /
+    `difficultyMax`, integers 1-10, min <= max, default 4-6). The game draws only questions whose
+    rating falls in the band, so difficulty stays consistent instead of blending across tiers: a
+    4-6 game plays consistent middle questions, 1-3 plays easy, 8-10 plays hard. (Superseded the
+    original single 1-10 setting + easy/medium/hard blend table; every question now carries an
+    integer 1-10 rating and the bank was re-rated on that scale.)
 - **Round play**: one question per round. The engine sends the prompt; every player submits a
   free-form text answer within the round; a correct answer scores **100 points**.
 - **Answer matching**: normalize both the player's text and each acceptable answer (lowercase,
@@ -39,8 +43,9 @@ In (the game logic and its contract):
   round. The game does not auto-advance.
 - **End of game**: the player with the most points wins. Final standings are reported to the
   control-plane, which converts them to stars (win 3, second 2, third 1 by the platform default).
-- **Question selection**: draw per-round from `0009` honoring the difficulty blend, never
-  repeating a question within a game; `Random` draws across all categories.
+- **Question selection**: draw per-round from `0009` an unused question rated in `[min, max]`,
+  widening to the nearest rating (tie-breaking toward the easier side) only when the range runs
+  dry; never repeating a question within a game; `Random` draws across all categories.
 
 Out:
 - The question data itself (`0009`), the room/lobby and host controls UI (`0010`), the generic
@@ -53,24 +58,19 @@ Out:
 - Implement Trivia as a module in the modular game registry from `0007`, exposing the round
   lifecycle the protocol defines: `configure -> startRound -> collectAnswers -> reveal/score ->
   disputeWindow -> disputeVote -> leaderboard -> advance` and `endGame`.
-- **Difficulty blend** - the setting picks weights for each question draw (percent easy / medium
-  / hard), interpolated as this table:
-
-  | Setting | easy | medium | hard |
-  |---|---|---|---|
-  | 1 | 80 | 18 | 2 |
-  | 2 | 70 | 25 | 5 |
-  | 3 | 60 | 30 | 10 |
-  | 4 | 50 | 35 | 15 |
-  | 5 (default) | 40 | 40 | 20 |
-  | 6 | 30 | 42 | 28 |
-  | 7 | 22 | 40 | 38 |
-  | 8 | 15 | 37 | 48 |
-  | 9 | 8 | 32 | 60 |
-  | 10 | 3 | 22 | 75 |
-
-  Each round samples a difficulty tier by these weights, then picks an unused question of that
-  tier in the chosen category; if that tier is exhausted, fall back to the nearest tier.
+- **Difficulty as a 1-10 range** - every question carries an integer 1-10 `difficulty` (obscurity
+  for a general adult audience; the bank was re-rated on this real scale, replacing the old
+  `easy|medium|hard` tiers). The host sets a min-max band (`difficultyMin`/`difficultyMax`, default
+  4-6, validated on both sides with the engine as the authority). The draw indexes by category and
+  picks an unused question rated in `[min, max]`; when the range is exhausted it widens to the
+  nearest rating by absolute distance, tie-breaking toward the easier side (a gentler surprise than
+  jumping to an extreme). `configure` still guards the whole-category pool >= rounds so a game never
+  truly runs dry. The prompt carries the drawn question's numeric rating and the web badge shows
+  "Difficulty N/10"; the host config panel uses a mobile-first dual-thumb `DifficultyRange` slider
+  clamped so the thumbs cannot cross.
+  - The `prompt` payload is opaque/unversioned, so the numeric `difficulty` field is a hard cutover:
+    engine and web ship together. Defensively, `asScratch` maps a legacy single `difficulty` key to
+    a single-rating band so a game already in flight across a deploy degrades gracefully.
 - **Answer matching tolerance** - exact match after normalization is the baseline. To cut false
   negatives from typos, also accept a Levenshtein distance of 1 for answers of 5+ characters.
   Decision to confirm in review: keep the fuzzy tolerance, or require exact-normalized only and
@@ -85,8 +85,11 @@ Out:
 ## Acceptance
 
 - [ ] Host can configure category (8 + Random), rounds (1-100, default 10, out-of-range
-      rejected), and difficulty (1-10, default 5); the draw matches the blend table within
-      tolerance over a game.
+      rejected), and a difficulty min-max range (1-10, default 4-6, min<=max, validated on both
+      sides); the draw returns only in-range questions until the range is exhausted, then the
+      nearest rating, never repeating.
+- [ ] All questions carry an integer 1-10 `difficulty`; the prompt carries the numeric rating and
+      the web badge shows "Difficulty N/10".
 - [ ] Each round serves one non-repeating question; correct normalized answers score 100.
 - [ ] Dispute window is 10s; a disputed answer upheld by a majority of the other players awards
       the disputer 50; no majority awards nothing.

@@ -1,7 +1,7 @@
 # 0015 - Trivia play polish
 
 Three play-feel tweaks surfaced by playtesting the end-to-end game (feedback `0014`). They are
-independent of the difficulty-model rework (spec `0016`) and ship first as one small PR.
+independent of the difficulty-model rework (folded into spec `0008`) and ship first as one small PR.
 
 ## Symptom
 

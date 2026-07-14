@@ -38,7 +38,7 @@ nothing platform-specific leaks into those services.
   now, kept modular via a game registry so a game can later split into its own engine. At the
   end of each round it reports state and results to the control-plane; on game complete it
   reports final standings for stars. Session state lives in Redis and modules are pure callbacks -
-  with one exception: a **live game** (spec 0044, e.g. Teeter Tower). A live module implements
+  with one exception: a **live game** (spec 0043, e.g. Teeter Tower). A live module implements
   `GameModule.tick` and streams a `sim` frame; the engine runs a per-session continuous sim loop
   (~25 fps) that steps the module and broadcasts the snapshot, and the module holds an in-process
   (non-Redis) world - a Matter.js physics world - outside the Redis-backed session state. A compact
