@@ -110,6 +110,17 @@ jobs:
           GITHUB_ACTOR_NAME: ${{ github.actor }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          # Newsletter subscribe / Constant Contact (spec 0047). Optional secrets: while unset the
+          # POST /v1/subscribe endpoint ships INERT (a clear "not configured" response, never a crash),
+          # so the pipeline works before an operator provisions them. When set, they are written to
+          # .env.prod below. Mint CTCT_REFRESH_TOKEN via `ctct login`; find CTCT_LIST_ID via
+          # `ctct list list --name "Branch Out"`.
+          CTCT_CLIENT_ID: ${{ secrets.CTCT_CLIENT_ID }}
+          CTCT_REFRESH_TOKEN: ${{ secrets.CTCT_REFRESH_TOKEN }}
+          CTCT_LIST_ID: ${{ secrets.CTCT_LIST_ID }}
+          # Optional per-IP rate-limit tunables (default 5 / 600s when unset).
+          SUBSCRIBE_MAX_PER_IP: ${{ vars.SUBSCRIBE_MAX_PER_IP }}
+          SUBSCRIBE_WINDOW_SECONDS: ${{ vars.SUBSCRIBE_WINDOW_SECONDS }}
           # Root admin creds (spec 0037) are managed ON THE BOX only - never in GitHub. They live in the
           # host .env.prod and are PRESERVED across the rewrite below (not sourced from a secret). To
           # seed/rotate the break-glass root admin, edit ADMIN_ROOT_EMAIL/ADMIN_ROOT_PASSWORD in
@@ -135,6 +146,13 @@ jobs:
             printf 'export GHCR_ACTOR=%q\n' "$GITHUB_ACTOR_NAME"
             printf 'export POSTGRES_PASSWORD=%q\n' "$POSTGRES_PASSWORD"
             printf 'export SESSION_SECRET=%q\n' "$SESSION_SECRET"
+            # Subscribe / Constant Contact (spec 0047). Optional: empty when the secret/var is unset,
+            # which the remote script treats as "leave the endpoint inert" (writes no .env.prod line).
+            printf 'export CTCT_CLIENT_ID=%q\n' "$CTCT_CLIENT_ID"
+            printf 'export CTCT_REFRESH_TOKEN=%q\n' "$CTCT_REFRESH_TOKEN"
+            printf 'export CTCT_LIST_ID=%q\n' "$CTCT_LIST_ID"
+            printf 'export SUBSCRIBE_MAX_PER_IP=%q\n' "$SUBSCRIBE_MAX_PER_IP"
+            printf 'export SUBSCRIBE_WINDOW_SECONDS=%q\n' "$SUBSCRIBE_WINDOW_SECONDS"
             cat <<'REMOTE'
           set -euo pipefail
           REPO="$HOME/branchout"
@@ -247,6 +265,15 @@ jobs:
             # GitHub). Blank on a box that never set them -> the boot reconcile is a no-op.
             printf 'ADMIN_ROOT_EMAIL=%s\n' "$PREV_ADMIN_ROOT_EMAIL"
             printf 'ADMIN_ROOT_PASSWORD=%s\n' "$PREV_ADMIN_ROOT_PASSWORD"
+            # Newsletter subscribe / Constant Contact (spec 0047). Written ONLY when a secret is set:
+            # an empty value would make control-plane read '' (still inert) but writing nothing keeps
+            # the endpoint cleanly "not configured" and the file free of blank keys. The optional
+            # per-IP knobs fall back to their code defaults (5 / 600s) when unset.
+            [ -n "$CTCT_CLIENT_ID" ] && printf 'CTCT_CLIENT_ID=%s\n' "$CTCT_CLIENT_ID"
+            [ -n "$CTCT_REFRESH_TOKEN" ] && printf 'CTCT_REFRESH_TOKEN=%s\n' "$CTCT_REFRESH_TOKEN"
+            [ -n "$CTCT_LIST_ID" ] && printf 'CTCT_LIST_ID=%s\n' "$CTCT_LIST_ID"
+            [ -n "$SUBSCRIBE_MAX_PER_IP" ] && printf 'SUBSCRIBE_MAX_PER_IP=%s\n' "$SUBSCRIBE_MAX_PER_IP"
+            [ -n "$SUBSCRIBE_WINDOW_SECONDS" ] && printf 'SUBSCRIBE_WINDOW_SECONDS=%s\n' "$SUBSCRIBE_WINDOW_SECONDS"
             # The engine reaches the report intake over the container network and does
             # not present a token yet (follow-up). Caddy blocks /api/engine/* from the
             # internet, so the intake is only reachable internally - open here is safe.

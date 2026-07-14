@@ -7,7 +7,7 @@ import { InMemoryAdminRepository } from './admin/repository.memory';
 import { AdminService } from './admin/service';
 import { InMemoryAdminSessionStore } from './admin/session.store.memory';
 import { createApp } from './app';
-import type { AdminCookieConfig, SessionCookieConfig } from './config';
+import type { AdminCookieConfig, SessionCookieConfig, SubscribeConfig } from './config';
 import { CreditLedger } from './credits/ledger';
 import { InMemoryLedgerRepository } from './credits/repository.memory';
 import { FreeTierProvider } from './credits/tiers';
@@ -48,6 +48,9 @@ const defaultRateLimit: RateLimitConfig = {
   signupWindowSeconds: 3600,
 };
 
+/** Subscribe config with no CTCT secrets (the endpoint is inert); generous per-IP cap. Spec 0047. */
+const defaultSubscribe: SubscribeConfig = { maxPerIp: 50, windowSeconds: 600 };
+
 function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => number) {
   const repo = new InMemoryAccountRepository();
   const accounts = new AccountService(repo, fakeHasher);
@@ -83,6 +86,7 @@ function makeApp(rateLimit: RateLimitConfig = defaultRateLimit, now?: () => numb
     webOrigins: ['http://localhost:3000'],
     limiter,
     rateLimit,
+    subscribe: defaultSubscribe,
   });
   return {
     app,
@@ -1017,6 +1021,7 @@ function makeAppWithToken(token: string) {
     internalToken: token,
     limiter: new InMemoryRateLimiter(),
     rateLimit: defaultRateLimit,
+    subscribe: defaultSubscribe,
   });
   return { app };
 }

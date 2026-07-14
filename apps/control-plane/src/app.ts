@@ -5,13 +5,20 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { AccountService } from './accounts/service';
 import type { AdminService } from './admin/service';
 import type { AdminSessionStore } from './admin/session';
-import type { AdminCookieConfig, RateLimitConfig, SessionCookieConfig } from './config';
+import type {
+  AdminCookieConfig,
+  RateLimitConfig,
+  SessionCookieConfig,
+  SubscribeConfig,
+} from './config';
 import type { RateLimiter } from './ratelimit/limiter';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
 import { registerEngineRoutes } from './routes/engine';
 import { registerProfileRoutes } from './routes/profiles';
 import { registerRoomRoutes } from './routes/rooms';
+import { registerSubscribeRoutes } from './routes/subscribe';
+import { createTokenCache, type TokenCache } from './subscribe/constant-contact';
 import type { ProfileService } from './profiles/service';
 import type { RoomService } from './rooms/service';
 import type { SessionStore } from './sessions/store';
@@ -41,6 +48,15 @@ export interface AppDeps {
   limiter: RateLimiter;
   /** Auth rate-limit thresholds. */
   rateLimit: RateLimitConfig;
+  /** Newsletter subscribe / Constant Contact config (spec 0047). */
+  subscribe: SubscribeConfig;
+  /**
+   * Module-scoped CTCT access-token cache for the subscribe endpoint (spec 0047). Optional so a
+   * caller (or a test) need not supply one; `createApp` mints a fresh cache when it is absent.
+   */
+  subscribeTokenCache?: TokenCache;
+  /** Injected fetch for the subscribe endpoint's CTCT calls (tests mock it); defaults to global fetch. */
+  subscribeFetch?: typeof fetch;
 }
 
 /**
@@ -116,6 +132,15 @@ export function createApp(deps: AppDeps): FastifyInstance {
       registerEngineRoutes(v1, {
         rooms: deps.rooms,
         internalToken: deps.internalToken,
+      });
+
+      registerSubscribeRoutes(v1, {
+        config: deps.subscribe,
+        limiter: deps.limiter,
+        // A module-scoped token cache so a CTCT access token is minted once and reused across requests
+        // for the life of the process; a fresh one is created when the caller supplies none.
+        tokenCache: deps.subscribeTokenCache ?? createTokenCache(),
+        ...(deps.subscribeFetch ? { fetchImpl: deps.subscribeFetch } : {}),
       });
 
       done();

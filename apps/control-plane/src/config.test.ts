@@ -78,3 +78,38 @@ describe('loadConfig rate limiting (spec 0036)', () => {
     expect(rateLimit.loginWindowSeconds).toBe(900); // negative rejected
   });
 });
+
+describe('loadConfig subscribe / Constant Contact (spec 0047)', () => {
+  it('leaves the CTCT credentials unset by default (the endpoint ships inert)', () => {
+    const { subscribe } = loadConfig({ ...base });
+    expect('ctctClientId' in subscribe).toBe(false);
+    expect('ctctRefreshToken' in subscribe).toBe(false);
+    expect('ctctListId' in subscribe).toBe(false);
+    // The per-IP knobs default to 5 / 10 min.
+    expect(subscribe.maxPerIp).toBe(5);
+    expect(subscribe.windowSeconds).toBe(600);
+  });
+
+  it('reads the CTCT credentials and the tunable rate-limit knobs from the environment', () => {
+    const { subscribe } = loadConfig({
+      ...base,
+      CTCT_CLIENT_ID: 'client-1',
+      CTCT_REFRESH_TOKEN: 'refresh-1',
+      CTCT_LIST_ID: 'list-branch-out',
+      SUBSCRIBE_MAX_PER_IP: '9',
+      SUBSCRIBE_WINDOW_SECONDS: '120',
+    });
+    expect(subscribe).toEqual({
+      ctctClientId: 'client-1',
+      ctctRefreshToken: 'refresh-1',
+      ctctListId: 'list-branch-out',
+      maxPerIp: 9,
+      windowSeconds: 120,
+    });
+  });
+
+  it('falls back to the default on a garbage subscribe knob', () => {
+    const { subscribe } = loadConfig({ ...base, SUBSCRIBE_MAX_PER_IP: 'abc' });
+    expect(subscribe.maxPerIp).toBe(5);
+  });
+});
