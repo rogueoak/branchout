@@ -233,7 +233,11 @@ What the product does for users, grouped by area. Each capability maps to one or
       empty-state index of test games (games added later). The role is granted out-of-band (a DB
       update) until the admin console (spec `0037`) ships a toggle (spec `0035`). The account page
       shows an "Insider game previews" button that links to the surface, rendered only for insider
-      accounts (spec `0039`).
+      accounts (spec `0039`). The nav's Games link and the wordmark/home are **surface-owned**: on
+      the insider host they stay relative (Games reaches the insider games on the landing, the
+      wordmark returns to the insider landing), and only the genuinely apex-only chrome (Log in /
+      Sign up / Manage account, footer legal) crosses to the apex; the landing leads with one
+      centered welcome and each test-game card carries a "Play now" CTA (feedback `0030`).
 - [ ] Profile pages and friend search/invite.
 
 ## Future
