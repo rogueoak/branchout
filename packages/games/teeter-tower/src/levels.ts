@@ -13,11 +13,13 @@ export const CENTER_X = VIEW_W / 2; // 410
 /** Pieces that fall past this world-y are culled (lost off the bottom). */
 export const DEATH_Y = GROUND_TOP + 260;
 
-// Grip and fall tuning, ported verbatim from the prototype. Matter's friction saturates near 1.0,
-// so stability comes from stable piece shapes + soft landings, not big numbers here.
+// Grip and fall tuning. Matter's KINETIC friction saturates near 1.0, so stability comes from grippy
+// resting contact + damping, not from `PIECE_FRICTION`. `PIECE_FRICTION_STATIC` (the force to break a
+// resting piece free) is the real "stickiness" lever, raised hard so a landed piece grabs and stays put
+// instead of sliding/toppling off; `PIECE_FRICTION_AIR` damps the landing skitter (feedback 0028).
 export const PIECE_FRICTION = 1.0;
-export const PIECE_FRICTION_STATIC = 6;
-export const PIECE_FRICTION_AIR = 0.03;
+export const PIECE_FRICTION_STATIC = 20;
+export const PIECE_FRICTION_AIR = 0.05;
 export const PIECE_DENSITY = 0.0016;
 /** Caps drop velocity so a piece can't slam the tower off center. */
 export const MAX_FALL_SPEED = 9;
