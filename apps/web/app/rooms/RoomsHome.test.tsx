@@ -102,6 +102,15 @@ describe('RoomsHome create flow', () => {
     await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=invite'));
   });
 
+  it('does NOT autofocus the join-code input on mount (feedback 0030)', async () => {
+    render(<RoomsHome viewer={{ signedIn: false }} />);
+    const input = await screen.findByLabelText('Room code');
+    // The field must not steal focus on load - that pops the mobile keyboard and buries the primary
+    // "Create a room" action. It is `autoFocus={false}`, so nothing on mount focuses it.
+    expect(document.activeElement).not.toBe(input);
+    expect(input).toHaveProperty('autofocus', false);
+  });
+
   it('renders the shared footer with privacy and terms links (spec 0031)', async () => {
     render(<RoomsHome viewer={{ signedIn: false }} />);
     const footer = await screen.findByRole('contentinfo');
