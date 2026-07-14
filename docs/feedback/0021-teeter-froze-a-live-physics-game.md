@@ -18,8 +18,9 @@ surface.
 
 ## Fix
 
-Spec 0044: a continuous per-session simulation + streaming loop in the engine (a new opt-in "live
-game" capability via `GameModule.tick` + a `sim` frame). The Teeter world runs live and streams; the
+Folded back into spec 0043 (Teeter Tower's living spec): a continuous per-session simulation +
+streaming loop in the engine (a new opt-in "live game" capability via `GameModule.tick` + a `sim`
+frame). The Teeter world runs live and streams; the
 web collapses to one interactive canvas. Server-authoritative AND continuous, so multiplayer still
 sees one shared, live tower.
 

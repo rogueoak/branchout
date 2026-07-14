@@ -2,7 +2,7 @@
 
 ## Symptom
 
-First real phone playtest of the live Teeter Tower (spec 0044). Frame rate and mechanics feel good,
+First real phone playtest of the live Teeter Tower (spec 0043). Frame rate and mechanics feel good,
 but six issues hurt it:
 
 1. Placed pieces visibly intersect each other.

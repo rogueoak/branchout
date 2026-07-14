@@ -310,7 +310,7 @@ Capture durable lessons as they emerge.
   scale and let the host pick a min-max range, not to add more blend rows. Re-rating 1600 rows was a
   merge-by-id textual swap so only the `difficulty` field changed (the diff stayed reviewable), and
   the wire/UI followed the data (numeric prompt rating, dual-thumb slider). The knob's expressiveness
-  is bounded by the granularity of the data underneath it - grow the data first. (Spec `0016`.)
+  is bounded by the granularity of the data underneath it - grow the data first. (Spec `0008`.)
 - **Store the canonical form; compute the display form at the view - never make storage carry
   presentation.** Trivia answers are stored lowercase because matching is case-insensitive; the
   fix for shouty display was a title-case transform in the viewer, not a data change or a second

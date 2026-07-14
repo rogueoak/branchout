@@ -3,7 +3,7 @@
 ## Problem
 
 The game-engine runs every game in-process on its single main thread. The live physics game (Teeter
-Tower, spec 0044) runs a ~25fps Matter.js `tick` loop synchronously on that thread (plus
+Tower, spec 0043) runs a ~25fps Matter.js `tick` loop synchronously on that thread (plus
 `Query.collides` per move), so one heavy game - or a game with a bug that loops or crashes - stalls
 WebSocket handling and starves every other room. There is no isolation boundary and no way to kill a
 stuck game.
@@ -56,10 +56,10 @@ the main thread); a shared worker pool (chosen: one worker per game); a warm-spa
     state); the next engine call/`startTick` respawns + the module rebuilds lazily from ctx scratch.
   - **hang**: a per-call timeout AND a tick heartbeat; on breach `worker.terminate()` (force-kills the
     thread) then respawn; rebuild is automatic - the module rebuilds its world from `ctx.scratch` on the
-    next call (Teeter's lazy `worldFor`/`createWorld`; the seed is persisted in scratch, spec 0044).
+    next call (Teeter's lazy `worldFor`/`createWorld`; the seed is persisted in scratch, spec 0043).
 
 ### Determinism / rebuild
-- `configure` derives + persists the seed once (spec 0044). A respawned worker never re-`configure`s;
+- `configure` derives + persists the seed once (spec 0043). A respawned worker never re-`configure`s;
   it rebuilds lazily from the existing scratch, so the world is identical. Turn-based games are pure
   over scratch - rebuild is just the snapshot.
 

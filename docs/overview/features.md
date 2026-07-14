@@ -102,13 +102,13 @@ What the product does for users, grouped by area. Each capability maps to one or
       engine WebSocket, engine <-> control-plane REST) plus idempotent round/complete reporting
       (spec `0007`).
 - [x] Trivia question bank - questions across 8 categories (Nature, Food, Animals, Science, People,
-      Places, Things, History), each rated 1-10 for difficulty (spec `0016`), with a loader and a
+      Places, Things, History), each rated 1-10 for difficulty (spec `0008`), with a loader and a
       structural validator (schema, id format + uniqueness, bounded difficulty, no duplicate prompt
       in a category - no total/per-category count or spread gate, spec `0041`). The public repo ships
       a small sample; the full bank is served from a private data repo mounted at deploy time (specs
-      `0009`, `0016`, `0041`).
+      `0009`, `0041`).
 - [x] First reference game - Trivia: host-configured category (8 + Random), rounds (1-100,
-      default 10) and a difficulty min-max range (1-10, default 4-6, spec `0016`) that draws only
+      default 10) and a difficulty min-max range (1-10, default 4-6, spec `0008`) that draws only
       questions rated in the range (widening to the nearest rating when exhausted); free-text answer
       matching (normalized exact plus Levenshtein-1 for 5+ char answers);
       100 points for a correct answer; a 10s dispute window with a majority vote of the other
@@ -128,11 +128,13 @@ What the product does for users, grouped by area. Each capability maps to one or
       Liar Liar is registered in the engine boot alongside Trivia, so a host can start and play it
       (specs `0022`, `0041`).
 - [~] Third game (insider-only) - Teeter Tower: a physics stacking game where a turn is
-      `{ angle, dropX }` on the generic `move` channel (spec `0042`). Unlike the quiz games the
-      physics is **server-authoritative** - Matter.js runs headless in the engine, one piece-drop is
-      one round, and the settle is streamed to every client as a keyframe track so all viewers see
-      the identical tower; the browser is a pure renderer (`@branchout/game-teeter-tower`, spec
-      `0043`). Gated by SURFACE, not entitlement (feedback `0029`): a game `visibility: 'insider'`
+      `{ angle, dropX, dropY }` on the generic `move` channel (spec `0042`). Unlike the quiz games the
+      physics is **server-authoritative AND continuous** - Matter.js runs headless in the engine as a
+      per-session live world stepped on a ~25 fps tick loop and streamed live via a `sim` frame, so
+      the tower keeps swaying and can topple on its own and every client sees the identical live tower;
+      the browser is a pure renderer on a single interactive canvas (no slider, no re-aim). The drop
+      must clear the 25%-from-top line and level 1's target is 600 (`@branchout/game-teeter-tower`,
+      spec `0043`). Gated by SURFACE, not entitlement (feedback `0029`): a game `visibility: 'insider'`
       flag hides it from the public picker/pages/sitemap, and the room picker offers it only on the
       insider surface (`getSurface()` reads the request host), so it never shows on the apex even to
       an insider. The insider home card deep-links into a room RELATIVELY, and the room/join flow is
