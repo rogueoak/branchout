@@ -71,6 +71,35 @@ const TAP_MAX_MOVE_PX = 12;
 const DEFAULT_AIM_Y = GROUND_TOP - 300;
 
 /**
+ * The minimum gap (px) the SPINNING piece's centre keeps above the platform (feedback 0032). The
+ * spinning piece follows the cursor vertically now; this only stops it from previewing INSIDE the
+ * platform. Angle-INDEPENDENT (a constant), so the piece still spins in place with no vertical bob -
+ * the fixed-gap pin (feedback 0027) killed the bob but also blocked vertical aim; this restores the
+ * aim while keeping the bob-free property.
+ */
+const SPIN_FLOOR_GAP = 60;
+
+/**
+ * The spinning piece's centroid world-y: it follows the cursor (`pointerY`), clamped only so its centre
+ * stays a fixed gap above the platform (feedback 0032). Pure + exported so it is unit-testable (the
+ * transform runs in the canvas draw loop jsdom cannot exercise). Angle-independent, so no spin bob.
+ */
+export function spinAimY(pointerY: number): number {
+  return Math.min(pointerY, GROUND_TOP - SPIN_FLOOR_GAP);
+}
+
+/**
+ * The PLACING piece's centroid world-y (feedback 0032): it follows the cursor (`pointerY`) but is
+ * clamped so the piece bottom (centroid + rotated half-height `spanMax`) stays a hair above the
+ * required line. So the previewed pose is always a legal, above-line drop - a below-line aim is dropped
+ * AT the line, never blocked (the server clamps identically). Pure + exported for unit tests.
+ */
+export function placeAimY(pointerY: number, requiredLine: number, spanMax: number): number {
+  const maxCentroidY = requiredLine - spanMax - 1;
+  return Math.min(pointerY, maxCentroidY);
+}
+
+/**
  * The 0..1 interpolation fraction between the previous and current sim frame at wall-clock `now`
  * (feedback 0027). The inter-frame span is CAPPED at {@link MAX_INTERP_SPAN_MS}: after a pause the gap
  * between the last pre-pause frame and the first resumed frame is the whole pause, which would make the
@@ -245,18 +274,17 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     const span = rotatedYSpan(piece, angleAt);
     const x = clampDropX(pointerRef.current.x, live.platform.width);
     if (spinning) {
-      // Follow the cursor vertically (feedback 0032), clamped only to stay above the platform. The clamp
-      // is angle-independent (a constant `GROUND_TOP - 60`), so the piece can spin in place with no bob.
-      const y = Math.min(pointerRef.current.y, GROUND_TOP - 60);
+      // Follow the cursor vertically (feedback 0032), clamped only to stay above the platform (the
+      // clamp is angle-independent, so the piece spins in place with no bob). See `spinAimY`.
+      const y = spinAimY(pointerRef.current.y);
       return { x, y, legal: true, rawBottom: y + span.max };
     }
     // The piece bottom (centroid y + rotated max) relative to the line, kept for tests/callers.
     const rawBottom = pointerRef.current.y + span.max;
     // Clamp the drawn y so the ghost never sinks below the line (a small margin keeps it readable). The
     // clamp guarantees an above-line pose, so the drop is always legal (feedback 0032) - a below-line
-    // aim is dropped AT the line by the server, never blocked.
-    const maxCentroidY = live.requiredLine - span.max - 1;
-    const y = Math.min(pointerRef.current.y, maxCentroidY);
+    // aim is dropped AT the line by the server, never blocked. See `placeAimY`.
+    const y = placeAimY(pointerRef.current.y, live.requiredLine, span.max);
     return { x, y, legal: true, rawBottom };
   }
 
@@ -625,9 +653,12 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
               ) : (
                 <>
                   <p className="text-h3 font-semibold text-white">Round {level + 1}</p>
-                  <p className="text-body-sm text-white">
-                    {LEVEL_NAMES[level] ?? `Round ${level + 1}`}
-                  </p>
+                  {/* The level name only when there IS one (feedback 0032 review): past the named
+                      levels the fallback would repeat the "Round N" title verbatim, reading as a
+                      render glitch, so drop the subtitle rather than duplicate the line. */}
+                  {LEVEL_NAMES[level] ? (
+                    <p className="text-body-sm text-white">{LEVEL_NAMES[level]}</p>
+                  ) : null}
                 </>
               )}
             </div>

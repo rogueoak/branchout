@@ -39,6 +39,7 @@ import {
   heightToScore,
   heldBodyAt,
   INTRO_TICKS,
+  lineYFor,
   MAX_PLACED_BODIES,
   MAX_SETTLE_TICKS,
   overlapsScene,
@@ -360,9 +361,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       const dropX = clampDropX(parsed.dropX, world.platformWidth);
       let dropY = clampDropY(parsed.dropY);
       // Min-drop line as a world-y: the bottom of the piece must sit above it. Once every line is
-      // cleared, `reqH` is null and there is no line to clamp against.
-      const reqH = requiredDropHeight(level.target, height);
-      const lineY = reqH == null ? null : GROUND_TOP - reqH;
+      // cleared, `lineYFor` is null and there is no line to clamp against.
+      const lineY = lineYFor(level.target, height);
       // Below-the-line drop -> CLAMP up, don't block (feedback 0032): shift the piece up so its bottom
       // rests just above the line, then rebuild it there. Clamping UP moves it AWAY from the tower, so
       // it cannot introduce an overlap. The line is now satisfied by construction; only the overlap

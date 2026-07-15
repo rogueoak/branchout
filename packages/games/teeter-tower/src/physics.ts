@@ -96,7 +96,8 @@ export interface StoredPiece {
 // Deterministic piece generation (ported from the prototype's makePiece)
 // ---------------------------------------------------------------------------
 
-type PieceType = 'block' | 'plank' | 'ell' | 'blob' | 'tri' | 'trap' | 'notchSide' | 'notchBottom';
+export type PieceType =
+  'block' | 'plank' | 'ell' | 'blob' | 'tri' | 'trap' | 'notchSide' | 'notchBottom';
 // The type mix (feedback 0032). Blocks + planks (the reliable, easy-to-stack pieces) dominate; the
 // HARD shapes (`ell`, `blob`, `tri`) drop to one slot each so they show up occasionally, not on a
 // large share of drops (item 6). `trap` is the SPECIAL heavy reinforcement piece - one slot, placed
@@ -156,6 +157,12 @@ export interface GeneratedPiece {
   eyes: Eye[];
   /** The prototype's spin seed (a signed rotation speed) the renderer uses to spin the piece. */
   spinSeed: number;
+  /**
+   * The shape family this piece was drawn from (feedback 0032). Not persisted or streamed (the wire
+   * carries geometry, not type); exposed so tests can assert the bag mix + that both notch pieces
+   * appear, since the decomposed geometry alone cannot tell a notch from a blob.
+   */
+  type: PieceType;
 }
 
 /**
@@ -275,7 +282,7 @@ export function makePiece(rng: SeededRng): GeneratedPiece {
   ];
   const spinSeed = (rng.next() < 0.5 ? -1 : 1) * rng.range(0.015, 0.03);
 
-  return { body, skin, eyes, spinSeed };
+  return { body, skin, eyes, spinSeed, type };
 }
 
 /**
@@ -681,6 +688,17 @@ export function requiredDropHeight(target: number, height: number): number | nul
   return null;
 }
 
+/**
+ * The min-drop line as a world-y (the bottom of a dropped piece must sit above it), or null once every
+ * line is cleared. Centralizes the `requiredDropHeight -> GROUND_TOP - reqH` mapping so `collectMove`'s
+ * drop-at-line clamp and `evaluatePlacement`'s line check derive the same world-y (architect review of
+ * PR #94). y grows downward, so a legal drop has its lowest point at `y < lineY`.
+ */
+export function lineYFor(target: number, height: number): number | null {
+  const reqH = requiredDropHeight(target, height);
+  return reqH == null ? null : GROUND_TOP - reqH;
+}
+
 /** Verdict for a placement: `ok`, or a reason (`overlap` | `line`) it is illegal. */
 export interface PlacementVerdict {
   ok: boolean;
@@ -700,8 +718,7 @@ export function evaluatePlacement(
   pendulum: Matter.Body | null,
   walls: Matter.Body[] = [],
 ): PlacementVerdict {
-  const reqH = requiredDropHeight(target, height);
-  const lineY = reqH == null ? null : GROUND_TOP - reqH;
+  const lineY = lineYFor(target, height);
   if (overlapsScene(body, platform, placed, pendulum, walls))
     return { ok: false, reason: 'overlap' };
   if (lineY != null && body.bounds.max.y > lineY) return { ok: false, reason: 'line' };

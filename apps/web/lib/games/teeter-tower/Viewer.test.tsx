@@ -1,7 +1,8 @@
 import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
-import { interpFraction, TeeterViewer } from './Viewer';
+import { interpFraction, placeAimY, spinAimY, TeeterViewer } from './Viewer';
+import { GROUND_TOP } from './render';
 
 // The single canvas draws with rAF + a 2D context. jsdom leaves getContext unimplemented (returns
 // null); the draw loop guards on a null context, so rendering is safe - stub getContext to keep the
@@ -380,5 +381,30 @@ describe('interpFraction (interpolation span cap, feedback 0027)', () => {
     expect(interpFraction(1050, 1000, -4000)).toBeGreaterThan(0.25);
     // ...and it reaches the newest frame within a couple of frames (300ms past -> clamped to 1).
     expect(interpFraction(1300, 1000, -4000)).toBe(1);
+  });
+});
+
+describe('aim vertical follow (feedback 0032)', () => {
+  it('spinAimY follows the cursor vertically, clamped only above the platform', () => {
+    // The headline item 3 fix: while spinning the piece tracks pointer.y (it no longer sits at a fixed
+    // gap), so a higher cursor (smaller y) gives a higher piece 1:1 - reverting to the fixed pin fails.
+    expect(spinAimY(GROUND_TOP - 300)).toBe(GROUND_TOP - 300);
+    expect(spinAimY(GROUND_TOP - 120)).toBe(GROUND_TOP - 120);
+    // Clamp is angle-INDEPENDENT (a constant gap above the platform), so no spin bob: a cursor at/below
+    // the platform is pinned to the same gap regardless of the piece's rotation.
+    expect(spinAimY(GROUND_TOP + 50)).toBe(GROUND_TOP - 60);
+    expect(spinAimY(GROUND_TOP)).toBe(GROUND_TOP - 60);
+  });
+
+  it('placeAimY follows the cursor but clamps the bottom above the required line', () => {
+    const requiredLine = GROUND_TOP - 200;
+    const spanMax = 40; // rotated half-height of the piece
+    // Above the line: the cursor is honored verbatim.
+    expect(placeAimY(GROUND_TOP - 400, requiredLine, spanMax)).toBe(GROUND_TOP - 400);
+    // Below the line: clamped so the piece BOTTOM (centroid + spanMax) sits a hair above the line, not
+    // blocked (feedback 0032) - the submitted dropY is this clamped value, so the server accepts it.
+    const clamped = placeAimY(requiredLine, requiredLine, spanMax);
+    expect(clamped).toBe(requiredLine - spanMax - 1);
+    expect(clamped + spanMax).toBeLessThan(requiredLine);
   });
 });

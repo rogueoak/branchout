@@ -26,6 +26,7 @@ import {
   clampDropY,
   worldHeight,
   type LiveWorld,
+  type PieceType,
   type StoredBody,
 } from './physics';
 import {
@@ -511,44 +512,40 @@ describe('floor-only static friction (feedback 0032)', () => {
 });
 
 describe('notch pieces (feedback 0032: two new concave pieces)', () => {
-  /** Find the first piece index in the deterministic stream that is concave (a multi-part body). */
-  function firstConcaveIndex(): number {
-    for (let i = 0; i < 400; i++) {
-      if (makePiece(createRng(deriveSeed(1, i))).body.parts.length > 1) return i;
-    }
+  /** The shape family for a piece index in the deterministic stream (feedback 0032 exposes `type`). */
+  function typeAt(seed: number, i: number): PieceType {
+    return makePiece(createRng(deriveSeed(seed, i))).type;
+  }
+
+  /** The first stream index whose piece is `type`, or -1 if none in the window. */
+  function firstIndexOfType(seed: number, type: PieceType): number {
+    for (let i = 0; i < 400; i++) if (typeAt(seed, i) === type) return i;
     return -1;
   }
 
-  it('notchSide and notchBottom appear in the stream and are concave (multi-part after decomposition)', () => {
-    // A concave polygon built via Bodies.fromVertices decomposes into >1 convex part (like `blob`), so
-    // a notch piece has parts.length > 1. Scan the stream for at least one of each new type by shape:
-    // notchSide has a flat bottom edge spanning its full width; notchBottom has a V cut into the bottom.
-    // We just prove the two NEW pieces show up as concave bodies that round-trip below.
-    const idx = firstConcaveIndex();
-    expect(idx).toBeGreaterThanOrEqual(0);
-    // At least a handful of concave pieces exist across a reasonable window (blob + the two notches).
-    let concave = 0;
-    for (let i = 0; i < 120; i++) {
-      if (makePiece(createRng(deriveSeed(1, i))).body.parts.length > 1) concave++;
+  it('both notchSide and notchBottom show up in the stream and each is a concave (multi-part) body', () => {
+    // Assert the two NEW types by their exposed `type` (the decomposed geometry alone cannot tell a
+    // notch from a blob, which is what made the earlier parts.length count vacuous). Each must also be
+    // genuinely concave so it exercises the decomposition + compound round-trip path below.
+    for (const type of ['notchSide', 'notchBottom'] as const) {
+      const idx = firstIndexOfType(1, type);
+      expect(idx, `${type} should appear in the stream`).toBeGreaterThanOrEqual(0);
+      expect(makePiece(createRng(deriveSeed(1, idx))).body.parts.length).toBeGreaterThan(1);
     }
-    expect(concave).toBeGreaterThan(3);
   });
 
-  it('a concave notch piece round-trips through toStoredBodies -> createWorld (rebuild) with matching geometry', () => {
-    // Build a concave piece, snapshot it, drop it, snapshot the world, rebuild a world from the stored
-    // bodies - the rebuilt body keeps the same part count + overall bounds (the blob path, generalized).
-    const idx = firstConcaveIndex();
-    const original = makePiece(createRng(deriveSeed(1, idx))).body;
-    expect(original.parts.length).toBeGreaterThan(1); // genuinely concave -> decomposed
-
-    const world = worldWith([]);
+  it('a notch piece round-trips through toStoredBodies -> createWorld (rebuild) with matching geometry', () => {
+    // Round-trip a REAL notchBottom (not just "the first concave piece", which could be a blob) so the
+    // notch geometry itself is proven through the store/rebuild path (the blob path, generalized).
+    const idx = firstIndexOfType(1, 'notchBottom');
+    expect(idx).toBeGreaterThanOrEqual(0);
     const stored = storedPieceFrom(1, makePiece(createRng(deriveSeed(1, idx))));
     expect(stored.verts.length).toBeGreaterThan(1); // multiple local loops (one per convex part)
-    addPieceToWorld(world, stored, 410, GROUND_TOP - 200, 0);
 
+    const world = worldWith([]);
+    addPieceToWorld(world, stored, 410, GROUND_TOP - 200, 0);
     // Snapshot + rebuild via createWorld (the reconnect / worker-restart path).
-    const bodies = toStoredBodies(world);
-    const rebuilt = worldWith(bodies);
+    const rebuilt = worldWith(toStoredBodies(world));
     const rebuiltBody = rebuilt.placed[0]!.body;
     expect(rebuiltBody.parts.length).toBe(world.placed[0]!.body.parts.length);
     const w = (b: typeof rebuiltBody): number => b.bounds.max.x - b.bounds.min.x;
@@ -557,23 +554,35 @@ describe('notch pieces (feedback 0032: two new concave pieces)', () => {
     expect(h(rebuiltBody)).toBeCloseTo(h(world.placed[0]!.body), 1);
   });
 
-  it('the bag weights blocks/planks heavily and ell/blob/tri rarely (feedback 0032)', () => {
-    // Over a long deterministic run the reliable pieces dominate and the hard shapes are rare. We
-    // classify each piece by shape signature: a plank is a wide thin rectangle, a block a chunkier
-    // rectangle, the trap near-black; blob/notch are concave. This asserts the rebalanced mix without
-    // reaching into the private TYPE_BAG - rectangular (block+plank) pieces should be the clear
-    // majority, and concave/other pieces a smaller share.
-    let rects = 0;
-    let concave = 0;
-    const N = 600;
-    for (let i = 0; i < N; i++) {
-      const body = makePiece(createRng(deriveSeed(7, i))).body;
-      if (body.parts.length > 1) concave++;
-      else rects++; // single-part: block, plank, tri, trap (all convex)
+  it('the bag makes blocks/planks common and L/octagon/triangle rare (feedback 0032 items 2+6)', () => {
+    // Count the actual `type` mix over a long deterministic run. The reliable pieces (block, plank)
+    // must dominate, and each HARD shape (ell/blob/tri) must be individually rare - reverting the
+    // rebalance (or dropping a notch) fails this, unlike the old concave-fraction count.
+    const counts: Record<PieceType, number> = {
+      block: 0,
+      plank: 0,
+      ell: 0,
+      blob: 0,
+      tri: 0,
+      trap: 0,
+      notchSide: 0,
+      notchBottom: 0,
+    };
+    const N = 1200;
+    for (let i = 0; i < N; i++) counts[typeAt(7, i)] += 1;
+
+    // Blocks + planks are 6 of 12 slots -> a clear majority; each is the frequency of a single slot.
+    expect((counts.block + counts.plank) / N).toBeGreaterThan(0.4);
+    expect(counts.block).toBeGreaterThan(counts.ell);
+    expect(counts.block).toBeGreaterThan(counts.blob);
+    expect(counts.block).toBeGreaterThan(counts.tri);
+    // Each hard shape is ~1/12 of drops - rare, not routine.
+    for (const hard of ['ell', 'blob', 'tri'] as const) {
+      expect(counts[hard] / N).toBeLessThan(0.15);
     }
-    // Blocks + planks alone are 6 of 12 slots, so single-part convex pieces are a large majority.
-    expect(rects).toBeGreaterThan(concave);
-    expect(rects / N).toBeGreaterThan(0.55);
+    // Both new notch pieces are actually drawn.
+    expect(counts.notchSide).toBeGreaterThan(0);
+    expect(counts.notchBottom).toBeGreaterThan(0);
   });
 });
 
