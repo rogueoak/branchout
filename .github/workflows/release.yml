@@ -250,13 +250,17 @@ jobs:
           # Root admin creds (spec 0037) live ONLY on the box - read them from the current env file
           # before it is truncated, so the rewrite preserves them instead of clobbering them with a
           # value from GitHub (which we deliberately do not store there).
-          PREV_ADMIN_ROOT_EMAIL=$(grep -E '^ADMIN_ROOT_EMAIL=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2-)
-          PREV_ADMIN_ROOT_PASSWORD=$(grep -E '^ADMIN_ROOT_PASSWORD=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2-)
+          # `|| true` on every preserve-read: under `set -o pipefail` a no-match grep exits non-zero,
+          # and `set -e` would then abort the whole deploy on a box that simply does not have the key
+          # yet (a first deploy, or a key added later like CTCT_REFRESH_TOKEN in spec 0049). Empty on
+          # no-match is the intended "box never set this" behaviour, not a fatal error.
+          PREV_ADMIN_ROOT_EMAIL=$(grep -E '^ADMIN_ROOT_EMAIL=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- || true)
+          PREV_ADMIN_ROOT_PASSWORD=$(grep -E '^ADMIN_ROOT_PASSWORD=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- || true)
           # CTCT refresh token (specs 0047 + 0049): the daily keepalive cron on the box can ROTATE this
           # token in .env.prod. Read the box's current value before truncating so the rewrite preserves
           # it - the secrets.CTCT_REFRESH_TOKEN below is only the INITIAL SEED; once the box holds a
           # (possibly rotated) token, a deploy must NOT clobber it with the stale secret.
-          PREV_CTCT_REFRESH_TOKEN=$(grep -E '^CTCT_REFRESH_TOKEN=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2-)
+          PREV_CTCT_REFRESH_TOKEN=$(grep -E '^CTCT_REFRESH_TOKEN=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- || true)
           # Prefer the box's preserved token; fall back to the seed secret only on a box that never had one.
           CTCT_REFRESH_TOKEN="${PREV_CTCT_REFRESH_TOKEN:-$CTCT_REFRESH_TOKEN}"
           install -m 0600 /dev/null "$ENV_FILE"
