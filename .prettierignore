@@ -18,3 +18,7 @@ docs/
 AGENTS.md
 CLAUDE.md
 GEMINI.md
+
+# Hand-authored, Outlook-hardened email templates. Prettier's line-wrapping and
+# attribute reflow can break email-client rendering, so keep them as authored.
+emails/
