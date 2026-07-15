@@ -257,7 +257,10 @@ What the product does for users, grouped by area. Each capability maps to one or
       (`company`) drops naive bots and the endpoint is rate-limited per IP; failures return generic
       messages and never echo a subscriber's email. The endpoint ships INERT - a clear "Subscribe is not
       configured yet." 503 until an operator provisions `CTCT_CLIENT_ID`/`CTCT_REFRESH_TOKEN`/
-      `CTCT_LIST_ID` (spec `0047`).
+      `CTCT_LIST_ID` (spec `0047`). A daily host cron (`deploy/ctct-refresh/ctct-keepalive.sh`) exercises
+      the refresh token out-of-band so it never expires from disuse, persists a rotated token atomically,
+      and emails a Resend alert on failure; the deploy preserves the box's (rotated) token across runs
+      (spec `0049`).
 - [ ] Profile pages and friend search/invite.
 
 ## Future

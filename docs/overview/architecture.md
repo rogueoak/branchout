@@ -349,6 +349,21 @@ Server secrets live only in that host env file and in GitHub Actions secrets - n
 Rollback is a redeploy of an older `sha`; `cleanup-images.yml` bounds image disk use. See
 `deploy/README.md` for host setup and secrets.
 
+**CTCT token keepalive (spec 0049).** The subscribe endpoint (spec 0047) mints its Constant Contact
+access token lazily from a long-lived refresh token in `.env.prod`; a CTCT device-flow refresh token
+can rotate and expire when left idle, and only a real subscribe exercises it, so on a quiet site the
+token can die unnoticed. A **daily host cron** (deploy user) runs `deploy/ctct-refresh/ctct-keepalive.sh`
+- a wrapper around the `ctct` CLI's `refresh-token` in a container (the box has no Node runtime) - to
+exercise it out-of-band, logging OK and emailing a Resend alert on failure. It never prints the token.
+On the rare rotation it persists the new token to `.env.prod` atomically (backup + temp file + `mv`) and
+flags that `control-plane` must be recreated to load it (no auto-recreate: a rotation is rare and a
+force-recreate would blip). Because the deploy rewrites `.env.prod` from GitHub secrets every run,
+`CTCT_REFRESH_TOKEN` is **preserved across deploys** - the box's (possibly rotated) value wins and the
+secret is only the initial seed, exactly like `ADMIN_ROOT_*` (`CTCT_CLIENT_ID` / `CTCT_LIST_ID` are
+stable and stay sourced from secrets). See `deploy/README.md` for install, cron, and device-flow
+bootstrap; the confirmed (double) opt-in on the CTCT list is the spec 0047 abuse mitigation to enable
+before go-live.
+
 **Zero-downtime rollout (spec 0034).** The deploy no longer recreates containers in place
 (`up -d --wait`, which 502s for the seconds a container is down). It uses the **docker-rollout**
 plugin (SHA-pinned + checksum-verified on the host) to roll each app service - scale to a second

@@ -114,11 +114,13 @@ jobs:
           # a clear "not configured" response and never crashes, so a box with no key still boots. Set
           # it AND verify rogueoak.com as a Resend sending domain to actually deliver.
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          # Newsletter subscribe / Constant Contact (spec 0047). Optional secrets: while unset the
+          # Newsletter subscribe / Constant Contact (specs 0047 + 0049). Optional secrets: while unset the
           # POST /v1/subscribe endpoint ships INERT (a clear "not configured" response, never a crash),
           # so the pipeline works before an operator provisions them. When set, they are written to
           # .env.prod below. Mint CTCT_REFRESH_TOKEN via `ctct login`; find CTCT_LIST_ID via
-          # `ctct list list --name "Branch Out"`.
+          # `ctct list list --name "Branch Out"`. NOTE: CTCT_REFRESH_TOKEN is only the INITIAL SEED - the
+          # daily keepalive cron (spec 0049) can rotate it on the box, and the deploy PRESERVES the box's
+          # value rather than clobbering it (see below). CTCT_CLIENT_ID / CTCT_LIST_ID are stable.
           CTCT_CLIENT_ID: ${{ secrets.CTCT_CLIENT_ID }}
           CTCT_REFRESH_TOKEN: ${{ secrets.CTCT_REFRESH_TOKEN }}
           CTCT_LIST_ID: ${{ secrets.CTCT_LIST_ID }}
@@ -250,6 +252,13 @@ jobs:
           # value from GitHub (which we deliberately do not store there).
           PREV_ADMIN_ROOT_EMAIL=$(grep -E '^ADMIN_ROOT_EMAIL=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2-)
           PREV_ADMIN_ROOT_PASSWORD=$(grep -E '^ADMIN_ROOT_PASSWORD=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2-)
+          # CTCT refresh token (specs 0047 + 0049): the daily keepalive cron on the box can ROTATE this
+          # token in .env.prod. Read the box's current value before truncating so the rewrite preserves
+          # it - the secrets.CTCT_REFRESH_TOKEN below is only the INITIAL SEED; once the box holds a
+          # (possibly rotated) token, a deploy must NOT clobber it with the stale secret.
+          PREV_CTCT_REFRESH_TOKEN=$(grep -E '^CTCT_REFRESH_TOKEN=' "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2-)
+          # Prefer the box's preserved token; fall back to the seed secret only on a box that never had one.
+          CTCT_REFRESH_TOKEN="${PREV_CTCT_REFRESH_TOKEN:-$CTCT_REFRESH_TOKEN}"
           install -m 0600 /dev/null "$ENV_FILE"
           # Full runtime env for the app services. DATABASE_URL/REDIS_URL are required
           # by control-plane and game-engine; the rest wire the services to each other
@@ -273,10 +282,14 @@ jobs:
             # GitHub). Blank on a box that never set them -> the boot reconcile is a no-op.
             printf 'ADMIN_ROOT_EMAIL=%s\n' "$PREV_ADMIN_ROOT_EMAIL"
             printf 'ADMIN_ROOT_PASSWORD=%s\n' "$PREV_ADMIN_ROOT_PASSWORD"
-            # Newsletter subscribe / Constant Contact (spec 0047). Written ONLY when a secret is set:
-            # an empty value would make control-plane read '' (still inert) but writing nothing keeps
-            # the endpoint cleanly "not configured" and the file free of blank keys. The optional
+            # Newsletter subscribe / Constant Contact (specs 0047 + 0049). Written ONLY when a value is
+            # set: an empty value would make control-plane read '' (still inert) but writing nothing
+            # keeps the endpoint cleanly "not configured" and the file free of blank keys. The optional
             # per-IP knobs fall back to their code defaults (5 / 600s) when unset.
+            # CTCT_CLIENT_ID and CTCT_LIST_ID are STABLE - always sourced from the secrets each deploy.
+            # CTCT_REFRESH_TOKEN was resolved above to the box's PRESERVED (possibly rotated) value,
+            # falling back to the seed secret only on a first-time box: the keepalive cron rotates it on
+            # the box, so a deploy must preserve it rather than overwrite it with the stale secret.
             [ -n "$CTCT_CLIENT_ID" ] && printf 'CTCT_CLIENT_ID=%s\n' "$CTCT_CLIENT_ID"
             [ -n "$CTCT_REFRESH_TOKEN" ] && printf 'CTCT_REFRESH_TOKEN=%s\n' "$CTCT_REFRESH_TOKEN"
             [ -n "$CTCT_LIST_ID" ] && printf 'CTCT_LIST_ID=%s\n' "$CTCT_LIST_ID"
