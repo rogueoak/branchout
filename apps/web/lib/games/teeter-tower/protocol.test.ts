@@ -91,4 +91,18 @@ describe('asTeeterSim', () => {
     const noId = { verts, eyes, skin, x: 410, y: 440, spinSeed: 0.02 };
     expect(asTeeterSim(sim({ next: noId }))).toBeNull();
   });
+
+  it('decodes the round-transition phase, defaulting to "playing" when absent (feedback 0032)', () => {
+    // Each valid phase round-trips.
+    expect(asTeeterSim(sim({ phase: 'playing' }))?.phase).toBe('playing');
+    expect(asTeeterSim(sim({ phase: 'complete' }))?.phase).toBe('complete');
+    expect(asTeeterSim(sim({ phase: 'intro' }))?.phase).toBe('intro');
+    // Absent or invalid -> defaults to 'playing' (resilient to a pre-field engine frame), NOT a reject.
+    const noPhase = sim();
+    delete (noPhase as { phase?: unknown }).phase;
+    expect(asTeeterSim(noPhase)).not.toBeNull();
+    expect(asTeeterSim(noPhase)?.phase).toBe('playing');
+    expect(asTeeterSim(sim({ phase: 'bogus' }))?.phase).toBe('playing');
+    expect(asTeeterSim(sim({ phase: 42 }))?.phase).toBe('playing');
+  });
 });

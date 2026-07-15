@@ -62,6 +62,15 @@ export interface TeeterMove {
 }
 
 /**
+ * The round-transition phase (feedback 0032). `'playing'` is normal play. On clearing a non-final
+ * round the world enters `'complete'` for a short beat (holding the settled tower, withholding the
+ * next piece) so the client can paint "Complete!"; then `'intro'` over the fresh empty tower so the
+ * client can paint "Round X"; then back to `'playing'`. A reconnect mid-transition reads the phase off
+ * the streamed sim and paints the right banner. Round 1 opens directly in `'playing'` (no intro beat).
+ */
+export type TeeterPhase = 'playing' | 'complete' | 'intro';
+
+/**
  * A live snapshot of the whole game, streamed each tick as the `sim` frame AND returned by
  * `startRound` as the initial prompt (so a client renders immediately, before the first tick). The
  * client REPLACES its state from the newest snapshot and interpolates between them for smooth sway.
@@ -99,4 +108,10 @@ export interface TeeterSim {
   platform: { width: number; walls: boolean };
   /** True once the final level is cleared - the game is over. */
   over: boolean;
+  /**
+   * The round-transition phase (feedback 0032): `'playing'` during normal play, `'complete'` during
+   * the post-clear "Complete!" beat, `'intro'` during the "Round X" beat over the fresh tower. The
+   * client paints the matching banner and treats the withheld next piece as a pause, not a stall.
+   */
+  phase: TeeterPhase;
 }

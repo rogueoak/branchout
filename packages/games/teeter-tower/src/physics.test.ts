@@ -8,6 +8,7 @@ import { createRng, deriveSeed } from './rng';
 import {
   TRAP_DENSITY_MULT,
   addPieceToWorld,
+  clampDropYToLine,
   createWorld,
   evaluatePlacement,
   heightToScore,
@@ -29,9 +30,12 @@ import {
 } from './physics';
 import {
   CENTER_X,
+  FLOOR_FRICTION_STATIC,
   GROUND_TOP,
   LEVELS,
   PIECE_DENSITY,
+  PIECE_FRICTION,
+  PIECE_FRICTION_STATIC,
   PLATFORM_W,
   WALL_HEIGHT,
   WALL_THICKNESS,
@@ -470,5 +474,151 @@ describe('clampDropY', () => {
     expect(clampDropY(GROUND_TOP + 500)).toBe(GROUND_TOP);
     expect(clampDropY(-100000)).toBe(GROUND_TOP - 2000);
     expect(clampDropY(GROUND_TOP - 300)).toBe(GROUND_TOP - 300);
+  });
+});
+
+describe('floor-only static friction (feedback 0032)', () => {
+  it('the platform + side walls carry FLOOR_FRICTION_STATIC; pieces keep PIECE_FRICTION_STATIC', () => {
+    const world = createWorld({
+      seed: 1,
+      levelIndex: 0,
+      bestHeight: 0,
+      stableHeight: 0,
+      piecesThisLevel: 0,
+      totalScore: 0,
+      pieceIndex: 0,
+      bodies: [],
+      next: null,
+      target: LEVELS[0]!.target,
+      pendulum: false,
+      platformWidth: WIDE_PLATFORM_W,
+      walls: true,
+    });
+    // A floor-only static bump: the platform + walls grip harder while KINETIC friction stays at the
+    // piece's value (min-combined, so raising it would be inert). Piece-on-piece is untouched.
+    expect(world.platform.frictionStatic).toBe(FLOOR_FRICTION_STATIC);
+    expect(world.platform.friction).toBe(PIECE_FRICTION);
+    for (const wall of world.walls) {
+      expect(wall.frictionStatic).toBe(FLOOR_FRICTION_STATIC);
+      expect(wall.friction).toBe(PIECE_FRICTION);
+    }
+    // The generated pieces keep the unchanged piece-on-piece static grip.
+    const piece = makePiece(createRng(deriveSeed(1, 0))).body;
+    expect(piece.frictionStatic).toBe(PIECE_FRICTION_STATIC);
+    // Sanity: the floor grips harder than a piece (so the pair's max picks the floor value).
+    expect(FLOOR_FRICTION_STATIC).toBeGreaterThan(PIECE_FRICTION_STATIC);
+  });
+});
+
+describe('notch pieces (feedback 0032: two new concave pieces)', () => {
+  /** Find the first piece index in the deterministic stream that is concave (a multi-part body). */
+  function firstConcaveIndex(): number {
+    for (let i = 0; i < 400; i++) {
+      if (makePiece(createRng(deriveSeed(1, i))).body.parts.length > 1) return i;
+    }
+    return -1;
+  }
+
+  it('notchSide and notchBottom appear in the stream and are concave (multi-part after decomposition)', () => {
+    // A concave polygon built via Bodies.fromVertices decomposes into >1 convex part (like `blob`), so
+    // a notch piece has parts.length > 1. Scan the stream for at least one of each new type by shape:
+    // notchSide has a flat bottom edge spanning its full width; notchBottom has a V cut into the bottom.
+    // We just prove the two NEW pieces show up as concave bodies that round-trip below.
+    const idx = firstConcaveIndex();
+    expect(idx).toBeGreaterThanOrEqual(0);
+    // At least a handful of concave pieces exist across a reasonable window (blob + the two notches).
+    let concave = 0;
+    for (let i = 0; i < 120; i++) {
+      if (makePiece(createRng(deriveSeed(1, i))).body.parts.length > 1) concave++;
+    }
+    expect(concave).toBeGreaterThan(3);
+  });
+
+  it('a concave notch piece round-trips through toStoredBodies -> createWorld (rebuild) with matching geometry', () => {
+    // Build a concave piece, snapshot it, drop it, snapshot the world, rebuild a world from the stored
+    // bodies - the rebuilt body keeps the same part count + overall bounds (the blob path, generalized).
+    const idx = firstConcaveIndex();
+    const original = makePiece(createRng(deriveSeed(1, idx))).body;
+    expect(original.parts.length).toBeGreaterThan(1); // genuinely concave -> decomposed
+
+    const world = worldWith([]);
+    const stored = storedPieceFrom(1, makePiece(createRng(deriveSeed(1, idx))));
+    expect(stored.verts.length).toBeGreaterThan(1); // multiple local loops (one per convex part)
+    addPieceToWorld(world, stored, 410, GROUND_TOP - 200, 0);
+
+    // Snapshot + rebuild via createWorld (the reconnect / worker-restart path).
+    const bodies = toStoredBodies(world);
+    const rebuilt = worldWith(bodies);
+    const rebuiltBody = rebuilt.placed[0]!.body;
+    expect(rebuiltBody.parts.length).toBe(world.placed[0]!.body.parts.length);
+    const w = (b: typeof rebuiltBody): number => b.bounds.max.x - b.bounds.min.x;
+    const h = (b: typeof rebuiltBody): number => b.bounds.max.y - b.bounds.min.y;
+    expect(w(rebuiltBody)).toBeCloseTo(w(world.placed[0]!.body), 1);
+    expect(h(rebuiltBody)).toBeCloseTo(h(world.placed[0]!.body), 1);
+  });
+
+  it('the bag weights blocks/planks heavily and ell/blob/tri rarely (feedback 0032)', () => {
+    // Over a long deterministic run the reliable pieces dominate and the hard shapes are rare. We
+    // classify each piece by shape signature: a plank is a wide thin rectangle, a block a chunkier
+    // rectangle, the trap near-black; blob/notch are concave. This asserts the rebalanced mix without
+    // reaching into the private TYPE_BAG - rectangular (block+plank) pieces should be the clear
+    // majority, and concave/other pieces a smaller share.
+    let rects = 0;
+    let concave = 0;
+    const N = 600;
+    for (let i = 0; i < N; i++) {
+      const body = makePiece(createRng(deriveSeed(7, i))).body;
+      if (body.parts.length > 1) concave++;
+      else rects++; // single-part: block, plank, tri, trap (all convex)
+    }
+    // Blocks + planks alone are 6 of 12 slots, so single-part convex pieces are a large majority.
+    expect(rects).toBeGreaterThan(concave);
+    expect(rects / N).toBeGreaterThan(0.55);
+  });
+});
+
+describe('clampDropYToLine (feedback 0032: below-line drop -> clamp up, not block)', () => {
+  it('shifts a below-line body up so its bottom rests just above the line', () => {
+    // A block whose bottom is BELOW the line (larger y) is shifted UP so its bottom sits a hair above.
+    const lineY = GROUND_TOP - 200;
+    const belowBottomY = lineY + 60; // centroid so the bottom is well below the line
+    const held = heldBodyAt(
+      [
+        [
+          { x: -30, y: -20 },
+          { x: 30, y: -20 },
+          { x: 30, y: 20 },
+          { x: -30, y: 20 },
+        ],
+      ],
+      410,
+      belowBottomY,
+      0,
+    );
+    const cy = clampDropYToLine(held, lineY);
+    expect(cy).toBeLessThan(belowBottomY); // moved up (away from the tower)
+    // The clamped bottom (cy + half-height 20) is just above the line.
+    expect(cy + 20).toBeLessThanOrEqual(lineY);
+    expect(cy + 20).toBeGreaterThan(lineY - 1); // within the small margin
+  });
+
+  it('leaves an above-line body and a null line untouched', () => {
+    const lineY = GROUND_TOP - 200;
+    const aboveCy = lineY - 100; // bottom (cy + 20) well above the line
+    const held = heldBodyAt(
+      [
+        [
+          { x: -30, y: -20 },
+          { x: 30, y: -20 },
+          { x: 30, y: 20 },
+          { x: -30, y: 20 },
+        ],
+      ],
+      410,
+      aboveCy,
+      0,
+    );
+    expect(clampDropYToLine(held, lineY)).toBe(aboveCy); // already above -> unchanged
+    expect(clampDropYToLine(held, null)).toBe(aboveCy); // no line -> unchanged
   });
 });

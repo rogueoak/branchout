@@ -16,6 +16,7 @@ import {
   CENTER_X,
   DEATH_Y,
   dropHalfRangeForWidth,
+  FLOOR_FRICTION_STATIC,
   GROUND_TOP,
   MAX_FALL_SPEED,
   PALETTE,
@@ -29,7 +30,7 @@ import {
   WALL_HEIGHT,
   WALL_THICKNESS,
 } from './levels';
-import type { Body as BodyPayload, Eye, Piece, Skin, Vec2 } from './types';
+import type { Body as BodyPayload, Eye, Piece, Skin, TeeterPhase, Vec2 } from './types';
 
 const { Bodies, Body, Common, Composite, Constraint, Engine, Query, Vertices } = Matter;
 
@@ -95,19 +96,25 @@ export interface StoredPiece {
 // Deterministic piece generation (ported from the prototype's makePiece)
 // ---------------------------------------------------------------------------
 
-type PieceType = 'block' | 'plank' | 'ell' | 'blob' | 'tri' | 'trap';
-// The type mix. `trap` is the SPECIAL heavy reinforcement piece - one slot, so it shows up
-// occasionally (a piece you place deliberately to anchor a wall), not on every drop.
+type PieceType = 'block' | 'plank' | 'ell' | 'blob' | 'tri' | 'trap' | 'notchSide' | 'notchBottom';
+// The type mix (feedback 0032). Blocks + planks (the reliable, easy-to-stack pieces) dominate; the
+// HARD shapes (`ell`, `blob`, `tri`) drop to one slot each so they show up occasionally, not on a
+// large share of drops (item 6). `trap` is the SPECIAL heavy reinforcement piece - one slot, placed
+// deliberately to anchor a wall. Two new concave "notch" pieces (item 2) get one slot each: a
+// side-notch block (interlocks sideways) and a bottom-notch block (two feet + a concave apex).
 const TYPE_BAG: readonly PieceType[] = [
   'block',
   'block',
+  'block',
   'plank',
   'plank',
-  'ell',
+  'plank',
+  'notchSide',
+  'notchBottom',
+  'trap',
   'ell',
   'blob',
   'tri',
-  'trap',
 ];
 
 /** The heavy trapezoid's density multiplier vs a normal piece (4x heavier - reinforcement). */
@@ -129,6 +136,16 @@ export const SETTLE_ANGULAR = 0.12;
  * TICK_MS (~40ms) this is ~2s.
  */
 export const MAX_SETTLE_TICKS = 50;
+
+/**
+ * Round-transition beat lengths (feedback 0032). The engine ticks at ~40ms (spec 0044), so these are
+ * countdowns in ticks. On clearing a non-final round the world holds the settled tower in `'complete'`
+ * for `COMPLETE_TICKS` (~1.6s) - the client paints "Complete!" - then plays `'intro'` for
+ * `INTRO_TICKS` (~1.2s) over the fresh empty tower - the client paints "Round X" - before resuming
+ * play. Perceivable pauses that hold the sim + gate the next input, so they are server-authoritative.
+ */
+export const COMPLETE_TICKS = 40;
+export const INTRO_TICKS = 30;
 /** The heavy trapezoid's cosmetics: near-black with a faint outline so it reads on the dark sky. */
 const TRAP_SKIN: Skin = { fill: '#0e0e16', stroke: '#4a4a5c' };
 
@@ -194,6 +211,45 @@ export function makePiece(rng: SeededRng): GeneratedPiece {
       density: PIECE_DENSITY * TRAP_DENSITY_MULT,
     });
     skin = TRAP_SKIN;
+  } else if (type === 'notchSide') {
+    // A rectangle with a rectangular notch cut into its RIGHT edge (feedback 0032): one internal
+    // (concave) angle, a flat bottom so it rests stably and interlocks sideways. A single concave
+    // polygon via `Bodies.fromVertices` (poly-decomp already wired, like `blob`), so it decomposes
+    // into convex parts and round-trips through the stored-body snapshot the same way `blob` does.
+    // Vertices are LOCAL, y-down, wound counter-clockwise like `trap`.
+    const w = rng.range(70, 96) * s;
+    const h = rng.range(58, 78) * s;
+    const nh = h * rng.range(0.3, 0.42); // notch height (fraction of the edge)
+    const nd = w * rng.range(0.3, 0.4); // notch depth (into the body from the right edge)
+    const verts: Vec2[] = [
+      { x: -w / 2, y: -h / 2 }, // top-left
+      { x: w / 2, y: -h / 2 }, // top-right
+      { x: w / 2, y: -nh / 2 }, // notch-top (right edge)
+      { x: w / 2 - nd, y: 0 }, // notch-inner (the concave vertex)
+      { x: w / 2, y: nh / 2 }, // notch-bottom (right edge)
+      { x: w / 2, y: h / 2 }, // bottom-right
+      { x: -w / 2, y: h / 2 }, // bottom-left
+    ];
+    body = Bodies.fromVertices(0, 0, [verts], opts);
+  } else if (type === 'notchBottom') {
+    // A rectangle with a V-notch cut UP into its BOTTOM edge (feedback 0032): two feet + one concave
+    // apex, a touch trickier to seat. Single concave polygon via `Bodies.fromVertices` (like `blob`),
+    // so it decomposes into convex parts and round-trips through the snapshot as compound loops.
+    // Vertices are LOCAL, y-down, wound counter-clockwise like `trap`.
+    const w = rng.range(70, 96) * s;
+    const h = rng.range(58, 78) * s;
+    const nw = w * rng.range(0.3, 0.44); // notch width across the bottom edge
+    const nd = h * rng.range(0.3, 0.42); // notch depth (up into the body)
+    const verts: Vec2[] = [
+      { x: -w / 2, y: h / 2 }, // bottom-left
+      { x: -nw / 2, y: h / 2 }, // notch-left (start of the V)
+      { x: 0, y: h / 2 - nd }, // notch-apex (the concave vertex)
+      { x: nw / 2, y: h / 2 }, // notch-right (end of the V)
+      { x: w / 2, y: h / 2 }, // bottom-right
+      { x: w / 2, y: -h / 2 }, // top-right
+      { x: -w / 2, y: -h / 2 }, // top-left
+    ];
+    body = Bodies.fromVertices(0, 0, [verts], opts);
   } else {
     // "ell" - a compound L shape.
     const t = rng.range(28, 36) * s;
@@ -321,6 +377,15 @@ export interface LiveWorld {
   next: StoredPiece | null;
   /** True once the final level cleared - the game is over and the world stops stepping. */
   over: boolean;
+  /**
+   * The round-transition phase (feedback 0032): `'playing'` during play, `'complete'` during the
+   * post-clear beat (holding the settled tower, next piece withheld), `'intro'` during the "Round X"
+   * beat over the fresh tower. Persisted in scratch so a reconnect mid-transition shows the right
+   * banner; streamed on `TeeterSim.phase`.
+   */
+  phase: TeeterPhase;
+  /** Ticks remaining in the current `'complete'`/`'intro'` beat (0 while `'playing'`). */
+  phaseTicks: number;
 }
 
 /** Rebuild a matter body from stored local vertex loops at a world transform. */
@@ -378,7 +443,9 @@ function makePlatform(platformWidth: number): Matter.Body {
     { isStatic: true },
   );
   platform.friction = PIECE_FRICTION;
-  platform.frictionStatic = PIECE_FRICTION_STATIC;
+  // Floor-only static grip (feedback 0032): a much higher static friction pins a settled base row to
+  // the platform (combined by `max` on the pair), leaving piece-on-piece grip untouched.
+  platform.frictionStatic = FLOOR_FRICTION_STATIC;
   return platform;
 }
 
@@ -397,7 +464,9 @@ function makeWalls(platformWidth: number, walls: boolean): Matter.Body[] {
   return [leftCX, rightCX].map((cx) => {
     const wall = Bodies.rectangle(cx, wallCY, WALL_THICKNESS, WALL_HEIGHT, { isStatic: true });
     wall.friction = PIECE_FRICTION;
-    wall.frictionStatic = PIECE_FRICTION_STATIC;
+    // Floor-only static grip (feedback 0032): match the platform's high static friction so a piece
+    // resting against a curb is gripped, not slowly slid off, without changing piece-on-piece grip.
+    wall.frictionStatic = FLOOR_FRICTION_STATIC;
     return wall;
   });
 }
@@ -448,6 +517,10 @@ export function createWorld(args: {
   platformWidth: number;
   /** Whether the level's platform has short static side walls (level 1 only). */
   walls: boolean;
+  /** The round-transition phase (feedback 0032); defaults to `'playing'`. */
+  phase?: TeeterPhase;
+  /** Ticks remaining in the current transition beat (feedback 0032); defaults to 0. */
+  phaseTicks?: number;
 }): LiveWorld {
   const engine = makeEngine();
   const platform = makePlatform(args.platformWidth);
@@ -486,6 +559,10 @@ export function createWorld(args: {
     seed: args.seed,
     next: args.next,
     over: args.over ?? false,
+    // Round-transition beat (feedback 0032): defaults to normal play, so a fresh world / a legacy
+    // snapshot without a phase comes back `'playing'` with no pending countdown.
+    phase: args.phase ?? 'playing',
+    phaseTicks: args.phaseTicks ?? 0,
   };
 }
 
@@ -681,6 +758,21 @@ export function clampDropY(y: number): number {
  */
 export function heldBodyAt(verts: Vec2[][], x: number, y: number, angle: number): Matter.Body {
   return bodyFromStored(verts, x, y, angle);
+}
+
+/**
+ * Clamp a held body's centroid y UP so its bottom rests just above the min-drop line (feedback 0032).
+ * The below-line drop is no longer blocked - the piece is just dropped AT line height. Given the held
+ * body's current bottom (`body.bounds.max.y`) and the line world-y `lineY`, returns the adjusted
+ * centroid y: unchanged when the body already sits above the line, else shifted up by
+ * `(bottom - lineY + margin)` so the new bottom is a hair above the line. Clamping UP moves the piece
+ * AWAY from the tower, so it can never introduce an overlap the caller's overlap check would miss.
+ * `lineY == null` (all lines cleared) leaves y untouched.
+ */
+export function clampDropYToLine(body: Matter.Body, lineY: number | null): number {
+  const cy = body.position.y;
+  if (lineY == null || body.bounds.max.y <= lineY) return cy;
+  return cy - (body.bounds.max.y - lineY + 0.5);
 }
 
 // ---------------------------------------------------------------------------

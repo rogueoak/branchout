@@ -388,6 +388,22 @@ Capture durable lessons as they emerge.
   "won't keep sliding once moving". Pair it with a lower `MAX_FALL_SPEED` (softer landing = less energy to
   slide) and `frictionAir` (bleeds slide energy). Don't trust a "saturates" comment - test the lever.
   (Feedback `0028`.)
+- **Matter combines a contact PAIR's friction with `min` (kinetic) and `frictionStatic` with `max`
+  (static) - so a floor-ONLY grip increase is a `frictionStatic` bump on the floor, not a kinetic one.**
+  The pieces gripped each other but crept along the platform; the ask was "grip the floor, not each other."
+  Raising the floor's kinetic `friction` above the piece's does nothing (`min` caps the pair at the piece),
+  and the piece's kinetic friction is SHARED with piece-on-piece (already too sticky). Static friction is
+  combined by `max`, so raising only the FLOOR's `frictionStatic` (30 -> 80) wins the piece-on-floor pair
+  independently while piece-on-piece stays 30. Know the pair-combine rule before you pick the lever: to move
+  one contact's grip and not another, use the coefficient whose combine rule lets the surface you changed
+  win. (Feedback `0032`, generalizing `0028`.)
+- **A pause the player must PERCEIVE has to be server-authoritative in a live game - it holds the sim and
+  gates the next input, not just a client overlay.** The "Complete!/Round X" beat between rounds is a `phase`
+  on the streamed world with a persisted tick countdown: while it runs the server withholds the next piece
+  and keeps stepping the held tower, and every client (including a reconnect, which rebuilds the phase from
+  scratch) paints the same banner. A client-only banner would race the server's instant `advanceLevel` and
+  desync a rejoin. When a beat must be seen and must gate input, model it as authoritative state, not a local
+  animation. (Feedback `0032`.)
 
 ## Client-server contracts
 
