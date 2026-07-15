@@ -95,6 +95,20 @@ Capture durable lessons as they emerge.
   `test`, so `turbo run test` never needs Docker; e2e runs as its own CI job. A dedicated compose
   project (`branchout-e2e`) on shifted ports lets a run coexist with a developer's dev stack.
   (Spec `0026`.)
+- **Logic that runs only inside an un-runnable loop needs a pure exported seam - and when you change
+  that logic, KEEP the seam, don't inline it back.** Teeter's aim math lives in a canvas rAF draw loop
+  jsdom cannot exercise, so it had a pure exported helper (`spinGapY`) a unit test could pin. The
+  round-7 vertical-aim fix inlined the new formula back into the unexported `placedTransform` closure,
+  so the headline behavior shipped with NO test (a revert stayed green) until persona review caught it;
+  the fix re-extracted `spinAimY`/`placeAimY`. When you replace a tested pure helper with inline logic,
+  you silently delete its test. (Feedback `0032`, tester review of PR #94.)
+- **A test that keys on a property OTHER cases also satisfy proves nothing about the new case - assert
+  the discriminating attribute, and expose one when the observable output can't distinguish.** The new
+  notch pieces were "tested" by counting concave (multi-part) bodies - but `blob` and `ell` are already
+  concave, so removing both notch pieces kept the count green. The decomposed geometry can't tell a
+  notch from a blob, so the fix exposed a non-wire `GeneratedPiece.type` the test asserts directly (both
+  notch types appear; each hard shape is individually rare). If a shape/mix assertion can pass without
+  the thing it names, it is vacuous. (Feedback `0032`, tester/engineer review of PR #94.)
 
 ## Services and state
 

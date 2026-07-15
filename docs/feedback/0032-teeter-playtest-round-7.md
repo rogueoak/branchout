@@ -129,5 +129,23 @@ verification in `docs/plans/0032-teeter-playtest-round-7.md`.
   sim and gates the next input, not just a client overlay.** Modeling "Complete!/Round X" as a
   phase on the streamed world (with a persisted countdown) keeps a reconnect and every client in
   sync; a client-only banner would race the server's instant advance and desync a rejoin.
+
+## Review addendum (PR #94)
+
+Persona review (engineer/tester/architect/security/user-player) found no blockers; the design
+(phase machine, floor-friction lever, server drop-clamp, concave pieces) was confirmed sound. Two
+**major** findings, both test-coverage gaps, were fixed before merge and generalized into
+`overview/learnings.md`:
+
+- The headline **vertical-aim** behavior had no test - its math was inlined into the unexported
+  canvas-draw closure (jsdom can't run it). Fixed by re-extracting pure exported `spinAimY` /
+  `placeAimY` helpers and unit-testing them. Lesson: keep the testable seam when you change loop-only
+  logic; don't inline a tested helper away.
+- The **notch-piece** tests keyed on concave-part count, which `blob`/`ell` already satisfy, so
+  removing a notch stayed green. Fixed by exposing a non-wire `GeneratedPiece.type` and asserting the
+  mix by type. Lesson: assert the discriminating attribute, not a property other cases share.
+
+Minor/nit fixes folded in: guard the intro banner subtitle against duplicating the "Round N" title
+past the named levels; centralize the min-drop world-y in a `lineYFor` helper.
 </content>
 </invoke>
