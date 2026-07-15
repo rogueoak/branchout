@@ -1,7 +1,8 @@
 import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
-import { interpFraction, spinGapY, TeeterViewer } from './Viewer';
+import { interpFraction, placeAimY, spinAimY, TeeterViewer } from './Viewer';
+import { GROUND_TOP } from './render';
 
 // The single canvas draws with rAF + a 2D context. jsdom leaves getContext unimplemented (returns
 // null); the draw loop guards on a null context, so rendering is safe - stub getContext to keep the
@@ -181,23 +182,25 @@ describe('TeeterViewer single interactive surface', () => {
     expect(onMove).toHaveBeenCalledTimes(1);
   });
 
-  it('a double-tap does not drop when the pose is below the line (feedback 0025)', () => {
+  it('the Drop button stays enabled and reads "Drop" even for a low pointer (feedback 0032)', () => {
     const onMove = vi.fn();
-    // A required line ABOVE the default pointer makes the pose illegal (the button reads "Too low" and
-    // is disabled). The double-tap shortcut reaches drop() directly, so it must honor that too.
+    // A required line ABOVE the default pointer used to make the pose illegal ("Too low", disabled).
+    // The line is no longer a block (feedback 0032) - a below-line aim is dropped AT the line - so the
+    // Drop button stays enabled + labeled "Drop", and a double-tap submits the (clamped) pose.
     const sim = { ...teeterSim('p1'), requiredLine: 100 };
     render(<TeeterViewer state={state({ sim })} me="p1" onMove={onMove} />);
     const board = screen.getByRole('img', { name: /aim and drop the piece/i })
       .parentElement as HTMLElement;
-    // Stop the spin (that is legal in any pose), then the placing pose is below the line.
+    // Stop the spin, then the placing pose is below the line - but the button offers Drop, not "Too low".
     tap(board, 100, 100, 1000);
     tap(board, 100, 100, 1150);
-    const btn = screen.getByRole('button', { name: /below the line/i }) as HTMLButtonElement;
-    expect(btn.disabled).toBe(true);
-    // A double-tap must NOT submit an illegal (below-line) drop.
+    const btn = screen.getByRole('button', { name: /drop the piece/i }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+    expect(screen.queryByRole('button', { name: /below the line/i })).toBeNull();
+    // A double-tap while placing now submits the drop even from a below-line aim (server clamps it).
     tap(board, 100, 100, 2000);
     tap(board, 100, 100, 2150);
-    expect(onMove).not.toHaveBeenCalled();
+    expect(onMove).toHaveBeenCalledTimes(1);
   });
 
   it('shows the start-of-game gesture hint until a piece has landed (feedback 0025)', () => {
@@ -287,6 +290,37 @@ describe('TeeterViewer single interactive surface', () => {
     }
   });
 
+  it('paints the "Complete!" banner + announces it during the complete phase (feedback 0032)', () => {
+    // The round-transition beat: `phase: 'complete'` shows a centered "Complete!" overlay and the
+    // aria-live status announces the round complete. `next` is withheld during the beat.
+    const sim = { ...teeterSim('p1'), next: null, phase: 'complete' };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
+    expect(screen.getByText(/^Complete!$/)).toBeDefined();
+    expect(screen.getByRole('status').textContent).toMatch(/round complete/i);
+    // No aim controls during the beat.
+    expect(screen.queryByRole('button', { name: /stop the spin|drop the piece/i })).toBeNull();
+  });
+
+  it('paints the "Round X" intro banner + announces it during the intro phase (feedback 0032)', () => {
+    // `phase: 'intro'` over the fresh tower shows "Round X" with the level name. Level 1 (index 1) is
+    // "Reach for the sky", so the banner reads Round 2.
+    const sim = { ...teeterSim('p1'), next: null, level: 1, phase: 'intro' };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
+    // The banner shows "Round 2" with the level name (the name also appears in the sr-only status, so
+    // scope the name assertion to the status region to avoid the multiple-match ambiguity).
+    expect(screen.getByText(/^Round 2$/)).toBeDefined();
+    expect(screen.getByRole('status').textContent).toMatch(/Round 2 - Reach for the sky/i);
+  });
+
+  it('does not show the settling status during a transition beat (feedback 0032)', () => {
+    // With `next == null` but `phase: 'complete'`, the between-piece "settling" copy must NOT fire -
+    // the transition banner + status carry the message instead.
+    const sim = { ...teeterSim('p1'), next: null, phase: 'complete' };
+    render(<TeeterViewer state={state({ sim })} me="p1" onMove={noop} />);
+    expect(screen.getByRole('status').textContent).not.toMatch(/settle/i);
+    expect(screen.getByRole('status').textContent).toMatch(/round complete/i);
+  });
+
   it('maps a server rejection reason to player-clear copy', () => {
     render(
       <TeeterViewer
@@ -333,20 +367,6 @@ describe('TeeterViewer single interactive surface', () => {
   });
 });
 
-describe('spinGapY (fixed-height spin math, feedback 0027)', () => {
-  it('pins the centroid a fixed gap above the line, INDEPENDENT of the spin angle (no bob)', () => {
-    const requiredLine = 400;
-    const y = spinGapY(requiredLine);
-    // The centre sits a fixed gap above the line...
-    expect(y).toBeLessThan(requiredLine);
-    expect(requiredLine - y).toBe(130);
-    // ...and takes NO piece/angle argument, so as the piece spins (its rotated half-height changing
-    // every frame) the height never moves. It also tracks the line: a lower line lowers the piece by
-    // the same amount.
-    expect(spinGapY(500) - spinGapY(400)).toBe(100);
-  });
-});
-
 describe('interpFraction (interpolation span cap, feedback 0027)', () => {
   it('interpolates a normal frame gap proportionally', () => {
     // 20ms into a 40ms (~TICK_MS) inter-frame span -> halfway.
@@ -361,5 +381,30 @@ describe('interpFraction (interpolation span cap, feedback 0027)', () => {
     expect(interpFraction(1050, 1000, -4000)).toBeGreaterThan(0.25);
     // ...and it reaches the newest frame within a couple of frames (300ms past -> clamped to 1).
     expect(interpFraction(1300, 1000, -4000)).toBe(1);
+  });
+});
+
+describe('aim vertical follow (feedback 0032)', () => {
+  it('spinAimY follows the cursor vertically, clamped only above the platform', () => {
+    // The headline item 3 fix: while spinning the piece tracks pointer.y (it no longer sits at a fixed
+    // gap), so a higher cursor (smaller y) gives a higher piece 1:1 - reverting to the fixed pin fails.
+    expect(spinAimY(GROUND_TOP - 300)).toBe(GROUND_TOP - 300);
+    expect(spinAimY(GROUND_TOP - 120)).toBe(GROUND_TOP - 120);
+    // Clamp is angle-INDEPENDENT (a constant gap above the platform), so no spin bob: a cursor at/below
+    // the platform is pinned to the same gap regardless of the piece's rotation.
+    expect(spinAimY(GROUND_TOP + 50)).toBe(GROUND_TOP - 60);
+    expect(spinAimY(GROUND_TOP)).toBe(GROUND_TOP - 60);
+  });
+
+  it('placeAimY follows the cursor but clamps the bottom above the required line', () => {
+    const requiredLine = GROUND_TOP - 200;
+    const spanMax = 40; // rotated half-height of the piece
+    // Above the line: the cursor is honored verbatim.
+    expect(placeAimY(GROUND_TOP - 400, requiredLine, spanMax)).toBe(GROUND_TOP - 400);
+    // Below the line: clamped so the piece BOTTOM (centroid + spanMax) sits a hair above the line, not
+    // blocked (feedback 0032) - the submitted dropY is this clamped value, so the server accepts it.
+    const clamped = placeAimY(requiredLine, requiredLine, spanMax);
+    expect(clamped).toBe(requiredLine - spanMax - 1);
+    expect(clamped + spanMax).toBeLessThan(requiredLine);
   });
 });

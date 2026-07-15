@@ -23,6 +23,14 @@ export const PIECE_FRICTION = 3.0;
 export const PIECE_FRICTION_STATIC = 30;
 export const PIECE_FRICTION_AIR = 0.08;
 export const PIECE_DENSITY = 0.0016;
+// Floor-only static grip (feedback 0032). Matter combines a contact PAIR as `friction = min(a, b)`
+// (kinetic) and `frictionStatic = max(a, b)` (static). So to grip the piece-on-FLOOR contact WITHOUT
+// touching piece-on-piece, we raise only the floor's static friction: `frictionStatic(piece-floor) =
+// max(30, FLOOR_FRICTION_STATIC)` wins the pair, while piece-on-piece stays `PIECE_FRICTION_STATIC =
+// 30`. Kinetic floor friction stays at `PIECE_FRICTION` - raising it would be inert (min caps it at
+// the piece), and the piece's kinetic friction is shared with piece-on-piece (already too grippy).
+// This is the "bottom row creeps along the platform" lever: it pins a settled base row to the floor.
+export const FLOOR_FRICTION_STATIC = 80;
 /** Caps drop velocity so a piece lands soft and can't slam the tower off center. */
 export const MAX_FALL_SPEED = 6;
 

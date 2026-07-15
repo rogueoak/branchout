@@ -8,7 +8,13 @@ import { describe, expect, it } from 'vitest';
 import type { LiveTickResult, RoundContext, SessionPlayer } from '@branchout/game-sdk';
 import { createTeeterTowerGame } from './teeter-tower';
 import { GROUND_TOP, LEVELS, levelAt, PAR_PENALTY, TOTAL_ROUNDS } from './levels';
-import { MAX_PLACED_BODIES, MAX_SETTLE_TICKS, type StoredBody } from './physics';
+import {
+  COMPLETE_TICKS,
+  INTRO_TICKS,
+  MAX_PLACED_BODIES,
+  MAX_SETTLE_TICKS,
+  type StoredBody,
+} from './physics';
 import type { TeeterMove, TeeterSim } from './types';
 
 /** A fixed rng so `configure` derives a stable base seed. Returns a constant per game. */
@@ -267,23 +273,30 @@ describe('collectMove (apply to the live world)', () => {
     expect(bad.rejected?.reason).toMatch(/overlap/i);
   });
 
-  it('rejects a drop whose lowest point is below the required line', () => {
-    // For an empty tower the required line is the first 25%-of-target line above the platform; a piece
-    // must sit fully ABOVE it. We read the line from the prompt and drop well below it (larger world-y,
-    // y grows down), so the placement is rejected on the line rule regardless of the exact target.
+  it('clamps a below-the-line drop up to line height instead of blocking it (feedback 0032)', () => {
+    // For an empty tower the required line is the first 25%-of-target line above the platform. A
+    // below-line aim is no longer rejected (feedback 0032) - the server CLAMPS the piece up so its
+    // bottom rests just above the line, then runs the overlap check. So a drop below the line is
+    // ACCEPTED and the placed body sits above the line.
     const game = createTeeterTowerGame(stubRng(0.5));
     const scratch = game.configure({}, players('p1')).scratch;
     const base = ctx({ scratch });
     const started = game.startRound(base);
     const requiredLine = (started.prompt as TeeterSim).requiredLine;
-    // Drop the piece centroid just below the line (larger world-y) but still clear of the platform, so
-    // it is rejected on the LINE rule (a much lower drop would instead overlap the platform).
-    const bad = game.collectMove(
+    // Drop the piece centroid below the line (larger world-y, y grows down) but clear of the platform.
+    const collected = game.collectMove(
       { ...base, scratch: started.scratch },
       'p1',
       JSON.stringify(move(0, 410, requiredLine + 45)),
     );
-    expect(bad.rejected?.reason).toMatch(/line/i);
+    expect(collected.rejected).toBeUndefined();
+    const after = collected.scratch as { bodies: StoredBody[] };
+    expect(after.bodies).toHaveLength(1);
+    // The clamped body's bottom (centroid y + half-height) sits above the line (smaller y). The stored
+    // block placed here is 80px tall (see move()'s piece) - read its bottom off the stored transform.
+    const b = after.bodies[0]!;
+    const bottom = b.y + Math.max(...b.verts.flat().map((v) => v.y));
+    expect(bottom).toBeLessThanOrEqual(requiredLine + 0.6); // just above the line, within the margin
   });
 });
 
@@ -311,9 +324,11 @@ describe('tick (step the live world)', () => {
     expect(sim.level).toBe(0);
   });
 
-  it('advances the internal level once the tower reaches the target', () => {
-    // Pre-seed a tower already at level 0's target; the first tick reads height >= target and
-    // advances the level, resetting the tower and keeping the banked score.
+  it('runs the round-transition beat: playing -> complete -> intro -> playing (feedback 0032)', () => {
+    // Pre-seed a tower already at level 0's target. The first tick reads height >= target and enters the
+    // "Complete!" beat (`'complete'`) - it does NOT advance yet, and withholds the next piece. After
+    // COMPLETE_TICKS it advances the level and plays the "Round X" intro (`'intro'`); after INTRO_TICKS
+    // it resumes normal play at level 1, offering the next piece.
     const game = createTeeterTowerGame(stubRng(0.5));
     const target = LEVELS[0]!.target;
     const scratch: Record<string, unknown> = {
@@ -326,18 +341,52 @@ describe('tick (step the live world)', () => {
       bodies: [tallBlock(1, target + 40)], // top well above the target line
       next: null,
       over: false,
+      phase: 'playing',
+      phaseTicks: 0,
     };
     const base = ctx({ scratch, round: 4 });
     const started = game.startRound(base);
-    const ticked = game.tick!({ ...base, scratch: started.scratch });
-    const sim = ticked.sim as TeeterSim;
+
+    // First tick: enter the 'complete' beat. Still level 0, tower held, next withheld, NOT over.
+    let ticked = game.tick!({ ...base, scratch: started.scratch });
+    let sim = ticked.sim as TeeterSim;
     expect(ticked.over).toBe(false);
+    expect(sim.phase).toBe('complete');
+    expect(sim.level).toBe(0); // not advanced yet
+    expect(sim.next).toBeNull(); // next piece withheld during the beat
+    expect(sim.score).toBe(100); // the cleared level banked 100
+
+    // Run out the 'complete' countdown: on the last tick it advances the level and enters 'intro'.
+    let cur = ticked.scratch;
+    for (let i = 0; i < COMPLETE_TICKS - 1; i++) {
+      ticked = game.tick!({ ...base, scratch: cur });
+      cur = ticked.scratch;
+      expect((ticked.sim as TeeterSim).phase).toBe('complete');
+    }
+    ticked = game.tick!({ ...base, scratch: cur });
+    cur = ticked.scratch;
+    sim = ticked.sim as TeeterSim;
+    expect(sim.phase).toBe('intro');
     expect(sim.level).toBe(1); // advanced
     expect(sim.target).toBe(LEVELS[1]!.target);
     expect(sim.bodies).toEqual([]); // tower reset for the new level
-    expect(sim.score).toBe(100); // the cleared level banked 100
     expect(sim.par).toBe(LEVELS[1]!.par); // the new round's par
     expect(sim.pieces).toBe(0); // per-round piece count reset for the fresh round
+    expect(sim.next).toBeNull(); // still withheld during the intro
+
+    // Run out the 'intro' countdown: it returns to 'playing', and the next tick offers the piece.
+    for (let i = 0; i < INTRO_TICKS - 1; i++) {
+      ticked = game.tick!({ ...base, scratch: cur });
+      cur = ticked.scratch;
+      expect((ticked.sim as TeeterSim).phase).toBe('intro');
+    }
+    ticked = game.tick!({ ...base, scratch: cur });
+    cur = ticked.scratch;
+    expect((ticked.sim as TeeterSim).phase).toBe('playing');
+    // One more tick in 'playing' offers the fresh piece (empty/settled tower).
+    ticked = game.tick!({ ...base, scratch: cur });
+    expect((ticked.sim as TeeterSim).next).not.toBeNull();
+
     const after = ticked.scratch as {
       levelIndex: number;
       bodies: unknown[];
@@ -350,7 +399,7 @@ describe('tick (step the live world)', () => {
     expect(after.piecesThisLevel).toBe(0);
   });
 
-  it('flips over=true once the final level clears (no lose state)', () => {
+  it('the final round routes through complete, then flips over=true (feedback 0032)', () => {
     const game = createTeeterTowerGame(stubRng(0.5));
     const lastIndex = LEVELS.length - 1;
     const target = levelAt(lastIndex).target;
@@ -363,10 +412,25 @@ describe('tick (step the live world)', () => {
       bodies: [tallBlock(1, target + 40)],
       next: null,
       over: false,
+      phase: 'playing',
+      phaseTicks: 0,
     };
     const base = ctx({ scratch, round: 5 });
     const started = game.startRound(base);
-    const ticked = game.tick!({ ...base, scratch: started.scratch });
+
+    // First tick: the FINAL round routes through 'complete' too (so "Complete!" shows) - not over yet.
+    let ticked = game.tick!({ ...base, scratch: started.scratch });
+    expect(ticked.over).toBe(false);
+    expect((ticked.sim as TeeterSim).phase).toBe('complete');
+
+    // Run out the 'complete' countdown: on the last tick the game ends (no next level to advance to).
+    let cur = ticked.scratch;
+    for (let i = 0; i < COMPLETE_TICKS - 1; i++) {
+      ticked = game.tick!({ ...base, scratch: cur });
+      cur = ticked.scratch;
+      expect(ticked.over).toBe(false);
+    }
+    ticked = game.tick!({ ...base, scratch: cur });
     const sim = ticked.sim as TeeterSim;
     expect(ticked.over).toBe(true);
     expect(sim.over).toBe(true);

@@ -140,7 +140,11 @@ What the product does for users, grouped by area. Each capability maps to one or
       an insider. The insider home card deep-links into a room RELATIVELY, and the room/join flow is
       mirrored under the gated `/insider` tree, so play stays on the insider host end to end.
       Playable solo now; the turn abstraction (active player = `round % players`) is built for
-      multiplayer later.
+      multiplayer later. Playtest tuning (feedback `0032`): floor-only static grip pins the base row
+      without stiffening piece-on-piece; the piece bag adds two concave "notch" pieces and makes the
+      hard shapes (L/octagon/triangle) rare; the spinning piece follows the cursor vertically; a
+      below-the-line drop is clamped to the line, not blocked; and clearing a round plays a
+      server-authoritative "Complete!" -> "Round X" beat (a `phase` on the streamed sim).
 
 ## Web
 

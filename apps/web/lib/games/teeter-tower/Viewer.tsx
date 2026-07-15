@@ -15,8 +15,9 @@
 //   1. 'spinning': the piece spins locally (spinSeed via rAF) AND sits at the pointer - tap/drag the
 //      canvas to reposition it repeatedly. The top-right button reads "Stop spin".
 //   2. Tapping "Stop spin" LOCKS the current on-screen angle and switches to 'placing'. The piece keeps
-//      following the pointer (x and y), clamped so its bottom stays ABOVE the required line and its x
-//      within the platform range; it ghosts + turns red when the drop would be below the line.
+//      following the pointer (x and y), clamped so its drawn bottom stays above the required line and
+//      its x within the platform range. A below-line aim is no longer blocked (feedback 0032) - the
+//      server drops it AT the line - so the Drop button stays enabled and the ghost never reddens.
 //   3. The top-right button now reads "Drop"; tapping it submits onMove(round, JSON.stringify({ angle,
 //      dropX, dropY })). No re-aim - we wait for the stream to land it and present the next piece.
 // Mobile-first (CLAUDE.md rule #1): the surface fills the viewport height and the canvas fits WIDTH
@@ -70,24 +71,32 @@ const TAP_MAX_MOVE_PX = 12;
 const DEFAULT_AIM_Y = GROUND_TOP - 300;
 
 /**
- * While spinning, the piece's CENTRE hovers this fixed gap (px) above the required line (feedback
- * 0026/0027): the pointer moves it left/right but not up/down, so it never bobs. Chosen comfortably
- * larger than the tallest piece's rotated half-height (~106px for the longest plank) so the spinning
- * bottom stays clear of the line with margin to spare. It may sit above the finish line when the line
- * is near the target - that is intended. (Cosmetic only: `placing` re-clamps and `drop()` refuses an
- * illegal pose, so the spin gap can never let an illegal tower through.)
+ * The minimum gap (px) the SPINNING piece's centre keeps above the platform (feedback 0032). The
+ * spinning piece follows the cursor vertically now; this only stops it from previewing INSIDE the
+ * platform. Angle-INDEPENDENT (a constant), so the piece still spins in place with no vertical bob -
+ * the fixed-gap pin (feedback 0027) killed the bob but also blocked vertical aim; this restores the
+ * aim while keeping the bob-free property.
  */
-const SPIN_GAP = 130;
+const SPIN_FLOOR_GAP = 60;
 
 /**
- * The spinning piece's centroid world-y: a FIXED gap above the required line, INDEPENDENT of the spin
- * angle (feedback 0027). The earlier version (0026) subtracted the piece's ROTATED half-height, which
- * changes every frame as the piece spins - so the centroid bobbed up and down. Pinning the CENTRE at a
- * constant height lets the piece rotate in place with no vertical bob. Pure so it is unit-testable (the
- * transform runs in the canvas draw loop, which jsdom cannot exercise).
+ * The spinning piece's centroid world-y: it follows the cursor (`pointerY`), clamped only so its centre
+ * stays a fixed gap above the platform (feedback 0032). Pure + exported so it is unit-testable (the
+ * transform runs in the canvas draw loop jsdom cannot exercise). Angle-independent, so no spin bob.
  */
-export function spinGapY(requiredLine: number): number {
-  return requiredLine - SPIN_GAP;
+export function spinAimY(pointerY: number): number {
+  return Math.min(pointerY, GROUND_TOP - SPIN_FLOOR_GAP);
+}
+
+/**
+ * The PLACING piece's centroid world-y (feedback 0032): it follows the cursor (`pointerY`) but is
+ * clamped so the piece bottom (centroid + rotated half-height `spanMax`) stays a hair above the
+ * required line. So the previewed pose is always a legal, above-line drop - a below-line aim is dropped
+ * AT the line, never blocked (the server clamps identically). Pure + exported for unit tests.
+ */
+export function placeAimY(pointerY: number, requiredLine: number, spanMax: number): number {
+  const maxCentroidY = requiredLine - spanMax - 1;
+  return Math.min(pointerY, maxCentroidY);
 }
 
 /**
@@ -250,10 +259,12 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     }
   }, [sim]);
 
-  // The aim piece's transform. X always follows the pointer (clamped to the platform range). Y differs
-  // by phase (feedback 0026): while SPINNING the piece hovers at a FIXED gap above the required line
-  // (pointer.y ignored, so no bob on the moving line); while PLACING it follows pointer.y, clamped above
-  // the line. Returns the drawable transform + whether the drop is legal (always legal while spinning).
+  // The aim piece's transform. X always follows the pointer (clamped to the platform range). Y follows
+  // the pointer in BOTH phases now (feedback 0032): while SPINNING the centre tracks pointer.y clamped
+  // only to stay above the platform (angle-INDEPENDENT, so no spin bob - the earlier fixed-gap pin,
+  // feedback 0027, killed the bob but also stopped vertical aim); while PLACING it follows pointer.y
+  // clamped above the line. The drop is always legal: the placing clamp guarantees an above-line pose,
+  // and a below-line pose is clamped up server-side (never blocked). `rawBottom` is kept for tests.
   function placedTransform(
     piece: Piece,
     live: TeeterSim,
@@ -263,18 +274,18 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     const span = rotatedYSpan(piece, angleAt);
     const x = clampDropX(pointerRef.current.x, live.platform.width);
     if (spinning) {
-      // Angle-INDEPENDENT centroid height (feedback 0027): using span.max here made the piece bob as it
-      // spun, because the rotated half-height changes every frame. Pin the centre; let it rotate in place.
-      const y = spinGapY(live.requiredLine);
+      // Follow the cursor vertically (feedback 0032), clamped only to stay above the platform (the
+      // clamp is angle-independent, so the piece spins in place with no bob). See `spinAimY`.
+      const y = spinAimY(pointerRef.current.y);
       return { x, y, legal: true, rawBottom: y + span.max };
     }
-    // The piece bottom (centroid y + rotated max) must be strictly above requiredLine (smaller y).
+    // The piece bottom (centroid y + rotated max) relative to the line, kept for tests/callers.
     const rawBottom = pointerRef.current.y + span.max;
-    const legal = rawBottom < live.requiredLine;
-    // Clamp the drawn y so the ghost never sinks below the line (a small margin keeps it readable).
-    const maxCentroidY = live.requiredLine - span.max - 1;
-    const y = Math.min(pointerRef.current.y, maxCentroidY);
-    return { x, y, legal, rawBottom };
+    // Clamp the drawn y so the ghost never sinks below the line (a small margin keeps it readable). The
+    // clamp guarantees an above-line pose, so the drop is always legal (feedback 0032) - a below-line
+    // aim is dropped AT the line by the server, never blocked. See `placeAimY`.
+    const y = placeAimY(pointerRef.current.y, live.requiredLine, span.max);
+    return { x, y, legal: true, rawBottom };
   }
 
   // The single draw loop: interpolate + draw the live tower every frame, follow the tower top with the
@@ -333,8 +344,9 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             if (spinning) spinAngleRef.current += piece.spinSeed;
             const drawAngle = spinning ? spinAngleRef.current : angleRef.current;
             const t = placedTransform(piece, live, drawAngle, spinning);
-            const skin =
-              spinning || t.legal ? piece.skin : { fill: '#c23b52', stroke: chrome.dropLine };
+            // The ghost never reddens for the line now (feedback 0032): the placing clamp keeps the pose
+            // above the line and a below-line aim is clamped up server-side, so it always previews legal.
+            const skin = piece.skin;
             // A drop guide line from the piece down to the platform, so the landing spot reads clearly.
             ctx.save();
             ctx.strokeStyle = chrome.dropLine;
@@ -459,20 +471,12 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     const live = simRef.current;
     if (!live || !live.next || !isActive || aim !== 'placing') return;
     const t = placedTransform(live.next, live, angleRef.current, false);
-    // Refuse an illegal (below-the-line) drop here too - the button is disabled for it, but the
-    // double-tap shortcut (feedback 0025) reaches drop() directly, and the server would reject it anyway.
-    if (!t.legal) return;
-    // Submit the piece's current transform. The server clamps + re-checks; we send our previewed pose.
+    // The drop is never blocked for the line (feedback 0032): the placing clamp already sits the piece
+    // above the line, and a below-line aim is clamped up server-side. Submit the previewed (clamped)
+    // pose; the server clamps + re-checks (overlap only for the line).
     onMove?.(state.round, JSON.stringify({ angle: angleRef.current, dropX: t.x, dropY: t.y }));
     setDropped(true);
   }
-
-  // Whether the currently placed pose is above the required line (a legal drop preview). The server is
-  // authoritative; this only disables/annotates the Drop button + colors the ghost.
-  const dropLegal =
-    isActive && sim != null && sim.next != null && aim === 'placing'
-      ? placedTransform(sim.next, sim, angle, false).legal
-      : false;
 
   const level = sim?.level ?? 0;
   const score = sim?.score ?? 0;
@@ -505,24 +509,37 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
 
   const watchingName = sim && !isActive ? nicknameOf(state, sim.activePlayer) : null;
 
+  // The round-transition phase (feedback 0032): a server-authoritative beat between rounds. `'complete'`
+  // paints "Complete!" over the held tower; `'intro'` paints "Round X" over the fresh tower. Defaults to
+  // normal play so a pre-field frame reads as `'playing'`.
+  const phase = sim?.phase ?? 'playing';
+
   // The between-piece pause (feedback 0027): no aim piece yet while the tower settles. Show a "Settling"
-  // hint (for everyone) so the vanished aim controls read as intentional pacing, not a stall.
-  const settling = sim != null && !sim.over && sim.next == null;
+  // hint (for everyone) so the vanished aim controls read as intentional pacing, not a stall. Gated on
+  // `'playing'` (feedback 0032) so it does NOT fire during the complete/intro beat (which have their own
+  // banners and also withhold the next piece).
+  const settling = sim != null && !sim.over && sim.next == null && phase === 'playing';
 
   // The SHORT turn/aim hint the draw loop paints as an on-canvas overlay (kept terse so it never
   // squishes at ~360px). The full copy lives in the screen-reader status below. It describes the new
   // flow: the canvas moves the piece; the top-right button stops the spin, then drops (feedback 0023).
-  const hint = settling
-    ? 'Settling...'
-    : isActive
-      ? dropped
-        ? 'Dropping...'
-        : aim === 'spinning'
-          ? 'Move the piece, then Stop spin'
-          : 'Move it into place, then Drop'
-      : watchingName
-        ? `Watching ${watchingName}`
-        : '';
+  // During the transition beat the centered DOM banner (below) carries the message, so the on-canvas
+  // hint stays blank (feedback 0032) - no competing text. `watchingName` is gated on `'playing'` so the
+  // active player never sees "Watching <self>" while `next` is briefly null during the beat.
+  const hint =
+    phase !== 'playing'
+      ? ''
+      : settling
+        ? 'Settling...'
+        : isActive
+          ? dropped
+            ? 'Dropping...'
+            : aim === 'spinning'
+              ? 'Move the piece, then Stop spin'
+              : 'Move it into place, then Drop'
+          : watchingName
+            ? `Watching ${watchingName}`
+            : '';
   hintRef.current = hint;
 
   // The live game state as text, for the visually-hidden aria-live region below. The HUD + hint are
@@ -536,19 +553,24 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
     piecesUsed > par
       ? `${piecesUsed} of ${par} par pieces used - over par, minus ten points per piece.`
       : `${piecesUsed} of ${par} par pieces used.`,
-    settling
-      ? 'Letting the tower settle - the next piece is coming.'
-      : isActive
-        ? dropped
-          ? 'Dropping the piece.'
-          : aim === 'spinning'
-            ? 'Your turn: move the piece on the board, then Stop spin to lock the angle.'
-            : dropLegal
-              ? 'Your turn: move it into place, then Drop. The drop is final, no re-aim.'
-              : 'Your turn: the piece is below the line - move it higher before you can drop.'
-        : watchingName
-          ? `Watching ${watchingName} build the tower.`
-          : '',
+    // The transition beat (feedback 0032) is announced first so a screen reader observes it; then the
+    // settling pause; then the turn/aim state. The below-line branch is gone - a below-line aim is now
+    // dropped AT the line (never blocked), so placing always reads "move it into place, then Drop".
+    phase === 'complete'
+      ? 'Round complete.'
+      : phase === 'intro'
+        ? `Round ${level + 1} - ${roundName}.`
+        : settling
+          ? 'Letting the tower settle - the next piece is coming.'
+          : isActive
+            ? dropped
+              ? 'Dropping the piece.'
+              : aim === 'spinning'
+                ? 'Your turn: move the piece on the board, then Stop spin to lock the angle.'
+                : 'Your turn: move it into place, then Drop. The drop is final, no re-aim.'
+            : watchingName
+              ? `Watching ${watchingName} build the tower.`
+              : '',
   ].join(' ');
 
   // The start-of-game gesture hint (feedback 0025): a centered onboarding overlay shown only while the
@@ -569,25 +591,19 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
         {srStatus}
       </p>
       {/* The aim control bar ABOVE the canvas (feedback 0025), so the button never sits on the on-canvas
-          hint. 'spinning' -> "Stop spin" (lock the angle); 'placing' -> "Drop" (submit); disabled below
-          the required line. A double-tap on the board is the same action. min-h keeps the row from
-          collapsing (no layout jump) when it is not the local turn. */}
+          hint. 'spinning' -> "Stop spin" (lock the angle); 'placing' -> "Drop" (submit). The Drop is
+          always enabled now (feedback 0032): a below-line aim is dropped AT the line, never blocked, so
+          there is no "Too low" state. A double-tap on the board is the same action. min-h keeps the row
+          from collapsing (no layout jump) when it is not the local turn. */}
       <div className="flex min-h-11 items-center justify-end">
         {isActive && !dropped ? (
           <button
             type="button"
-            aria-label={
-              aim === 'spinning'
-                ? 'Stop the spin and lock the angle'
-                : dropLegal
-                  ? 'Drop the piece'
-                  : 'The piece is below the line - move it higher before dropping'
-            }
-            disabled={aim === 'placing' && !dropLegal}
+            aria-label={aim === 'spinning' ? 'Stop the spin and lock the angle' : 'Drop the piece'}
             onClick={handleAimButton}
             className="min-h-11 min-w-24 rounded-lg bg-accent px-4 py-2 text-body-sm font-semibold text-black shadow-md disabled:opacity-50"
           >
-            {aim === 'spinning' ? 'Stop spin' : dropLegal ? 'Drop' : 'Too low'}
+            {aim === 'spinning' ? 'Stop spin' : 'Drop'}
           </button>
         ) : null}
       </div>
@@ -624,6 +640,28 @@ export function TeeterViewer({ state, me, onMove }: GameViewProps) {
             <p className="max-w-[15rem] rounded-lg bg-black/70 px-4 py-3 text-center text-body-sm font-semibold text-white shadow-md">
               {startHintText}
             </p>
+          </div>
+        ) : null}
+        {/* The round-transition banner (feedback 0032): a centered overlay for the server-authoritative
+            beat between rounds. `'complete'` -> "Complete!" over the held tower; `'intro'` -> "Round X"
+            with the level name over the fresh tower. `pointer-events-none` so it never blocks aiming. */}
+        {phase === 'complete' || phase === 'intro' ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
+            <div className="rounded-lg bg-black/70 px-6 py-4 text-center shadow-md">
+              {phase === 'complete' ? (
+                <p className="text-h3 font-semibold text-white">Complete!</p>
+              ) : (
+                <>
+                  <p className="text-h3 font-semibold text-white">Round {level + 1}</p>
+                  {/* The level name only when there IS one (feedback 0032 review): past the named
+                      levels the fallback would repeat the "Round N" title verbatim, reading as a
+                      render glitch, so drop the subtitle rather than duplicate the line. */}
+                  {LEVEL_NAMES[level] ? (
+                    <p className="text-body-sm text-white">{LEVEL_NAMES[level]}</p>
+                  ) : null}
+                </>
+              )}
+            </div>
           </div>
         ) : null}
         {state.rejected ? (

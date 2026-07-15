@@ -64,6 +64,13 @@ export interface TeeterMove {
 }
 
 /**
+ * The round-transition phase (feedback 0032). Mirrors packages/games/teeter-tower/src/types.ts.
+ * `'playing'` during play, `'complete'` during the post-clear "Complete!" beat, `'intro'` during the
+ * "Round X" beat over the fresh tower. The client paints the matching banner from this.
+ */
+export type TeeterPhase = 'playing' | 'complete' | 'intro';
+
+/**
  * A live snapshot of the whole game, streamed each tick as the `sim` frame. The client REPLACES its
  * state from the newest snapshot and interpolates between two of them for smooth sway.
  */
@@ -94,6 +101,11 @@ export interface TeeterSim {
   platform: { width: number; walls: boolean };
   /** True once the final level is cleared - the game is over. */
   over: boolean;
+  /**
+   * The round-transition phase (feedback 0032): `'playing'` / `'complete'` / `'intro'`. The client
+   * paints the "Complete!" / "Round X" banner from this and treats a withheld next piece as a pause.
+   */
+  phase: TeeterPhase;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -213,6 +225,15 @@ function asPiece(value: unknown): Piece | null {
   return null;
 }
 
+/**
+ * Decode the round-transition phase (feedback 0032). Accepts the three known values; DEFAULTS to
+ * `'playing'` when the field is absent or invalid, so a pre-field engine frame (an older server that
+ * does not stream `phase` yet) decodes as normal play rather than rejecting the whole sim.
+ */
+function asPhase(value: unknown): TeeterPhase {
+  return value === 'complete' || value === 'intro' ? value : 'playing';
+}
+
 /** Decode the platform config `{ width, walls }`, or null on any shape mismatch. */
 function asPlatform(value: unknown): { width: number; walls: boolean } | null {
   if (!isRecord(value)) return null;
@@ -260,6 +281,9 @@ export function asTeeterSim(value: unknown): TeeterSim | null {
       requiredLine: value.requiredLine,
       platform,
       over: value.over,
+      // Resilient to a pre-field engine frame: a missing/invalid phase decodes as 'playing' rather
+      // than nulling the whole sim (feedback 0032).
+      phase: asPhase(value.phase),
     };
   }
   return null;

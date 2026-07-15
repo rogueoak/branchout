@@ -95,6 +95,20 @@ Capture durable lessons as they emerge.
   `test`, so `turbo run test` never needs Docker; e2e runs as its own CI job. A dedicated compose
   project (`branchout-e2e`) on shifted ports lets a run coexist with a developer's dev stack.
   (Spec `0026`.)
+- **Logic that runs only inside an un-runnable loop needs a pure exported seam - and when you change
+  that logic, KEEP the seam, don't inline it back.** Teeter's aim math lives in a canvas rAF draw loop
+  jsdom cannot exercise, so it had a pure exported helper (`spinGapY`) a unit test could pin. The
+  round-7 vertical-aim fix inlined the new formula back into the unexported `placedTransform` closure,
+  so the headline behavior shipped with NO test (a revert stayed green) until persona review caught it;
+  the fix re-extracted `spinAimY`/`placeAimY`. When you replace a tested pure helper with inline logic,
+  you silently delete its test. (Feedback `0032`, tester review of PR #94.)
+- **A test that keys on a property OTHER cases also satisfy proves nothing about the new case - assert
+  the discriminating attribute, and expose one when the observable output can't distinguish.** The new
+  notch pieces were "tested" by counting concave (multi-part) bodies - but `blob` and `ell` are already
+  concave, so removing both notch pieces kept the count green. The decomposed geometry can't tell a
+  notch from a blob, so the fix exposed a non-wire `GeneratedPiece.type` the test asserts directly (both
+  notch types appear; each hard shape is individually rare). If a shape/mix assertion can pass without
+  the thing it names, it is vacuous. (Feedback `0032`, tester/engineer review of PR #94.)
 
 ## Services and state
 
@@ -388,6 +402,22 @@ Capture durable lessons as they emerge.
   "won't keep sliding once moving". Pair it with a lower `MAX_FALL_SPEED` (softer landing = less energy to
   slide) and `frictionAir` (bleeds slide energy). Don't trust a "saturates" comment - test the lever.
   (Feedback `0028`.)
+- **Matter combines a contact PAIR's friction with `min` (kinetic) and `frictionStatic` with `max`
+  (static) - so a floor-ONLY grip increase is a `frictionStatic` bump on the floor, not a kinetic one.**
+  The pieces gripped each other but crept along the platform; the ask was "grip the floor, not each other."
+  Raising the floor's kinetic `friction` above the piece's does nothing (`min` caps the pair at the piece),
+  and the piece's kinetic friction is SHARED with piece-on-piece (already too sticky). Static friction is
+  combined by `max`, so raising only the FLOOR's `frictionStatic` (30 -> 80) wins the piece-on-floor pair
+  independently while piece-on-piece stays 30. Know the pair-combine rule before you pick the lever: to move
+  one contact's grip and not another, use the coefficient whose combine rule lets the surface you changed
+  win. (Feedback `0032`, generalizing `0028`.)
+- **A pause the player must PERCEIVE has to be server-authoritative in a live game - it holds the sim and
+  gates the next input, not just a client overlay.** The "Complete!/Round X" beat between rounds is a `phase`
+  on the streamed world with a persisted tick countdown: while it runs the server withholds the next piece
+  and keeps stepping the held tower, and every client (including a reconnect, which rebuilds the phase from
+  scratch) paints the same banner. A client-only banner would race the server's instant `advanceLevel` and
+  desync a rejoin. When a beat must be seen and must gate input, model it as authoritative state, not a local
+  animation. (Feedback `0032`.)
 
 ## Client-server contracts
 

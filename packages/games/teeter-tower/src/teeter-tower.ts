@@ -33,12 +33,16 @@ import {
   addPieceToWorld,
   clampDropX,
   clampDropY,
+  clampDropYToLine,
+  COMPLETE_TICKS,
   createWorld,
-  evaluatePlacement,
   heightToScore,
   heldBodyAt,
+  INTRO_TICKS,
+  lineYFor,
   MAX_PLACED_BODIES,
   MAX_SETTLE_TICKS,
+  overlapsScene,
   pieceForIndex,
   requiredDropHeight,
   sceneSettled,
@@ -53,7 +57,7 @@ import {
   type StoredPiece,
 } from './physics';
 import { GROUND_TOP } from './levels';
-import type { TeeterMove, TeeterSim } from './types';
+import type { TeeterMove, TeeterPhase, TeeterSim } from './types';
 
 export const TEETER_TOWER_GAME_ID = 'teeter-tower';
 
@@ -93,6 +97,13 @@ interface TeeterScratch {
   next: StoredPiece | null;
   /** True once the final level cleared - the game is over. */
   over: boolean;
+  /**
+   * The round-transition phase (feedback 0032), persisted so a reconnect mid-transition rebuilds into
+   * the same beat and shows the right banner. `'playing'` outside a transition.
+   */
+  phase: TeeterPhase;
+  /** Ticks remaining in the current transition beat (feedback 0032); 0 while `'playing'`. */
+  phaseTicks: number;
 }
 
 function asScratch(scratch: Readonly<Record<string, unknown>>): TeeterScratch {
@@ -108,6 +119,9 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): TeeterScratch {
     bodies: s.bodies ?? [],
     next: s.next ?? null,
     over: s.over ?? false,
+    // Default to normal play (feedback 0032): a legacy snapshot without a phase rebuilds as `'playing'`.
+    phase: s.phase ?? 'playing',
+    phaseTicks: s.phaseTicks ?? 0,
   };
 }
 
@@ -185,6 +199,9 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       pendulum: level.pendulum,
       platformWidth: level.platformWidth,
       walls: level.walls,
+      // Thread the transition beat through so a reconnect mid-transition resumes it (feedback 0032).
+      phase: scratch.phase,
+      phaseTicks: scratch.phaseTicks,
     });
   };
 
@@ -217,6 +234,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
     bodies: toStoredBodies(world),
     next: world.next,
     over: world.over,
+    phase: world.phase,
+    phaseTicks: world.phaseTicks,
   });
 
   /** The streamable TeeterSim snapshot for the current world. */
@@ -240,6 +259,8 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       // per-level platform (level 1 is wider + walled) is honored client-side without a hardcoded width.
       platform: { width: level.platformWidth, walls: level.walls },
       over: world.over,
+      // Round-transition beat (feedback 0032): the client paints the "Complete!"/"Round X" banner.
+      phase: world.phase,
     };
   };
 
@@ -261,6 +282,10 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         bodies: [],
         next: null,
         over: false,
+        // Round 1 opens directly in normal play (feedback 0032): the transition beat is only BETWEEN
+        // rounds, so the game-start flow (and the single-drop e2e) is unchanged.
+        phase: 'playing',
+        phaseTicks: 0,
       };
       // `rounds` is unused for a live game (the engine ends it via tick.over), but the SDK requires
       // it >= 1. TOTAL_ROUNDS keeps a meaningful non-zero value. There is NO out-of-pieces lose
@@ -326,32 +351,34 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
         };
       }
 
-      // Legality: the piece is placed at the client's chosen transform (angle, dropX, dropY), then
-      // the server re-checks both rules authoritatively: it must clear the scene AND (min-drop rule)
-      // sit fully above the required line, computed off the tower's CURRENT highest point. dropX and
-      // dropY are both clamped to the legal world range before the solver sees them (the client aims
-      // the height; the clamp guards a malformed or wildly out-of-range value).
+      // Legality: the piece is placed at the client's chosen transform (angle, dropX, dropY). dropX and
+      // dropY are clamped to the legal world range before the solver sees them (the client aims the
+      // height; the clamp guards a malformed or wildly out-of-range value).
       const level = levelAt(world.levelIndex);
       // Gate the drop against the SETTLED tower height (feedback 0026), so the min-drop line the player
       // aimed at (the streamed, stable line) is the one the server enforces - not a mid-tumble value.
       const height = world.stableHeight;
       const dropX = clampDropX(parsed.dropX, world.platformWidth);
-      const dropY = clampDropY(parsed.dropY);
-      const held = heldBodyAt(piece.verts, dropX, dropY, parsed.angle);
+      let dropY = clampDropY(parsed.dropY);
+      // Min-drop line as a world-y: the bottom of the piece must sit above it. Once every line is
+      // cleared, `lineYFor` is null and there is no line to clamp against.
+      const lineY = lineYFor(level.target, height);
+      // Below-the-line drop -> CLAMP up, don't block (feedback 0032): shift the piece up so its bottom
+      // rests just above the line, then rebuild it there. Clamping UP moves it AWAY from the tower, so
+      // it cannot introduce an overlap. The line is now satisfied by construction; only the overlap
+      // rule can still reject a genuinely blocked spot.
+      let held = heldBodyAt(piece.verts, dropX, dropY, parsed.angle);
+      const clampedY = clampDropYToLine(held, lineY);
+      if (clampedY !== dropY) {
+        dropY = clampedY;
+        held = heldBodyAt(piece.verts, dropX, dropY, parsed.angle);
+      }
       const placedBodies = world.placed.map((p) => p.body);
-      const verdict = evaluatePlacement(
-        held,
-        level.target,
-        height,
-        world.platform,
-        placedBodies,
-        world.pendulum,
-        world.walls,
-      );
-      if (!verdict.ok) {
-        const reason =
-          verdict.reason === 'line' ? 'drop above the required line' : 'piece overlaps the tower';
-        return { scratch: ctx.scratch as Record<string, unknown>, rejected: { reason } };
+      if (overlapsScene(held, world.platform, placedBodies, world.pendulum, world.walls)) {
+        return {
+          scratch: ctx.scratch as Record<string, unknown>,
+          rejected: { reason: 'piece overlaps the tower' },
+        };
       }
 
       // Success: add the piece as a DYNAMIC body, advance the piece index. No re-aim: once added it is
@@ -383,48 +410,88 @@ export function createTeeterTowerGame(rng: () => number = Math.random): GameModu
       // Refresh the reported height ONLY when the whole scene is at rest (feedback 0026): while a piece
       // falls or the tower tumbles, `stableHeight` holds its last settled value, so the height / score /
       // level-clear / min-drop line never react to motion. A just-dropped body has been stepped once
-      // above, so it reads as moving here and cannot settle the height at its release point.
+      // above, so it reads as moving here and cannot settle the height at its release point. Kept alive
+      // during the transition beat too, so the held tower stays visually settled while "Complete!" shows.
       if (sceneSettled(world)) world.stableHeight = worldHeight(world);
+
+      const level = levelAt(world.levelIndex);
+
+      // Round-transition beat (feedback 0032). During `'complete'`/`'intro'` the scoring/clear block is
+      // SKIPPED entirely and no piece is offered - the tower just holds while the banner shows. A
+      // perceivable pause has to be server-authoritative: it holds the sim and gates the next input.
+      if (world.phase === 'complete') {
+        world.phaseTicks -= 1;
+        if (world.phaseTicks <= 0) {
+          if (world.levelIndex < LEVELS.length - 1) {
+            // The post-clear beat elapsed: advance to the fresh round and play the "Round X" intro.
+            advanceLevel(world);
+            world.phase = 'intro';
+            world.phaseTicks = INTRO_TICKS;
+          } else {
+            // The FINAL round routed through `'complete'` (so "Complete!" shows), and its beat has now
+            // elapsed: the game is over. No lose state in v1.
+            world.over = true;
+            world.next = null;
+          }
+        }
+        const over = world.over;
+        const result: LiveTickResult = {
+          scratch: toRecord(snapshot(world)),
+          sim: toSim(world, ctx.players),
+          over,
+        };
+        if (over) worlds.delete(keyFor(ctx)); // retire the world so a restart rebuilds cleanly
+        return result;
+      }
+
+      if (world.phase === 'intro') {
+        world.phaseTicks -= 1;
+        if (world.phaseTicks <= 0) {
+          // The intro beat elapsed: resume play. The next `'playing'` tick offers the first piece via
+          // the existing settle block (the fresh tower is empty/settled, so it appears at once).
+          world.phase = 'playing';
+          world.settleWaitTicks = 0;
+        }
+        return {
+          scratch: toRecord(snapshot(world)),
+          sim: toSim(world, ctx.players),
+          over: false,
+        };
+      }
+
+      // ---- 'playing': the normal scoring / clear / offer-next block ----
 
       // Score off the settled height. The per-drop delta is this level's band gain (heightToScore of the
       // new best minus the prior best); it accumulates into the cumulative total across levels.
-      const level = levelAt(world.levelIndex);
       const height = world.stableHeight;
       const priorScore = heightToScore(world.bestHeight, level.target);
       world.bestHeight = Math.max(world.bestHeight, height);
       const newScore = heightToScore(world.bestHeight, level.target);
       world.totalScore += newScore - priorScore;
 
-      let over = false;
       if (height >= level.target) {
-        if (world.levelIndex < LEVELS.length - 1) {
-          // Level cleared: advance the internal level and reset the tower for the next one. The
-          // banked score carries (totalScore never resets); bestHeight resets for the fresh level.
-          advanceLevel(world);
-        } else {
-          // Final level cleared: the game is over. No lose state in v1. Clear the aim piece so the
-          // final snapshot streams `next: null` (nothing left to drop).
-          world.over = true;
-          world.next = null;
-          over = true;
-        }
+        // Round cleared: enter the "Complete!" beat (feedback 0032). Do NOT advance or set `over` here -
+        // the `'complete'` tick handles it once the countdown elapses. Withhold the next piece so the
+        // held tower reads as a deliberate pause. This routes BOTH a non-final and the final round.
+        world.phase = 'complete';
+        world.phaseTicks = COMPLETE_TICKS;
+        world.next = null;
+        return {
+          scratch: toRecord(snapshot(world)),
+          sim: toSim(world, ctx.players),
+          over: false,
+        };
       }
 
       // Pause between pieces (feedback 0027): while `next` is null (just after a drop) hold off offering
       // the next piece until the tower has settled - or a max wait, so a never-resting scene (e.g. the
       // pendulum) can't withhold it forever. An empty/settled scene (game start, fresh level) offers it
-      // at once. `advanceLevel` already reset the wait when the tower reset.
+      // at once.
       if (!world.next && !world.over) {
         world.settleWaitTicks += 1;
         if (sceneSettled(world) || world.settleWaitTicks >= MAX_SETTLE_TICKS) ensureNext(world);
       }
-      const scratch = snapshot(world);
-      const sim = toSim(world, ctx.players);
-      if (over) {
-        // Drop the retired world so a restart rebuilds cleanly.
-        worlds.delete(keyFor(ctx));
-      }
-      return { scratch: toRecord(scratch), sim, over };
+      return { scratch: toRecord(snapshot(world)), sim: toSim(world, ctx.players), over: false };
     },
 
     // --- turn-based lifecycle callbacks: present for interface completeness, unused in live flow ---
