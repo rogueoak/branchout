@@ -116,6 +116,8 @@ async function buildGameLogo(gameSvg, outName) {
 }
 const logoTrivia = await buildGameLogo(triviaSvg, 'game-trivia.png');
 const logoLiarLiar = await buildGameLogo(liarLiarSvg, 'game-liarliar.png');
+// The app-icon mark the site nav uses (branchout-icon.svg), for the email header lockup.
+const brandIcon = await buildGameLogo(iconSvg, 'brand-icon.png');
 
 // Copy to apps/web/public for Next.js static serving.
 copyFileSync(join(distDir, 'favicon-16.png'), join(webPublic, 'favicon-16.png'));
@@ -130,4 +132,5 @@ const webAssets = join(webPublic, 'assets');
 mkdirSync(webAssets, { recursive: true });
 copyFileSync(logoTrivia, join(webAssets, 'trivia.png'));
 copyFileSync(logoLiarLiar, join(webAssets, 'liar-liar.png'));
+copyFileSync(brandIcon, join(webAssets, 'brand-icon.png'));
 console.log('Copied brand assets to apps/web/public/');

@@ -54,7 +54,7 @@
       .p-fluid-header { padding: 30px 24px !important; }
       .p-fluid-footer { padding: 28px 24px !important; }
       .h1-fluid { font-size: 26px !important; line-height: 33px !important; }
-      .wordmark-fluid { font-size: 30px !important; }
+      .wordmark-fluid { font-size: 25px !important; }
       .btn-fluid { width: 100% !important; }
       .btn-fluid a { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
       .game-name-fluid { font-size: 17px !important; }
@@ -94,21 +94,27 @@
           <!-- ===================== Header band (brand-dark, matches the site) ===================== -->
           <tr>
             <td class="p-fluid-header" align="center" bgcolor="#1b1826" style="background-color:#1b1826; padding:36px 40px 30px; border-left:1px solid #2a2738; border-right:1px solid #2a2738;">
-              <!-- Wordmark. Gradient text is unreliable in email, so "out" uses a solid brand gold that
-                   always renders; the whole lockup carries the brand even if remote styles are stripped. -->
+              <!-- Nav-style wordmark: the app-icon mark + "Branch Out" with a small, tilted "games"
+                   at the end, matching the site header. The rotate applies where supported (Apple
+                   Mail, iOS, most webmail); Outlook strips transforms, so "games" simply sits inline
+                   unrotated there. The live text carries the brand even if the icon image is blocked. -->
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
                 <tr>
-                  <td class="wordmark-fluid" align="center" style="font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:34px; font-weight:800; letter-spacing:-0.5px; color:#f7f6fa;">
-                    Branch&nbsp;<span style="color:#fbbf24;">out</span>
+                  <td align="center">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+                      <tr>
+                        <td valign="middle" style="padding-right:12px;">
+                          <img src="https://branchout.games/assets/brand-icon.png" width="44" height="44" alt="" style="display:block; width:44px; height:44px; border-radius:10px;" />
+                        </td>
+                        <td valign="middle" class="wordmark-fluid" style="font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:30px; font-weight:800; letter-spacing:-0.5px; line-height:1; color:#f7f6fa; white-space:nowrap;">
+                          Branch Out<span style="display:inline-block; margin-left:5px; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#a78bfa; vertical-align:3px; transform:rotate(-6deg);">games</span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-top:8px;">
-                    <div style="height:2px; width:150px; background-color:#ec4899; background-image:linear-gradient(90deg,#fbbf24 0%,#ec4899 50%,#7c3aed 100%); line-height:2px; font-size:2px; margin:0 auto;">&nbsp;</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-top:12px; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13px; font-weight:500; letter-spacing:1px; text-transform:uppercase; color:#9c98ae;">
+                  <td align="center" style="padding-top:14px; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13px; font-weight:500; letter-spacing:1px; text-transform:uppercase; color:#9c98ae;">
                     Where game night grows
                   </td>
                 </tr>
@@ -247,10 +253,10 @@
             <td class="p-fluid-footer" bgcolor="#161320" style="background-color:#161320; padding:32px 40px; border:1px solid #2a2738; border-top:0; border-radius:0 0 16px 16px;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
 
-                <!-- Wordmark + tagline -->
+                <!-- Wordmark + tagline (matches the nav-style lockup: "games" small + tilted). -->
                 <tr>
-                  <td align="center" style="font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:18px; font-weight:800; letter-spacing:-0.3px; color:#f7f6fa;">
-                    Branch&nbsp;<span style="color:#fbbf24;">out</span>
+                  <td align="center" style="font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:18px; font-weight:800; letter-spacing:-0.3px; line-height:1; color:#f7f6fa; white-space:nowrap;">
+                    Branch Out<span style="display:inline-block; margin-left:4px; font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#a78bfa; vertical-align:2px; transform:rotate(-6deg);">games</span>
                   </td>
                 </tr>
                 <tr>
