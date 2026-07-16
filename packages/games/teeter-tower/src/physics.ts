@@ -226,10 +226,8 @@ export function makePiece(rng: SeededRng): GeneratedPiece {
     // Vertices are LOCAL, y-down, wound counter-clockwise like `trap`.
     const w = rng.range(70, 96) * s;
     const h = rng.range(58, 78) * s;
-    // Bigger cut-out (feedback 0032 follow-up): a taller, deeper wedge so the concave notch reads
-    // clearly. `nd` caps below w/2 so the inner vertex stays within the body's right half.
-    const nh = h * rng.range(0.42, 0.56); // notch height (fraction of the edge)
-    const nd = w * rng.range(0.4, 0.5); // notch depth (into the body from the right edge)
+    const nh = h * rng.range(0.3, 0.42); // notch height (fraction of the edge)
+    const nd = w * rng.range(0.3, 0.4); // notch depth (into the body from the right edge)
     const verts: Vec2[] = [
       { x: -w / 2, y: -h / 2 }, // top-left
       { x: w / 2, y: -h / 2 }, // top-right
