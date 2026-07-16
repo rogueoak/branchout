@@ -226,8 +226,10 @@ export function makePiece(rng: SeededRng): GeneratedPiece {
     // Vertices are LOCAL, y-down, wound counter-clockwise like `trap`.
     const w = rng.range(70, 96) * s;
     const h = rng.range(58, 78) * s;
-    const nh = h * rng.range(0.3, 0.42); // notch height (fraction of the edge)
-    const nd = w * rng.range(0.3, 0.4); // notch depth (into the body from the right edge)
+    // Bigger cut-out (feedback 0032 follow-up): a taller, deeper wedge so the concave notch reads
+    // clearly. `nd` caps below w/2 so the inner vertex stays within the body's right half.
+    const nh = h * rng.range(0.42, 0.56); // notch height (fraction of the edge)
+    const nd = w * rng.range(0.4, 0.5); // notch depth (into the body from the right edge)
     const verts: Vec2[] = [
       { x: -w / 2, y: -h / 2 }, // top-left
       { x: w / 2, y: -h / 2 }, // top-right
@@ -245,8 +247,10 @@ export function makePiece(rng: SeededRng): GeneratedPiece {
     // Vertices are LOCAL, y-down, wound counter-clockwise like `trap`.
     const w = rng.range(70, 96) * s;
     const h = rng.range(58, 78) * s;
-    const nw = w * rng.range(0.3, 0.44); // notch width across the bottom edge
-    const nd = h * rng.range(0.3, 0.42); // notch depth (up into the body)
+    // Bigger cut-out (feedback 0032 follow-up): a wider, deeper V so the concave notch reads clearly.
+    // `nd` caps below h/2 so the apex stays within the body's lower half.
+    const nw = w * rng.range(0.42, 0.56); // notch width across the bottom edge
+    const nd = h * rng.range(0.42, 0.54); // notch depth (up into the body)
     const verts: Vec2[] = [
       { x: -w / 2, y: h / 2 }, // bottom-left
       { x: -nw / 2, y: h / 2 }, // notch-left (start of the V)

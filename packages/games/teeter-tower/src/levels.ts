@@ -30,7 +30,8 @@ export const PIECE_DENSITY = 0.0016;
 // 30`. Kinetic floor friction stays at `PIECE_FRICTION` - raising it would be inert (min caps it at
 // the piece), and the piece's kinetic friction is shared with piece-on-piece (already too grippy).
 // This is the "bottom row creeps along the platform" lever: it pins a settled base row to the floor.
-export const FLOOR_FRICTION_STATIC = 80;
+// Raised again (feedback 0032 follow-up) for still more floor grip so the base course holds firm.
+export const FLOOR_FRICTION_STATIC = 140;
 /** Caps drop velocity so a piece lands soft and can't slam the tower off center. */
 export const MAX_FALL_SPEED = 6;
 
