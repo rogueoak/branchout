@@ -19,19 +19,20 @@ export const DEATH_Y = GROUND_TOP + 260;
 // clamped to 1), so kinetic friction is raised well past 1 for real grip on the sliding landing contact.
 // `PIECE_FRICTION_AIR` bleeds off horizontal slide energy, and a lower `MAX_FALL_SPEED` softens the
 // landing so a piece knocks the tower around less. `frictionStatic` stays high to pin a settled piece.
-export const PIECE_FRICTION = 3.0;
-export const PIECE_FRICTION_STATIC = 30;
+// Both raised a bit (feedback 0032 follow-up) for more grip on every contact, floor and piece-on-piece.
+export const PIECE_FRICTION = 4.0;
+export const PIECE_FRICTION_STATIC = 45;
 export const PIECE_FRICTION_AIR = 0.08;
 export const PIECE_DENSITY = 0.0016;
-// Floor-only static grip (feedback 0032). Matter combines a contact PAIR as `friction = min(a, b)`
-// (kinetic) and `frictionStatic = max(a, b)` (static). So to grip the piece-on-FLOOR contact WITHOUT
-// touching piece-on-piece, we raise only the floor's static friction: `frictionStatic(piece-floor) =
-// max(30, FLOOR_FRICTION_STATIC)` wins the pair, while piece-on-piece stays `PIECE_FRICTION_STATIC =
-// 30`. Kinetic floor friction stays at `PIECE_FRICTION` - raising it would be inert (min caps it at
-// the piece), and the piece's kinetic friction is shared with piece-on-piece (already too grippy).
-// This is the "bottom row creeps along the platform" lever: it pins a settled base row to the floor.
+// Extra floor-only static grip (feedback 0032). Matter combines a contact PAIR as `friction = min(a, b)`
+// (kinetic) and `frictionStatic = max(a, b)` (static). So the floor's static friction wins the
+// piece-on-FLOOR pair (`frictionStatic(piece-floor) = max(PIECE_FRICTION_STATIC, FLOOR_FRICTION_STATIC)`)
+// while piece-on-piece stays at `PIECE_FRICTION_STATIC`. Kinetic floor friction tracks `PIECE_FRICTION`
+// (set in makePlatform) - raising it above the piece would be inert (min caps it at the piece), so the
+// floor's landing-slide grip rides the piece's kinetic value. This is the "bottom row creeps along the
+// platform" lever: it pins a settled base row to the floor, on top of the piece bump above.
 // Raised again (feedback 0032 follow-up) for still more floor grip so the base course holds firm.
-export const FLOOR_FRICTION_STATIC = 140;
+export const FLOOR_FRICTION_STATIC = 220;
 /** Caps drop velocity so a piece lands soft and can't slam the tower off center. */
 export const MAX_FALL_SPEED = 6;
 
