@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CreditLedger } from './ledger';
 import { InMemoryLedgerRepository } from './repository.memory';
-import { StaticTierProvider } from './tiers';
+import { StaticTierProvider, UnlimitedTierProvider } from './tiers';
 
 /** A ledger with a fixed clock and a pinned tier per account, for deterministic tests. */
 function makeLedger(
@@ -66,6 +66,15 @@ describe('affordability', () => {
     expect(result.balance).toBe(Number.POSITIVE_INFINITY);
     // Unlimited short-circuits: no grant row is written for Party.
     expect(repo.all()).toHaveLength(0);
+  });
+
+  it('UnlimitedTierProvider makes games free: a full Teeter round budget is affordable', async () => {
+    // The "games are free for now" wiring - every account reads as unlimited, so Teeter's ~53-round
+    // budget (the start that used to fail with "need 53 credits") is affordable on a zero balance.
+    const ledger = new CreditLedger(new InMemoryLedgerRepository(), new UnlimitedTierProvider());
+    const result = await ledger.canAfford('acct', 53);
+    expect(result.ok).toBe(true);
+    expect(result.balance).toBe(Number.POSITIVE_INFINITY);
   });
 
   it('afford reflects prior debits', async () => {
