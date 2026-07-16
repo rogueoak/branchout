@@ -42,6 +42,19 @@ export class FreeTierProvider implements TierProvider {
   }
 }
 
+/**
+ * Temporary "games are free for now" provider: every account reads as the unlimited Party tier, so
+ * the affordability check short-circuits to `true` and no start is ever refused for want of credits.
+ * Wired in place of {@link FreeTierProvider} in production until the Purchases spec ships; swap it
+ * back to charge credits again. Debits still append to the ledger (inert - a Party balance reads
+ * `UNLIMITED`), so restoring paid play is a one-line provider swap with the ledger intact.
+ */
+export class UnlimitedTierProvider implements TierProvider {
+  async getTier(): Promise<Tier> {
+    return 'party';
+  }
+}
+
 /** Test/seed provider: hand it an explicit map of account id -> tier, defaulting to Free. */
 export class StaticTierProvider implements TierProvider {
   constructor(private readonly tiers: Record<string, Tier> = {}) {}

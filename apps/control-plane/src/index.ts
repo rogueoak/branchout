@@ -10,7 +10,7 @@ import { loadConfig } from './config';
 import { ResendMailer } from './feedback/mailer';
 import { CreditLedger } from './credits/ledger';
 import { PostgresLedgerRepository } from './credits/repository';
-import { FreeTierProvider } from './credits/tiers';
+import { UnlimitedTierProvider } from './credits/tiers';
 import { createPostgresPool, pingPostgres } from './db';
 import { runMigrations } from './db/migrations';
 import { allMigrations } from './migrations';
@@ -116,7 +116,10 @@ async function main(): Promise<void> {
     del: (key) => redis.del(key),
   };
   const limiter = new RedisRateLimiter(rateLimitRedis);
-  const ledger = new CreditLedger(new PostgresLedgerRepository(pool), new FreeTierProvider());
+  // Games are free for now (no credit cost): every account reads as the unlimited Party tier, so a
+  // start is never refused for want of credits. Swap back to `new FreeTierProvider()` to re-enable
+  // paid play once the Purchases spec ships.
+  const ledger = new CreditLedger(new PostgresLedgerRepository(pool), new UnlimitedTierProvider());
   const engine = new HttpEngineClient(config.engineUrl, config.internalToken);
   const plays = new PostgresPlaysRepository(pool);
   const rooms = new RoomService(
