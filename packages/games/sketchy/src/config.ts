@@ -3,7 +3,11 @@
 // the `/sessions` handoff boundary, so a bad config is a 400, not a broken game. Mirrored on the web.
 
 export const MIN_ROUNDS = 1;
-export const MAX_ROUNDS = 20;
+// Each round (cycle) is 1 draw + N sketch engine rounds, so with 8 players a cycle is 9 engine
+// rounds. Cap the cycle count at 10 to keep an insider session bounded (<= 90 engine rounds) and to
+// stay comfortably within the sample seed bank (a cycle deals N distinct seeds and never repeats a
+// prompt across the game, so 10 cycles of 8 players needs 80 seeds; the sample carries 100+).
+export const MAX_ROUNDS = 10;
 export const DEFAULT_ROUNDS = 3;
 
 /** Host-supplied configuration, before validation/defaulting. */

@@ -5,6 +5,7 @@ import { logoSvg } from '../logo.js';
 import { triviaSvg } from '../trivia.js';
 import { liarLiarSvg } from '../liarliar.js';
 import { sketchySvg } from '../sketchy.js';
+import { reversiSvg } from '../reversi.js';
 import { heroTriviaSvg } from '../hero-trivia.js';
 import { heroLiarLiarSvg } from '../hero-liarliar.js';
 import { palette, goldRootRule, safeArea, sparkGradient } from '../brand-notes.js';
@@ -29,6 +30,7 @@ describe('SVG exports', () => {
     ['triviaSvg', triviaSvg],
     ['liarLiarSvg', liarLiarSvg],
     ['sketchySvg', sketchySvg],
+    ['reversiSvg', reversiSvg],
   ])(
     '%s is a 512 game mark that keeps the gold root (the gold-root rule holds for games)',
     (_name, svg) => {

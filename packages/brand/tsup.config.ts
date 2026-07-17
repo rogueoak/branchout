@@ -11,6 +11,7 @@ export default defineConfig({
     'src/hero-liarliar.ts',
     'src/teeter-tower.ts',
     'src/sketchy.ts',
+    'src/reversi.ts',
     'src/brand.ts',
     'src/avatar-ids.ts',
     'src/avatars.ts',

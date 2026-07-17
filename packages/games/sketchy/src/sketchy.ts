@@ -298,10 +298,13 @@ export function createSketchyGame(
       if (scratch.stage === 'draw') {
         return connected.every((p) => scratch.sketches[p.player] !== undefined);
       }
-      // Every connected player EXCEPT the featured author must have written a decoy.
-      return connected
-        .filter((p) => p.player !== scratch.featured)
-        .every((p) => scratch.decoys[p.player] !== undefined);
+      // Every connected player EXCEPT the featured author must have written a decoy. If the featured
+      // author is the ONLY connected player (everyone else dropped), there are no decoy-writers, so an
+      // empty `.every` would falsely close collection into an unguessable single-option decision -
+      // hold the round open (the move timer still bounds it) until a non-featured player is present.
+      const writers = connected.filter((p) => p.player !== scratch.featured);
+      if (writers.length === 0) return false;
+      return writers.every((p) => scratch.decoys[p.player] !== undefined);
     },
 
     reveal(ctx: RoundContext): RevealResult {

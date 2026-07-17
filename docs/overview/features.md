@@ -151,6 +151,19 @@ What the product does for users, grouped by area. Each capability maps to one or
       hard shapes (L/octagon/triangle) rare; the spinning piece follows the cursor vertically; a
       below-the-line drop is clamped to the line, not blocked; and clearing a round plays a
       server-authoritative "Complete!" -> "Round X" beat (a `phase` on the streamed sim).
+- [~] Board games (insider-only), first entry Reversi - the classic 8x8 two-player disc-flip game,
+      and the reusable **board harness** Checkers and Chess follow (spec `0054`). Reversi uses the LIVE
+      model (like Teeter) but its state is fully serializable, so the whole game - board, turn, and
+      pass-state - lives in **scratch** with **no in-process world** (no Matter.js, no `disposeLive`).
+      A turn is `{ row, col }` on the generic `move` channel; the engine validates turn + legality and
+      applies the flip (rejecting an illegal/out-of-turn move to that device only), streams the whole
+      board on the `sim` frame, and ends the game when neither side can move (custom 2-player standings
+      by final disc count). It is PERFECT information, so it does NOT use the per-player private
+      channel (spec `0052`). The board machinery is factored for reuse: a serializable `Grid`,
+      eight-direction ray helpers, two-seat turn management (`packages/games/reversi/src/board.ts`), and
+      a single-surface board renderer with the layout + tap hit-test in a game-agnostic `board-render.ts`.
+      Themed Violet vs Amber discs (canopy grape/sunbeam tokens, no hardcoded hex) on a wood-grain
+      board (`@branchout/game-reversi`). Insider-gated by SURFACE like Teeter (feedback `0029`).
 - [x] Per-player private payloads - the hidden-information seam the next wave of games (spymaster
       key, hidden role, private hand) build on (spec `0052`). A lifecycle result may carry an optional
       `private` map (playerId -> opaque secret); the engine delivers each entry ONLY to that player's

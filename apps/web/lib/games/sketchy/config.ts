@@ -4,7 +4,9 @@
 // to the engine unchanged.
 
 export const MIN_ROUNDS = 1;
-export const MAX_ROUNDS = 20;
+// Mirror of the engine cap (spec 0063): a cycle is 1 draw + N sketch engine rounds, so 10 cycles
+// keeps an 8-player session bounded and within the sample seed bank (10 x 8 = 80 distinct seeds).
+export const MAX_ROUNDS = 10;
 export const DEFAULT_ROUNDS = 3;
 
 /** The host's Sketchy setup: how many draw-and-guess cycles to play. */

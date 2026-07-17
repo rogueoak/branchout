@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@branchout/game-liar-liar": "workspace:*",
+    "@branchout/game-reversi": "workspace:*",
     "@branchout/game-sdk": "workspace:*",
     "@branchout/game-sketchy": "workspace:*",
     "@branchout/game-teeter-tower": "workspace:*",

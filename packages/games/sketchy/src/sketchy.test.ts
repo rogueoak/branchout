@@ -123,6 +123,42 @@ describe('draw round', () => {
   });
 });
 
+describe('sketch round: allSubmitted holds when only the featured author is connected', () => {
+  it('does not close a decoy stage with no decoy-writers present', () => {
+    const game = createSketchyGame(BANK, mulberry32(2));
+    let scratch = game.configure({ rounds: 1 }, roster).scratch;
+    scratch = game.startRound(ctxOf(1, 'collecting', scratch)).scratch;
+    for (const p of ['p1', 'p2', 'p3']) {
+      scratch = game.collectMove(
+        ctxOf(1, 'collecting', scratch),
+        p,
+        serializeSketch(sampleSketch),
+      ).scratch;
+    }
+    game.reveal(ctxOf(1, 'collecting', scratch));
+    scratch = game.startRound(ctxOf(2, 'collecting', scratch)).scratch;
+    const featured = (scratch as { featured: string }).featured;
+
+    // Only the featured author is connected: there are zero decoy-writers, so the stage must NOT
+    // close (an empty `.every` would falsely report done and open an unguessable single option).
+    const onlyFeatured: SessionPlayer[] = roster.map((p) => ({
+      ...p,
+      connected: p.player === featured,
+    }));
+    const ctx: RoundContext = {
+      room: 'r',
+      game: 'sketchy',
+      phase: 'collecting',
+      round: 2,
+      players: onlyFeatured,
+      scores: {},
+      scratch,
+      config: {},
+    };
+    expect(game.allSubmitted?.(ctx)).toBe(false);
+  });
+});
+
 describe('sketch round: decoys, dedupe, truth rejection, scoring', () => {
   // Drive one whole cycle: draw round, then feature p1's sketch and score the guesses.
   function playToSketchRound() {

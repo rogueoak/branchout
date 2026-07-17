@@ -97,6 +97,7 @@ import { triviaGameUi } from './trivia';
 import { liarLiarGameUi } from './liar-liar';
 import { teeterTowerGameUi } from './teeter-tower';
 import { sketchyGameUi } from './sketchy';
+import { reversiGameUi } from './reversi';
 
 /** Every registered game UI module, keyed by game id. Adding a game is adding it here. */
 export const GAME_UI_MODULES: Record<string, GameUiModule> = {
@@ -104,6 +105,7 @@ export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [liarLiarGameUi.id]: liarLiarGameUi,
   [teeterTowerGameUi.id]: teeterTowerGameUi,
   [sketchyGameUi.id]: sketchyGameUi,
+  [reversiGameUi.id]: reversiGameUi,
 };
 
 /** The host's game options, in display order. */
@@ -112,6 +114,7 @@ export const GAME_UI_LIST: readonly GameUiModule[] = [
   liarLiarGameUi,
   teeterTowerGameUi,
   sketchyGameUi,
+  reversiGameUi,
 ];
 
 /** The default game a fresh room starts on, and the safe fallback for an unknown id. */
