@@ -12,6 +12,7 @@ export default defineConfig({
     'src/hero-trivia.ts',
     'src/hero-liarliar.ts',
     'src/teeter-tower.ts',
+    'src/whispergrove.ts',
     'src/reversi.ts',
     'src/checkers.ts',
     'src/brand.ts',

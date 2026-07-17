@@ -22,6 +22,7 @@
     "@branchout/game-sdk": "workspace:*",
     "@branchout/game-teeter-tower": "workspace:*",
     "@branchout/game-trivia": "workspace:*",
+    "@branchout/game-whispergrove": "workspace:*",
     "@branchout/protocol": "workspace:*",
     "@branchout/service-runtime": "workspace:*",
     "fastify": "^5.2.0",

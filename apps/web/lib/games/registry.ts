@@ -97,6 +97,7 @@ import { triviaGameUi } from './trivia';
 import { liarLiarGameUi } from './liar-liar';
 import { loneLeafGameUi } from './lone-leaf';
 import { teeterTowerGameUi } from './teeter-tower';
+import { whispergroveGameUi } from './whispergrove';
 import { reversiGameUi } from './reversi';
 import { oddBirdGameUi } from './odd-bird';
 import { checkersGameUi } from './checkers';
@@ -107,6 +108,7 @@ export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [liarLiarGameUi.id]: liarLiarGameUi,
   [loneLeafGameUi.id]: loneLeafGameUi,
   [teeterTowerGameUi.id]: teeterTowerGameUi,
+  [whispergroveGameUi.id]: whispergroveGameUi,
   [reversiGameUi.id]: reversiGameUi,
   [oddBirdGameUi.id]: oddBirdGameUi,
   [checkersGameUi.id]: checkersGameUi,
@@ -118,6 +120,7 @@ export const GAME_UI_LIST: readonly GameUiModule[] = [
   liarLiarGameUi,
   loneLeafGameUi,
   teeterTowerGameUi,
+  whispergroveGameUi,
   reversiGameUi,
   oddBirdGameUi,
   checkersGameUi,

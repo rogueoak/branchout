@@ -50,6 +50,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./whispergrove": {
+      "types": "./dist/whispergrove.d.ts",
+      "import": "./dist/whispergrove.js"
+    },
     "./reversi": {
       "types": "./dist/reversi.d.ts",
       "import": "./dist/reversi.js"

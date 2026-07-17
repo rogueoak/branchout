@@ -187,6 +187,16 @@ What the product does for users, grouped by area. Each capability maps to one or
       `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
       catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
       client exposes the local player's secret as `state.private` for a game's UI module.
+- [~] Fourth game (insider-only) - Whispergrove: a two-team word-grid deduction game (spec `0062`).
+      A 5x5 grove of 25 word leaves; a secret key marks 9 leaves for the starting grove, 8 for the
+      other, 7 neutral saplings, and 1 instant-loss Deadwood. Each grove has one Whisperer who ALONE
+      sees the key (delivered over the spec `0052` private channel to the two Whisperers only, never
+      broadcast) and gives a one-word-plus-number whisper; their grove taps leaves - an own leaf keeps
+      the turn going, a sapling or enemy leaf ends it, the Deadwood loses instantly. First grove to
+      reveal all its leaves wins. Built on the LIVE model (grid state in scratch, streamed via `sim`);
+      teams tracked in scratch and mapped to shared per-player standings. A ~400-word single-noun
+      sample bank is bundled (`@branchout/game-whispergrove`). Insider-only by surface like the other
+      insider games; needs 4+ players (two groves of 2+).
 - [~] Fourth game (insider-only) - Odd Bird: a hidden-role location deduction game, the first to ride
       the per-player private channel (spec `0052`). A roost (a location) is drawn; every player is
       dealt the SAME roost plus a distinct perch (a role) - except one random odd bird, who is told
