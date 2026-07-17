@@ -7,12 +7,7 @@
 // deal them alternately into the two groves (team 0, team 1, team 0, ...). Deterministic assignment
 // means a test can pin exactly who is on which team, and a reconnect never reshuffles the teams.
 
-import {
-  rankStandings,
-  type PlayerView,
-  type ScoreEvent,
-  type Standing,
-} from '@branchout/protocol';
+import { rankStandings, type PlayerView, type Standing } from '@branchout/protocol';
 import type { SessionPlayer } from '@branchout/game-sdk';
 
 /** The two groves (teams). Named for the palette: grape (violet) and sunbeam (amber). */
@@ -71,14 +66,4 @@ export function teamStandings(
     scores[player.player] = team === undefined ? 0 : teamScores[team];
   }
   return rankStandings(players, scores);
-}
-
-/** Build the per-player score events (each member credited the team's per-sprint blooms). */
-export function teamScoreEvents(
-  members: readonly string[],
-  points: number,
-  reason: string,
-): ScoreEvent[] {
-  if (points === 0) return [];
-  return members.map((player) => ({ player, points, reason }));
 }

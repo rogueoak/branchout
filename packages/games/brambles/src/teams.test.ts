@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayerView } from '@branchout/protocol';
 import type { SessionPlayer } from '@branchout/game-sdk';
-import { activeTeamForSprint, assignTeams, guideOf, teamScoreEvents, teamStandings } from './teams';
+import { activeTeamForSprint, assignTeams, guideOf, teamStandings } from './teams';
 
 function players(...ids: string[]): SessionPlayer[] {
   return ids.map((id) => ({ player: id, nickname: id.toUpperCase(), connected: true }));
@@ -62,15 +62,5 @@ describe('teamStandings - team result -> per-player standings', () => {
   it('a tie shares rank 1 across both teams', () => {
     const standings = teamStandings(roster, teamOf, [4, 4]);
     expect(standings.every((s) => s.rank === 1)).toBe(true);
-  });
-});
-
-describe('teamScoreEvents', () => {
-  it('credits each member the team points, and nothing on zero', () => {
-    expect(teamScoreEvents(['p1', 'p3'], 2, 'blooms')).toEqual([
-      { player: 'p1', points: 2, reason: 'blooms' },
-      { player: 'p3', points: 2, reason: 'blooms' },
-    ]);
-    expect(teamScoreEvents(['p1', 'p3'], 0, 'blooms')).toEqual([]);
   });
 });

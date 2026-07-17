@@ -112,7 +112,8 @@ export function BramblesRemote({ state, me, onMove }: GameRemoteProps) {
   return (
     <section aria-label="Your controller" className="flex flex-col gap-3">
       <p className="text-body text-text">
-        The Guide is describing a hidden bloom. Type what you think it is.
+        The Guide is describing a hidden bloom. If it is your grove&apos;s sprint, type your guess -
+        otherwise sit tight and watch.
       </p>
       <div className="flex gap-2">
         <Input

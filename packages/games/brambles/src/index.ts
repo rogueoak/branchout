@@ -32,7 +32,6 @@ export {
   activeTeamForSprint,
   guideOf,
   teamStandings,
-  teamScoreEvents,
   type TeamId,
   type TeamAssignment,
 } from './teams';
