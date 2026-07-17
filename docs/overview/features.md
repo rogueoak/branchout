@@ -82,7 +82,7 @@ What the product does for users, grouped by area. Each capability maps to one or
       minimum players. The picker lives in the lobby ("Your mode") with per-option descriptions and
       defaults in priority order: remembered device mode -> no interactive member yet -> second join
       -> mobile -> interactive (specs `0006`, `0013`, `0050`).
-- [x] Per-game player limits - Trivia 1-8, Liar Liar 2-8, Teeter 1-4, shared via `@branchout/protocol`
+- [x] Per-game player limits - Trivia 1-8, Liar Liar 2-8, Teeter 1-4, Lone Leaf 3-7, shared via `@branchout/protocol`
       so the lobby and the control-plane agree. At the max a playing joiner is clamped to `viewer`;
       below the min Start is blocked. Viewers never count toward the total or paid rounds (spec `0050`).
 - [x] Host - the host has a mode like anyone (defaults to interactive) plus an `isHost` flag: it
@@ -164,6 +164,21 @@ What the product does for users, grouped by area. Each capability maps to one or
       a single-surface board renderer with the layout + tap hit-test in a game-agnostic `board-render.ts`.
       Themed Violet vs Amber discs (canopy grape/sunbeam tokens, no hardcoded hex) on a wood-grain
       board (`@branchout/game-reversi`). Insider-gated by SURFACE like Teeter (feedback `0029`).
+- [~] Checkers (insider-only) - classic English draughts, the SECOND board game and the first to reuse
+      the shared board harness Reversi factored out (spec `0055`). It reuses the `@branchout/game-board`
+      package (`Grid`, the `DIAGONAL` rays, `Turns`/`assignSeats`) and the shared web `../board/geometry`
+      wholesale - only the rules and the piece chrome (Violet vs Amber acorn men, a gold-root crown ring
+      on a King) are Checkers-specific. Like Reversi it is LIVE + fully serializable (board in scratch,
+      no in-process world, no `disposeLive`) and PERFECT information (no spec `0052`). The rules ship
+      **standard English draughts**: men move/capture diagonally forward, jumps chain (multi-jump forced
+      to completion), MANDATORY CAPTURE is on (any available jump is legal - not the "longest jump"
+      variant), a man that stops on the far row is crowned a King (crowning mid-chain ends the turn), and
+      the side to move with no legal move loses (no draw). A move is `{ from, path }` on the generic
+      `move` channel; the engine validates turn + full legality (incl. mandatory capture and the whole
+      multi-jump path, rejecting to that device only) and streams the whole board on `sim`. The web
+      Viewer is a select-then-move two-tap surface (tap a piece, then a highlighted destination; a
+      multi-jump submits whole). Standings rank the winner first even when the loser has more pieces
+      (`@branchout/game-checkers`). Insider-gated by SURFACE like Teeter (feedback `0029`).
 - [x] Per-player private payloads - the hidden-information seam the next wave of games (spymaster
       key, hidden role, private hand) build on (spec `0052`). A lifecycle result may carry an optional
       `private` map (playerId -> opaque secret); the engine delivers each entry ONLY to that player's
@@ -182,6 +197,31 @@ What the product does for users, grouped by area. Each capability maps to one or
       teams tracked in scratch and mapped to shared per-player standings. A ~400-word single-noun
       sample bank is bundled (`@branchout/game-whispergrove`). Insider-only by surface like the other
       insider games; needs 4+ players (two groves of 2+).
+- [~] Fourth game (insider-only) - Odd Bird: a hidden-role location deduction game, the first to ride
+      the per-player private channel (spec `0052`). A roost (a location) is drawn; every player is
+      dealt the SAME roost plus a distinct perch (a role) - except one random odd bird, who is told
+      only that they are the odd bird. Each player's card (roost + perch, or "you are the odd bird") is
+      delivered ONLY to that player via the `private` frame and NEVER broadcast, so the shared viewer
+      never shows it (a test proves player B never receives player A's card and the odd bird never
+      receives the roost). Runs on the generic decision lifecycle: `startRound` deals the cards and
+      runs a long question window (the flock questions each other out loud, out of band), anyone calls
+      the flush to open the vote, the flock accuses a player and the odd bird gets one roost guess, and
+      `resolveDecision` scores both outcomes - the flock scores when it flushes the odd bird; the odd
+      bird scores for surviving or for naming the roost. Ships as `@branchout/game-odd-bird` with a
+      ~30-roost sample bank (`validateRoostBank`: schema, `<category>-NNN` id, distinct perches),
+      insider-gated by surface (spec `0043`), 3-8 players (`@branchout/game-odd-bird`, spec `0059`).
+- [~] Fourth game (insider-only) - Lone Leaf: a COOPERATIVE single-clue word game for 3-7 players and
+      the first game built on the per-player private channel (spec `0057`). Each round one player is the
+      Seeker (the role rotates by seat) and must guess a hidden mystery word - the seed - that they
+      alone cannot see; every other player secretly writes ONE one-word clue (a leaf). Before the Seeker
+      looks, matching or invalid leaves wilt (are cleared, both of a duplicate pair, folding case and a
+      light stem), so only the unique leaves survive. The Seeker sees the survivors and takes one guess;
+      scoring is cooperative - a correct guess banks a point for everyone and all players share the
+      standing. The seed rides the spec `0052` private channel to the non-Seekers ONLY and never the
+      broadcast prompt/viewer/reveal, so the Seeker's device never receives it (a unit test proves the
+      Seeker is absent from the private map, and the e2e proves the seed shows on a non-Seeker's device
+      but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled ~60-word
+      sample seed bank (`@branchout/game-lone-leaf`).
 
 ## Web
 

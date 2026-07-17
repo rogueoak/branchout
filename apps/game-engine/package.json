@@ -14,7 +14,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@branchout/game-checkers": "workspace:*",
     "@branchout/game-liar-liar": "workspace:*",
+    "@branchout/game-odd-bird": "workspace:*",
+    "@branchout/game-lone-leaf": "workspace:*",
     "@branchout/game-reversi": "workspace:*",
     "@branchout/game-sdk": "workspace:*",
     "@branchout/game-teeter-tower": "workspace:*",

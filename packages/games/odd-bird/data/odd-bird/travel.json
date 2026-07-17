@@ -1,0 +1,92 @@
+[
+  {
+    "id": "travel-001",
+    "category": "travel",
+    "name": "An airport terminal",
+    "perches": [
+      "Gate agent",
+      "Delayed passenger",
+      "Pilot",
+      "Baggage handler",
+      "Duty-free clerk",
+      "Security officer",
+      "Flight attendant",
+      "Lost traveler"
+    ]
+  },
+  {
+    "id": "travel-002",
+    "category": "travel",
+    "name": "A cruise ship",
+    "perches": [
+      "Captain",
+      "First-time cruiser",
+      "Buffet chef",
+      "Cabin steward",
+      "Lounge singer",
+      "Excursion guide",
+      "Seasick passenger",
+      "Pool bartender"
+    ]
+  },
+  {
+    "id": "travel-003",
+    "category": "travel",
+    "name": "A train station",
+    "perches": [
+      "Ticket inspector",
+      "Commuter",
+      "Platform announcer",
+      "Newsstand vendor",
+      "Backpacking tourist",
+      "Station cleaner",
+      "Conductor",
+      "Track engineer"
+    ]
+  },
+  {
+    "id": "travel-004",
+    "category": "travel",
+    "name": "A roadside motel",
+    "perches": [
+      "Night-desk clerk",
+      "Road-trip family",
+      "Housekeeper",
+      "Traveling salesperson",
+      "Pool maintenance worker",
+      "Vending-machine snacker",
+      "Manager",
+      "Long-haul trucker"
+    ]
+  },
+  {
+    "id": "travel-005",
+    "category": "travel",
+    "name": "A ski resort gondola",
+    "perches": [
+      "Gondola operator",
+      "Sightseeing tourist",
+      "Ski patroller",
+      "Photographer",
+      "Nervous first-rider",
+      "Maintenance technician",
+      "Season-pass local",
+      "Guide"
+    ]
+  },
+  {
+    "id": "travel-006",
+    "category": "travel",
+    "name": "A tour bus",
+    "perches": [
+      "Tour guide",
+      "Sleepy passenger",
+      "Bus driver",
+      "History buff",
+      "Souvenir shopper",
+      "Photographer",
+      "Lost tourist",
+      "Snack vendor"
+    ]
+  }
+]

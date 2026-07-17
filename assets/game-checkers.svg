@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Checkers">
+  <defs>
+    <radialGradient id="ck-bg" cx="0.5" cy="0.42" r="0.8">
+      <stop offset="0" stop-color="#221836"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <linearGradient id="ck-wood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4a3524"/>
+      <stop offset="1" stop-color="#2e2016"/>
+    </linearGradient>
+    <radialGradient id="ck-violet" cx="0.38" cy="0.34" r="0.75">
+      <stop offset="0" stop-color="#C4B5FD"/>
+      <stop offset="1" stop-color="#6D28D9"/>
+    </radialGradient>
+    <radialGradient id="ck-amber" cx="0.38" cy="0.34" r="0.75">
+      <stop offset="0" stop-color="#FDE047"/>
+      <stop offset="1" stop-color="#CA8A04"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#ck-bg)"/>
+
+  <!-- the wood-grain board, tilted for depth -->
+  <g transform="rotate(-6 256 268)">
+    <rect x="96" y="108" width="320" height="320" rx="26" fill="url(#ck-wood)" stroke="#1c130c" stroke-width="6"/>
+    <!-- grid lines: a 4x4 hint of the 8x8 board -->
+    <g stroke="#1c130c" stroke-width="3" opacity="0.55">
+      <line x1="176" y1="108" x2="176" y2="428"/>
+      <line x1="256" y1="108" x2="256" y2="428"/>
+      <line x1="336" y1="108" x2="336" y2="428"/>
+      <line x1="96" y1="188" x2="416" y2="188"/>
+      <line x1="96" y1="268" x2="416" y2="268"/>
+      <line x1="96" y1="348" x2="416" y2="348"/>
+    </g>
+
+    <!-- the oak skeleton bent to the board: a central gold root sprouting a two-tone canopy of
+         stacked checker pieces, with a crowned king at the crown of the tree -->
+    <!-- gold root node (the single family gold root) -->
+    <circle cx="256" cy="388" r="20" fill="#d2a463" stroke="#a97e46" stroke-width="4"/>
+
+    <!-- amber men (one canopy side, lower rows) -->
+    <ellipse cx="176" cy="348" rx="30" ry="22" fill="url(#ck-amber)" stroke="#854D0E" stroke-width="4"/>
+    <ellipse cx="336" cy="348" rx="30" ry="22" fill="url(#ck-amber)" stroke="#854D0E" stroke-width="4"/>
+    <ellipse cx="256" cy="268" rx="30" ry="22" fill="url(#ck-amber)" stroke="#854D0E" stroke-width="4"/>
+
+    <!-- violet men (the other canopy side) -->
+    <ellipse cx="176" cy="268" rx="30" ry="22" fill="url(#ck-violet)" stroke="#4C1D95" stroke-width="4"/>
+    <ellipse cx="336" cy="268" rx="30" ry="22" fill="url(#ck-violet)" stroke="#4C1D95" stroke-width="4"/>
+
+    <!-- a crowned KING at the crown of the tree: a stacked violet piece with a gold-root crown ring -->
+    <g transform="translate(256 176)">
+      <ellipse cx="0" cy="8" rx="34" ry="24" fill="url(#ck-violet)" stroke="#4C1D95" stroke-width="4"/>
+      <ellipse cx="0" cy="-6" rx="34" ry="24" fill="url(#ck-violet)" stroke="#4C1D95" stroke-width="4"/>
+      <!-- the gold-root crown ring marks the king -->
+      <ellipse cx="0" cy="-6" rx="18" ry="12" fill="none" stroke="#d2a463" stroke-width="5"/>
+    </g>
+  </g>
+</svg>
