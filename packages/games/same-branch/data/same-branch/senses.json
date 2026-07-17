@@ -1,0 +1,122 @@
+[
+  {
+    "id": "senses-001",
+    "category": "senses",
+    "left": "cold",
+    "right": "hot"
+  },
+  {
+    "id": "senses-002",
+    "category": "senses",
+    "left": "quiet",
+    "right": "loud"
+  },
+  {
+    "id": "senses-003",
+    "category": "senses",
+    "left": "dark",
+    "right": "bright"
+  },
+  {
+    "id": "senses-004",
+    "category": "senses",
+    "left": "smooth",
+    "right": "rough"
+  },
+  {
+    "id": "senses-005",
+    "category": "senses",
+    "left": "bland",
+    "right": "spicy"
+  },
+  {
+    "id": "senses-006",
+    "category": "senses",
+    "left": "dull",
+    "right": "shiny"
+  },
+  {
+    "id": "senses-007",
+    "category": "senses",
+    "left": "soft",
+    "right": "hard"
+  },
+  {
+    "id": "senses-008",
+    "category": "senses",
+    "left": "dry",
+    "right": "wet"
+  },
+  {
+    "id": "senses-009",
+    "category": "senses",
+    "left": "light",
+    "right": "heavy"
+  },
+  {
+    "id": "senses-010",
+    "category": "senses",
+    "left": "sour",
+    "right": "sweet"
+  },
+  {
+    "id": "senses-011",
+    "category": "senses",
+    "left": "faint smell",
+    "right": "strong smell"
+  },
+  {
+    "id": "senses-012",
+    "category": "senses",
+    "left": "blurry",
+    "right": "sharp"
+  },
+  {
+    "id": "senses-013",
+    "category": "senses",
+    "left": "warm color",
+    "right": "cool color"
+  },
+  {
+    "id": "senses-014",
+    "category": "senses",
+    "left": "still",
+    "right": "buzzing"
+  },
+  {
+    "id": "senses-015",
+    "category": "senses",
+    "left": "sticky",
+    "right": "slippery"
+  },
+  {
+    "id": "senses-016",
+    "category": "senses",
+    "left": "tiny",
+    "right": "huge"
+  },
+  {
+    "id": "senses-017",
+    "category": "senses",
+    "left": "thin",
+    "right": "thick"
+  },
+  {
+    "id": "senses-018",
+    "category": "senses",
+    "left": "gentle breeze",
+    "right": "strong wind"
+  },
+  {
+    "id": "senses-019",
+    "category": "senses",
+    "left": "pale",
+    "right": "vivid"
+  },
+  {
+    "id": "senses-020",
+    "category": "senses",
+    "left": "muffled",
+    "right": "crisp"
+  }
+]

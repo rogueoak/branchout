@@ -13,6 +13,7 @@ export default defineConfig({
     'src/teeter-tower.ts',
     'src/reversi.ts',
     'src/checkers.ts',
+    'src/samebranch.ts',
     'src/brand.ts',
     'src/avatar-ids.ts',
     'src/avatars.ts',

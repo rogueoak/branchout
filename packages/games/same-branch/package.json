@@ -1,0 +1,36 @@
+{
+  "name": "@branchout/game-same-branch",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Same Branch: a spectrum-guessing party game, as an independent @branchout/game-sdk plugin package.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "data"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@branchout/protocol": "workspace:*",
+    "@branchout/game-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@branchout/config": "workspace:*",
+    "@types/node": "^20.17.10",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

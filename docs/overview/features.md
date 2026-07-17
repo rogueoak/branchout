@@ -199,6 +199,19 @@ What the product does for users, grouped by area. Each capability maps to one or
       Seeker is absent from the private map, and the e2e proves the seed shows on a non-Seeker's device
       but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled ~60-word
       sample seed bank (`@branchout/game-lone-leaf`).
+- [~] Fifth game (insider-only) - Same Branch: a spectrum-guessing party game (2-8 players) on the
+      round-based lifecycle (`@branchout/game-same-branch`, spec `0058`). Each round shows a branch
+      running between two opposites (the **branch**); a hidden target (the **bud**) sits on it. One
+      player - the **Reader**, rotating by seat each round - alone sees the bud and reads a one-line
+      **hunch**; everyone else drags the **sap line** (a 0-100 dial) to guess where the bud is, and the
+      reveal scores each guess by closeness (bullseye 4 / close 3 / near 2 / miss 0). Two modes: free-
+      for-all (per-player scores) and co-op (one pooled grove score). **The bud is a real secret**: it
+      is delivered ONLY to the Reader's device via the per-player private channel (spec `0052`) and is
+      never in the broadcast prompt or any pre-reveal payload, so no other device ever receives it. A
+      sample spectrum bank (~120 opposite pairs across six categories) ships bundled with a structural
+      validator; the full bank later lives in the private data repo (spec `0041`). Same insider
+      surface gating as Teeter (visibility `insider`, hidden from the public picker/pages/sitemap). The
+      web remote's branch dial is a touch-first, keyboard-operable ARIA slider that works at 360px.
 
 ## Web
 

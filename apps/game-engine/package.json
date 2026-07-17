@@ -18,6 +18,7 @@
     "@branchout/game-liar-liar": "workspace:*",
     "@branchout/game-lone-leaf": "workspace:*",
     "@branchout/game-reversi": "workspace:*",
+    "@branchout/game-same-branch": "workspace:*",
     "@branchout/game-sdk": "workspace:*",
     "@branchout/game-teeter-tower": "workspace:*",
     "@branchout/game-trivia": "workspace:*",

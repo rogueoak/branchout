@@ -17,6 +17,7 @@ import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 import { reversiPlugin } from '@branchout/game-reversi';
 import { checkersPlugin } from '@branchout/game-checkers';
+import { sameBranchPlugin } from '@branchout/game-same-branch';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -52,6 +53,7 @@ async function main(): Promise<void> {
     teeterTowerPlugin,
     reversiPlugin,
     checkersPlugin,
+    sameBranchPlugin,
   ]);
   console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);
 

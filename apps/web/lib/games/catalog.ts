@@ -242,6 +242,38 @@ const MARKETING: Record<string, GameMarketing> = {
       'Checkers (English draughts) is a phone-first two-player strategy game in insider testing. Jump ' +
       'to capture, chain multi-jumps, and crown a King; capture every piece to win.',
   },
+  // Same Branch is insider-only (spec 0058): the entry exists so the build-time "every registered
+  // game needs marketing copy" check passes, but PUBLIC_GAME_CATALOG excludes it. Its share card is a
+  // placeholder (no public raster is generated for an insider game).
+  'same-branch': {
+    description:
+      'Same Branch is a spectrum-guessing party game for phones. Each round one player - the Reader - ' +
+      'sees a hidden spot (the bud) on a branch that runs between two opposites, and gives a one-line ' +
+      'hunch. The grove moves the sap line to guess where the bud is, scoring by how close they land. ' +
+      'Still in testing.',
+    howToPlay: [
+      {
+        title: 'Read the bud',
+        body: 'The Reader alone sees the hidden bud on the branch and gives a one-line hunch that fits it.',
+      },
+      {
+        title: 'Move the sap line',
+        body: 'Everyone else drags the sap line to where they think the bud sits between the two ends.',
+      },
+      {
+        title: 'Score by closeness',
+        body: 'Reveal the bud and score each guess - a bullseye is worth the most, a wild miss nothing.',
+      },
+    ],
+    categories: ['Party', 'Deduction', 'Wit'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Same Branch',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Same Branch - a spectrum-guessing party game | Branch Out Games',
+    seoDescription:
+      'Same Branch is a phone-first spectrum-guessing party game in insider testing. One Reader gives ' +
+      'a one-line hunch for a hidden spot on a branch; the grove guesses how close they can land.',
+  },
 };
 
 /** A game's full marketing + display data - the registry basics plus the catalog copy. */
