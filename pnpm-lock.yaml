@@ -151,24 +151,42 @@ importers:
 
   apps/game-engine:
     dependencies:
+      '@branchout/game-checkers':
+        specifier: workspace:*
+        version: link:../../packages/games/checkers
+      '@branchout/game-chess':
+        specifier: workspace:*
+        version: link:../../packages/games/chess
       '@branchout/game-liar-liar':
         specifier: workspace:*
         version: link:../../packages/games/liar-liar
+      '@branchout/game-lone-leaf':
+        specifier: workspace:*
+        version: link:../../packages/games/lone-leaf
       '@branchout/game-nightleaf':
         specifier: workspace:*
         version: link:../../packages/games/nightleaf
+      '@branchout/game-odd-bird':
+        specifier: workspace:*
+        version: link:../../packages/games/odd-bird
       '@branchout/game-reversi':
         specifier: workspace:*
         version: link:../../packages/games/reversi
       '@branchout/game-sdk':
         specifier: workspace:*
         version: link:../../packages/game-sdk
+      '@branchout/game-sketchy':
+        specifier: workspace:*
+        version: link:../../packages/games/sketchy
       '@branchout/game-teeter-tower':
         specifier: workspace:*
         version: link:../../packages/games/teeter-tower
       '@branchout/game-trivia':
         specifier: workspace:*
         version: link:../../packages/games/trivia
+      '@branchout/game-whispergrove':
+        specifier: workspace:*
+        version: link:../../packages/games/whispergrove
       '@branchout/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
@@ -381,7 +399,88 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
 
+  packages/games/checkers:
+    dependencies:
+      '@branchout/game-board':
+        specifier: workspace:*
+        version: link:../../game-board
+      '@branchout/game-sdk':
+        specifier: workspace:*
+        version: link:../../game-sdk
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../../protocol
+    devDependencies:
+      '@branchout/config':
+        specifier: workspace:*
+        version: link:../../config
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.43
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
+
+  packages/games/chess:
+    dependencies:
+      '@branchout/game-board':
+        specifier: workspace:*
+        version: link:../../game-board
+      '@branchout/game-sdk':
+        specifier: workspace:*
+        version: link:../../game-sdk
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../../protocol
+    devDependencies:
+      '@branchout/config':
+        specifier: workspace:*
+        version: link:../../config
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.43
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
+
   packages/games/liar-liar:
+    dependencies:
+      '@branchout/game-sdk':
+        specifier: workspace:*
+        version: link:../../game-sdk
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../../protocol
+    devDependencies:
+      '@branchout/config':
+        specifier: workspace:*
+        version: link:../../config
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.43
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
+
+  packages/games/lone-leaf:
     dependencies:
       '@branchout/game-sdk':
         specifier: workspace:*
@@ -431,11 +530,61 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
 
+  packages/games/odd-bird:
+    dependencies:
+      '@branchout/game-sdk':
+        specifier: workspace:*
+        version: link:../../game-sdk
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../../protocol
+    devDependencies:
+      '@branchout/config':
+        specifier: workspace:*
+        version: link:../../config
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.43
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
+
   packages/games/reversi:
     dependencies:
       '@branchout/game-board':
         specifier: workspace:*
         version: link:../../game-board
+      '@branchout/game-sdk':
+        specifier: workspace:*
+        version: link:../../game-sdk
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../../protocol
+    devDependencies:
+      '@branchout/config':
+        specifier: workspace:*
+        version: link:../../config
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.43
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
+
+  packages/games/sketchy:
+    dependencies:
       '@branchout/game-sdk':
         specifier: workspace:*
         version: link:../../game-sdk
@@ -494,6 +643,31 @@ importers:
         version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
 
   packages/games/trivia:
+    dependencies:
+      '@branchout/game-sdk':
+        specifier: workspace:*
+        version: link:../../game-sdk
+      '@branchout/protocol':
+        specifier: workspace:*
+        version: link:../../protocol
+    devDependencies:
+      '@branchout/config':
+        specifier: workspace:*
+        version: link:../../config
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.43
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)(lightningcss@1.32.0)
+
+  packages/games/whispergrove:
     dependencies:
       '@branchout/game-sdk':
         specifier: workspace:*

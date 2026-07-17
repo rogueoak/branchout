@@ -5,7 +5,13 @@ import { logoSvg } from '../logo.js';
 import { triviaSvg } from '../trivia.js';
 import { liarLiarSvg } from '../liarliar.js';
 import { nightleafSvg } from '../nightleaf.js';
+import { sketchySvg } from '../sketchy.js';
+import { whispergroveSvg } from '../whispergrove.js';
+import { loneLeafSvg } from '../loneleaf.js';
 import { reversiSvg } from '../reversi.js';
+import { chessSvg } from '../chess.js';
+import { oddBirdSvg } from '../oddbird.js';
+import { checkersSvg } from '../checkers.js';
 import { heroTriviaSvg } from '../hero-trivia.js';
 import { heroLiarLiarSvg } from '../hero-liarliar.js';
 import { palette, goldRootRule, safeArea, sparkGradient } from '../brand-notes.js';
@@ -30,7 +36,13 @@ describe('SVG exports', () => {
     ['triviaSvg', triviaSvg],
     ['liarLiarSvg', liarLiarSvg],
     ['nightleafSvg', nightleafSvg],
+    ['sketchySvg', sketchySvg],
+    ['whispergroveSvg', whispergroveSvg],
+    ['loneLeafSvg', loneLeafSvg],
     ['reversiSvg', reversiSvg],
+    ['chessSvg', chessSvg],
+    ['oddBirdSvg', oddBirdSvg],
+    ['checkersSvg', checkersSvg],
   ])(
     '%s is a 512 game mark that keeps the gold root (the gold-root rule holds for games)',
     (_name, svg) => {

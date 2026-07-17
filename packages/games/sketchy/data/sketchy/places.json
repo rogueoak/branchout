@@ -1,0 +1,102 @@
+[
+  {
+    "id": "places-001",
+    "category": "places",
+    "text": "a lighthouse"
+  },
+  {
+    "id": "places-002",
+    "category": "places",
+    "text": "a castle on a hill"
+  },
+  {
+    "id": "places-003",
+    "category": "places",
+    "text": "a busy city street"
+  },
+  {
+    "id": "places-004",
+    "category": "places",
+    "text": "a cozy campsite"
+  },
+  {
+    "id": "places-005",
+    "category": "places",
+    "text": "a treehouse"
+  },
+  {
+    "id": "places-006",
+    "category": "places",
+    "text": "a subway station"
+  },
+  {
+    "id": "places-007",
+    "category": "places",
+    "text": "a farmers market"
+  },
+  {
+    "id": "places-008",
+    "category": "places",
+    "text": "a haunted house"
+  },
+  {
+    "id": "places-009",
+    "category": "places",
+    "text": "a ferris wheel"
+  },
+  {
+    "id": "places-010",
+    "category": "places",
+    "text": "a library"
+  },
+  {
+    "id": "places-011",
+    "category": "places",
+    "text": "a mountain cabin"
+  },
+  {
+    "id": "places-012",
+    "category": "places",
+    "text": "a pirate ship"
+  },
+  {
+    "id": "places-013",
+    "category": "places",
+    "text": "a space station"
+  },
+  {
+    "id": "places-014",
+    "category": "places",
+    "text": "a windmill"
+  },
+  {
+    "id": "places-015",
+    "category": "places",
+    "text": "a desert oasis"
+  },
+  {
+    "id": "places-016",
+    "category": "places",
+    "text": "a fishing dock"
+  },
+  {
+    "id": "places-017",
+    "category": "places",
+    "text": "a lemonade stand"
+  },
+  {
+    "id": "places-018",
+    "category": "places",
+    "text": "a hot spring"
+  },
+  {
+    "id": "places-019",
+    "category": "places",
+    "text": "a bakery window"
+  },
+  {
+    "id": "places-020",
+    "category": "places",
+    "text": "a train platform"
+  }
+]
