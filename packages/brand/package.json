@@ -46,6 +46,10 @@
       "types": "./dist/reversi.d.ts",
       "import": "./dist/reversi.js"
     },
+    "./checkers": {
+      "types": "./dist/checkers.d.ts",
+      "import": "./dist/checkers.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"
