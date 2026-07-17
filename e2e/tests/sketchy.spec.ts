@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { signUp, spanSessionToInsider } from '../lib/helpers';
 import { INSIDER_URL, WEB_PORT, grantCredits, grantInsider } from '../lib/stack';
 
@@ -9,23 +9,47 @@ import { INSIDER_URL, WEB_PORT, grantCredits, grantInsider } from '../lib/stack'
 // featured sketch the other players write a decoy and everyone guesses the true seed, until the game
 // reaches a scored end. It also proves the gate: the game lives ONLY on the insider surface.
 //
-// The whole flow runs on `insider.localhost`, at 360px wide, in three browser contexts (the host is
-// interactive; the other two are remote-only players who also see the between-round results).
+// Pairing (live-verified, mirrors the fixed Zinger spec): the host plays INTERACTIVE (a screen + a
+// controller on one device) and the two guests play REMOTE (controller-only). The guests join on a
+// mobile user agent, whose device default is `remote` (spec 0050), so no manual mode switch is needed.
+//
+// Guests are SIGNED-IN insiders, not anonymous. The insider surface is gated (feedback 0029): a
+// signed-out visitor to `insider.localhost/join` is bounced to login and can never reach the room.
+// So each guest signs up, is granted insider + funded out-of-band, and spans its session to the
+// insider host - exactly the host's own path - before joining. (An earlier version joined anonymously
+// and hung: the guest never reached the room, so it never reached final-results.)
 
 const PHONE = { width: 360, height: 780 };
 
-/** A guest joins the insider room by code on the insider host and lands in the lobby. */
-async function joinInsider(page: Page, code: string, nickname: string): Promise<void> {
+const PIXEL_UA =
+  'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
+/** Sign up a fresh insider account in `ctx`, grant it insider + credits, span its session to the
+ * insider host, then join the insider-hosted room by code. The context uses a mobile UA, so the guest
+ * defaults to REMOTE. Returns the joined room page. */
+async function joinInsiderAsGuest(
+  ctx: BrowserContext,
+  code: string,
+  nickname: string,
+): Promise<Page> {
+  const setup = await ctx.newPage();
+  const account = await signUp(setup);
+  await setup.close();
+  grantInsider(account.gamerTag);
+  grantCredits(account.gamerTag);
+  await spanSessionToInsider(ctx);
+
+  const page = await ctx.newPage();
   await page.goto(`${INSIDER_URL}/join?code=${code}`);
   await page.getByLabel('Your name').fill(nickname);
   await page.getByRole('button', { name: /join room/i }).click();
   await page.waitForURL(new RegExp(`/rooms/${code}$`));
+  return page;
 }
 
 /** Draw a few strokes on the sketch canvas with pointer moves, then submit. */
 async function drawAndSubmit(page: Page): Promise<void> {
   const canvas = page.getByLabel(/draw your seed on the bark/i);
-  await expect(canvas).toBeVisible({ timeout: 30_000 });
   const box = await canvas.boundingBox();
   if (!box) throw new Error('draw canvas has no bounding box');
   // One diagonal stroke via pointer down -> move -> up (mouse emulates a pointer at 360px).
@@ -35,7 +59,7 @@ async function drawAndSubmit(page: Page): Promise<void> {
   await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.6, { steps: 5 });
   await page.mouse.up();
   await page.getByRole('button', { name: /submit sketch/i }).click();
-  await expect(page.getByText(/sketch submitted/i)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/sketch submitted/i)).toBeVisible({ timeout: 15_000 });
 }
 
 test('three insiders play a full Sketchy round: draw, decoy, guess, and score', async ({
@@ -44,18 +68,16 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
   // The draw + per-sketch guess cycle streams several rounds, so allow a generous budget.
   test.setTimeout(240_000);
 
+  // Host defaults to interactive; the two guests use a mobile UA so they default to remote.
   const hostCtx = await browser.newContext({ viewport: PHONE });
-  const p2Ctx = await browser.newContext({ viewport: PHONE });
-  const p3Ctx = await browser.newContext({ viewport: PHONE });
+  const p2Ctx = await browser.newContext({ viewport: PHONE, userAgent: PIXEL_UA });
+  const p3Ctx = await browser.newContext({ viewport: PHONE, userAgent: PIXEL_UA });
   const host = await hostCtx.newPage();
-  const p2 = await p2Ctx.newPage();
-  const p3 = await p3Ctx.newPage();
-  const players = [host, p2, p3];
 
   try {
     // A fresh account, granted insider out-of-band and funded (a multi-round game reserves credits).
     const account = await signUp(host);
-    await spanSessionToInsider(host.context());
+    await spanSessionToInsider(hostCtx);
     grantInsider(account.gamerTag);
     grantCredits(account.gamerTag);
     await host.goto(`${INSIDER_URL}/rooms`);
@@ -69,52 +91,77 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
     await host.getByRole('button', { name: /pick sketchy/i }).click();
     await host.waitForURL(new RegExp(`/rooms/${code}(?![?/])`));
 
-    // Two more players join (on the insider surface).
-    await joinInsider(p2, code, 'Player Two');
-    await joinInsider(p3, code, 'Player Three');
+    // Two more insiders join as REMOTE guests - three total (Sketchy's minimum).
+    const player2 = await joinInsiderAsGuest(p2Ctx, code, 'Player Two');
+    const player3 = await joinInsiderAsGuest(p3Ctx, code, 'Player Three');
+    const players = [host, player2, player3];
 
     // One cycle keeps the run short.
     await host.locator('#sketchy-rounds').fill('1');
     await host.getByRole('button', { name: /start game/i }).click();
 
-    // ----- Draw round: every player draws their secret seed. -----
+    // ----- Draw round -----
+    // Gate on ALL THREE controllers showing the draw canvas BEFORE anyone submits. The engine
+    // early-closes the draw window once every CONNECTED player has submitted (allSubmitted); a guest
+    // whose game socket is still connecting when the others submit would be locked out of the draw
+    // round (the window closes without its sketch, and the sketch rounds run one short). Waiting for
+    // every canvas first guarantees all three are connected before the first submit - the same
+    // connect-race gate that mattered for Zinger.
+    for (const page of players) {
+      await expect(page.getByLabel(/draw your seed on the bark/i)).toBeVisible({ timeout: 30_000 });
+    }
     for (const page of players) {
       await drawAndSubmit(page);
     }
 
-    // The draw round has no guess; the host advances through the gallery leaderboard, then the
-    // sketch rounds run (one per player). Drive the whole game to the final results, handling each
-    // decoy + guess stage as it appears on the host (interactive) and the two remotes.
+    // The draw round has no guess: the host advances through the gallery leaderboard, then the sketch
+    // rounds run (one per player). Drive the whole game to the final results, handling each decoy +
+    // guess stage as it appears on the host (interactive) and the two remotes.
     await expect(async () => {
-      // If the host has a Next button (a between-round leaderboard), advance.
-      const next = host.getByRole('button', { name: /^next$/i });
-      if (await next.isVisible().catch(() => false)) {
-        await next.click().catch(() => {});
+      // ADVANCE ONLY on a between-round leaderboard. The host's "Next" button (an `advance` control)
+      // is present in EVERY non-complete phase, so clicking it whenever it is visible would force-skip
+      // an open decoy/guess collection (advancing past it with no submissions) and stall the game. The
+      // host's viewer shows "Waiting for the host to start the next round." ONLY on the leaderboard, so
+      // gate the advance on that copy - a reliable "between rounds" signal - then press Next.
+      const onLeaderboard = await host
+        .getByText(/waiting for the host to start the next round/i)
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (onLeaderboard) {
+        await host
+          .getByRole('button', { name: /^next$/i })
+          .click()
+          .catch(() => {});
       }
 
-      // Decoy stage: any player showing the decoy input writes one.
+      // Decoy stage: any player showing the decoy input writes one. Scope the submit to that player's
+      // own controller so a stray button elsewhere is never mistaken for it.
       for (const page of players) {
         const decoy = page.getByPlaceholder(/convincing fake seed/i);
         if (await decoy.isVisible().catch(() => false)) {
           await decoy.fill(`decoy ${Math.floor(Math.random() * 100000)}`).catch(() => {});
           await page
             .getByRole('region', { name: /your controller/i })
-            .getByRole('button', { name: /^submit$/i })
+            .getByRole('button', { name: /^(submit|resend)$/i })
             .click()
             .catch(() => {});
         }
       }
 
-      // Guess stage: any player asked "Which one is the true seed?" picks the first option.
+      // Guess stage: any player asked "Which one is the true seed?" whose controller shows vote
+      // buttons picks the first option. Scope to the controller so a viewer's option list (which has
+      // no buttons) is never clicked.
       for (const page of players) {
-        const guessing = page.getByText(/which one is the true seed/i);
-        if (await guessing.isVisible().catch(() => false)) {
-          await page
-            .getByRole('region', { name: /your controller/i })
-            .getByRole('button')
-            .first()
-            .click()
-            .catch(() => {});
+        const controller = page.getByRole('region', { name: /your controller/i });
+        const guessing = await controller
+          .getByText(/which one is the true seed/i)
+          .isVisible()
+          .catch(() => false);
+        if (!guessing) continue;
+        const button = controller.getByRole('button').first();
+        if (await button.isVisible().catch(() => false)) {
+          await button.click().catch(() => {});
         }
       }
 
@@ -122,9 +169,9 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
       await expect(host.getByTestId('final-results')).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 180_000 });
 
-    // Both remote players also reach the final results.
-    await expect(p2.getByTestId('final-results')).toBeVisible();
-    await expect(p3.getByTestId('final-results')).toBeVisible();
+    // Both REMOTE guests also reach the final results - the "remote guest completes" proof.
+    await expect(player2.getByTestId('final-results')).toBeVisible();
+    await expect(player3.getByTestId('final-results')).toBeVisible();
   } finally {
     await hostCtx.close();
     await p2Ctx.close();
