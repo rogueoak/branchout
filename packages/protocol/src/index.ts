@@ -39,6 +39,18 @@ export {
   type VoteMessage,
 } from './messages';
 
+// Engine-join authentication (spec 0064): the shared HMAC token the control-plane mints over the
+// caller's own membership and the engine verifies on the WebSocket `join`, so a device cannot join
+// as another player and read their secrets.
+export {
+  ENGINE_TOKEN_TTL_SECONDS,
+  mintEngineToken,
+  verifyEngineToken,
+  type EngineTokenClaims,
+  type EngineTokenError,
+  type EngineTokenResult,
+} from './engine-auth';
+
 // Engine <-> control-plane server-to-server channel.
 export {
   parseGameCompleteReport,

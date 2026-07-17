@@ -213,25 +213,27 @@ brings up Caddy and the full site.
 
 Set under **Settings -> Secrets and variables -> Actions** in the rogueoak/branchout repo:
 
-| Secret                | Value                                                                                                                       |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet)                |
-| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                                        |
-| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                                              |
-| `DEPLOY_USER`         | `deploy`                                                                                                                    |
-| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                                    |
-| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                                        |
-| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                                             |
-| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)                        |
-| `RESEND_API_KEY`      | Resend API key for host feedback email (spec 0048) and the CTCT keepalive alert (spec 0049); optional                       |
-| `CTCT_CLIENT_ID`      | Constant Contact app client_id (spec 0047); stable, sourced from this secret each deploy                                    |
-| `CTCT_REFRESH_TOKEN`  | CTCT refresh token; the **initial seed** only - the keepalive rotates it on the box and the deploy preserves it (spec 0049) |
-| `CTCT_LIST_ID`        | The "Branch Out Games" CTCT list id (spec 0047); stable, sourced from this secret each deploy                               |
+| Secret                | Value                                                                                                                                                                                                                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEPLOY_SSH_KEY`      | Private SSH key for the `deploy` user (the public key goes in `~deploy/.ssh/authorized_keys` on the droplet)                                                                                                                                  |
+| `DEPLOY_KNOWN_HOSTS`  | Output of `ssh-keyscan -H <droplet-ip>` (pins the host key; prevents MITM on deploy)                                                                                                                                                          |
+| `DEPLOY_HOST`         | Droplet IP address or hostname                                                                                                                                                                                                                |
+| `DEPLOY_USER`         | `deploy`                                                                                                                                                                                                                                      |
+| `POSTGRES_PASSWORD`   | Strong random password for the Postgres `branchout` user                                                                                                                                                                                      |
+| `SESSION_SECRET`      | Strong random secret for session signing (spec 0004)                                                                                                                                                                                          |
+| `ENGINE_AUTH_SECRET`  | Shared HMAC secret for engine-join authentication (spec 0064); control-plane mints the join token, game-engine verifies it. **Required** - unset means the engine does not enforce the token and per-player secrecy (spec 0052) does not hold |
+| `ADMIN_ROOT_EMAIL`    | Email of the seeded root admin (spec 0037); optional - unset means no admin yet                                                                                                                                                               |
+| `ADMIN_ROOT_PASSWORD` | Password for the seeded root admin (min 12 chars); env is the source of truth (break-glass recovery)                                                                                                                                          |
+| `RESEND_API_KEY`      | Resend API key for host feedback email (spec 0048) and the CTCT keepalive alert (spec 0049); optional                                                                                                                                         |
+| `CTCT_CLIENT_ID`      | Constant Contact app client_id (spec 0047); stable, sourced from this secret each deploy                                                                                                                                                      |
+| `CTCT_REFRESH_TOKEN`  | CTCT refresh token; the **initial seed** only - the keepalive rotates it on the box and the deploy preserves it (spec 0049)                                                                                                                   |
+| `CTCT_LIST_ID`        | The "Branch Out Games" CTCT list id (spec 0047); stable, sourced from this secret each deploy                                                                                                                                                 |
 
 Generate strong values with:
 
 ```sh
 openssl rand -base64 32   # run once for POSTGRES_PASSWORD, once for SESSION_SECRET
+openssl rand -hex 32       # run once for ENGINE_AUTH_SECRET (spec 0064)
 ```
 
 ### Analytics key (spec 0032)

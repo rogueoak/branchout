@@ -41,6 +41,13 @@ export interface GameClientOptions {
   player: string;
   /** The per-game display name shown to others. */
   nickname: string;
+  /**
+   * A short-lived engine-join auth token (spec 0064), fetched from the control-plane over this
+   * device's own session. It binds the connection to `player`, so the engine rejects a join that
+   * claims another player's id. Included on every join (including reconnect). Omitted only in a
+   * pure-unit test or a dev engine with no `ENGINE_AUTH_SECRET`, where the engine skips enforcement.
+   */
+  token?: string;
   /** Override the socket transport (tests inject a mock). */
   socketFactory?: (url: string) => GameSocket;
   /** Base delay before the first reconnect attempt, in ms; doubles each failed attempt. */
@@ -109,6 +116,12 @@ export class GameClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
   private closed = false;
+  /**
+   * The engine-join token sent on the NEXT (re)join (spec 0064). Mutable and separate from the
+   * readonly `options` because the token is short-lived: a long game refreshes it out-of-band via
+   * {@link updateToken} without rebuilding the socket. Seeded from the initial options.
+   */
+  private currentToken: string | undefined;
 
   constructor(options: GameClientOptions) {
     this.options = {
@@ -116,6 +129,7 @@ export class GameClient {
       maxReconnectDelayMs: DEFAULT_MAX_RECONNECT_DELAY_MS,
       ...options,
     };
+    this.currentToken = options.token;
     this.factory = options.socketFactory ?? nativeSocketFactory;
     // Seed the reducer with this device's own player id so it can reject a mis-targeted `private`
     // frame (spec 0052 defense-in-depth) - the reducer has no other source for the local identity.
@@ -125,6 +139,16 @@ export class GameClient {
   /** The current snapshot. */
   getState(): GameState {
     return this.state;
+  }
+
+  /**
+   * Replace the engine-join token used on the NEXT (re)connect (spec 0064). The token is short-lived,
+   * so a long game refreshes it out-of-band and pushes the new one here without rebuilding the socket
+   * (a rebuild would needlessly drop a healthy connection). It takes effect on the next join, which is
+   * exactly when a reconnect needs a still-valid token.
+   */
+  updateToken(token: string | undefined): void {
+    this.currentToken = token;
   }
 
   /** Subscribe to state changes. Returns an unsubscribe. */
@@ -150,6 +174,10 @@ export class GameClient {
         game: this.options.game,
         player: this.options.player,
         nickname: this.options.nickname,
+        // Authenticate the join (spec 0064) with the current (possibly refreshed) token. Additive on
+        // the wire: a join without one is still well-formed; the engine only requires it when its
+        // secret is set.
+        ...(this.currentToken ? { token: this.currentToken } : {}),
       });
     };
     socket.onmessage = (data) => this.handleMessage(data);

@@ -41,6 +41,16 @@ export interface JoinMessage {
   game: string;
   player: string;
   nickname: string;
+  /**
+   * A short-lived, per-connection auth token proving this device is the claimed `player` (spec
+   * 0064). The control-plane mints it over the caller's OWN membership (session -> playerId), so a
+   * device can only ever get a token for its own id. The engine verifies the HMAC binds this exact
+   * `{room, game, player}` and is unexpired before honouring the join. Optional/additive under the
+   * same `PROTOCOL_VERSION`: a peer predating it still parses a valid `join` frame, and the engine
+   * only REQUIRES it when `ENGINE_AUTH_SECRET` is configured (always in dev/e2e/prod; unset only in
+   * pure-unit tests that never touch the auth path).
+   */
+  token?: string;
 }
 
 /** A player submits their move for the current round. */
@@ -206,6 +216,11 @@ export function serializeMessage(message: ProtocolMessage): string {
 }
 
 function parseJoin(data: Record<string, unknown>): JoinMessage {
+  // `token` (spec 0064) is optional and additive: present it as a string when the client sends one,
+  // omit it otherwise. A non-string token is ignored here (dropped to undefined) rather than a parse
+  // error, so a malformed token becomes a clean "missing token" auth rejection in the engine rather
+  // than a transport-level failure - the auth boundary is the one that decides, not the parser.
+  const token = typeof data.token === 'string' ? data.token : undefined;
   return {
     v: PROTOCOL_VERSION,
     type: 'join',
@@ -213,6 +228,7 @@ function parseJoin(data: Record<string, unknown>): JoinMessage {
     game: requireId(data, 'game'),
     player: requireId(data, 'player'),
     nickname: requireString(data, 'nickname'),
+    ...(token !== undefined ? { token } : {}),
   };
 }
 

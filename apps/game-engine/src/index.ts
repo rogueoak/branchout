@@ -104,7 +104,17 @@ async function main(): Promise<void> {
   // Mount the WebSocket endpoint on Fastify's underlying HTTP server via the transport-agnostic
   // adapter in @branchout/protocol. Fastify does not handle the HTTP `upgrade` event itself, so
   // the adapter owns it cleanly; this keeps realtime behind the same swappable interface.
-  const sockets = attachGameSocket(app.server, engine, pubsub);
+  //
+  // Engine-join authentication (spec 0064): when ENGINE_AUTH_SECRET is set, a `join` must carry a
+  // valid control-plane-minted token binding it to its player, so a device cannot impersonate
+  // another player and read their private payloads. Warn (don't fail) if it is unset, since a bare
+  // engine can still run trusted-network games - but a real deployment MUST set it.
+  if (!config.engineAuthSecret) {
+    console.warn('[game-engine] ENGINE_AUTH_SECRET unset; join tokens are NOT enforced (dev only)');
+  }
+  const sockets = attachGameSocket(app.server, engine, pubsub, {
+    ...(config.engineAuthSecret ? { authSecret: config.engineAuthSecret } : {}),
+  });
 
   const shutdown = (signal: string) => {
     console.log(`[game-engine] ${signal} received, shutting down`);

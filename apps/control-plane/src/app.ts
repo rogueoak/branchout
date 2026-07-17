@@ -47,6 +47,12 @@ export interface AppDeps {
   webOrigins: string[];
   /** Shared secret the engine presents on the report intake; left unset only in trusted dev. */
   internalToken?: string;
+  /**
+   * Shared HMAC secret for engine-join authentication (spec 0064). Used to mint the per-connection
+   * token at `GET /rooms/:code/engine-token`. Unset -> the endpoint returns a 503 "not configured"
+   * (dev/tests); the engine correspondingly skips join enforcement so the two stay consistent.
+   */
+  engineAuthSecret?: string;
   /** Rate limiter backing the auth-endpoint lockouts (spec 0036). */
   limiter: RateLimiter;
   /** Auth rate-limit thresholds. */
@@ -123,6 +129,7 @@ export function createApp(deps: AppDeps): FastifyInstance {
         rooms: deps.rooms,
         sessions: deps.sessions,
         cookie: deps.cookie,
+        ...(deps.engineAuthSecret ? { engineAuthSecret: deps.engineAuthSecret } : {}),
       });
 
       registerProfileRoutes(v1, { profiles: deps.profiles });

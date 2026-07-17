@@ -2,7 +2,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
-import { PROTOCOL_VERSION, type ServerMessage } from '@branchout/protocol';
+import { PROTOCOL_VERSION, mintEngineToken, type ServerMessage } from '@branchout/protocol';
 import { GameEngine } from './engine';
 import { InMemoryPubSub } from './pubsub';
 import { InProcessRuntimeProvider } from './worker/runtime';
@@ -383,6 +383,196 @@ describe('game-engine websocket', () => {
       join(socket, { player: 'intruder' });
       expect((await err).message).toMatch(/roster/);
       socket.close();
+    });
+  });
+
+  // --- Engine-join authentication (spec 0064) ---------------------------------------------------
+  //
+  // When ENGINE_AUTH_SECRET is set the socket is built with an authSecret, so a `join` MUST carry a
+  // valid control-plane-minted token binding it to its player. These run a SECOND server (this
+  // describe's own beforeEach) so the base suite's no-secret socket is untouched.
+  describe('join authentication (spec 0064)', () => {
+    const SECRET = 'test-engine-secret';
+    let authServer: Server;
+    let authUrl: string;
+    let authEngine: GameEngine;
+
+    const openAuth = (): Promise<WebSocket> => {
+      const socket = new WebSocket(authUrl);
+      return new Promise((resolve, reject) => {
+        socket.on('open', () => resolve(socket));
+        socket.on('error', reject);
+      });
+    };
+
+    beforeEach(async () => {
+      const pubsub = new InMemoryPubSub();
+      authEngine = new GameEngine({
+        runtimeProvider: new InProcessRuntimeProvider([stubGame]),
+        store: new InMemorySessionStore(),
+        pubsub,
+        reporter: new NoopReporter(),
+      });
+      authServer = createServer();
+      attachGameSocket(authServer, authEngine, pubsub, { authSecret: SECRET });
+      await new Promise<void>((resolve) => authServer.listen(0, () => resolve()));
+      const { port } = authServer.address() as AddressInfo;
+      authUrl = `ws://127.0.0.1:${port}`;
+      await authEngine.start({
+        v: PROTOCOL_VERSION,
+        room: 'auth-room',
+        game: STUB_GAME_ID,
+        players: [
+          { player: 'p1', nickname: 'Ada' },
+          { player: 'p2', nickname: 'Bo' },
+        ],
+        config: {
+          rounds: 1,
+          secrets: ['blue'],
+          privates: [{ p1: 'secretA', p2: 'secretB' }],
+        },
+      });
+    });
+
+    afterEach(async () => {
+      await new Promise<void>((resolve) => authServer.close(() => resolve()));
+    });
+
+    const tokenFor = (player: string, over: Parameters<typeof mintEngineToken>[2] = {}) =>
+      mintEngineToken({ room: 'auth-room', game: STUB_GAME_ID, player }, SECRET, over);
+
+    const joinAuth = (socket: WebSocket, over: Record<string, unknown> = {}) =>
+      socket.send(
+        JSON.stringify({
+          v: PROTOCOL_VERSION,
+          type: 'join',
+          room: 'auth-room',
+          game: STUB_GAME_ID,
+          player: 'p1',
+          nickname: 'Ada',
+          ...over,
+        }),
+      );
+
+    it('rejects a join with NO token when the secret is set', async () => {
+      const socket = await openAuth();
+      const err = waitFor(socket, 'error');
+      joinAuth(socket); // no token
+      expect((await err).message).toMatch(/not authenticated/);
+      socket.close();
+    });
+
+    it('rejects a join with an EXPIRED token', async () => {
+      const socket = await openAuth();
+      const err = waitFor(socket, 'error');
+      const expired = tokenFor('p1', { nowSeconds: 1_000, ttlSeconds: 60 }); // exp long past
+      joinAuth(socket, { token: expired });
+      expect((await err).message).toMatch(/not authenticated/);
+      socket.close();
+    });
+
+    it('rejects a join whose token is for a DIFFERENT player than the claimed one (impersonation)', async () => {
+      const socket = await openAuth();
+      const err = waitFor(socket, 'error');
+      // A valid token minted for p2, but the frame claims to be p1 - the impersonation the whole
+      // spec closes. The token is well-formed and unexpired, so only the player-binding check stops it.
+      joinAuth(socket, { player: 'p1', token: tokenFor('p2') });
+      expect((await err).message).toMatch(/not authenticated/);
+      socket.close();
+    });
+
+    it('rejects a join with a token signed by a different secret', async () => {
+      const socket = await openAuth();
+      const err = waitFor(socket, 'error');
+      const forged = mintEngineToken(
+        { room: 'auth-room', game: STUB_GAME_ID, player: 'p1' },
+        'wrong-secret',
+      );
+      joinAuth(socket, { token: forged });
+      expect((await err).message).toMatch(/not authenticated/);
+      socket.close();
+    });
+
+    it('accepts a valid token, binds the player, and lets it act', async () => {
+      const socket = await openAuth();
+      const state = waitFor(socket, 'state');
+      joinAuth(socket, { token: tokenFor('p1') });
+      const snapshot = await state;
+      expect(snapshot).toMatchObject({ type: 'state', room: 'auth-room' });
+      // The bound player can submit a move for ITS OWN id (no error frame comes back).
+      socket.send(
+        JSON.stringify({
+          v: PROTOCOL_VERSION,
+          type: 'move',
+          room: 'auth-room',
+          game: STUB_GAME_ID,
+          player: 'p1',
+          round: 1,
+          move: 'blue',
+        }),
+      );
+      // Advance and confirm the move counted: the reveal reflects a submitted answer, proving the
+      // authenticated socket was truly bound and acting as p1.
+      const reveal = waitFor(socket, 'reveal');
+      await authEngine.control('auth-room', STUB_GAME_ID, 'advance');
+      expect(await reveal).toMatchObject({ type: 'reveal' });
+      socket.close();
+    });
+
+    it('holds secrecy WITH auth: a device cannot join as another player and cannot read that player s private payload (spec 0052 + 0064)', async () => {
+      // The load-bearing proof that authentication actually closes the 0033/0052 secrecy gap. p1
+      // authenticates honestly and receives ITS OWN secret (secretA). A SECOND connection - the
+      // attacker - tries to join as p2 to steal secretB, but it can only mint (in reality: obtain from
+      // the control-plane) a token for ITS OWN id, p1. Two attacks are proven to fail:
+      //   (a) claim p2 with a p1 token   -> rejected (token/player mismatch)
+      //   (b) claim p2 with no token     -> rejected (missing token)
+      // In NEITHER case does the attacker's socket ever receive secretB - the private channel is never
+      // subscribed because the join is refused before any subscribe.
+      const victim = await openAuth();
+      const victimFrames: Record<string, unknown>[] = [];
+      victim.on('message', (d) =>
+        victimFrames.push(JSON.parse(d.toString()) as Record<string, unknown>),
+      );
+      const victimSecret = waitFor(victim, 'private');
+      joinAuth(victim, { player: 'p1', token: tokenFor('p1') });
+      expect(await victimSecret).toMatchObject({
+        type: 'private',
+        player: 'p1',
+        private: 'secretA',
+      });
+
+      // Attacker attack (a): p1's token, but claims to be p2.
+      const attacker = await openAuth();
+      const attackerFrames: Record<string, unknown>[] = [];
+      attacker.on('message', (d) =>
+        attackerFrames.push(JSON.parse(d.toString()) as Record<string, unknown>),
+      );
+      const attackErr = waitFor(attacker, 'error');
+      joinAuth(attacker, { player: 'p2', token: tokenFor('p1') });
+      expect((await attackErr).message).toMatch(/not authenticated/);
+
+      // Attacker attack (b): claims p2 with no token at all.
+      const attacker2 = await openAuth();
+      const attacker2Frames: Record<string, unknown>[] = [];
+      attacker2.on('message', (d) =>
+        attacker2Frames.push(JSON.parse(d.toString()) as Record<string, unknown>),
+      );
+      const attackErr2 = waitFor(attacker2, 'error');
+      joinAuth(attacker2, { player: 'p2' });
+      expect((await attackErr2).message).toMatch(/not authenticated/);
+
+      // Give any (bugged) private delivery a beat to arrive, then assert NEITHER attacker socket ever
+      // saw p2's secret - the secrecy guarantee now genuinely holds behind the authenticated join.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(JSON.stringify(attackerFrames)).not.toContain('secretB');
+      expect(JSON.stringify(attacker2Frames)).not.toContain('secretB');
+      // And the honest victim still has its own secret and never the other's (sanity of the happy path).
+      expect(JSON.stringify(victimFrames)).toContain('secretA');
+      expect(JSON.stringify(victimFrames)).not.toContain('secretB');
+
+      victim.close();
+      attacker.close();
+      attacker2.close();
     });
   });
 });

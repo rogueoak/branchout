@@ -239,6 +239,21 @@ export async function resumeRoom(code: string): Promise<ResumeResult> {
   return request<ResumeResult>(`/rooms/${encodeURIComponent(code)}/me`, { method: 'GET' });
 }
 
+/**
+ * Fetch this device's short-lived engine-join auth token (spec 0064). The control-plane mints it
+ * over the caller's OWN membership (session -> playerId), so it can only ever authenticate THIS
+ * device as its own player - never another. The game client includes it in the engine `join` frame,
+ * and the engine verifies it before honouring the join, which is what makes per-player secrecy
+ * actually hold. Re-fetched on each (re)connect, since the token is deliberately short-lived.
+ */
+export async function fetchEngineToken(code: string): Promise<string> {
+  const { token } = await request<{ token: string }>(
+    `/rooms/${encodeURIComponent(code)}/engine-token`,
+    { method: 'GET' },
+  );
+  return token;
+}
+
 /** List a room's members (caller must be a member; only the host sees session ids). */
 export async function listMembers(code: string): Promise<RoomMember[]> {
   const { members } = await request<{ members: RoomMember[] }>(

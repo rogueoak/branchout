@@ -173,8 +173,12 @@ Capture durable lessons as they emerge.
   perfectly targeted per-player channel is only as private as the identity it keys on. The engine's
   WebSocket `join` self-asserts its `player` id (playerIds are public), so a secret delivered over
   `private:{room}:{game}:{player}` is only as secret as that unauthenticated join. Authenticate
-  identity *before* keying secrets on it, or the secret is only as private as that gate. (Feedback
-  `0033`, spec `0052`.)
+  identity *before* keying secrets on it, or the secret is only as private as that gate. Closed by a
+  stateless HMAC token the party that OWNS the identity mapping (the control-plane, holder of the
+  private `sessionId <-> playerId`) mints over the caller's OWN membership and the engine verifies -
+  so a caller can only ever prove its own id, never claim another's. Keep mint + verify in ONE shared
+  module (`@branchout/protocol`) so they can never drift into an accept-anything gap. (Feedback
+  `0033`, specs `0052` + `0064`.)
 
 ## Module boundaries
 

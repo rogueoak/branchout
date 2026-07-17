@@ -25,6 +25,7 @@ import {
 import {
   RoomApiError,
   controlGame,
+  fetchEngineToken,
   getRoom,
   listMembers,
   resumeRoom,
@@ -212,14 +213,46 @@ export function RoomClient({
     };
   }, [code, membership]);
 
+  // The engine-join auth token (spec 0064). We fetch it once the game is running and this device has
+  // a resolved identity, and REFRESH it periodically so a mid-game reconnect always joins with a
+  // still-valid token (the token is deliberately short-lived). The engine requires it, so the game
+  // socket is only opened once we hold one - gating on it below avoids a doomed join that the engine
+  // would just reject. A fetch failure leaves it null (the game stays in "connecting"); the interval
+  // retries.
+  const [engineToken, setEngineToken] = useState<string | null>(null);
+  useEffect(() => {
+    if (!running || !me || !room?.selectedGame) {
+      setEngineToken(null);
+      return;
+    }
+    let active = true;
+    const refresh = async () => {
+      try {
+        const token = await fetchEngineToken(code);
+        if (active) setEngineToken(token);
+      } catch {
+        // Leave the last-good (or null) token; the interval retries. A persistent failure keeps the
+        // game in a connecting state rather than joining unauthenticated (which the engine rejects).
+      }
+    };
+    void refresh();
+    // 90s < the 120s token TTL, so a reconnect after a drop still has a live token to join with.
+    const timer = setInterval(refresh, 90_000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [code, running, me, room?.selectedGame]);
+
   const gameOptions =
-    running && me && room?.selectedGame
+    running && me && room?.selectedGame && engineToken
       ? {
           url: ENGINE_WS_URL,
           room: room.id,
           game: room.selectedGame,
           player: me,
           nickname: membership?.nickname ?? 'Player',
+          token: engineToken,
         }
       : null;
 

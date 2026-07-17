@@ -5,9 +5,22 @@ import type {
   SocketConnection,
   SocketServer,
 } from '@branchout/protocol';
+import { verifyEngineToken } from '@branchout/protocol';
 import { createWsServer } from '@branchout/protocol/ws';
 import type { GameEngine } from './engine';
 import { privateChannel, streamChannel, type PubSub, type Subscription } from './pubsub';
+
+/** Options for {@link attachGameSocket}. */
+export interface GameSocketOptions {
+  /**
+   * The shared HMAC secret for engine-join authentication (spec 0064). When set, a `join` frame
+   * MUST carry a valid token that binds the connecting device to its claimed `{room, game, player}`,
+   * or the join is refused before it subscribes to any channel - so a device can never join as
+   * another player and read that player's private payloads. When unset (pure-unit tests only, never
+   * dev/e2e/prod), enforcement is skipped and the pre-0064 self-asserted join stands.
+   */
+  authSecret?: string;
+}
 
 /** Per-connection binding: which session this device joined and its stream subscriptions. */
 interface Bound {
@@ -36,11 +49,47 @@ export function attachGameSocket(
   server: HttpServer,
   engine: GameEngine,
   pubsub: PubSub,
+  options: GameSocketOptions = {},
 ): SocketServer {
   const bindings = new Map<SocketConnection, Bound>();
+  const { authSecret } = options;
 
   const fail = (connection: SocketConnection, message: string) => {
     connection.send({ type: 'error', message });
+  };
+
+  /**
+   * Authenticate a join (spec 0064). When a secret is configured the frame must carry a token whose
+   * HMAC binds this exact `{room, game, player}` and is unexpired; the token's player MUST equal the
+   * join's `player` (the control-plane only ever mints a token for the caller's OWN id, so a device
+   * cannot get one for a victim). Returns true when the join may proceed. On rejection it sends a
+   * targeted `error` frame (never a broadcast) and returns false. When no secret is set, enforcement
+   * is skipped (pure-unit tests only).
+   */
+  const authorizeJoin = (connection: SocketConnection, message: JoinMessage): boolean => {
+    if (!authSecret) return true;
+    if (!message.token) {
+      fail(connection, 'this join is not authenticated');
+      return false;
+    }
+    const result = verifyEngineToken(message.token, authSecret);
+    if (!result.ok) {
+      fail(connection, 'this join is not authenticated');
+      return false;
+    }
+    const { claims } = result;
+    if (
+      claims.room !== message.room ||
+      claims.game !== message.game ||
+      claims.player !== message.player
+    ) {
+      // A valid token for a DIFFERENT identity than the one the frame claims - the impersonation
+      // case. The token proves the control-plane vouched for `claims.player`; the join claims
+      // someone else. Refuse rather than trust either half.
+      fail(connection, 'this join is not authenticated');
+      return false;
+    }
+    return true;
   };
 
   const handleJoin = async (connection: SocketConnection, message: JoinMessage) => {
@@ -48,6 +97,9 @@ export function attachGameSocket(
       fail(connection, 'this connection has already joined a session');
       return;
     }
+    // Authenticate BEFORE subscribing to any channel (spec 0064): an unauthenticated device must
+    // never reach the per-player `private:` channel it would otherwise subscribe to below.
+    if (!authorizeJoin(connection, message)) return;
     // Subscribe first so no streamed frame is missed between the snapshot and later updates.
     const subscription = await pubsub.subscribe(
       streamChannel(message.room, message.game),

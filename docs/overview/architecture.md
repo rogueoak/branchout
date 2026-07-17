@@ -459,7 +459,10 @@ start-handoff roster (`toHandoffPlayers`) and the engine `join` key on it, and i
 browser on join and in `/members`, because the engine already broadcasts it in every `state` frame's
 `players[].player`. This split lets a non-host browser (which cannot read its httpOnly cookie) learn
 an engine identity without ever exposing the session token. Rule: a browser-facing service echoes
-the *public* identity a UI needs, never the secret that authenticates the caller.
+the *public* identity a UI needs, never the secret that authenticates the caller. Because `playerId`
+is public, the engine `join` cannot trust it alone; the connecting device proves it IS that player
+with a short-lived HMAC token the control-plane mints over the caller's own session-to-playerId
+mapping and the engine verifies (spec `0064`, see "Engine-join authentication" below).
 - **Engine <-> control-plane (REST).** `start` handoff (control-plane -> engine), `round` result
   and `game-complete` standings (engine -> control-plane). Each report carries a stable id
   (`roundId`, `gameId`) so a retry never double-bills - the transport is internal REST, chosen
@@ -496,8 +499,25 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   catch-up, and clears it when the next round starts (the same per-round pruning as `reveal`/
   `standings`). The module runs in a worker and returns plain data; the main thread owns the sockets
   and does the targeted send. The web client folds the frame into `state.private` for a game's UI.
-  Secrecy is only as strong as the WebSocket `join` identity, which is self-asserted and not yet
-  authenticated (playerIds are public), so a hardened join is a tracked follow-up (feedback `0033`).
+  Secrecy is now bounded by an **authenticated join** (spec `0064`), not just by routing: the private
+  channel keys on the `player` id the `join` asserts, so that assertion is what must be trusted - and
+  it now is. When `ENGINE_AUTH_SECRET` is set the join REQUIRES a control-plane-minted token binding
+  the connection to its player, so a device cannot join as another player and subscribe to their
+  private channel. Feedback `0033`'s contingency is resolved.
+- **Engine-join authentication** (spec `0064`). The player WebSocket `join` carries a self-asserted,
+  PUBLIC `player` id; without a proof of identity a device could join as another player and read their
+  private payloads (spec `0052`) or spoof their moves/votes. The fix is a stateless, short-lived HMAC
+  token: the control-plane owns the private `sessionId <-> playerId` mapping, so it MINTS the token
+  over the caller's OWN membership at `GET /v1/rooms/:code/engine-token` (a caller can only ever get a
+  token for their own id), binding `{room.id, selectedGame, playerId}` + an `exp`. The engine VERIFIES
+  it on join (recompute the HMAC, check `exp`, and that the token's player equals the join's `player`)
+  BEFORE subscribing to any channel, rejecting with a targeted `error` otherwise, and binds the socket
+  to the authenticated player. `mintEngineToken`/`verifyEngineToken` live once in `@branchout/protocol`
+  so mint and verify never drift; the `token` field is additive on `join` under the same
+  `PROTOCOL_VERSION`. The web game client fetches the token (over its session cookie) and includes it
+  on every join, refreshing it so a mid-game reconnect always joins with a live token. The shared
+  `ENGINE_AUTH_SECRET` is a server secret on both control-plane and game-engine (unset only in
+  pure-unit tests, where the engine skips enforcement).
 - **Server-authoritative games** (spec `0043`, Teeter Tower). A game's payloads are opaque, so a
   module can own *shared simulation state*, not just per-player answers: Teeter runs Matter.js
   **headless in the engine**, keeps the authoritative tower in `scratch`, and treats one piece-drop

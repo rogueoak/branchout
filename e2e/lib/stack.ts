@@ -48,6 +48,11 @@ const composeEnv: NodeJS.ProcessEnv = {
   CONTROL_PLANE_PORT: String(CONTROL_PLANE_PORT),
   GAME_ENGINE_PORT: String(GAME_ENGINE_PORT),
   ADMIN_PORT: String(ADMIN_PORT),
+  // Engine-join authentication (spec 0064): set the shared secret so the e2e stack runs the REAL
+  // auth path - control-plane mints the join token, game-engine requires it. This is what proves the
+  // full token wiring end to end (a game only connects+plays if the browser fetched and sent a valid
+  // token). The compose files pass this same value to both control-plane and game-engine.
+  ENGINE_AUTH_SECRET: process.env.ENGINE_AUTH_SECRET ?? 'e2e-engine-auth-secret',
 };
 
 // Base (production-shaped) + dev overlay (browser -> localhost, runtime NEXT_PUBLIC_*, SSR

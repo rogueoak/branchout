@@ -3,6 +3,7 @@ import {
   RoomApiError,
   controlGame,
   createRoom,
+  fetchEngineToken,
   fetchIdentity,
   joinRoom,
   listMembers,
@@ -102,6 +103,17 @@ describe('room-api', () => {
     expect(members).toHaveLength(1);
     expect(members[0]!.mode).toBe('interactive');
     expect(members[0]!.isHost).toBe(true);
+  });
+
+  it('fetches the engine-join auth token over the session cookie (spec 0064)', async () => {
+    const fetchMock = mockFetch({ ok: true, body: { token: 'r1.trivia.pid.9999999999.sig' } });
+    const token = await fetchEngineToken('ABC12');
+    expect(token).toBe('r1.trivia.pid.9999999999.sig');
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toContain('/v1/rooms/ABC12/engine-token');
+    expect(init.method).toBe('GET');
+    // Credentialed so the control-plane resolves THIS caller's own membership from the session.
+    expect(init.credentials).toBe('include');
   });
 
   it('sends the advance control action to the control-plane proxy', async () => {

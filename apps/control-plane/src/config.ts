@@ -97,6 +97,14 @@ export interface ServiceConfig {
   engineUrl: string;
   /** Shared secret the engine presents on the report intake; unset only in trusted dev. */
   internalToken?: string;
+  /**
+   * Shared HMAC secret for engine-join authentication (spec 0064). The control-plane mints a
+   * short-lived token over the caller's OWN membership at `GET /rooms/:code/engine-token`; the
+   * engine verifies it on the WebSocket join. Same value on both services. Unset only in pure-unit
+   * tests / trusted dev, where the endpoint returns a 503 "not configured" and the engine skips
+   * enforcement.
+   */
+  engineAuthSecret?: string;
   /** TTL for live room membership/presence in Redis; refreshed on each write. */
   membershipTtlSeconds: number;
   /** Auth rate-limiting / lockout thresholds. */
@@ -197,6 +205,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     ...(env.ADMIN_ROOT_PASSWORD ? { adminRootPassword: env.ADMIN_ROOT_PASSWORD } : {}),
     engineUrl: env.ENGINE_URL ?? 'http://localhost:4001',
     ...(env.INTERNAL_API_TOKEN ? { internalToken: env.INTERNAL_API_TOKEN } : {}),
+    ...(env.ENGINE_AUTH_SECRET ? { engineAuthSecret: env.ENGINE_AUTH_SECRET } : {}),
     membershipTtlSeconds: Number(env.MEMBERSHIP_TTL_SECONDS ?? DEFAULT_MEMBERSHIP_TTL),
     rateLimit: {
       loginMaxAttempts: parsePositiveInt(env.LOGIN_MAX_ATTEMPTS, DEFAULT_LOGIN_MAX_ATTEMPTS),
