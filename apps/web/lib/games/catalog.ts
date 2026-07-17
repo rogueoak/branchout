@@ -111,6 +111,39 @@ const MARKETING: Record<string, GameMarketing> = {
       'Play Liar Liar free in your browser: a Fibbage-style bluffing game. Write a fake answer to a ' +
       'wild-but-true clue, then pick the real one hidden among the lies. Start a room - no app.',
   },
+  // Lone Leaf is insider-only (spec 0057): the entry exists so the build-time "every registered game
+  // needs marketing copy" check passes, but PUBLIC_GAME_CATALOG excludes it, so it never appears on
+  // the public /games index, feature pages, or sitemap. Its share card reuses the trivia placeholder
+  // (no public raster is generated for an insider game).
+  'lone-leaf': {
+    description:
+      'Lone Leaf is a cooperative single-clue word game for phones. One player is the Seeker and ' +
+      'must guess a hidden seed word they cannot see; everyone else writes a single one-word clue. ' +
+      'Matching clues wilt and vanish before the Seeker looks - so think alike, but not too alike. ' +
+      'The Seeker takes one guess, and the whole grove shares the result. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Deal the seed',
+        body: 'One player is the Seeker and never sees the seed; everyone else sees it on their phone.',
+      },
+      {
+        title: 'Write one leaf',
+        body: 'Each non-Seeker writes a single one-word clue for the seed. Matching clues wilt away.',
+      },
+      {
+        title: 'Guess together',
+        body: 'The Seeker guesses from the surviving unique clues; a correct guess scores for everyone.',
+      },
+    ],
+    categories: ['Nature', 'Everyday', 'Places', 'Food', 'Animals', 'Feelings'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Lone Leaf',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Lone Leaf - a cooperative single-clue word game | Branch Out Games',
+    seoDescription:
+      'Lone Leaf is a phone-first cooperative word game in insider testing. Give the Seeker a ' +
+      'single one-word clue - but matching clues wilt away - and guess the hidden seed together.',
+  },
   // Teeter Tower is insider-only (spec 0043): the entry exists so the build-time "every registered
   // game needs marketing copy" check passes, but the PUBLIC_GAME_CATALOG below excludes it, so it
   // never appears on the public /games index, the feature pages, or the sitemap. Its share card is a
@@ -174,6 +207,227 @@ const MARKETING: Record<string, GameMarketing> = {
     seoDescription:
       'Brambles is a phone-first, two-team word game in insider testing. Your grove Guide describes a ' +
       'hidden bloom while dodging forbidden thorns, and your grove races to guess it.',
+  },
+  nightleaf: {
+    description:
+      'Nightleaf is a cooperative, silent card climb for phones. Everyone holds a hidden hand of ' +
+      'numbered leaves and must play them onto one shared pile in strictly ascending order - with no ' +
+      'talking about the numbers. Play out of turn and the grove loses a bud. Clear every tier to ' +
+      'win. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Hold your leaves',
+        body: 'You get a secret hand of numbered leaves. No one may say or hint at their numbers.',
+      },
+      {
+        title: 'Play in order',
+        body: 'Together, play every leaf onto the shared trunk lowest-first. A leaf out of order costs a bud.',
+      },
+      {
+        title: 'Climb the tiers',
+        body: 'Clear a tier to deal a bigger hand. Clear the final tier before the buds run out to win.',
+      },
+    ],
+    categories: ['Co-op', 'Party', 'Memory'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Nightleaf',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Nightleaf - a cooperative silent card game | Branch Out Games',
+    seoDescription:
+      'Nightleaf is a phone-first cooperative card game in insider testing. Play a hidden hand of ' +
+      'numbered leaves onto a shared pile in ascending order, in total silence, without losing a bud.',
+  },
+  // Sketchy is insider-only (spec 0063), so this entry exists only to satisfy the completeness check;
+  // PUBLIC_GAME_CATALOG excludes it from the public /games index, feature pages, and sitemap. Its
+  // share card is a placeholder (no public raster for an insider game).
+  sketchy: {
+    description:
+      'Sketchy is a draw-and-guess party game for phones. Everyone gets a secret seed and draws it, ' +
+      'then writes fake prompts (decoys) for each sketch. Pick out the real seed hidden among the ' +
+      'decoys - and score every time your decoy fools someone. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Draw your seed',
+        body: 'You get a secret prompt only you can see. Draw it on your phone before the timer ends.',
+      },
+      {
+        title: 'Write a decoy',
+        body: 'For every other sketch, write a fake prompt convincing enough to fool the room.',
+      },
+      {
+        title: 'Find the true seed',
+        body: 'Pick the real prompt from the decoys; guessing right and fooling players both score.',
+      },
+    ],
+    categories: ['Drawing', 'Bluffing', 'Party'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Sketchy',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Sketchy - a draw-and-guess party game | Branch Out Games',
+    seoDescription:
+      'Sketchy is a phone-first draw-and-guess party game in insider testing. Draw your secret seed, ' +
+      'write decoys for other sketches, and pick the real prompt hidden among the fakes.',
+  },
+  // Whispergrove is insider-only (spec 0062): the entry exists so the build-time "every registered
+  // game needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so it never
+  // appears on the public /games index, the feature pages, or the sitemap. Its share card is a
+  // placeholder (no public raster is generated for an insider game); it satisfies the shape check.
+  whispergrove: {
+    description:
+      'Whispergrove is a two-team word-grid game for phones. Twenty-five leaves fill a grove; a ' +
+      'secret key marks nine for one grove, eight for the other, seven saplings, and one Deadwood. ' +
+      'Each grove has one Whisperer who alone sees the key and gives a one-word whisper plus a ' +
+      'number; their grove taps leaves to link them. First grove to reveal all its leaves wins - ' +
+      'but tap the Deadwood and your grove falls. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Deal the grove',
+        body: 'Two groves form. Each grove picks one Whisperer, who alone sees the secret key on the 25-leaf grove.',
+      },
+      {
+        title: 'Whisper a link',
+        body: 'On your grove turn the Whisperer gives one word and a number, hinting how many leaves it links.',
+      },
+      {
+        title: 'Tap and race',
+        body: 'Your grove taps leaves. Link all yours first to win - but never wake the Deadwood.',
+      },
+    ],
+    categories: ['Word', 'Teams', 'Deduction'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Whispergrove',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Whispergrove - a two-team word-grid game | Branch Out Games',
+    seoDescription:
+      'Whispergrove is a phone-first two-team word-grid game in insider testing. A Whisperer who ' +
+      'alone sees the secret key gives one-word whispers; your grove taps leaves to link them first.',
+  },
+  // Reversi is insider-only (spec 0054): the entry exists so the build-time "every registered game
+  // needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so it never
+  // appears on the public /games index, the feature pages, or the sitemap. Its share card is a
+  // placeholder (no public raster is generated for an insider game); it satisfies the shape check.
+  reversi: {
+    description:
+      'Reversi is the classic disc-flip strategy game for two, built for phones. Place a Violet or ' +
+      "Amber disc to bracket a straight line of your opponent's discs and flip them all to your " +
+      'color. Corners and edges win games. When neither side can move, the most discs takes it.',
+    howToPlay: [
+      {
+        title: 'Bracket a line',
+        body: 'On your turn, place a disc so it traps one or more of the other color in a straight line ending on your disc.',
+      },
+      {
+        title: 'Flip the discs',
+        body: 'Every trapped disc between your two flips to your color, in any of the eight directions at once.',
+      },
+      {
+        title: 'Own the board',
+        body: 'Must move if you can, else pass. When neither side can move, the most discs of your color wins.',
+      },
+    ],
+    categories: ['Classic', 'Strategy', 'Two-player'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Reversi',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Reversi - the classic disc-flip strategy game | Branch Out Games',
+    seoDescription:
+      'Reversi is a phone-first two-player disc-flip strategy game in insider testing. Bracket a ' +
+      "line of your opponent's discs to flip them; the most discs of your color wins.",
+  },
+  // Chess is insider-only (spec 0056): the entry exists so the build-time "every registered game needs
+  // marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so it never appears on the
+  // public /games index, the feature pages, or the sitemap. Its share card is a placeholder (no public
+  // raster is generated for an insider game); it satisfies the shape check.
+  chess: {
+    description:
+      'Chess is the classic game of strategy for two, built for phones. Full standard rules - ' +
+      'castling, en passant, and pawn promotion - with every legal move enforced by the server, ' +
+      'including check, checkmate, and stalemate. Violet and Amber armies on a warm wood board.',
+    howToPlay: [
+      {
+        title: 'Move a piece',
+        body: 'Tap one of your pieces to select it; its legal squares light up. Tap a highlighted square to move there.',
+      },
+      {
+        title: 'Use the special moves',
+        body: 'Castle your king to safety, capture en passant, and promote a pawn that reaches the far rank - the board offers them when they are legal.',
+      },
+      {
+        title: 'Deliver checkmate',
+        body: 'Attack the enemy king so it cannot escape, block, or be defended. Stalemate or bare kings draw the game.',
+      },
+    ],
+    categories: ['Classic', 'Strategy', 'Two-player'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Chess',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Chess - the classic strategy board game | Branch Out Games',
+    seoDescription:
+      'Chess is a phone-first two-player strategy game in insider testing. Full standard rules with ' +
+      'castling, en passant, promotion, and checkmate, every move enforced by the server.',
+  },
+  'odd-bird': {
+    description:
+      'Odd Bird is a hidden-role deduction party game for phones. Everyone shares a secret roost ' +
+      'and a distinct perch at it - except one odd bird, who knows only that they are the odd bird. ' +
+      'Ask each other pointed questions out loud, expose the odd bird with the flush vote, and never ' +
+      'give the roost away. Still in insider testing.',
+    howToPlay: [
+      {
+        title: 'Check your card',
+        body: 'Everyone gets the same roost and a secret perch on their own phone - except one odd bird.',
+      },
+      {
+        title: 'Question the flock',
+        body: 'Take turns asking pointed questions out loud. Answers must fit the roost without naming it.',
+      },
+      {
+        title: 'Call the flush',
+        body: 'Vote on who the odd bird is. The flock wins by flushing them; the odd bird wins by hiding or naming the roost.',
+      },
+    ],
+    categories: ['Deduction', 'Party', 'Hidden role'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Odd Bird',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Odd Bird - a hidden-role deduction game | Branch Out Games',
+    seoDescription:
+      'Odd Bird is a phone-first hidden-role deduction party game in insider testing. Everyone shares ' +
+      'a secret roost and role except one odd bird - ask questions, flush them out, and keep the ' +
+      'roost hidden.',
+  },
+  // Checkers is insider-only (spec 0055): like Reversi, the entry exists so the build-time "every
+  // registered game needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so
+  // it never appears on the public /games index, the feature pages, or the sitemap. Its share card is
+  // a placeholder (no public raster is generated for an insider game); it satisfies the shape check.
+  checkers: {
+    description:
+      'Checkers (English draughts) is the classic strategy game for two, built for phones. Move your ' +
+      'Violet or Amber pieces diagonally forward, jump an opponent to capture, and chain multi-jumps ' +
+      'in one turn. Reach the far row to crown a King that moves both ways. Capture every piece, or ' +
+      'leave your opponent no move, to win.',
+    howToPlay: [
+      {
+        title: 'Move and jump',
+        body: 'Slide a piece one square diagonally forward, or jump over a touching opponent into the empty square beyond to capture it.',
+      },
+      {
+        title: 'Chain and crown',
+        body: 'If a jump is open you must take it, and a landed piece keeps jumping. Reach the far row to crown a King that moves and jumps both ways.',
+      },
+      {
+        title: 'Clear the board',
+        body: 'Capture all of your opponent pieces, or block their last move, to win the game.',
+      },
+    ],
+    categories: ['Classic', 'Strategy', 'Two-player'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Checkers',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Checkers - the classic draughts strategy game | Branch Out Games',
+    seoDescription:
+      'Checkers (English draughts) is a phone-first two-player strategy game in insider testing. Jump ' +
+      'to capture, chain multi-jumps, and crown a King; capture every piece to win.',
   },
 };
 

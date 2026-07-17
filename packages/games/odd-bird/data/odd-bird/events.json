@@ -1,0 +1,92 @@
+[
+  {
+    "id": "events-001",
+    "category": "events",
+    "name": "A wedding reception",
+    "perches": [
+      "Nervous best man",
+      "Wedding planner",
+      "Caterer",
+      "DJ",
+      "Flower girl",
+      "Photographer",
+      "Distant cousin",
+      "Bartender"
+    ]
+  },
+  {
+    "id": "events-002",
+    "category": "events",
+    "name": "A rock concert",
+    "perches": [
+      "Lead singer",
+      "Roadie",
+      "Front-row superfan",
+      "Sound engineer",
+      "Security guard",
+      "Merch seller",
+      "Ticket scalper",
+      "Lighting technician"
+    ]
+  },
+  {
+    "id": "events-003",
+    "category": "events",
+    "name": "A carnival",
+    "perches": [
+      "Ride operator",
+      "Cotton-candy vendor",
+      "Face painter",
+      "Ticket taker",
+      "Fortune teller",
+      "Lost child",
+      "Game-booth barker",
+      "Funnel-cake fryer"
+    ]
+  },
+  {
+    "id": "events-004",
+    "category": "events",
+    "name": "A movie premiere",
+    "perches": [
+      "Lead actor",
+      "Red-carpet reporter",
+      "Bodyguard",
+      "Studio publicist",
+      "Autograph hunter",
+      "Usher",
+      "Film director",
+      "Popcorn vendor"
+    ]
+  },
+  {
+    "id": "events-005",
+    "category": "events",
+    "name": "A sports stadium",
+    "perches": [
+      "Star player",
+      "Referee",
+      "Hot-dog vendor",
+      "Season-ticket holder",
+      "Mascot",
+      "Coach",
+      "Groundskeeper",
+      "Halftime announcer"
+    ]
+  },
+  {
+    "id": "events-006",
+    "category": "events",
+    "name": "A costume party",
+    "perches": [
+      "Host in an elaborate costume",
+      "Late arrival",
+      "DJ",
+      "Caterer",
+      "Award judge",
+      "Party crasher",
+      "Photographer",
+      "Bartender"
+    ]
+  }
+]

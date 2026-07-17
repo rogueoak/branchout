@@ -1,0 +1,92 @@
+[
+  {
+    "id": "outdoors-001",
+    "category": "outdoors",
+    "name": "A campsite in the woods",
+    "perches": [
+      "Park ranger",
+      "First-time camper",
+      "Trail guide",
+      "Campfire cook",
+      "Birdwatcher",
+      "Kayak renter",
+      "Scout leader",
+      "Marshmallow toaster"
+    ]
+  },
+  {
+    "id": "outdoors-002",
+    "category": "outdoors",
+    "name": "A beach",
+    "perches": [
+      "Lifeguard",
+      "Sandcastle builder",
+      "Ice-cream vendor",
+      "Surfer",
+      "Beach volleyball player",
+      "Sunbather",
+      "Shell collector",
+      "Metal-detector hobbyist"
+    ]
+  },
+  {
+    "id": "outdoors-003",
+    "category": "outdoors",
+    "name": "A mountain ski lodge",
+    "perches": [
+      "Ski instructor",
+      "Lift operator",
+      "Hot-cocoa server",
+      "First-day beginner",
+      "Snowboarder",
+      "Rescue patroller",
+      "Fireplace loafer",
+      "Gear-rental clerk"
+    ]
+  },
+  {
+    "id": "outdoors-004",
+    "category": "outdoors",
+    "name": "A community garden",
+    "perches": [
+      "Master gardener",
+      "Compost keeper",
+      "Weekend volunteer",
+      "Beekeeper",
+      "Tomato grower",
+      "Watering-can borrower",
+      "Seed swapper",
+      "Curious neighbor"
+    ]
+  },
+  {
+    "id": "outdoors-005",
+    "category": "outdoors",
+    "name": "A hiking trail",
+    "perches": [
+      "Through-hiker",
+      "Day tripper",
+      "Trail-maintenance crew",
+      "Photographer",
+      "Dog walker",
+      "Lost tourist",
+      "Geocacher",
+      "Water-refill stopper"
+    ]
+  },
+  {
+    "id": "outdoors-006",
+    "category": "outdoors",
+    "name": "A farmers' market",
+    "perches": [
+      "Vegetable farmer",
+      "Cheese vendor",
+      "Bargain hunter",
+      "Flower seller",
+      "Baker",
+      "Street musician",
+      "Market organizer",
+      "Free-sample taster"
+    ]
+  }
+]
