@@ -113,25 +113,13 @@ export function sameCoord(a: Coord, b: Coord): boolean {
  * The single-hop CAPTURES available FROM a square for the piece sitting on it: for each direction the
  * piece may move, if the adjacent square holds an opponent and the square just beyond is empty and
  * on-board, that hop captures. Returns the landing square + the captured (jumped) square per hop. A
- * king considers all four diagonals; a man only its forward two.
+ * king considers all four diagonals; a man only its forward two. Delegates to the shared
+ * {@link captureHopsFromPiece} core with the piece the board holds on `from`.
  */
 export function captureHopsFrom(board: Grid<Cell>, from: Coord): { to: Coord; jumped: Coord }[] {
   const piece = board.at(from.row, from.col);
   if (!piece) return [];
-  const hops: { to: Coord; jumped: Coord }[] = [];
-  for (const step of stepsFor(piece)) {
-    const midR = from.row + step.dr;
-    const midC = from.col + step.dc;
-    const toR = from.row + step.dr * 2;
-    const toC = from.col + step.dc * 2;
-    if (!board.inBounds(toR, toC)) continue;
-    const mid = board.inBounds(midR, midC) ? board.at(midR, midC) : null;
-    const dest = board.at(toR, toC);
-    if (mid && mid.seat !== piece.seat && dest === null) {
-      hops.push({ to: { row: toR, col: toC }, jumped: { row: midR, col: midC } });
-    }
-  }
-  return hops;
+  return captureHopsFromPiece(board, from, piece);
 }
 
 /**
@@ -210,7 +198,11 @@ export function jumpPathsFrom(board: Grid<Cell>, from: Coord): Coord[][] {
   return paths;
 }
 
-/** Capture hops for a specific piece identity on a square (used by the chain walk over a candidate board). */
+/**
+ * The single-hop captures for a specific piece identity sitting on a square. This is the shared core:
+ * {@link captureHopsFrom} calls it with the board's own piece, and the multi-jump chain walk calls it
+ * with the (possibly newly crowned) piece it is tracking over a candidate board.
+ */
 function captureHopsFromPiece(
   board: Grid<Cell>,
   from: Coord,

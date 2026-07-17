@@ -445,19 +445,8 @@ describe('end + scoring', () => {
   });
 
   it('a side whose every piece is blocked has no legal move (has lost)', () => {
-    // Amber man boxed into the top-left corner by violet men, with no jump and no empty step.
-    const stuck = board([
-      'a.......',
-      '.v......',
-      EMPTY_ROW,
-      EMPTY_ROW,
-      EMPTY_ROW,
-      EMPTY_ROW,
-      EMPTY_ROW,
-      EMPTY_ROW,
-    ]);
-    // Amber at (0,0) can only go down-diagonal to (1,1), which holds a violet; jumping needs an empty
-    // (2,2) - it is empty - so this WOULD be a jump. Adjust: block the landing too.
+    // Amber man at (0,0) is boxed into the top-left corner: its only forward diagonal (1,1) holds a
+    // violet, and the jump landing (2,2) is blocked by another violet, so there is no step and no jump.
     const boxed = board([
       'a.......',
       '.v......',
@@ -470,7 +459,6 @@ describe('end + scoring', () => {
     ]);
     expect(hasLegalMove(boxed, AMBER)).toBe(false);
     expect(isGameOverFor(boxed, AMBER)).toBe(true);
-    void stuck;
   });
 
   it('the winner is the OTHER seat when the side to move is stuck (no draw)', () => {

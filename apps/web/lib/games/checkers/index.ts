@@ -17,7 +17,7 @@ export const CHECKERS_ROUNDS = 1;
 export const checkersGameUi: GameUiModule = {
   id: 'checkers',
   name: 'Checkers',
-  tagline: 'Jump, chain, and crown - capture every piece to win.',
+  tagline: 'Jump, chain, and crown - clear the board or block their last move to win.',
   icon: checkersSvg,
   summary:
     'The classic game of checkers (English draughts) for two. Move your pieces diagonally forward, ' +
