@@ -32,8 +32,12 @@ test('four insiders play a Brambles sprint and score a bloom (360px)', async ({ 
     browser.newContext({ viewport: { width: 360, height: 780 } }),
     browser.newContext({ viewport: { width: 360, height: 780 } }),
   ]);
-  const pages = await Promise.all(contexts.map((c) => c.newPage()));
-  const [host, p2, p3, p4] = pages;
+  const [hostCtx, p2Ctx, p3Ctx, p4Ctx] = contexts;
+  const host = await hostCtx.newPage();
+  const p2 = await p2Ctx.newPage();
+  const p3 = await p3Ctx.newPage();
+  const p4 = await p4Ctx.newPage();
+  const pages: Page[] = [host, p2, p3, p4];
 
   try {
     // Host: a fresh insider account, funded (a live game reserves its round budget to start).
