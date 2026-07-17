@@ -129,20 +129,21 @@ export function DrawCanvas({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-1.5" role="group" aria-label="Twig color">
-          {STROKE_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-label={`Draw in ${c}`}
-              aria-pressed={color === c}
-              disabled={disabled}
-              onClick={() => setColor(c)}
-              className={`h-8 w-8 rounded-full border-2 ${
-                color === c ? 'border-text' : 'border-border'
-              }`}
-              style={{ backgroundColor: c }}
-            />
-          ))}
+          {STROKE_COLORS.map((c) => {
+            const selectedBorder = color === c ? 'border-text' : 'border-border';
+            return (
+              <button
+                key={c}
+                type="button"
+                aria-label={`Draw in ${c}`}
+                aria-pressed={color === c}
+                disabled={disabled}
+                onClick={() => setColor(c)}
+                className={`h-8 w-8 rounded-full border-2 ${selectedBorder}`}
+                style={{ backgroundColor: c }}
+              />
+            );
+          })}
         </div>
         <div className="flex gap-1.5">
           <button

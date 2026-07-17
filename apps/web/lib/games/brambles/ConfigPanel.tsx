@@ -25,6 +25,19 @@ export function BramblesConfigPanel({ value, onChange, disabled }: GameConfigPan
   const errors = validateBramblesConfig(config);
   const set = (next: Partial<BramblesHostConfig>) => onChange({ ...config, ...next });
 
+  const sprintsError = errorFor(errors, 'sprints');
+  const secondsError = errorFor(errors, 'sprintSeconds');
+  const sprintsErrorMsg = sprintsError ? (
+    <p id="brambles-sprints-error" role="alert" className="text-body-sm text-danger">
+      {sprintsError}
+    </p>
+  ) : null;
+  const secondsErrorMsg = secondsError ? (
+    <p id="brambles-seconds-error" role="alert" className="text-body-sm text-danger">
+      {secondsError}
+    </p>
+  ) : null;
+
   return (
     <div className="flex flex-col gap-5">
       <p className="text-body-sm text-text-muted">
@@ -44,14 +57,10 @@ export function BramblesConfigPanel({ value, onChange, disabled }: GameConfigPan
           disabled={disabled}
           value={Number.isNaN(config.sprints) ? '' : config.sprints}
           onChange={(event) => set({ sprints: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'sprints') !== null}
-          aria-describedby={errorFor(errors, 'sprints') ? 'brambles-sprints-error' : undefined}
+          aria-invalid={sprintsError !== null}
+          aria-describedby={sprintsError ? 'brambles-sprints-error' : undefined}
         />
-        {errorFor(errors, 'sprints') ? (
-          <p id="brambles-sprints-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'sprints')}
-          </p>
-        ) : null}
+        {sprintsErrorMsg}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -65,16 +74,10 @@ export function BramblesConfigPanel({ value, onChange, disabled }: GameConfigPan
           disabled={disabled}
           value={Number.isNaN(config.sprintSeconds) ? '' : config.sprintSeconds}
           onChange={(event) => set({ sprintSeconds: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'sprintSeconds') !== null}
-          aria-describedby={
-            errorFor(errors, 'sprintSeconds') ? 'brambles-seconds-error' : undefined
-          }
+          aria-invalid={secondsError !== null}
+          aria-describedby={secondsError ? 'brambles-seconds-error' : undefined}
         />
-        {errorFor(errors, 'sprintSeconds') ? (
-          <p id="brambles-seconds-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'sprintSeconds')}
-          </p>
-        ) : null}
+        {secondsErrorMsg}
       </div>
     </div>
   );

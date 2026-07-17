@@ -54,6 +54,11 @@ export function BramblesRemote({ state, me, onMove }: GameRemoteProps) {
 
   if (isGuide && secret) {
     const trimmed = draft.trim();
+    const rejectedBadge = state.rejected ? (
+      <Badge variant="danger" className="w-fit" role="alert">
+        {state.rejected}
+      </Badge>
+    ) : null;
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <Badge variant="primary" className="w-fit">
@@ -94,11 +99,7 @@ export function BramblesRemote({ state, me, onMove }: GameRemoteProps) {
             Send
           </Button>
         </div>
-        {state.rejected ? (
-          <Badge variant="danger" className="w-fit" role="alert">
-            {state.rejected}
-          </Badge>
-        ) : null}
+        {rejectedBadge}
         <Button type="button" variant="outline" onClick={() => onMove(round, move('skip'))}>
           Skip this card
         </Button>
@@ -109,6 +110,11 @@ export function BramblesRemote({ state, me, onMove }: GameRemoteProps) {
   // A guesser (or an opposing-grove player). Offer a guess box; the engine rejects an out-of-turn
   // guess from the opposing grove (shown as a reject).
   const trimmed = draft.trim();
+  const guessRejected = state.rejected ? (
+    <Badge variant="neutral" className="w-fit" role="status">
+      {state.rejected}
+    </Badge>
+  ) : null;
   return (
     <section aria-label="Your controller" className="flex flex-col gap-3">
       <p className="text-body text-text">
@@ -135,11 +141,7 @@ export function BramblesRemote({ state, me, onMove }: GameRemoteProps) {
           Guess
         </Button>
       </div>
-      {state.rejected ? (
-        <Badge variant="neutral" className="w-fit" role="status">
-          {state.rejected}
-        </Badge>
-      ) : null}
+      {guessRejected}
     </section>
   );
 }

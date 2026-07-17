@@ -29,6 +29,37 @@ export function NightleafConfigPanel({ value, onChange, disabled }: GameConfigPa
   const errors = validateNightleafConfig(config);
   const set = (next: Partial<NightleafHostConfig>) => onChange({ ...config, ...next });
 
+  const tiersError = errorFor(errors, 'tiers');
+  const budsError = errorFor(errors, 'buds');
+  const firefliesError = errorFor(errors, 'fireflies');
+
+  let tiersErrorLine = null;
+  if (tiersError) {
+    tiersErrorLine = (
+      <p id="nightleaf-tiers-error" role="alert" className="text-body-sm text-danger">
+        {tiersError}
+      </p>
+    );
+  }
+
+  let budsErrorLine = null;
+  if (budsError) {
+    budsErrorLine = (
+      <p id="nightleaf-buds-error" role="alert" className="text-body-sm text-danger">
+        {budsError}
+      </p>
+    );
+  }
+
+  let firefliesErrorLine = null;
+  if (firefliesError) {
+    firefliesErrorLine = (
+      <p id="nightleaf-fireflies-error" role="alert" className="text-body-sm text-danger">
+        {firefliesError}
+      </p>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <p className="text-body-sm text-text-muted">
@@ -47,17 +78,13 @@ export function NightleafConfigPanel({ value, onChange, disabled }: GameConfigPa
           disabled={disabled}
           value={Number.isNaN(config.tiers) ? '' : config.tiers}
           onChange={(event) => set({ tiers: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'tiers') !== null}
-          aria-describedby={errorFor(errors, 'tiers') ? 'nightleaf-tiers-error' : undefined}
+          aria-invalid={tiersError !== null}
+          aria-describedby={tiersError ? 'nightleaf-tiers-error' : undefined}
         />
         <p className="text-caption text-text-subtle">
           Tier N deals N leaves to each player. Clear the final tier to win.
         </p>
-        {errorFor(errors, 'tiers') ? (
-          <p id="nightleaf-tiers-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'tiers')}
-          </p>
-        ) : null}
+        {tiersErrorLine}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -71,17 +98,13 @@ export function NightleafConfigPanel({ value, onChange, disabled }: GameConfigPa
           disabled={disabled}
           value={Number.isNaN(config.buds) ? '' : config.buds}
           onChange={(event) => set({ buds: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'buds') !== null}
-          aria-describedby={errorFor(errors, 'buds') ? 'nightleaf-buds-error' : undefined}
+          aria-invalid={budsError !== null}
+          aria-describedby={budsError ? 'nightleaf-buds-error' : undefined}
         />
         <p className="text-caption text-text-subtle">
           Play out of order and the grove loses a bud.
         </p>
-        {errorFor(errors, 'buds') ? (
-          <p id="nightleaf-buds-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'buds')}
-          </p>
-        ) : null}
+        {budsErrorLine}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -95,17 +118,13 @@ export function NightleafConfigPanel({ value, onChange, disabled }: GameConfigPa
           disabled={disabled}
           value={Number.isNaN(config.fireflies) ? '' : config.fireflies}
           onChange={(event) => set({ fireflies: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'fireflies') !== null}
-          aria-describedby={errorFor(errors, 'fireflies') ? 'nightleaf-fireflies-error' : undefined}
+          aria-invalid={firefliesError !== null}
+          aria-describedby={firefliesError ? 'nightleaf-fireflies-error' : undefined}
         />
         <p className="text-caption text-text-subtle">
           Spend a firefly for a hush: everyone drops their lowest leaf at once.
         </p>
-        {errorFor(errors, 'fireflies') ? (
-          <p id="nightleaf-fireflies-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'fireflies')}
-          </p>
-        ) : null}
+        {firefliesErrorLine}
       </div>
     </div>
   );

@@ -59,6 +59,23 @@ function rejectionMessage(reason: string): string {
   return map[reason] ?? 'That move did not land - tap a piece, then a highlighted square.';
 }
 
+/** The turn/outcome status line, phrased from `me`'s vantage. */
+function turnLineFor(
+  sim: CheckersSim | null,
+  isActive: boolean,
+  toMove: 'violet' | 'amber' | null,
+  activeName: string | null,
+): string {
+  if (sim?.over) {
+    if (sim.outcome) return `Game over - ${SIDE_LABEL[sim.outcome]} wins.`;
+    return 'Game over.';
+  }
+  const side = toMove ? SIDE_LABEL[toMove] : '';
+  if (isActive) return `Your turn (${side}) - tap a piece, then a highlighted square.`;
+  if (activeName) return `Waiting for ${activeName} (${side}).`;
+  return 'Waiting for the next move.';
+}
+
 /** The color/rank of a wire cell, or null for an empty square. */
 function pieceOf(cell: WireCell): { color: 'violet' | 'amber'; king: boolean } | null {
   if (cell === 'empty') return null;
@@ -282,37 +299,36 @@ export function CheckersViewer({ state, me, onMove }: GameViewProps) {
   const highlightViolet = sim?.over ? sim.outcome === 'violet' : toMove === 'violet';
   const highlightAmber = sim?.over ? sim.outcome === 'amber' : toMove === 'amber';
 
-  const turnLine = sim?.over
-    ? sim?.outcome
-      ? `Game over - ${SIDE_LABEL[sim.outcome]} wins.`
-      : 'Game over.'
-    : isActive
-      ? `Your turn (${toMove ? SIDE_LABEL[toMove] : ''}) - tap a piece, then a highlighted square.`
-      : activeName
-        ? `Waiting for ${activeName} (${toMove ? SIDE_LABEL[toMove] : ''}).`
-        : 'Waiting for the next move.';
+  const turnLine = turnLineFor(sim, isActive, toMove, activeName);
+  const violetTone = highlightViolet ? 'text-primary' : 'text-text';
+  const amberTone = highlightAmber ? 'text-accent-strong' : 'text-text';
+  const boardLabel = isActive ? 'Tap a piece, then a highlighted square to move' : 'Checkers board';
+
+  let rejectedBanner = null;
+  if (state.rejected) {
+    rejectedBanner = (
+      <p
+        role="alert"
+        className="absolute inset-x-0 top-2 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
+      >
+        {rejectionMessage(state.rejected)}
+      </p>
+    );
+  }
 
   return (
     // Fill the single-surface stage height so the whole board fits the viewport without page scroll.
     <section aria-label="Game viewer" className="flex h-full min-h-0 flex-col gap-2">
       {/* Scoreboard: the two piece counts, the side to move called out. Big + legible at 360px. */}
       <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-raised px-3 py-2">
-        <span
-          className={`flex items-center gap-2 text-body-sm font-semibold ${
-            highlightViolet ? 'text-primary' : 'text-text'
-          }`}
-        >
+        <span className={`flex items-center gap-2 text-body-sm font-semibold ${violetTone}`}>
           <span
             aria-hidden
             className="inline-block h-4 w-4 rounded-full bg-primary ring-1 ring-primary-active"
           />
           Violet {violet}
         </span>
-        <span
-          className={`flex items-center gap-2 text-body-sm font-semibold ${
-            highlightAmber ? 'text-accent-strong' : 'text-text'
-          }`}
-        >
+        <span className={`flex items-center gap-2 text-body-sm font-semibold ${amberTone}`}>
           Amber {amber}
           <span
             aria-hidden
@@ -342,20 +358,11 @@ export function CheckersViewer({ state, me, onMove }: GameViewProps) {
       >
         <canvas
           ref={canvasRef}
-          aria-label={
-            isActive ? 'Tap a piece, then a highlighted square to move' : 'Checkers board'
-          }
+          aria-label={boardLabel}
           role="img"
           className="block h-full w-full"
         />
-        {state.rejected ? (
-          <p
-            role="alert"
-            className="absolute inset-x-0 top-2 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
-          >
-            {rejectionMessage(state.rejected)}
-          </p>
-        ) : null}
+        {rejectedBanner}
       </div>
     </section>
   );

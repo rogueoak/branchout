@@ -57,16 +57,37 @@ export function ZingerRemote({
   }
 
   if (phase === 'collecting') {
+    const setupHeader =
+      showResults && prompt ? (
+        <div className="flex flex-col gap-2">
+          <Badge variant="info" className="w-fit">
+            Round {prompt.round}
+          </Badge>
+          <h2 className="text-h3 text-text">{prompt.setup}</h2>
+        </div>
+      ) : null;
+    const submitLabel = submittedThisDraft && !rejectedThisDraft ? 'Resend' : 'Submit';
+    let submitStatus = (
+      <p className="text-body-sm text-text-subtle">
+        Keep it short and funny - you might land in the face-off.
+      </p>
+    );
+    if (rejectedThisDraft) {
+      submitStatus = (
+        <Badge variant="danger" className="w-fit" role="alert">
+          {state.rejected} - try again.
+        </Badge>
+      );
+    } else if (submittedThisDraft) {
+      submitStatus = (
+        <p role="status" className="text-body-sm text-success">
+          Zinger submitted! Waiting for the others...
+        </p>
+      );
+    }
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
-        {showResults && prompt ? (
-          <div className="flex flex-col gap-2">
-            <Badge variant="info" className="w-fit">
-              Round {prompt.round}
-            </Badge>
-            <h2 className="text-h3 text-text">{prompt.setup}</h2>
-          </div>
-        ) : null}
+        {setupHeader}
         <label htmlFor="zinger-input" className="text-body-sm font-medium text-text">
           Write your zinger
         </label>
@@ -82,22 +103,10 @@ export function ZingerRemote({
             }}
           />
           <Button type="button" variant="primary" onClick={submit} disabled={!trimmed}>
-            {submittedThisDraft && !rejectedThisDraft ? 'Resend' : 'Submit'}
+            {submitLabel}
           </Button>
         </div>
-        {rejectedThisDraft ? (
-          <Badge variant="danger" className="w-fit" role="alert">
-            {state.rejected} - try again.
-          </Badge>
-        ) : submittedThisDraft ? (
-          <p role="status" className="text-body-sm text-success">
-            Zinger submitted! Waiting for the others...
-          </p>
-        ) : (
-          <p className="text-body-sm text-text-subtle">
-            Keep it short and funny - you might land in the face-off.
-          </p>
-        )}
+        {submitStatus}
       </section>
     );
   }
@@ -111,42 +120,49 @@ export function ZingerRemote({
     // also ignores a self-vote by author id as a backstop.
     const isAuthor = me != null && (faceOff?.authorIds.includes(me) ?? false);
     const voted = votedRound === round;
+    const setupHeading =
+      showResults && faceOff?.setup ? <h2 className="text-h3 text-text">{faceOff.setup}</h2> : null;
+    let voteBody;
+    if (isAuthor) {
+      voteBody = (
+        <p role="status" className="text-body-sm text-text-muted">
+          Your zinger is in this face-off - sit this vote out and see how it lands.
+        </p>
+      );
+    } else {
+      const voteChoices = voted ? (
+        <p role="status" className="text-body-sm text-success">
+          Vote locked in! Waiting for the others...
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {options.map((option) => (
+            <Button
+              key={option.id}
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onVote(round, option.id, true);
+                setVotedRound(round);
+              }}
+            >
+              {option.text}
+            </Button>
+          ))}
+        </div>
+      );
+      voteBody = (
+        <>
+          <p className="text-body text-text">Which zinger landed hardest?</p>
+          {voteChoices}
+        </>
+      );
+    }
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         {/* A remote-only player has no viewer on their screen, so re-show the setup they vote on. */}
-        {showResults && faceOff?.setup ? (
-          <h2 className="text-h3 text-text">{faceOff.setup}</h2>
-        ) : null}
-        {isAuthor ? (
-          <p role="status" className="text-body-sm text-text-muted">
-            Your zinger is in this face-off - sit this vote out and see how it lands.
-          </p>
-        ) : (
-          <>
-            <p className="text-body text-text">Which zinger landed hardest?</p>
-            {voted ? (
-              <p role="status" className="text-body-sm text-success">
-                Vote locked in! Waiting for the others...
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {options.map((option) => (
-                  <Button
-                    key={option.id}
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      onVote(round, option.id, true);
-                      setVotedRound(round);
-                    }}
-                  >
-                    {option.text}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+        {setupHeading}
+        {voteBody}
       </section>
     );
   }
@@ -156,23 +172,20 @@ export function ZingerRemote({
   }
 
   if (showResults && phase === 'leaderboard') {
+    const nextHint = isHost
+      ? 'Tap Next when you are ready for the next round.'
+      : 'Waiting for the host to start the next round.';
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <Leaderboard standings={state.standings} me={me} />
-        <p className="text-body-sm text-text-muted">
-          {isHost
-            ? 'Tap Next when you are ready for the next round.'
-            : 'Waiting for the host to start the next round.'}
-        </p>
+        <p className="text-body-sm text-text-muted">{nextHint}</p>
       </section>
     );
   }
 
-  return (
-    <p className="text-body-sm text-text-muted">
-      {phase === 'complete'
-        ? 'The game is over - see the results on the viewer.'
-        : 'Watch the viewer - the next setup is coming up.'}
-    </p>
-  );
+  const fallbackLine =
+    phase === 'complete'
+      ? 'The game is over - see the results on the viewer.'
+      : 'Watch the viewer - the next setup is coming up.';
+  return <p className="text-body-sm text-text-muted">{fallbackLine}</p>;
 }

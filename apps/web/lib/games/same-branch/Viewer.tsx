@@ -44,37 +44,43 @@ export function SameBranchViewer({ state, me }: GameViewProps) {
           })),
         ]
       : [];
-    return (
-      <section aria-label="Game viewer" className="flex flex-col gap-5">
-        {reveal ? (
-          <div className="flex flex-col gap-3 rounded-lg bg-surface-raised p-4">
-            <Badge variant="primary" className="w-fit">
-              Round {reveal.round} - the bud
-            </Badge>
-            <p className="text-body-sm text-text-muted">
-              {nicknameOf(players, reveal.reader)} read: {reveal.hunch || '(no hunch)'}
-            </p>
-            <BranchDial
-              left={reveal.left}
-              right={reveal.right}
-              value={reveal.bud}
-              markers={markers}
-              ariaLabel="Round result on the branch"
-            />
-            <ul aria-label="Round result" className="flex flex-col gap-1">
-              {reveal.guesses.map((g) => (
+    let revealCard = null;
+    if (reveal) {
+      revealCard = (
+        <div className="flex flex-col gap-3 rounded-lg bg-surface-raised p-4">
+          <Badge variant="primary" className="w-fit">
+            Round {reveal.round} - the bud
+          </Badge>
+          <p className="text-body-sm text-text-muted">
+            {nicknameOf(players, reveal.reader)} read: {reveal.hunch || '(no hunch)'}
+          </p>
+          <BranchDial
+            left={reveal.left}
+            right={reveal.right}
+            value={reveal.bud}
+            markers={markers}
+            ariaLabel="Round result on the branch"
+          />
+          <ul aria-label="Round result" className="flex flex-col gap-1">
+            {reveal.guesses.map((g) => {
+              const who = g.player === me ? 'You' : nicknameOf(players, g.player);
+              const pointWord = g.points === 1 ? 'point' : 'points';
+              return (
                 <li key={g.player} className="flex items-baseline justify-between gap-3">
-                  <span className="text-body text-text">
-                    {g.player === me ? 'You' : nicknameOf(players, g.player)}
-                  </span>
+                  <span className="text-body text-text">{who}</span>
                   <span className="text-body-sm text-text-subtle">
-                    {g.band} - {g.points} {g.points === 1 ? 'point' : 'points'}
+                    {g.band} - {g.points} {pointWord}
                   </span>
                 </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+              );
+            })}
+          </ul>
+        </div>
+      );
+    }
+    return (
+      <section aria-label="Game viewer" className="flex flex-col gap-5">
+        {revealCard}
         <Leaderboard standings={standings} me={me} />
         <p className="text-body-sm text-text-muted">
           Waiting for the host to start the next round.
@@ -85,26 +91,29 @@ export function SameBranchViewer({ state, me }: GameViewProps) {
 
   if (prompt && phase === 'collecting') {
     const isReader = prompt.reader === me;
+    let timerBadge = null;
+    if (secondsLeft !== null) {
+      timerBadge = (
+        <Badge variant={secondsLeft <= 15 ? 'warning' : 'neutral'}>
+          <span role="timer" aria-label={`${secondsLeft} seconds left`}>
+            {secondsLeft}s left
+          </span>
+        </Badge>
+      );
+    }
+    const readerHint = isReader
+      ? 'You are the Reader - only you can see the bud. Give a one-line hunch that fits it.'
+      : `${nicknameOf(players, prompt.reader)} sees the hidden bud and will read a hunch. Move the sap line to guess where it is.`;
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="info">Round {prompt.round}</Badge>
           <Badge variant="neutral">Reader: {nicknameOf(players, prompt.reader)}</Badge>
-          {secondsLeft !== null ? (
-            <Badge variant={secondsLeft <= 15 ? 'warning' : 'neutral'}>
-              <span role="timer" aria-label={`${secondsLeft} seconds left`}>
-                {secondsLeft}s left
-              </span>
-            </Badge>
-          ) : null}
+          {timerBadge}
         </div>
         <h2 className="text-h2 text-text">Where does the bud sit on the branch?</h2>
         <BranchDial left={prompt.left} right={prompt.right} value={null} ariaLabel="The branch" />
-        <p className="text-body text-text-muted">
-          {isReader
-            ? 'You are the Reader - only you can see the bud. Give a one-line hunch that fits it.'
-            : `${nicknameOf(players, prompt.reader)} sees the hidden bud and will read a hunch. Move the sap line to guess where it is.`}
-        </p>
+        <p className="text-body text-text-muted">{readerHint}</p>
       </section>
     );
   }

@@ -31,9 +31,14 @@ interface SheetProps {
 }
 
 export function Sheet({ open, onOpenChange, title, trigger, children }: SheetProps) {
+  // Hoisted so the JSX carries no inline ternary (conventions.md).
+  let triggerNode = null;
+  if (trigger) {
+    triggerNode = <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>;
+  }
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      {trigger ? <Dialog.Trigger asChild>{trigger}</Dialog.Trigger> : null}
+      {triggerNode}
       <Dialog.Portal>
         {/* The scrim: dims the live game behind the sheet; a tap on it closes (backdrop dismiss).
             Fades in/out with the dialog state (reduced-motion falls back to an instant swap). */}

@@ -16,6 +16,31 @@ interface RulesContentProps {
 }
 
 export function RulesContent({ name, rules, howToPlay }: RulesContentProps) {
+  // Hoisted so the JSX carries no inline ternary (conventions.md): the quick-start strip only when the
+  // catalog supplied how-to-play steps.
+  let quickStart = null;
+  if (howToPlay && howToPlay.length > 0) {
+    quickStart = (
+      <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface-raised p-4">
+        <h3 className="text-h4 text-text">Quick start</h3>
+        <ol className="flex flex-col gap-3" role="list">
+          {howToPlay.map((step, i) => (
+            <li key={step.title} className="flex gap-3">
+              <span aria-hidden="true" className="text-body font-bold text-primary">
+                {i + 1}
+              </span>
+              <div className="flex flex-col gap-1">
+                <span className="text-body-sm font-medium text-text">{step.title}</span>
+                <span className="text-body-sm text-text-muted">{step.body}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p className="sr-only">Quick start for {name}.</p>
+      </section>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Objective as the lead line - the one sentence that says how you win, set apart from the
@@ -36,25 +61,7 @@ export function RulesContent({ name, rules, howToPlay }: RulesContentProps) {
         </section>
       ))}
 
-      {howToPlay && howToPlay.length > 0 ? (
-        <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface-raised p-4">
-          <h3 className="text-h4 text-text">Quick start</h3>
-          <ol className="flex flex-col gap-3" role="list">
-            {howToPlay.map((step, i) => (
-              <li key={step.title} className="flex gap-3">
-                <span aria-hidden="true" className="text-body font-bold text-primary">
-                  {i + 1}
-                </span>
-                <div className="flex flex-col gap-1">
-                  <span className="text-body-sm font-medium text-text">{step.title}</span>
-                  <span className="text-body-sm text-text-muted">{step.body}</span>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <p className="sr-only">Quick start for {name}.</p>
-        </section>
-      ) : null}
+      {quickStart}
     </div>
   );
 }

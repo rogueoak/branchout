@@ -73,15 +73,10 @@ export interface GroveProps {
 export function Grove({ leaves, keyView = null, onTap = null, canTap = false }: GroveProps) {
   return (
     <div className="grid grid-cols-5 gap-1.5" role="grid" aria-label="The grove of 25 leaves">
-      {leaves.map((leaf) => (
-        <Leaf
-          key={leaf.index}
-          leaf={leaf}
-          secret={keyView ? (keyView[leaf.index] ?? null) : null}
-          onTap={onTap}
-          canTap={canTap}
-        />
-      ))}
+      {leaves.map((leaf) => {
+        const secret = keyView ? (keyView[leaf.index] ?? null) : null;
+        return <Leaf key={leaf.index} leaf={leaf} secret={secret} onTap={onTap} canTap={canTap} />;
+      })}
     </div>
   );
 }

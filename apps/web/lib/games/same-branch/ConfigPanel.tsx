@@ -39,6 +39,61 @@ export function SameBranchConfigPanel({ value, onChange, disabled }: GameConfigP
     set({ categories: next });
   };
 
+  const categoriesError = errorFor(errors, 'categories');
+  const roundsError = errorFor(errors, 'rounds');
+
+  let categoryPicker;
+  if (!random) {
+    const categoriesErrorMsg = categoriesError ? (
+      <p role="alert" className="text-body-sm text-danger">
+        {categoriesError}
+      </p>
+    ) : null;
+    categoryPicker = (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Choose up to 3 categories">
+          {CATEGORIES.map((category) => {
+            const on = selected.includes(category);
+            return (
+              <Button
+                key={category}
+                type="button"
+                size="sm"
+                variant={on ? 'secondary' : 'outline'}
+                aria-pressed={on}
+                disabled={disabled || (!on && atCap)}
+                onClick={() => toggleCategory(category)}
+              >
+                {CATEGORY_LABELS[category as SameBranchCategory]}
+              </Button>
+            );
+          })}
+        </div>
+        <p className="text-caption text-text-subtle">
+          {selected.length}/{MAX_CATEGORIES} chosen. Pick 1-3 categories, or switch to Random.
+        </p>
+        {categoriesErrorMsg}
+      </div>
+    );
+  } else {
+    categoryPicker = (
+      <Badge variant="neutral" className="w-fit">
+        Drawing from all 6 categories
+      </Badge>
+    );
+  }
+
+  const scoringHint =
+    config.mode === 'coop'
+      ? 'The whole grove pools every guess into one shared score.'
+      : 'Every player scores their own closeness - most points wins.';
+
+  const roundsErrorMsg = roundsError ? (
+    <p id="same-branch-rounds-error" role="alert" className="text-body-sm text-danger">
+      {roundsError}
+    </p>
+  ) : null;
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -64,44 +119,7 @@ export function SameBranchConfigPanel({ value, onChange, disabled }: GameConfigP
           </Button>
         </div>
 
-        {!random ? (
-          <div className="flex flex-col gap-2">
-            <div
-              className="flex flex-wrap gap-2"
-              role="group"
-              aria-label="Choose up to 3 categories"
-            >
-              {CATEGORIES.map((category) => {
-                const on = selected.includes(category);
-                return (
-                  <Button
-                    key={category}
-                    type="button"
-                    size="sm"
-                    variant={on ? 'secondary' : 'outline'}
-                    aria-pressed={on}
-                    disabled={disabled || (!on && atCap)}
-                    onClick={() => toggleCategory(category)}
-                  >
-                    {CATEGORY_LABELS[category as SameBranchCategory]}
-                  </Button>
-                );
-              })}
-            </div>
-            <p className="text-caption text-text-subtle">
-              {selected.length}/{MAX_CATEGORIES} chosen. Pick 1-3 categories, or switch to Random.
-            </p>
-            {errorFor(errors, 'categories') ? (
-              <p role="alert" className="text-body-sm text-danger">
-                {errorFor(errors, 'categories')}
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <Badge variant="neutral" className="w-fit">
-            Drawing from all 6 categories
-          </Badge>
-        )}
+        {categoryPicker}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -126,11 +144,7 @@ export function SameBranchConfigPanel({ value, onChange, disabled }: GameConfigP
             Co-op
           </Button>
         </div>
-        <p className="text-caption text-text-subtle">
-          {config.mode === 'coop'
-            ? 'The whole grove pools every guess into one shared score.'
-            : 'Every player scores their own closeness - most points wins.'}
-        </p>
+        <p className="text-caption text-text-subtle">{scoringHint}</p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -144,14 +158,10 @@ export function SameBranchConfigPanel({ value, onChange, disabled }: GameConfigP
           disabled={disabled}
           value={Number.isNaN(config.rounds) ? '' : config.rounds}
           onChange={(event) => set({ rounds: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'rounds') !== null}
-          aria-describedby={errorFor(errors, 'rounds') ? 'same-branch-rounds-error' : undefined}
+          aria-invalid={roundsError !== null}
+          aria-describedby={roundsError ? 'same-branch-rounds-error' : undefined}
         />
-        {errorFor(errors, 'rounds') ? (
-          <p id="same-branch-rounds-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'rounds')}
-          </p>
-        ) : null}
+        {roundsErrorMsg}
       </div>
     </div>
   );

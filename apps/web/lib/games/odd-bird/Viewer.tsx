@@ -30,57 +30,71 @@ export function OddBirdViewer({ state, me }: GameViewProps) {
   const secondsLeft = useMoveCountdown(state.moveMsRemaining, state.round, state.paused);
 
   if (phase === 'complete') {
+    let resultPanel = null;
+    if (result) {
+      const winBadgeVariant = result.flockWon ? 'success' : 'danger';
+      const winLabel = result.flockWon ? 'The flock wins' : 'The odd bird wins';
+      const flushedLine = result.flushed
+        ? `The flock flushed ${nicknameOf(players, result.flushed)}.`
+        : 'The flock could not agree, so no one was flushed.';
+      let guessedLine = null;
+      if (result.guessedRoost) {
+        const guessedName = result.guessedName ? ` (${result.guessedName})` : '';
+        guessedLine = (
+          <p className="text-body-sm text-text">The odd bird named the roost{guessedName}.</p>
+        );
+      }
+      resultPanel = (
+        <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">
+          <Badge variant={winBadgeVariant} className="w-fit">
+            {winLabel}
+          </Badge>
+          <p className="text-body-sm text-text-muted">The roost was</p>
+          <p className="text-h3 text-success">{result.roost}</p>
+          <p className="text-body text-text">
+            The odd bird was{' '}
+            <span className="font-medium text-secondary">
+              {nicknameOf(players, result.oddBird)}
+            </span>
+            .
+          </p>
+          <p className="text-body-sm text-text-muted">{flushedLine}</p>
+          {guessedLine}
+        </div>
+      );
+    }
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-5">
-        {result ? (
-          <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">
-            <Badge variant={result.flockWon ? 'success' : 'danger'} className="w-fit">
-              {result.flockWon ? 'The flock wins' : 'The odd bird wins'}
-            </Badge>
-            <p className="text-body-sm text-text-muted">The roost was</p>
-            <p className="text-h3 text-success">{result.roost}</p>
-            <p className="text-body text-text">
-              The odd bird was{' '}
-              <span className="font-medium text-secondary">
-                {nicknameOf(players, result.oddBird)}
-              </span>
-              .
-            </p>
-            <p className="text-body-sm text-text-muted">
-              {result.flushed
-                ? `The flock flushed ${nicknameOf(players, result.flushed)}.`
-                : 'The flock could not agree, so no one was flushed.'}
-            </p>
-            {result.guessedRoost ? (
-              <p className="text-body-sm text-text">
-                The odd bird named the roost{result.guessedName ? ` (${result.guessedName})` : ''}.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+        {resultPanel}
         <FinalResults standings={standings} me={me} />
       </section>
     );
   }
 
   if (phase === 'leaderboard') {
+    let resultPanel = null;
+    if (result) {
+      const winBadgeVariant = result.flockWon ? 'success' : 'danger';
+      const winLabel = result.flockWon ? 'The flock wins' : 'The odd bird wins';
+      resultPanel = (
+        <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">
+          <Badge variant={winBadgeVariant} className="w-fit">
+            {winLabel}
+          </Badge>
+          <p className="text-h3 text-success">{result.roost}</p>
+          <p className="text-body text-text">
+            The odd bird was{' '}
+            <span className="font-medium text-secondary">
+              {nicknameOf(players, result.oddBird)}
+            </span>
+            .
+          </p>
+        </div>
+      );
+    }
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-5">
-        {result ? (
-          <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">
-            <Badge variant={result.flockWon ? 'success' : 'danger'} className="w-fit">
-              {result.flockWon ? 'The flock wins' : 'The odd bird wins'}
-            </Badge>
-            <p className="text-h3 text-success">{result.roost}</p>
-            <p className="text-body text-text">
-              The odd bird was{' '}
-              <span className="font-medium text-secondary">
-                {nicknameOf(players, result.oddBird)}
-              </span>
-              .
-            </p>
-          </div>
-        ) : null}
+        {resultPanel}
         <Leaderboard standings={standings} me={me} />
       </section>
     );
@@ -102,18 +116,23 @@ export function OddBirdViewer({ state, me }: GameViewProps) {
   }
 
   if (prompt && phase === 'collecting') {
+    let timerBadge = null;
+    if (secondsLeft !== null) {
+      const timerVariant = secondsLeft <= 30 ? 'warning' : 'neutral';
+      timerBadge = (
+        <Badge variant={timerVariant}>
+          <span role="timer" aria-label={`${secondsLeft} seconds left`}>
+            {secondsLeft}s left
+          </span>
+        </Badge>
+      );
+    }
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="info">{prompt.players} at the roost</Badge>
           <Badge variant="neutral">{label(prompt.category)}</Badge>
-          {secondsLeft !== null ? (
-            <Badge variant={secondsLeft <= 30 ? 'warning' : 'neutral'}>
-              <span role="timer" aria-label={`${secondsLeft} seconds left`}>
-                {secondsLeft}s left
-              </span>
-            </Badge>
-          ) : null}
+          {timerBadge}
         </div>
         <h2 className="text-h2 text-text">Question the flock</h2>
         <p className="text-body text-text-muted">

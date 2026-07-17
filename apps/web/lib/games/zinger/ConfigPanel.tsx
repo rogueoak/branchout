@@ -24,6 +24,18 @@ export function ZingerConfigPanel({ value, onChange, disabled }: GameConfigPanel
   const errors = validateZingerConfig(config);
   const set = (next: Partial<ZingerHostConfig>) => onChange({ ...config, ...next });
 
+  const roundsError = errorFor(errors, 'rounds');
+  const roundsValue = Number.isNaN(config.rounds) ? '' : config.rounds;
+  const roundsHelp = roundsError ? (
+    <p id="zinger-rounds-error" role="alert" className="text-body-sm text-danger">
+      {roundsError}
+    </p>
+  ) : (
+    <p className="text-caption text-text-subtle">
+      Each round is one setup, one face-off, and a vote. Best with three or more players.
+    </p>
+  );
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -35,20 +47,12 @@ export function ZingerConfigPanel({ value, onChange, disabled }: GameConfigPanel
           min={MIN_ROUNDS}
           max={MAX_ROUNDS}
           disabled={disabled}
-          value={Number.isNaN(config.rounds) ? '' : config.rounds}
+          value={roundsValue}
           onChange={(event) => set({ rounds: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'rounds') !== null}
-          aria-describedby={errorFor(errors, 'rounds') ? 'zinger-rounds-error' : undefined}
+          aria-invalid={roundsError !== null}
+          aria-describedby={roundsError ? 'zinger-rounds-error' : undefined}
         />
-        {errorFor(errors, 'rounds') ? (
-          <p id="zinger-rounds-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'rounds')}
-          </p>
-        ) : (
-          <p className="text-caption text-text-subtle">
-            Each round is one setup, one face-off, and a vote. Best with three or more players.
-          </p>
-        )}
+        {roundsHelp}
       </div>
     </div>
   );

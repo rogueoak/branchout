@@ -60,17 +60,28 @@ export function SketchyRemote({
   if (phase === 'collecting' && prompt?.stage === 'draw') {
     const submitted = drawSubmittedRound === round;
     const canSubmit = isDrawn(sketch) && !submitted;
+    const seedBadge = secret ? (
+      <Badge variant="primary" className="w-fit">
+        {secret.seed}
+      </Badge>
+    ) : (
+      <p className="text-body-sm text-text-subtle">Waiting for your secret seed...</p>
+    );
+    const submitLabel = submitted ? 'Resend sketch' : 'Submit sketch';
+    const drawFooter = submitted ? (
+      <p role="status" className="text-body-sm text-success">
+        Sketch submitted! Waiting for the others...
+      </p>
+    ) : (
+      <p className="text-body-sm text-text-subtle">
+        Draw your seed with a twig. Others will guess what it was.
+      </p>
+    );
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <span className="text-body-sm font-medium text-text">Your seed - draw it!</span>
-          {secret ? (
-            <Badge variant="primary" className="w-fit">
-              {secret.seed}
-            </Badge>
-          ) : (
-            <p className="text-body-sm text-text-subtle">Waiting for your secret seed...</p>
-          )}
+          {seedBadge}
         </div>
         <DrawCanvas sketch={sketch} onChange={setSketch} disabled={submitted} />
         <Button
@@ -83,17 +94,9 @@ export function SketchyRemote({
             setDrawSubmittedRound(round);
           }}
         >
-          {submitted ? 'Resend sketch' : 'Submit sketch'}
+          {submitLabel}
         </Button>
-        {submitted ? (
-          <p role="status" className="text-body-sm text-success">
-            Sketch submitted! Waiting for the others...
-          </p>
-        ) : (
-          <p className="text-body-sm text-text-subtle">
-            Draw your seed with a twig. Others will guess what it was.
-          </p>
-        )}
+        {drawFooter}
       </section>
     );
   }
@@ -102,10 +105,13 @@ export function SketchyRemote({
   if (phase === 'collecting' && prompt?.stage === 'sketch') {
     const iAmFeatured = prompt.featured === me;
     if (iAmFeatured) {
+      const ownSketch = prompt.sketch ? (
+        <SketchReplay sketch={prompt.sketch} label="Your sketch" />
+      ) : null;
       return (
         <section aria-label="Your controller" className="flex flex-col gap-3">
           <p className="text-body text-text">This is your sketch! Sit tight.</p>
-          {prompt.sketch ? <SketchReplay sketch={prompt.sketch} label="Your sketch" /> : null}
+          {ownSketch}
           <p className="text-body-sm text-text-subtle">
             Everyone else is writing a fake seed for your drawing.
           </p>
@@ -121,10 +127,32 @@ export function SketchyRemote({
       setMyDecoy(trimmed);
       setDecoyRound(round);
     };
+    const sketchToGuess = prompt.sketch ? (
+      <SketchReplay sketch={prompt.sketch} label="The sketch to guess" />
+    ) : null;
+    const decoyButtonLabel = submitted && !rejected ? 'Resend' : 'Submit';
+    let decoyFooter = (
+      <p className="text-body-sm text-text-subtle">
+        Write a fake seed good enough to fool the room - but not the real one.
+      </p>
+    );
+    if (rejected) {
+      decoyFooter = (
+        <Badge variant="danger" className="w-fit" role="alert">
+          {state.rejected} - try another.
+        </Badge>
+      );
+    } else if (submitted) {
+      decoyFooter = (
+        <p role="status" className="text-body-sm text-success">
+          Decoy submitted! Waiting for the others...
+        </p>
+      );
+    }
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <p className="text-body-sm font-medium text-text">What was this a drawing of?</p>
-        {prompt.sketch ? <SketchReplay sketch={prompt.sketch} label="The sketch to guess" /> : null}
+        {sketchToGuess}
         <div className="flex gap-2">
           <Input
             id="sketchy-decoy-input"
@@ -137,22 +165,10 @@ export function SketchyRemote({
             }}
           />
           <Button type="button" variant="primary" onClick={submit} disabled={!trimmed}>
-            {submitted && !rejected ? 'Resend' : 'Submit'}
+            {decoyButtonLabel}
           </Button>
         </div>
-        {rejected ? (
-          <Badge variant="danger" className="w-fit" role="alert">
-            {state.rejected} - try another.
-          </Badge>
-        ) : submitted ? (
-          <p role="status" className="text-body-sm text-success">
-            Decoy submitted! Waiting for the others...
-          </p>
-        ) : (
-          <p className="text-body-sm text-text-subtle">
-            Write a fake seed good enough to fool the room - but not the real one.
-          </p>
-        )}
+        {decoyFooter}
       </section>
     );
   }
@@ -176,33 +192,36 @@ export function SketchyRemote({
         </section>
       );
     }
+    const guessSketch =
+      showResults && guess?.sketch ? (
+        <SketchReplay sketch={guess.sketch} label="The sketch to guess" />
+      ) : null;
+    const guessBody = guessed ? (
+      <p role="status" className="text-body-sm text-success">
+        Locked in! Waiting for the others...
+      </p>
+    ) : (
+      <div className="flex flex-col gap-2">
+        {guessable.map((option) => (
+          <Button
+            key={option.id}
+            type="button"
+            variant="outline"
+            onClick={() => {
+              onVote(round, option.id, true);
+              setGuessedRound(round);
+            }}
+          >
+            {option.text}
+          </Button>
+        ))}
+      </div>
+    );
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
-        {showResults && guess?.sketch ? (
-          <SketchReplay sketch={guess.sketch} label="The sketch to guess" />
-        ) : null}
+        {guessSketch}
         <p className="text-body text-text">Which one is the true seed?</p>
-        {guessed ? (
-          <p role="status" className="text-body-sm text-success">
-            Locked in! Waiting for the others...
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {guessable.map((option) => (
-              <Button
-                key={option.id}
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  onVote(round, option.id, true);
-                  setGuessedRound(round);
-                }}
-              >
-                {option.text}
-              </Button>
-            ))}
-          </div>
-        )}
+        {guessBody}
       </section>
     );
   }
@@ -212,23 +231,20 @@ export function SketchyRemote({
   }
 
   if (showResults && phase === 'leaderboard') {
+    const nextRoundHint = isHost
+      ? 'Tap Next when you are ready for the next round.'
+      : 'Waiting for the host to start the next round.';
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <Leaderboard standings={state.standings} me={me} />
-        <p className="text-body-sm text-text-muted">
-          {isHost
-            ? 'Tap Next when you are ready for the next round.'
-            : 'Waiting for the host to start the next round.'}
-        </p>
+        <p className="text-body-sm text-text-muted">{nextRoundHint}</p>
       </section>
     );
   }
 
-  return (
-    <p className="text-body-sm text-text-muted">
-      {phase === 'complete'
-        ? 'The game is over - see the results on the viewer.'
-        : 'Watch the viewer - the next round is coming up.'}
-    </p>
-  );
+  const fallbackLine =
+    phase === 'complete'
+      ? 'The game is over - see the results on the viewer.'
+      : 'Watch the viewer - the next round is coming up.';
+  return <p className="text-body-sm text-text-muted">{fallbackLine}</p>;
 }

@@ -67,18 +67,38 @@ export function LoneLeafRemote({
         </section>
       );
     }
+    const seedPanel = secret ? (
+      <div className="flex flex-col gap-1 rounded-md bg-surface-raised p-3">
+        <span className="text-caption text-text-subtle">
+          The seed (only you and the grove see it)
+        </span>
+        <span className="text-h3 text-secondary">{secret.seed}</span>
+      </div>
+    ) : (
+      <p className="text-body-sm text-text-subtle">Waiting for the seed...</p>
+    );
+    const submitLabel = submittedThisRound && !rejectedThisRound ? 'Resend' : 'Submit';
+    let leafStatus = (
+      <p className="text-body-sm text-text-subtle">
+        Pick a word that points at the seed but that no one else will think of.
+      </p>
+    );
+    if (rejectedThisRound) {
+      leafStatus = (
+        <Badge variant="danger" className="w-fit" role="alert">
+          {state.rejected} - try again.
+        </Badge>
+      );
+    } else if (submittedThisRound) {
+      leafStatus = (
+        <p role="status" className="text-body-sm text-success">
+          Leaf sent! Matching leaves will wilt - fingers crossed yours is unique.
+        </p>
+      );
+    }
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
-        {secret ? (
-          <div className="flex flex-col gap-1 rounded-md bg-surface-raised p-3">
-            <span className="text-caption text-text-subtle">
-              The seed (only you and the grove see it)
-            </span>
-            <span className="text-h3 text-secondary">{secret.seed}</span>
-          </div>
-        ) : (
-          <p className="text-body-sm text-text-subtle">Waiting for the seed...</p>
-        )}
+        {seedPanel}
         <label htmlFor="leaf-input" className="text-body-sm font-medium text-text">
           Write one leaf (a single word)
         </label>
@@ -94,22 +114,10 @@ export function LoneLeafRemote({
             }}
           />
           <Button type="button" variant="primary" onClick={submitLeaf} disabled={!trimmed}>
-            {submittedThisRound && !rejectedThisRound ? 'Resend' : 'Submit'}
+            {submitLabel}
           </Button>
         </div>
-        {rejectedThisRound ? (
-          <Badge variant="danger" className="w-fit" role="alert">
-            {state.rejected} - try again.
-          </Badge>
-        ) : submittedThisRound ? (
-          <p role="status" className="text-body-sm text-success">
-            Leaf sent! Matching leaves will wilt - fingers crossed yours is unique.
-          </p>
-        ) : (
-          <p className="text-body-sm text-text-subtle">
-            Pick a word that points at the seed but that no one else will think of.
-          </p>
-        )}
+        {leafStatus}
       </section>
     );
   }
@@ -125,52 +133,56 @@ export function LoneLeafRemote({
       );
     }
     const survivors = pickSurvivors(state.reveals);
+    const survivorWords = survivors?.survivors ?? [];
     const decided = decidedRound === round;
+    const leafList =
+      survivorWords.length === 0 ? (
+        <p className="text-body-sm text-text-subtle">
+          Every leaf wilted - take your best guess anyway.
+        </p>
+      ) : (
+        <ul aria-label="Surviving leaves" className="flex flex-wrap gap-2">
+          {survivorWords.map((word, index) => (
+            <li
+              key={`${word}-${index}`}
+              className="rounded-md bg-surface-raised px-3 py-1.5 text-body text-text"
+            >
+              {word}
+            </li>
+          ))}
+        </ul>
+      );
+    const guessBody = decided ? (
+      <p role="status" className="text-body-sm text-success">
+        Guess locked in!
+      </p>
+    ) : (
+      <div className="flex flex-col gap-2">
+        <label htmlFor="guess-input" className="text-body-sm font-medium text-text">
+          Your one guess
+        </label>
+        <div className="flex gap-2">
+          <Input
+            id="guess-input"
+            value={draft}
+            autoComplete="off"
+            placeholder="The seed word"
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') submitGuess();
+            }}
+          />
+          <Button type="button" variant="primary" onClick={submitGuess} disabled={!trimmed}>
+            Guess
+          </Button>
+        </div>
+      </div>
+    );
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <p className="text-body font-medium text-text">Your surviving leaves</p>
-        {(survivors?.survivors ?? []).length === 0 ? (
-          <p className="text-body-sm text-text-subtle">
-            Every leaf wilted - take your best guess anyway.
-          </p>
-        ) : (
-          <ul aria-label="Surviving leaves" className="flex flex-wrap gap-2">
-            {(survivors?.survivors ?? []).map((word, index) => (
-              <li
-                key={`${word}-${index}`}
-                className="rounded-md bg-surface-raised px-3 py-1.5 text-body text-text"
-              >
-                {word}
-              </li>
-            ))}
-          </ul>
-        )}
-        {decided ? (
-          <p role="status" className="text-body-sm text-success">
-            Guess locked in!
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <label htmlFor="guess-input" className="text-body-sm font-medium text-text">
-              Your one guess
-            </label>
-            <div className="flex gap-2">
-              <Input
-                id="guess-input"
-                value={draft}
-                autoComplete="off"
-                placeholder="The seed word"
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') submitGuess();
-                }}
-              />
-              <Button type="button" variant="primary" onClick={submitGuess} disabled={!trimmed}>
-                Guess
-              </Button>
-            </div>
-          </div>
-        )}
+        {leafList}
+        {guessBody}
       </section>
     );
   }
@@ -180,23 +192,20 @@ export function LoneLeafRemote({
   }
 
   if (showResults && phase === 'leaderboard') {
+    const nextHint = isHost
+      ? 'Tap Next when you are ready for the next round.'
+      : 'Waiting for the host to start the next round.';
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <Leaderboard standings={state.standings} me={me} />
-        <p className="text-body-sm text-text-muted">
-          {isHost
-            ? 'Tap Next when you are ready for the next round.'
-            : 'Waiting for the host to start the next round.'}
-        </p>
+        <p className="text-body-sm text-text-muted">{nextHint}</p>
       </section>
     );
   }
 
-  return (
-    <p className="text-body-sm text-text-muted">
-      {phase === 'complete'
-        ? 'The game is over - see the results on the viewer.'
-        : 'Watch the viewer - the next seed is coming up.'}
-    </p>
-  );
+  const fallbackLine =
+    phase === 'complete'
+      ? 'The game is over - see the results on the viewer.'
+      : 'Watch the viewer - the next seed is coming up.';
+  return <p className="text-body-sm text-text-muted">{fallbackLine}</p>;
 }

@@ -39,6 +39,55 @@ export function OddBirdConfigPanel({ value, onChange, disabled }: GameConfigPane
     set({ categories: next });
   };
 
+  const categoriesError = errorFor(errors, 'categories');
+  let categoriesPicker;
+  if (!random) {
+    let categoriesErrorLine = null;
+    if (categoriesError) {
+      categoriesErrorLine = (
+        <p role="alert" className="text-body-sm text-danger">
+          {categoriesError}
+        </p>
+      );
+    }
+    categoriesPicker = (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Choose roost categories">
+          {CATEGORIES.map((category) => {
+            const on = selected.includes(category);
+            const categoryVariant = on ? 'secondary' : 'outline';
+            return (
+              <Button
+                key={category}
+                type="button"
+                size="sm"
+                variant={categoryVariant}
+                aria-pressed={on}
+                disabled={disabled}
+                onClick={() => toggleCategory(category)}
+              >
+                {label(category)}
+              </Button>
+            );
+          })}
+        </div>
+        <p className="text-caption text-text-subtle">
+          {selected.length} chosen. Pick one or more categories, or switch to Random.
+        </p>
+        {categoriesErrorLine}
+      </div>
+    );
+  } else {
+    categoriesPicker = (
+      <Badge variant="neutral" className="w-fit">
+        Drawing from all {CATEGORIES.length} categories
+      </Badge>
+    );
+  }
+
+  const randomVariant = random ? 'primary' : 'outline';
+  const pickVariant = !random ? 'primary' : 'outline';
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -46,7 +95,7 @@ export function OddBirdConfigPanel({ value, onChange, disabled }: GameConfigPane
         <div className="flex gap-2" role="group" aria-label="Category selection">
           <Button
             type="button"
-            variant={random ? 'primary' : 'outline'}
+            variant={randomVariant}
             aria-pressed={random}
             disabled={disabled}
             onClick={() => set({ categories: 'random' })}
@@ -55,7 +104,7 @@ export function OddBirdConfigPanel({ value, onChange, disabled }: GameConfigPane
           </Button>
           <Button
             type="button"
-            variant={!random ? 'primary' : 'outline'}
+            variant={pickVariant}
             aria-pressed={!random}
             disabled={disabled}
             onClick={() => set({ categories: selected.length > 0 ? selected : [CATEGORIES[0]] })}
@@ -64,40 +113,7 @@ export function OddBirdConfigPanel({ value, onChange, disabled }: GameConfigPane
           </Button>
         </div>
 
-        {!random ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Choose roost categories">
-              {CATEGORIES.map((category) => {
-                const on = selected.includes(category);
-                return (
-                  <Button
-                    key={category}
-                    type="button"
-                    size="sm"
-                    variant={on ? 'secondary' : 'outline'}
-                    aria-pressed={on}
-                    disabled={disabled}
-                    onClick={() => toggleCategory(category)}
-                  >
-                    {label(category)}
-                  </Button>
-                );
-              })}
-            </div>
-            <p className="text-caption text-text-subtle">
-              {selected.length} chosen. Pick one or more categories, or switch to Random.
-            </p>
-            {errorFor(errors, 'categories') ? (
-              <p role="alert" className="text-body-sm text-danger">
-                {errorFor(errors, 'categories')}
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <Badge variant="neutral" className="w-fit">
-            Drawing from all {CATEGORIES.length} categories
-          </Badge>
-        )}
+        {categoriesPicker}
       </div>
 
       <p className="text-body-sm text-text-muted">
