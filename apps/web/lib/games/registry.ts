@@ -95,26 +95,32 @@ export interface GameUiModule {
 // from here without a cycle (types are erased; the value import lands last).
 import { triviaGameUi } from './trivia';
 import { liarLiarGameUi } from './liar-liar';
+import { loneLeafGameUi } from './lone-leaf';
 import { teeterTowerGameUi } from './teeter-tower';
 import { reversiGameUi } from './reversi';
 import { oddBirdGameUi } from './odd-bird';
+import { checkersGameUi } from './checkers';
 
 /** Every registered game UI module, keyed by game id. Adding a game is adding it here. */
 export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [triviaGameUi.id]: triviaGameUi,
   [liarLiarGameUi.id]: liarLiarGameUi,
+  [loneLeafGameUi.id]: loneLeafGameUi,
   [teeterTowerGameUi.id]: teeterTowerGameUi,
   [reversiGameUi.id]: reversiGameUi,
   [oddBirdGameUi.id]: oddBirdGameUi,
+  [checkersGameUi.id]: checkersGameUi,
 };
 
 /** The host's game options, in display order. */
 export const GAME_UI_LIST: readonly GameUiModule[] = [
   triviaGameUi,
   liarLiarGameUi,
+  loneLeafGameUi,
   teeterTowerGameUi,
   reversiGameUi,
   oddBirdGameUi,
+  checkersGameUi,
 ];
 
 /** The default game a fresh room starts on, and the safe fallback for an unknown id. */

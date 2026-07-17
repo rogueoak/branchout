@@ -111,6 +111,39 @@ const MARKETING: Record<string, GameMarketing> = {
       'Play Liar Liar free in your browser: a Fibbage-style bluffing game. Write a fake answer to a ' +
       'wild-but-true clue, then pick the real one hidden among the lies. Start a room - no app.',
   },
+  // Lone Leaf is insider-only (spec 0057): the entry exists so the build-time "every registered game
+  // needs marketing copy" check passes, but PUBLIC_GAME_CATALOG excludes it, so it never appears on
+  // the public /games index, feature pages, or sitemap. Its share card reuses the trivia placeholder
+  // (no public raster is generated for an insider game).
+  'lone-leaf': {
+    description:
+      'Lone Leaf is a cooperative single-clue word game for phones. One player is the Seeker and ' +
+      'must guess a hidden seed word they cannot see; everyone else writes a single one-word clue. ' +
+      'Matching clues wilt and vanish before the Seeker looks - so think alike, but not too alike. ' +
+      'The Seeker takes one guess, and the whole grove shares the result. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Deal the seed',
+        body: 'One player is the Seeker and never sees the seed; everyone else sees it on their phone.',
+      },
+      {
+        title: 'Write one leaf',
+        body: 'Each non-Seeker writes a single one-word clue for the seed. Matching clues wilt away.',
+      },
+      {
+        title: 'Guess together',
+        body: 'The Seeker guesses from the surviving unique clues; a correct guess scores for everyone.',
+      },
+    ],
+    categories: ['Nature', 'Everyday', 'Places', 'Food', 'Animals', 'Feelings'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Lone Leaf',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Lone Leaf - a cooperative single-clue word game | Branch Out Games',
+    seoDescription:
+      'Lone Leaf is a phone-first cooperative word game in insider testing. Give the Seeker a ' +
+      'single one-word clue - but matching clues wilt away - and guess the hidden seed together.',
+  },
   // Teeter Tower is insider-only (spec 0043): the entry exists so the build-time "every registered
   // game needs marketing copy" check passes, but the PUBLIC_GAME_CATALOG below excludes it, so it
   // never appears on the public /games index, the feature pages, or the sitemap. Its share card is a
@@ -205,6 +238,39 @@ const MARKETING: Record<string, GameMarketing> = {
       'Odd Bird is a phone-first hidden-role deduction party game in insider testing. Everyone shares ' +
       'a secret roost and role except one odd bird - ask questions, flush them out, and keep the ' +
       'roost hidden.',
+  },
+  // Checkers is insider-only (spec 0055): like Reversi, the entry exists so the build-time "every
+  // registered game needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so
+  // it never appears on the public /games index, the feature pages, or the sitemap. Its share card is
+  // a placeholder (no public raster is generated for an insider game); it satisfies the shape check.
+  checkers: {
+    description:
+      'Checkers (English draughts) is the classic strategy game for two, built for phones. Move your ' +
+      'Violet or Amber pieces diagonally forward, jump an opponent to capture, and chain multi-jumps ' +
+      'in one turn. Reach the far row to crown a King that moves both ways. Capture every piece, or ' +
+      'leave your opponent no move, to win.',
+    howToPlay: [
+      {
+        title: 'Move and jump',
+        body: 'Slide a piece one square diagonally forward, or jump over a touching opponent into the empty square beyond to capture it.',
+      },
+      {
+        title: 'Chain and crown',
+        body: 'If a jump is open you must take it, and a landed piece keeps jumping. Reach the far row to crown a King that moves and jumps both ways.',
+      },
+      {
+        title: 'Clear the board',
+        body: 'Capture all of your opponent pieces, or block their last move, to win the game.',
+      },
+    ],
+    categories: ['Classic', 'Strategy', 'Two-player'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Checkers',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Checkers - the classic draughts strategy game | Branch Out Games',
+    seoDescription:
+      'Checkers (English draughts) is a phone-first two-player strategy game in insider testing. Jump ' +
+      'to capture, chain multi-jumps, and crown a King; capture every piece to win.',
   },
 };
 

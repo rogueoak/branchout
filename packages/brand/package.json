@@ -34,6 +34,10 @@
       "types": "./dist/oddbird.d.ts",
       "import": "./dist/oddbird.js"
     },
+    "./loneleaf": {
+      "types": "./dist/loneleaf.d.ts",
+      "import": "./dist/loneleaf.js"
+    },
     "./hero-trivia": {
       "types": "./dist/hero-trivia.d.ts",
       "import": "./dist/hero-trivia.js"
@@ -49,6 +53,10 @@
     "./reversi": {
       "types": "./dist/reversi.d.ts",
       "import": "./dist/reversi.js"
+    },
+    "./checkers": {
+      "types": "./dist/checkers.d.ts",
+      "import": "./dist/checkers.js"
     },
     "./brand": {
       "types": "./dist/brand.d.ts",

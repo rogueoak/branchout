@@ -1,0 +1,12 @@
+[
+  { "id": "everyday-001", "word": "umbrella", "category": "everyday" },
+  { "id": "everyday-002", "word": "coffee", "category": "everyday" },
+  { "id": "everyday-003", "word": "pillow", "category": "everyday" },
+  { "id": "everyday-004", "word": "ladder", "category": "everyday" },
+  { "id": "everyday-005", "word": "candle", "category": "everyday" },
+  { "id": "everyday-006", "word": "mirror", "category": "everyday" },
+  { "id": "everyday-007", "word": "bicycle", "category": "everyday" },
+  { "id": "everyday-008", "word": "wallet", "category": "everyday" },
+  { "id": "everyday-009", "word": "toothbrush", "category": "everyday" },
+  { "id": "everyday-010", "word": "blanket", "category": "everyday" }
+]
