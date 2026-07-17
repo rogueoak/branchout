@@ -30,6 +30,10 @@
       "types": "./dist/liarliar.d.ts",
       "import": "./dist/liarliar.js"
     },
+    "./oddbird": {
+      "types": "./dist/oddbird.d.ts",
+      "import": "./dist/oddbird.js"
+    },
     "./hero-trivia": {
       "types": "./dist/hero-trivia.d.ts",
       "import": "./dist/hero-trivia.js"

@@ -144,6 +144,36 @@ const MARKETING: Record<string, GameMarketing> = {
       'Teeter Tower is a phone-first physics stacking game in insider testing. Spin a googly-eyed ' +
       'piece, lock its angle, and drop it to build toward the target line across three levels.',
   },
+  'odd-bird': {
+    description:
+      'Odd Bird is a hidden-role deduction party game for phones. Everyone shares a secret roost ' +
+      'and a distinct perch at it - except one odd bird, who knows only that they are the odd bird. ' +
+      'Ask each other pointed questions out loud, expose the odd bird with the flush vote, and never ' +
+      'give the roost away. Still in insider testing.',
+    howToPlay: [
+      {
+        title: 'Check your card',
+        body: 'Everyone gets the same roost and a secret perch on their own phone - except one odd bird.',
+      },
+      {
+        title: 'Question the flock',
+        body: 'Take turns asking pointed questions out loud. Answers must fit the roost without naming it.',
+      },
+      {
+        title: 'Call the flush',
+        body: 'Vote on who the odd bird is. The flock wins by flushing them; the odd bird wins by hiding or naming the roost.',
+      },
+    ],
+    categories: ['Deduction', 'Party', 'Hidden role'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Odd Bird',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Odd Bird - a hidden-role deduction game | Branch Out Games',
+    seoDescription:
+      'Odd Bird is a phone-first hidden-role deduction party game in insider testing. Everyone shares ' +
+      'a secret roost and role except one odd bird - ask questions, flush them out, and keep the ' +
+      'roost hidden.',
+  },
 };
 
 /** A game's full marketing + display data - the registry basics plus the catalog copy. */
