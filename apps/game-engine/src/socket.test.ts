@@ -377,11 +377,19 @@ describe('game-engine websocket', () => {
       socket.close();
     });
 
-    it('rejects a join for a player not in the roster', async () => {
+    it('admits a non-roster join as a spectator (public state frame, no error)', async () => {
+      // A viewer-only member (spec 0050) is not in the handed-off roster, but it must be able to WATCH
+      // the game. Its join is admitted as a spectator: it receives the public catch-up `state` frame
+      // rather than a roster-rejection error. (In production the spec 0064 token guard - covered by the
+      // `join authentication` suite below - is what limits who reaches the engine at all.)
       const socket = await open();
-      const err = waitFor(socket, 'error');
-      join(socket, { player: 'intruder' });
-      expect((await err).message).toMatch(/roster/);
+      const state = waitFor(socket, 'state');
+      join(socket, { player: 'observer' });
+      const frame = await state;
+      expect(frame.type).toBe('state');
+      // The spectator is never seated: the roster stays the handed-off player only.
+      const players = (frame.players as { player: string }[]).map((p) => p.player).sort();
+      expect(players).toEqual(['p1']);
       socket.close();
     });
   });

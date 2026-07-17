@@ -8,13 +8,7 @@ import type {
 } from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import type { GameModule } from '@branchout/game-sdk';
-import {
-  GameEngine,
-  NoSessionError,
-  UnknownPlayerError,
-  AUTO_ADVANCE_MS,
-  MAX_SIM_TICK_FAILURES,
-} from './engine';
+import { GameEngine, NoSessionError, AUTO_ADVANCE_MS, MAX_SIM_TICK_FAILURES } from './engine';
 
 /** `join` returns the ordered catch-up frames; the authoritative `state` frame is the last one. */
 function stateFrame(frames: ServerMessage[]): StateMessage {
@@ -609,11 +603,24 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
   });
 
-  it('rejects a join for a player not in the handed-off roster', async () => {
+  it('admits a non-roster join as a SPECTATOR: public catch-up frames, no seat, no secret', async () => {
     await h.engine.start(handoff());
-    await expect(h.engine.join('r1', STUB_GAME_ID, 'intruder', 'Mallory')).rejects.toThrow(
-      UnknownPlayerError,
-    );
+
+    // A viewer-only member (spec 0050) is not in the handed-off roster (only playing seats are), yet
+    // it must be able to WATCH the running game. So its join is admitted as a spectator: it gets the
+    // public catch-up frames (the authoritative `state` frame among them) rather than being rejected.
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'observer', 'Ivy');
+    const state = stateFrame(frames);
+    expect(state.type).toBe('state');
+
+    // The spectator is NEVER seated: the roster stays exactly the two players, and no `observer`
+    // player is added or marked connected.
+    expect(state.players.map((p) => p.player).sort()).toEqual(['p1', 'p2']);
+    expect(state.players.find((p) => p.player === 'observer')).toBeUndefined();
+
+    // Hidden-info stays safe: a spectator has no roster seat, so no per-player secret is keyed to it
+    // and its catch-up carries no `private` frame.
+    expect(frames.find((f) => f.type === 'private')).toBeUndefined();
   });
 
   it('exit ends the game, reports completion, and drops the session', async () => {

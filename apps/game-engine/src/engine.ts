@@ -62,13 +62,6 @@ export class NoSessionError extends Error {
   }
 }
 
-export class UnknownPlayerError extends Error {
-  constructor(player: string) {
-    super(`player "${player}" is not in this session's roster`);
-    this.name = 'UnknownPlayerError';
-  }
-}
-
 export interface EngineDeps {
   /** Supplies each session's game runtime (a worker in production, in-process in tests), spec 0045. */
   runtimeProvider: GameRuntimeProvider;
@@ -240,7 +233,14 @@ export class GameEngine {
       const state = await this.requireState(room, game);
       const existing = state.players.find((p) => p.player === player);
       if (!existing) {
-        throw new UnknownPlayerError(player);
+        // A viewer-only member (spec 0050) is a room member but NOT in the handed-off roster (only
+        // playing seats are), so it is not a session player. Rather than refuse its join - which
+        // would strand the observer/viewer on an empty screen for the whole game - admit it as a
+        // SPECTATOR: return the PUBLIC catch-up frames (prompt/reveal/leaderboard/sim/state) so it
+        // renders the live game, but never seat it, never mutate game state, and never hand it a
+        // private payload. Hidden-info stays safe: a spectator has no roster seat, so no per-player
+        // secret is ever keyed to it, and `catchUpFrames` only ever looks up THIS id's own payload.
+        return this.catchUpFrames(state, player);
       }
       existing.connected = true;
       if (nickname) existing.nickname = nickname;
