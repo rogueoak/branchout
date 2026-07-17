@@ -10,7 +10,11 @@ vi.mock('../../lib/analytics', () => ({
   identifyPlayer: vi.fn(),
   resetAnalytics: vi.fn(),
 }));
-vi.mock('../../lib/membership', () => ({ rememberMembership: vi.fn() }));
+vi.mock('../../lib/membership', () => ({
+  rememberMembership: vi.fn(),
+  recallDeviceMode: vi.fn(() => null),
+  recallMembership: vi.fn(() => null),
+}));
 vi.mock('../../lib/room-api', () => ({
   RoomApiError: class RoomApiError extends Error {
     status: number;

@@ -14,7 +14,10 @@ vi.mock('../../lib/room-api', () => ({
   selectGame: vi.fn(),
   setMode: vi.fn(),
 }));
-vi.mock('../../lib/membership', () => ({ rememberMembership: vi.fn() }));
+vi.mock('../../lib/membership', () => ({
+  rememberMembership: vi.fn(),
+  recallDeviceMode: vi.fn(() => null),
+}));
 
 // Analytics seam (spec 0032): room_created fires on a successful create.
 vi.mock('../../lib/analytics', () => ({
@@ -54,14 +57,14 @@ describe('RoomsHome create flow', () => {
     expect(trackRoomCreated).toHaveBeenCalledTimes(1);
   });
 
-  it('pre-selects the game and skips to invite when ?game names a known game', async () => {
+  it('pre-selects the game and skips to the lobby when ?game names a known game', async () => {
     vi.mocked(roomApi.selectGame).mockResolvedValue({ ...room, selectedGame: 'liar-liar' });
     render(<RoomsHome viewer={{ signedIn: false }} initialGame="liar-liar" />);
     fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
     await waitFor(() =>
       expect(roomApi.selectGame).toHaveBeenCalledWith('ABC12', 'liar-liar', expect.anything()),
     );
-    await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=invite'));
+    await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12'));
   });
 
   it('ignores an unknown ?game and falls back to the pick step', async () => {
@@ -99,7 +102,7 @@ describe('RoomsHome create flow', () => {
     await waitFor(() =>
       expect(roomApi.selectGame).toHaveBeenCalledWith('ABC12', 'teeter-tower', expect.anything()),
     );
-    await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12?step=invite'));
+    await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12'));
   });
 
   it('does NOT autofocus the join-code input on mount (feedback 0031)', async () => {

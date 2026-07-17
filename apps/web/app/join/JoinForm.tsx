@@ -1,11 +1,12 @@
 'use client';
 
-// Join a room by code (the target of the `/join?code=ABC12` share link, spec 0006). The player
-// picks a nickname, whether they play or observe, and - as a player - interactive or remote. If the
+// Join a room by code (the target of the `/join?code=ABC12` share link, spec 0006, spec 0050). The
+// player just picks a nickname; their mode (viewer / interactive / remote) is defaulted from the
+// device and chosen in the lobby's "Your mode" picker, so joining stays one tap of friction. If the
 // browser has no session yet, it mints an anonymous one for this code before joining, so an invited
 // friend needs no account.
 
-import { Button, Input, Label, buttonVariants, inputVariants } from '@rogueoak/canopy';
+import { Button, Input, Label, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 import { trackRoomJoined } from '../../lib/analytics';
@@ -14,14 +15,8 @@ import { TopNav } from '../../components/TopNav';
 import type { Viewer } from '../../lib/session';
 import { APEX_SURFACE, type Surface } from '../../lib/surface';
 import { defaultMode } from '../../lib/default-mode';
-import { rememberMembership } from '../../lib/membership';
-import {
-  RoomApiError,
-  joinRoom,
-  startAnonymousSession,
-  type Mode,
-  type Role,
-} from '../../lib/room-api';
+import { recallDeviceMode, recallMembership, rememberMembership } from '../../lib/membership';
+import { RoomApiError, joinRoom, startAnonymousSession, type Mode } from '../../lib/room-api';
 
 interface JoinFormProps {
   initialCode: string;
@@ -36,19 +31,27 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
   const router = useRouter();
   const [code, setCode] = useState(initialCode);
   const [nickname, setNickname] = useState('');
-  const [role, setRole] = useState<Role>('player');
   // Start on a stable, SSR-safe default so the server and first client render agree (no hydration
-  // mismatch), then refine to the device default (a phone -> remote, a TV -> interactive) once
-  // mounted. Always overridable by the player.
+  // mismatch), then refine to the device default once mounted. The joiner does not pick a mode here
+  // (that is the lobby's "Your mode" picker); this is only the mode the join call requests, which the
+  // server may clamp to `viewer` if the game is already full, and which the player can change later.
   const [mode, setMode] = useState<Mode>('interactive');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Apply the device-aware default after mount, where `navigator` is available (it is not during
-  // SSR). Runs once; a later user choice sticks because this effect does not re-run.
+  // Apply the device-aware default after mount, where `navigator`/storage are available (not during
+  // SSR). A second join from this device (an extra tab / rejoin) defaults to `viewer`; the roster is
+  // unknown pre-join, so the "no interactive member yet" rule is left to the lobby. Runs once.
   useEffect(() => {
-    setMode(defaultMode(navigator.userAgent));
-  }, []);
+    setMode(
+      defaultMode({
+        previous: recallDeviceMode(),
+        hasInteractive: true,
+        rejoining: recallMembership(initialCode) !== null,
+        userAgent: navigator.userAgent,
+      }),
+    );
+  }, [initialCode]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,12 +60,7 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
     setError(null);
     setSubmitting(true);
 
-    const attempt = () =>
-      joinRoom(trimmedCode, {
-        role,
-        nickname: trimmedName,
-        ...(role === 'player' ? { mode } : {}),
-      });
+    const attempt = () => joinRoom(trimmedCode, { nickname: trimmedName, mode });
 
     try {
       let result;
@@ -80,8 +78,7 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
       const { room, playerId } = result;
       trackRoomJoined();
       rememberMembership(trimmedCode, {
-        role,
-        ...(role === 'player' ? { mode } : {}),
+        mode,
         nickname: trimmedName,
         // The public engine identity join returned, so this device can connect to the engine.
         player: playerId,
@@ -135,33 +132,10 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="role">Join as</Label>
-          <select
-            id="role"
-            className={inputVariants()}
-            value={role}
-            onChange={(event) => setRole(event.target.value as Role)}
-          >
-            <option value="player">Player</option>
-            <option value="observer">Observer (watch only)</option>
-          </select>
-        </div>
-
-        {role === 'player' ? (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="mode">Mode</Label>
-            <select
-              id="mode"
-              className={inputVariants()}
-              value={mode}
-              onChange={(event) => setMode(event.target.value as Mode)}
-            >
-              <option value="interactive">Interactive (question + controller)</option>
-              <option value="remote">Remote (controller only)</option>
-            </select>
-          </div>
-        ) : null}
+        <p className="text-body-sm text-text-muted">
+          Choose how to play - watch, play on this screen, or use this device as a controller - once
+          you are in the room.
+        </p>
 
         {error ? (
           <p role="alert" className="text-body-sm text-danger">

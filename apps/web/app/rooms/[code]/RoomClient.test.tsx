@@ -101,7 +101,6 @@ const roomAt = (status: string): RoomView => ({
 
 function nonHostMembership(status: string): Membership {
   return {
-    role: 'player',
     isHost: false,
     mode: 'remote',
     nickname: 'Bob',
@@ -112,7 +111,6 @@ function nonHostMembership(status: string): Membership {
 
 function hostMembership(status: string): Membership {
   return {
-    role: 'player',
     isHost: true,
     mode: 'interactive',
     nickname: 'Ada',
@@ -174,7 +172,6 @@ describe('RoomClient resume when the tab forgot its membership (feedback 0021)',
     hoisted.resumeRoom.mockResolvedValue({
       room: roomAt('lobby'),
       membership: {
-        role: 'player',
         isHost: true,
         mode: 'interactive',
         nickname: 'Ada',
@@ -265,15 +262,14 @@ describe('RoomClient host setup wizard (spec 0029)', () => {
     expect(await screen.findByRole('button', { name: /pick teeter tower/i })).toBeDefined();
   });
 
-  it('shows the invite step (room code) to a host at ?step=invite', async () => {
+  it('lands a host in the lobby for a stale ?step=invite (the invite step was removed)', async () => {
     hoisted.recalled = hostMembership('lobby');
     getRoom.mockResolvedValue(roomAt('lobby'));
 
     render(<RoomClient code="ABC12" viewer={{ signedIn: false }} initialStep="invite" />);
 
-    expect(await screen.findByRole('heading', { name: /invite your friends/i })).toBeDefined();
-    // The invite affordance shows the room code (as a join link).
-    expect(screen.getByRole('link', { name: 'ABC12' })).toBeDefined();
+    // The old standalone invite step is gone; the share link lives in the lobby now.
+    expect(await screen.findByText('LOBBY_VIEW')).toBeDefined();
   });
 
   it('ignores the setup step for a non-host - it goes straight to the lobby', async () => {

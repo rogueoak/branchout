@@ -21,8 +21,6 @@ test('a host and a second player play a full one-round Liar Liar game', async ({
     const code = host.url().match(/\/rooms\/([A-Z2-9]{5})/)?.[1];
     if (!code) throw new Error(`could not read room code from ${host.url()}`);
     await host.getByRole('button', { name: /pick liar liar/i }).click();
-    await host.waitForURL(new RegExp(`/rooms/${code}\\?step=invite`));
-    await host.getByRole('button', { name: /continue to room/i }).click();
     await host.waitForURL(new RegExp(`/rooms/${code}(?![?/])`));
 
     await joinRoom(player, code, 'Player Two');

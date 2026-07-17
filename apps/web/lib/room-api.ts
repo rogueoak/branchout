@@ -8,12 +8,23 @@ import { V1_PREFIX } from '@branchout/protocol';
 
 const CONTROL_PLANE_URL = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? 'http://localhost:4000';
 
-/** A member's role in a room. The host is a player too - the `isHost` flag on {@link RoomMember}
- * carries the host privilege, not a role. */
-export type Role = 'player' | 'observer';
+/**
+ * A member's mode (spec 0050): `viewer` watches only (a shared screen), `interactive` plays with the
+ * game + controller on one screen, `remote` plays with a controller only. `interactive`/`remote` are
+ * the playing modes; `viewer`/`interactive` are the display (screen-capable) modes. Every member has
+ * one. The `isHost` flag on {@link RoomMember} carries the host privilege, independent of mode.
+ */
+export type Mode = 'viewer' | 'interactive' | 'remote';
 
-/** A player's mode; observers have none. The host is a player, so it picks a mode too. */
-export type Mode = 'interactive' | 'remote';
+/** The playing modes that count toward a game's player limits and fill the engine roster. */
+export function isPlayingMode(mode: Mode): boolean {
+  return mode === 'interactive' || mode === 'remote';
+}
+
+/** The display modes: a device that can show the game on a screen (a shared viewer or interactive). */
+export function isDisplayMode(mode: Mode): boolean {
+  return mode === 'viewer' || mode === 'interactive';
+}
 
 /** A room as the control-plane returns it. */
 export interface RoomView {
@@ -31,10 +42,10 @@ export interface RoomMember {
   /** The member's public engine identity (present on every row; the host reads its own from here). */
   playerId: string;
   accountId?: string;
-  role: Role;
-  /** True for the room's host: a player that also holds the admin powers (controls, kick). */
+  /** True for the room's host: a member that also holds the admin powers (controls, kick). */
   isHost: boolean;
-  mode?: Mode;
+  /** This member's mode (spec 0050): viewer, interactive, or remote. Always set. */
+  mode: Mode;
   nickname: string;
   connected: boolean;
 }
@@ -131,10 +142,10 @@ export async function createRoom(): Promise<JoinResult> {
   return { room, playerId };
 }
 
-/** Join a room by code as a player or observer, with a per-game nickname and (for a player) mode. */
+/** Join a room by code with a per-game nickname and mode (viewer / interactive / remote). */
 export async function joinRoom(
   code: string,
-  input: { role: Role; nickname: string; mode?: Mode },
+  input: { nickname: string; mode?: Mode },
 ): Promise<JoinResult> {
   const { room, playerId } = await request<JoinResult>(`/rooms/${encodeURIComponent(code)}/join`, {
     method: 'POST',
@@ -211,9 +222,8 @@ export async function getRoom(code: string): Promise<RoomView> {
 export interface ResumeResult {
   room: RoomView;
   membership: {
-    role: Role;
     isHost: boolean;
-    mode?: Mode;
+    mode: Mode;
     nickname: string;
     player: string;
   };

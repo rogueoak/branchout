@@ -61,7 +61,6 @@ function renderStage(props: Partial<Parameters<typeof GameStage>[0]>) {
       me="p1"
       game="trivia"
       code="ABC12"
-      role="player"
       mode="interactive"
       isHost={false}
       onMove={noop}
@@ -72,34 +71,34 @@ function renderStage(props: Partial<Parameters<typeof GameStage>[0]>) {
   );
 }
 
-describe('GameStage layout by mode and role', () => {
+describe('GameStage layout by mode', () => {
   it('interactive player sees the viewer and the controller', () => {
-    renderStage({ role: 'player', mode: 'interactive' });
+    renderStage({ mode: 'interactive' });
     expect(screen.getByLabelText('Game viewer')).toBeDefined();
     expect(screen.getByLabelText('Your controller')).toBeDefined();
   });
 
   it('remote player sees the controller only', () => {
-    renderStage({ role: 'player', mode: 'remote' });
+    renderStage({ mode: 'remote' });
     expect(screen.queryByLabelText('Game viewer')).toBeNull();
     expect(screen.getByLabelText('Your controller')).toBeDefined();
   });
 
-  it('observer sees the viewer only', () => {
-    renderStage({ role: 'observer', mode: undefined });
+  it('viewer mode sees the game only', () => {
+    renderStage({ mode: 'viewer' });
     expect(screen.getByLabelText('Game viewer')).toBeDefined();
     expect(screen.queryByLabelText('Your controller')).toBeNull();
   });
 
   it('an interactive host sees the viewer, the controller, and the control bar', () => {
-    renderStage({ role: 'player', mode: 'interactive', isHost: true });
+    renderStage({ mode: 'interactive', isHost: true });
     expect(screen.getByLabelText('Game viewer')).toBeDefined();
     expect(screen.getByLabelText('Your controller')).toBeDefined();
     expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
   });
 
   it('a remote host sees the controller and the control bar but no viewer', () => {
-    renderStage({ role: 'player', mode: 'remote', isHost: true });
+    renderStage({ mode: 'remote', isHost: true });
     expect(screen.queryByLabelText('Game viewer')).toBeNull();
     expect(screen.getByLabelText('Your controller')).toBeDefined();
     // The host plays: the answer UI is present on the controller.
@@ -173,7 +172,7 @@ describe('GameStage per-phase rendering', () => {
       ],
     });
     // me is p1, who answered correctly, so no dispute button appears.
-    renderStage({ state, role: 'player', mode: 'remote' });
+    renderStage({ state, mode: 'remote' });
     expect(screen.queryByRole('button', { name: 'Dispute' })).toBeNull();
   });
 
@@ -239,7 +238,7 @@ describe('GameStage per-phase rendering', () => {
         },
       ],
     });
-    renderStage({ state, role: 'player', mode: 'remote' });
+    renderStage({ state, mode: 'remote' });
     expect(screen.getByText(/Nothing for you to vote on/)).toBeDefined();
   });
 
@@ -265,7 +264,7 @@ describe('GameStage per-phase rendering', () => {
         { player: 'p2', nickname: 'Bo', score: 50, rank: 2 },
       ],
     });
-    renderStage({ state, role: 'player', mode: 'interactive', isHost: true });
+    renderStage({ state, mode: 'interactive', isHost: true });
     expect(screen.getByText(/Final results/)).toBeDefined();
     // Rank 1 earns three stars, rank 2 earns two, both labelled for assistive tech.
     expect(screen.getByLabelText('3 stars')).toBeDefined();
@@ -282,7 +281,7 @@ describe('GameStage connection, paused, and error surfaces', () => {
 
   it('shows a host-aware paused banner and flips the host Pause control to Resume', () => {
     const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
-    renderStage({ state, role: 'player', mode: 'interactive', isHost: true });
+    renderStage({ state, mode: 'interactive', isHost: true });
     // One banner at the stage level, host-aware (the viewer pane no longer carries its own).
     expect(screen.getByText(/resume when you are ready/i)).toBeDefined();
     expect(screen.getByRole('button', { name: 'Resume' })).toBeDefined();
@@ -291,7 +290,7 @@ describe('GameStage connection, paused, and error surfaces', () => {
   it('tells a non-host viewer the game is paused waiting on the host (not that it ended)', () => {
     // A host disconnect also sets paused; the copy must not read as a deliberate, permanent stop.
     const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
-    renderStage({ state, role: 'observer', mode: undefined, isHost: false });
+    renderStage({ state, mode: 'viewer', isHost: false });
     expect(screen.getByText(/waiting for the host/i)).toBeDefined();
   });
 
@@ -311,7 +310,7 @@ describe('GameStage remote-only player sees results without a viewer', () => {
         { player: 'p2', nickname: 'Bo', score: 50, rank: 2 },
       ],
     });
-    renderStage({ state, role: 'player', mode: 'remote' });
+    renderStage({ state, mode: 'remote' });
     expect(screen.queryByLabelText('Game viewer')).toBeNull();
     const controller = screen.getByLabelText('Your controller');
     within(controller).getByLabelText('Leaderboard');
@@ -319,7 +318,7 @@ describe('GameStage remote-only player sees results without a viewer', () => {
   });
 
   it('shows the question on the controller so a remote-only player does not answer blind', () => {
-    renderStage({ role: 'player', mode: 'remote' });
+    renderStage({ mode: 'remote' });
     const controller = screen.getByLabelText('Your controller');
     // No viewer beside them, so the question must live on the controller itself.
     within(controller).getByText('What is H2O?');
@@ -327,7 +326,7 @@ describe('GameStage remote-only player sees results without a viewer', () => {
   });
 
   it('does not duplicate the question on the controller for an interactive player', () => {
-    renderStage({ role: 'player', mode: 'interactive' });
+    renderStage({ mode: 'interactive' });
     // The interactive player reads the question from the viewer; the controller stays answer-only.
     const controller = screen.getByLabelText('Your controller');
     expect(within(controller).queryByText('What is H2O?')).toBeNull();
@@ -336,7 +335,7 @@ describe('GameStage remote-only player sees results without a viewer', () => {
 
   it('shows a paused banner to a remote-only player who has no viewer', () => {
     const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
-    renderStage({ state, role: 'player', mode: 'remote' });
+    renderStage({ state, mode: 'remote' });
     expect(screen.getByText(/waiting for the host/i)).toBeDefined();
   });
 
@@ -345,7 +344,7 @@ describe('GameStage remote-only player sees results without a viewer', () => {
       phase: 'complete',
       standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
     });
-    renderStage({ state, role: 'player', mode: 'remote' });
+    renderStage({ state, mode: 'remote' });
     const controller = screen.getByLabelText('Your controller');
     within(controller).getByText(/Final results/);
     within(controller).getByLabelText('3 stars');
@@ -356,7 +355,7 @@ describe('GameStage remote-only player sees results without a viewer', () => {
       phase: 'leaderboard',
       standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
     });
-    renderStage({ state, role: 'player', mode: 'remote', isHost: true });
+    renderStage({ state, mode: 'remote', isHost: true });
     const controller = screen.getByLabelText('Your controller');
     within(controller).getByText(/Tap Next when you are ready/);
     expect(within(controller).queryByText(/Waiting for the host/)).toBeNull();
@@ -393,19 +392,18 @@ describe('GameStage single-surface game (Teeter Tower)', () => {
   }
 
   it('renders only the viewer (no separate controller) for a remote player', () => {
-    renderStage({ game: 'teeter-tower', state: teeterState('p1'), role: 'player', mode: 'remote' });
+    renderStage({ game: 'teeter-tower', state: teeterState('p1'), mode: 'remote' });
     // The single surface is the viewer, shown even though a remote player normally sees no viewer.
     expect(screen.getByLabelText('Game viewer')).toBeDefined();
     // No separate remote controller pane (Teeter's Remote is a null no-op and is never rendered).
     expect(screen.queryByLabelText('Your controller')).toBeNull();
   });
 
-  it('shows the viewer for an observer without any controller', () => {
+  it('shows the game for a viewer without any controller', () => {
     renderStage({
       game: 'teeter-tower',
       state: teeterState('p1'),
-      role: 'observer',
-      mode: undefined,
+      mode: 'viewer',
     });
     expect(screen.getByLabelText('Game viewer')).toBeDefined();
     expect(screen.queryByLabelText('Your controller')).toBeNull();
@@ -413,7 +411,7 @@ describe('GameStage single-surface game (Teeter Tower)', () => {
 
   it('leaves the standard viewer + remote split intact for a non-single-surface game', () => {
     // Trivia is not single-surface: an interactive player still gets both panes.
-    renderStage({ game: 'trivia', role: 'player', mode: 'interactive' });
+    renderStage({ game: 'trivia', mode: 'interactive' });
     expect(screen.getByLabelText('Game viewer')).toBeDefined();
     expect(screen.getByLabelText('Your controller')).toBeDefined();
   });
@@ -421,7 +419,7 @@ describe('GameStage single-surface game (Teeter Tower)', () => {
 
 describe('GameStage host controls emphasis', () => {
   it('labels the host control bar and de-emphasizes Next while a question is answerable', () => {
-    renderStage({ role: 'player', mode: 'remote', isHost: true });
+    renderStage({ mode: 'remote', isHost: true });
     expect(screen.getByText('Host controls')).toBeDefined();
     // The player's answer Submit stays the clear primary; the advance control is an outline button.
     const next = screen.getByRole('button', { name: 'Next' });
@@ -435,7 +433,6 @@ describe('GameStage host controls emphasis', () => {
         me="p1"
         game="trivia"
         code="ABC12"
-        role="player"
         mode="interactive"
         isHost={false}
         onMove={noop}
@@ -451,7 +448,6 @@ describe('GameStage host controls emphasis', () => {
         me="p1"
         game="trivia"
         code="ABC12"
-        role="player"
         mode="interactive"
         isHost={true}
         onMove={noop}
@@ -475,7 +471,6 @@ describe('GameStage scroll-to-question', () => {
         state={state}
         me="p1"
         game="trivia"
-        role="player"
         mode="remote"
         isHost={false}
         onMove={noop}
@@ -538,7 +533,7 @@ describe('GameStage scroll-to-question', () => {
 
   it('does not scroll a viewer-only screen (no controller below the fold)', () => {
     // An observer sees only the viewer, so there is nothing to scroll past.
-    render(stage(round(1), { role: 'observer', mode: undefined }));
+    render(stage(round(1), { mode: 'viewer' }));
     expect(scrollTo).not.toHaveBeenCalled();
   });
 });

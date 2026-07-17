@@ -24,6 +24,11 @@ function asString(body: unknown, key: string): string {
   return '';
 }
 
+/** Parse a raw mode string to a known {@link Mode}, or `undefined` so the service applies its default. */
+function parseMode(raw: string): Mode | undefined {
+  return raw === 'viewer' || raw === 'interactive' || raw === 'remote' ? raw : undefined;
+}
+
 /** Map a RoomError code to an HTTP status. Authorization and affordability are distinct codes. */
 function statusFor(code: RoomError['code']): number {
   switch (code) {
@@ -39,6 +44,8 @@ function statusFor(code: RoomError['code']): number {
       return 402;
     case 'no_game':
     case 'no_viewer':
+    case 'too_few_players':
+    case 'room_full':
     case 'invalid':
       return 409;
     case 'engine':
@@ -92,18 +99,13 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
     }),
   );
 
-  // Join a room by code as a player or observer, with a per-game nickname.
+  // Join a room by code with a per-game nickname and mode (viewer / interactive / remote).
   app.post('/rooms/:code/join', async (request, reply) =>
     withSession(request, reply, async (session) => {
       const { code } = request.params as { code: string };
-      const roleRaw = asString(request.body, 'role');
-      const role = roleRaw === 'observer' ? 'observer' : 'player';
-      const modeRaw = asString(request.body, 'mode');
       const { room, playerId } = await rooms.join(code, session, {
-        role,
         nickname: asString(request.body, 'nickname'),
-        mode:
-          modeRaw === 'remote' ? 'remote' : modeRaw === 'interactive' ? 'interactive' : undefined,
+        mode: parseMode(asString(request.body, 'mode')),
       });
       // Return the caller's public playerId so a non-host device can `join` the engine with it.
       // `sessionId` (the httpOnly cookie value) is never echoed to JS.
@@ -111,11 +113,14 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
     }),
   );
 
-  // A player switches interactive/remote mode.
+  // A member switches mode (viewer / interactive / remote).
   app.patch('/rooms/:code/mode', async (request, reply) =>
     withSession(request, reply, async (session) => {
       const { code } = request.params as { code: string };
-      const mode = asString(request.body, 'mode') as Mode;
+      const mode = parseMode(asString(request.body, 'mode'));
+      if (!mode) {
+        return reply.code(409).send({ error: 'Choose a valid mode.' });
+      }
       await rooms.setMode(code, session, mode);
       return reply.code(200).send({ ok: true });
     }),

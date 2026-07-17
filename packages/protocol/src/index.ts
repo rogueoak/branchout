@@ -2,6 +2,10 @@
 // engine intake subpaths both ends of the report seam share.
 export { API_VERSION, V1_PREFIX, ENGINE_ROUNDS_SUBPATH, ENGINE_COMPLETE_SUBPATH } from './api';
 
+// Per-game player limits (spec 0050) - shared by the web lobby and the control-plane so the mode
+// picker's clamp and the server's join enforcement use one source of truth.
+export { PLAYER_LIMITS, DEFAULT_PLAYER_LIMITS, playerLimits, type PlayerLimits } from './games';
+
 // Shared domain types and version stamp.
 export {
   PROTOCOL_VERSION,
