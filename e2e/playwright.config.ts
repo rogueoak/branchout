@@ -45,6 +45,9 @@ export default defineConfig({
         // Teeter Tower: the insider-only live physics game - aim + drop loop and the picker gate
         // (spec 0044, feedback 0023).
         'teeter-tower.spec.ts',
+        // Zinger: the insider-only funny-answer party game - answer, face-off, vote loop and the
+        // picker gate (spec 0053). Runs at a 360px viewport in the spec per rule 1.
+        'zinger.spec.ts',
         // Game library + in-game help sheet (spec 0051): /games search narrows, and the always-
         // present help icon opens the rules sheet over a live game. Runs on desktop Chromium (so the
         // solo host defaults to interactive), pinned to a 360px viewport in the spec per rule 1.

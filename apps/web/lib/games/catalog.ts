@@ -144,6 +144,39 @@ const MARKETING: Record<string, GameMarketing> = {
       'Teeter Tower is a phone-first physics stacking game in insider testing. Spin a googly-eyed ' +
       'piece, lock its angle, and drop it to build toward the target line across three levels.',
   },
+  // Zinger is insider-only (spec 0053): the entry exists so the build-time "every registered game
+  // needs marketing copy" check passes, but PUBLIC_GAME_CATALOG excludes it, so it never appears on
+  // the public /games index, the feature pages, or the sitemap. Its share card is a placeholder (no
+  // public raster is generated for an insider game); it satisfies the shape check and is never
+  // surfaced publicly.
+  zinger: {
+    description:
+      'Zinger is a funny-answer party game for phones. Everyone answers a silly setup with a short ' +
+      'zinger, then two answers are pitted head to head in a face-off and the room votes on the ' +
+      'funnier one. Win votes to score, land a clean sweep for a bonus. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Answer the setup',
+        body: 'A short, silly setup appears. Type your funniest zinger before the timer runs out.',
+      },
+      {
+        title: 'Watch the face-off',
+        body: 'Two zingers are pitted head to head, with the authors hidden until the vote closes.',
+      },
+      {
+        title: 'Vote and score',
+        body: 'Everyone who did not write either votes for the funnier zinger; the winner scores.',
+      },
+    ],
+    categories: ['Party', 'Word', 'Wit'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Zinger',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Zinger - a funny-answer party game | Branch Out Games',
+    seoDescription:
+      'Zinger is a phone-first funny-answer party game in insider testing. Answer a silly setup, ' +
+      'watch two zingers face off, and vote on whose landed hardest.',
+  },
 };
 
 /** A game's full marketing + display data - the registry basics plus the catalog copy. */

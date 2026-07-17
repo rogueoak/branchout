@@ -11,6 +11,7 @@ import { createFsAssetLoaderFactory, type GameModule, type GamePlugin } from '@b
 import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { zingerPlugin } from '@branchout/game-zinger';
 import type {
   CallMessage,
   EngineToWorker,
@@ -24,7 +25,12 @@ import type {
 // worker loader does not resolve a relative *value* import without an extension (a bare/package import
 // resolves fine). So the list is intentionally duplicated with index.ts's boot list - keep the two in
 // sync when adding a game (index.ts records the manifest for handoff validation; this builds it).
-const PLUGINS: readonly GamePlugin[] = [triviaPlugin, liarLiarPlugin, teeterTowerPlugin];
+const PLUGINS: readonly GamePlugin[] = [
+  triviaPlugin,
+  liarLiarPlugin,
+  teeterTowerPlugin,
+  zingerPlugin,
+];
 
 /** A seeded, deterministic [0,1) rng (Mulberry32), so a build is reproducible from the init seed. */
 function seededRng(seed: number): () => number {

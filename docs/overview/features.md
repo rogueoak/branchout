@@ -159,6 +159,18 @@ What the product does for users, grouped by area. Each capability maps to one or
       `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
       catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
       client exposes the local player's secret as `state.private` for a game's UI module.
+- [~] Fourth game (insider-only) - Zinger: a funny-answer party game on the round-based decision
+      lifecycle (spec `0053`). Each round shows a short, silly setup ("the setup"); every player types
+      a short funny answer ("a zinger"). At reveal the engine pits two players' zingers head to head
+      ("the face-off") and everyone who did not write either votes for the funnier one; the winner
+      scores one point per vote, with a bonus for a unanimous vote ("a clean sweep") and no points on
+      a tie. It needs no new engine capability (it reuses the bluffing game's collect -> reveal ->
+      vote -> resolve shape) and no secret channel (a player only needs to see their own setup, and
+      seeing another's is not a cheat). Insider-only, gated by surface like Teeter Tower
+      (`visibility: 'insider'`). A small sample bank of clean, ASCII setups ships under the package
+      `data/` with a loader + structural validator; the full bank would later live in the private data
+      repo (spec `0041`). Registered in the engine boot (and the worker's plugin list) and the web
+      registry/catalog/library alongside the other games (`@branchout/game-zinger`).
 
 ## Web
 
