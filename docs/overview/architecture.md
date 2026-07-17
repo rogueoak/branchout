@@ -14,8 +14,12 @@ packages/
   theme          Branch out brand theme built on @rogueoak/roots (the brandable API)
   brand          logo, icon, and favicon assets (from assets/)
   game-sdk         the harness<->game plugin contract + dependency injection + test helpers
+  game-board       game-AGNOSTIC board harness (serializable Grid, 8 compass rays, two-seat Turns);
+                   the board-game family (Reversi now, Checkers/Chess later) depends on THIS, not on
+                   any one game's package
   games/trivia     the Trivia game as an independent @branchout/game-sdk plugin package
   games/liar-liar  the Liar Liar bluffing game as an independent plugin package (engine logic)
+  games/reversi    the Reversi disc-flip board game; consumes @branchout/game-board for its grid/turns
   protocol         shared TypeScript types + contracts (control-plane <-> engine <-> web)
   service-runtime  shared Fastify-service helpers (env parsing, Redis client)
   config           shared tsconfig, eslint, prettier

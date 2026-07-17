@@ -12,6 +12,7 @@ import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { reversiPlugin } from '@branchout/game-reversi';
 import type {
   CallMessage,
   EngineToWorker,
@@ -30,6 +31,7 @@ const PLUGINS: readonly GamePlugin[] = [
   liarLiarPlugin,
   loneLeafPlugin,
   teeterTowerPlugin,
+  reversiPlugin,
 ];
 
 /** A seeded, deterministic [0,1) rng (Mulberry32), so a build is reproducible from the init seed. */
