@@ -16,6 +16,12 @@ export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting' | 'closed'
 
 /** One immutable snapshot of the game the UI renders. */
 export interface GameState {
+  /**
+   * This device's own player id, or null when unknown (a reducer constructed without one, e.g. some
+   * unit tests). Used only to reject a mis-targeted `private` frame (spec 0052) - defense-in-depth so
+   * a replayed or misrouted secret never paints another player's payload into this device's UI.
+   */
+  player: string | null;
   connection: ConnectionStatus;
   /** True once at least one `state` frame has arrived (we know the real phase). */
   joined: boolean;
@@ -68,8 +74,9 @@ export interface GameState {
   error: string | null;
 }
 
-export function initialGameState(): GameState {
+export function initialGameState(player: string | null = null): GameState {
   return {
+    player,
     connection: 'connecting',
     joined: false,
     phase: 'configuring',
@@ -153,8 +160,13 @@ export function reduceGameState(
       return { ...state, standings: frame.standings };
 
     case 'private':
-      // The frame is already targeted to this device (spec 0052): store this player's own secret,
-      // replacing any prior one. A reconnect restores it from the catch-up frame the same way.
+      // The frame is already targeted to this device server-side (spec 0052), so normally it just
+      // stores this player's own secret, replacing any prior one; a reconnect restores it from the
+      // catch-up frame the same way. Defense-in-depth: if the frame names a DIFFERENT recipient than
+      // the local player (a mis-targeted or replayed frame), ignore it so another player's secret can
+      // never paint into this device's UI. When the local player is unknown, fall back to trusting the
+      // server's targeting (this only relaxes the extra check, not the server-side guarantee).
+      if (state.player !== null && frame.player !== state.player) return state;
       return { ...state, private: frame.private };
 
     case 'move_rejected':

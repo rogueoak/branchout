@@ -105,9 +105,18 @@ These three cover every hidden-info game in the wave.
 
 - After a lifecycle call returns a result carrying `private`, the main thread (which owns the
   sockets; the module runs in a worker and returns plain serializable data) iterates the map and, for
-  each playerId with a live connection, sends a `PrivateMessage` to that player's socket(s) via the
-  same per-connection send `move_rejected` uses (`apps/game-engine/src/socket.ts`, the player->
-  connection binding). It is never published to the pub/sub broadcast channel.
+  each playerId with a live connection, publishes a `PrivateMessage` to that player's own **per-player
+  Redis pub/sub channel** `private:{room}:{game}:{player}`, which only that player's connection(s)
+  subscribe to. It is never published to the broadcast `stream:` channel. NOTE: delivery landed as
+  this dedicated per-player pub/sub channel, not the `move_rejected` per-connection socket send this
+  Approach first sketched: a deal-time or tick secret has no originating socket and must fan out
+  across engine instances exactly like `stream:`, which the socket send cannot do. Catch-up still
+  mirrors `move_rejected` (a targeted reply to the joining connection).
+- Secrecy is bounded by engine-join authentication. The `private:{room}:{game}:{player}` channel keys
+  on the `player` id the `join` frame self-asserts, and that join is not yet authenticated (playerIds
+  are public), so a device can join as another player and subscribe to their channel. The seam ships
+  with a defense-in-depth recipient check in the web reducer and a documented contingency (feedback
+  `0033`); airtight secrecy is a tracked follow-up gated on authenticating the join identity.
 - The latest per-player payload is stored in `SessionState` (e.g. `privatePayloads: Record<string,
   unknown>` scoped to the current round). On (re)join, the join/catch-up path
   (`engine.ts` `catchUpFrames`) sends the joining player *their* stored payload (if any) as a

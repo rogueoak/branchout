@@ -726,13 +726,17 @@ describe('per-player private payloads (spec 0052)', () => {
 
     const p1Privates = tap.p1.filter((f) => f.type === 'private');
     const p2Privates = tap.p2.filter((f) => f.type === 'private');
-    // A gets ITS secret, B gets ITS secret...
+    // A gets ITS secret, B gets ITS secret - dealt for round 2, the round both taps were live for.
     expect(p1Privates).toHaveLength(1);
     expect(p1Privates[0]).toMatchObject({ player: 'p1', private: 'r2-secretA', round: 2 });
     expect(p2Privates).toHaveLength(1);
     expect(p2Privates[0]).toMatchObject({ player: 'p2', private: 'r2-secretB', round: 2 });
-    // ...and A NEVER sees B's secret, nor B A's - the load-bearing secrecy guarantee.
+    // ...and for that SAME round, A's channel carried A's secret yet NEVER B's, and vice versa - the
+    // load-bearing secrecy guarantee proven against the cross-secret that was live at the same time
+    // (not merely a later round the other channel never carried).
+    expect(JSON.stringify(tap.p1)).toContain('r2-secretA');
     expect(JSON.stringify(tap.p1)).not.toContain('r2-secretB');
+    expect(JSON.stringify(tap.p2)).toContain('r2-secretB');
     expect(JSON.stringify(tap.p2)).not.toContain('r2-secretA');
     // Nothing private ever lands on the broadcast channel every device reads.
     expect(tap.broadcast.some((f) => f.type === 'private')).toBe(false);
@@ -758,32 +762,54 @@ describe('per-player private payloads (spec 0052)', () => {
     ]);
   });
 
-  it('clears the prior round s secrets when a new round starts', async () => {
-    await h.engine.start(secretHandoff());
+  it('clears the prior round s secrets when a new round starts, dropping a key not re-dealt', async () => {
+    // Round 2 deliberately deals a DIFFERENT key set (only p1) so the assertion distinguishes a real
+    // reset from a merge: if the engine merged over round 1's map, p2's stale 'secretB' would survive.
+    await h.engine.start(
+      handoff({
+        config: {
+          rounds: 2,
+          secrets: ['blue', 'green'],
+          privates: [{ p1: 'secretA', p2: 'secretB' }, { p1: 'r2-secretA' }],
+        },
+      }),
+    );
     await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
     await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.privatePayloads).toEqual({
       p1: 'secretA',
       p2: 'secretB',
     });
-    // Advancing into round 2 replaces round 1's map - no stale secret survives into the new round.
+    // Advancing into round 2 replaces round 1's map - the dropped p2 key is gone, not merged over.
     await playRoundNoDispute(h.engine, 'r1');
     await h.engine.control('r1', STUB_GAME_ID, 'advance');
-    expect((await h.engine.getState('r1', STUB_GAME_ID))?.privatePayloads).toEqual({
-      p1: 'r2-secretA',
-      p2: 'r2-secretB',
-    });
+    const payloads = (await h.engine.getState('r1', STUB_GAME_ID))?.privatePayloads;
+    expect(payloads).toEqual({ p1: 'r2-secretA' });
+    expect(payloads).not.toHaveProperty('p2');
   });
 
-  it('does not deliver a private frame to a disconnected player but persists it for catch-up', async () => {
+  it('suppresses a fresh deal to a player that joined then disconnected, yet persists it for catch-up', async () => {
     await h.engine.start(secretHandoff());
-    // Nobody connected when round 1 dealt: the payload is stored, not sent.
+    // p1 joins (getting round 1's secret) and then disconnects - so it has a live-then-dead history,
+    // the exact branch the `target.connected` guard protects (not the never-connected case).
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p1');
+
+    // Subscribe AFTER the disconnect, then advance to round 2 so a NEW private is dealt to p1.
     const tap = taps();
     await tap.subscribe();
+    await playRoundNoDispute(h.engine, 'r1');
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> round 2 deals r2 secrets
+
+    // No round-2 private frame reached the disconnected p1's channel (delivery is suppressed)...
     expect(tap.p1.filter((f) => f.type === 'private')).toHaveLength(0);
-    // It is still recoverable on join.
-    const frames = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
-    expect(frames.some((f) => f.type === 'private')).toBe(true);
+    // ...but the updated secret WAS persisted, so a later re-join's catch-up recovers the fresh one.
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.privatePayloads?.p1).toBe('r2-secretA');
+    const again = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    expect(again.filter((f) => f.type === 'private')).toMatchObject([
+      { player: 'p1', private: 'r2-secretA', round: 2 },
+    ]);
   });
 });
 

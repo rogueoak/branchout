@@ -232,6 +232,72 @@ describe('game-engine websocket', () => {
     player.close();
   });
 
+  it('routes each player s private secret to its own socket alone, never the other s (spec 0052)', async () => {
+    // The true end-to-end per-connection secrecy proof: two REAL sockets, a stub dealing a distinct
+    // secret to each of p1/p2. It exercises the socket-layer wiring (each connection subscribes to
+    // privateChannel(room, game, its-own-player)) that the engine.test.ts pubsub taps cannot reach - a
+    // bug here (wrong id, a connection on another's private channel, a dropped subscription) would leak
+    // A's secret onto B's device and only THIS test would catch it.
+    await engine.start({
+      v: PROTOCOL_VERSION,
+      room: 'r5',
+      game: STUB_GAME_ID,
+      players: [
+        { player: 'p1', nickname: 'Ada' },
+        { player: 'p2', nickname: 'Bo' },
+      ],
+      config: {
+        rounds: 2,
+        secrets: ['blue', 'green'],
+        privates: [
+          { p1: 'secretA', p2: 'secretB' },
+          { p1: 'r2-secretA', p2: 'r2-secretB' },
+        ],
+      },
+    });
+
+    // Capture EVERY frame each socket receives so we can assert on the whole transcript, not just one.
+    const p1 = await open();
+    const p2 = await open();
+    const p1Frames: Record<string, unknown>[] = [];
+    const p2Frames: Record<string, unknown>[] = [];
+    p1.on('message', (d) => p1Frames.push(JSON.parse(d.toString()) as Record<string, unknown>));
+    p2.on('message', (d) => p2Frames.push(JSON.parse(d.toString()) as Record<string, unknown>));
+
+    // Both devices join. Catch-up hands each its OWN round-1 secret over its own socket.
+    const p1Caught = waitFor(p1, 'private');
+    const p2Caught = waitFor(p2, 'private');
+    p1.send(joinFrame('r5', 'p1', 'Ada'));
+    p2.send(joinFrame('r5', 'p2', 'Bo'));
+    expect(await p1Caught).toMatchObject({ type: 'private', player: 'p1', private: 'secretA' });
+    expect(await p2Caught).toMatchObject({ type: 'private', player: 'p2', private: 'secretB' });
+
+    // Now BOTH are live: advance into round 2 so the engine PUBLISHES a fresh private to each channel
+    // (the live-delivery path, distinct from catch-up). Each socket must receive only its own.
+    const p1R2 = waitForMatch(p1, (f) => f.type === 'private' && f.round === 2);
+    const p2R2 = waitForMatch(p2, (f) => f.type === 'private' && f.round === 2);
+    await engine.submitMove('r5', STUB_GAME_ID, 'p1', 1, 'blue');
+    await engine.submitMove('r5', STUB_GAME_ID, 'p2', 1, 'blue');
+    await engine.control('r5', STUB_GAME_ID, 'advance'); // collecting -> disputing (reveal)
+    await engine.control('r5', STUB_GAME_ID, 'advance'); // disputing -> leaderboard
+    await engine.control('r5', STUB_GAME_ID, 'advance'); // leaderboard -> round 2 (deals r2 secrets)
+    expect(await p1R2).toMatchObject({ type: 'private', player: 'p1', private: 'r2-secretA' });
+    expect(await p2R2).toMatchObject({ type: 'private', player: 'p2', private: 'r2-secretB' });
+
+    // The load-bearing per-connection proof: p2's DEVICE never once received A's secret, and p1's
+    // never received B's - across both the catch-up and the live round-2 deal.
+    expect(JSON.stringify(p1Frames)).not.toContain('secretB');
+    expect(JSON.stringify(p2Frames)).not.toContain('secretA');
+    // And each device did carry its own secret for both rounds - the channel is live, not just silent.
+    expect(JSON.stringify(p1Frames)).toContain('secretA');
+    expect(JSON.stringify(p1Frames)).toContain('r2-secretA');
+    expect(JSON.stringify(p2Frames)).toContain('secretB');
+    expect(JSON.stringify(p2Frames)).toContain('r2-secretB');
+
+    p1.close();
+    p2.close();
+  });
+
   describe('authorization guards', () => {
     const join = (socket: WebSocket, over: Record<string, unknown> = {}) =>
       socket.send(

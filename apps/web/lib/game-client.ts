@@ -104,7 +104,7 @@ export class GameClient {
     GameClientOptions;
   private readonly factory: (url: string) => GameSocket;
   private socket: GameSocket | null = null;
-  private state: GameState = initialGameState();
+  private state: GameState;
   private listeners = new Set<(state: GameState) => void>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
@@ -117,6 +117,9 @@ export class GameClient {
       ...options,
     };
     this.factory = options.socketFactory ?? nativeSocketFactory;
+    // Seed the reducer with this device's own player id so it can reject a mis-targeted `private`
+    // frame (spec 0052 defense-in-depth) - the reducer has no other source for the local identity.
+    this.state = initialGameState(options.player);
   }
 
   /** The current snapshot. */

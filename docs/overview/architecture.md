@@ -481,6 +481,8 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   catch-up, and clears it when the next round starts (the same per-round pruning as `reveal`/
   `standings`). The module runs in a worker and returns plain data; the main thread owns the sockets
   and does the targeted send. The web client folds the frame into `state.private` for a game's UI.
+  Secrecy is only as strong as the WebSocket `join` identity, which is self-asserted and not yet
+  authenticated (playerIds are public), so a hardened join is a tracked follow-up (feedback `0033`).
 - **Server-authoritative games** (spec `0043`, Teeter Tower). A game's payloads are opaque, so a
   module can own *shared simulation state*, not just per-player answers: Teeter runs Matter.js
   **headless in the engine**, keeps the authoritative tower in `scratch`, and treats one piece-drop

@@ -831,19 +831,28 @@ export class GameEngine {
         this.simFailures.delete(key); // a good tick clears the consecutive-failure count
         current.scratch = result.scratch;
         this.lastSim.set(key, result.sim);
+        // A live game whose secret can change re-emits it here (spec 0052). Persist the update into
+        // `privatePayloads` ALWAYS - even on an idle tick with zero connected devices - mirroring how
+        // `lastSim` is cached regardless of connection, so a device joining after an idle secret-change
+        // catches up on the latest secret rather than a stale one. Delivery (publish) stays gated on a
+        // live connection below. `current` is reloaded from the store each tick, so a changed secret
+        // has to be saved to survive; the idle branch below does exactly that write and nothing else.
+        this.persistPrivate(current, result.private);
         // Idle guard: with ZERO connected devices there is nobody to stream to and no move can land,
         // so skip the broadcast AND the per-tick save while idle (the world still stepped, and the
         // newest sim is cached so a reconnecting device catches up). The `over` end path below still
         // runs regardless, so an idle game still ends and disposes. Correctness holds: the save only
         // persists a rebuild snapshot, no rebuild can happen with no devices, and the next connected
-        // tick saves again.
+        // tick saves again. The one exception is a secret that CHANGED on this idle tick: persist that
+        // one save so a later joiner's catch-up serves the latest secret, not a stale one (spec 0052).
         const anyConnected = current.players.some((p) => p.connected);
         if (anyConnected) {
-          // A live game whose secret can change re-emits it here (spec 0052); persist the update in
-          // `privatePayloads` (for catch-up) before the save, and send it targeted to each recipient.
-          await this.deliverPrivate(current, result.private);
+          // Send this round's re-emitted secret targeted to each live recipient (persist already ran).
+          await this.sendPrivate(current, result.private);
           await this.store.save(current);
           if (result.sim != null) await this.publish(current, this.simMessage(current, result.sim));
+        } else if (result.private != null) {
+          await this.store.save(current);
         }
         if (result.over) {
           this.stopSimLoop(key);
@@ -951,32 +960,57 @@ export class GameEngine {
   }
 
   /**
-   * Deliver a lifecycle result's per-player private payloads (spec 0052). For each (playerId ->
-   * payload) entry the engine stores the latest payload in `state.privatePayloads` (so a reconnect
-   * recovers it via catch-up) and, when that player has a live connection, publishes a `PrivateMessage`
-   * to that player's OWN private channel - never the broadcast channel, so no other device receives it.
-   * The module runs in a worker and returns plain data; this main-thread path owns the sockets and does
-   * the targeted send, mirroring the `move_rejected` reply. A no-op when the result carried no `private`.
+   * Deliver a lifecycle result's per-player private payloads (spec 0052): persist then send. For each
+   * (playerId -> payload) entry the engine stores the latest payload in `state.privatePayloads` (so a
+   * reconnect recovers it via catch-up) and, when that player has a live connection, publishes a
+   * `PrivateMessage` to that player's OWN private channel - never the broadcast channel, so no other
+   * device receives it. The module runs in a worker and returns plain data; this main-thread path owns
+   * the sockets and does the targeted send, mirroring the `move_rejected` reply. A no-op when the
+   * result carried no `private`. The idle sim tick calls `persistPrivate`/`sendPrivate` separately so a
+   * secret that changes while nobody is connected still updates the catch-up store.
    */
   private async deliverPrivate(
     state: SessionState,
     payloads: Record<string, unknown> | undefined,
   ): Promise<void> {
+    this.persistPrivate(state, payloads);
+    await this.sendPrivate(state, payloads);
+  }
+
+  /**
+   * Fold a lifecycle result's per-player payloads into `state.privatePayloads` (spec 0052) WITHOUT
+   * publishing. Persistence is split from delivery so a secret that changes on an idle tick (zero
+   * connected devices) still updates the catch-up store - mirroring how `lastSim` is cached
+   * regardless of connection - and a later joiner recovers the latest secret, not a stale one. A
+   * payload for a player not in the roster is ignored: it is game-defined data we cannot route.
+   */
+  private persistPrivate(state: SessionState, payloads: Record<string, unknown> | undefined): void {
     if (!payloads) return;
     const store = (state.privatePayloads ??= {});
     for (const [player, payload] of Object.entries(payloads)) {
-      const target = state.players.find((p) => p.player === player);
-      // A payload for a player not in the roster is ignored: it is game-defined data we cannot route.
-      if (!target) continue;
+      if (!state.players.some((p) => p.player === player)) continue;
       store[player] = payload;
-      // Persist for catch-up regardless of connection, but only send now when the device is live -
-      // a disconnected player recovers this payload from the store on its next join catch-up.
-      if (target.connected) {
-        await this.pubsub.publish(
-          privateChannel(state.room, state.game, player),
-          this.privateMessage(state, player, payload),
-        );
-      }
+    }
+  }
+
+  /**
+   * Publish each per-player payload to that player's OWN private channel (spec 0052) when the device
+   * is live - never the broadcast channel, so no other device receives it. A disconnected player is
+   * skipped here and recovers its payload from the persisted store on its next join catch-up. Assumes
+   * `persistPrivate` already stored the payloads (via `deliverPrivate` or an explicit persist).
+   */
+  private async sendPrivate(
+    state: SessionState,
+    payloads: Record<string, unknown> | undefined,
+  ): Promise<void> {
+    if (!payloads) return;
+    for (const [player, payload] of Object.entries(payloads)) {
+      const target = state.players.find((p) => p.player === player);
+      if (!target || !target.connected) continue;
+      await this.pubsub.publish(
+        privateChannel(state.room, state.game, player),
+        this.privateMessage(state, player, payload),
+      );
     }
   }
 

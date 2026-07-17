@@ -56,11 +56,20 @@ export function attachGameSocket(
     // Also subscribe to this device's OWN private channel (spec 0052), so a targeted hidden-info
     // `private` frame the engine publishes reaches only this player's connection. Subscribing before
     // the join means a payload dealt during join is not missed; the join catch-up also replays the
-    // current one for a reconnect that subscribes after the deal.
-    const privateSubscription = await pubsub.subscribe(
-      privateChannel(message.room, message.game, message.player),
-      (frame) => connection.send(frame),
-    );
+    // current one for a reconnect that subscribes after the deal. If this second subscribe fails, the
+    // broadcast subscription above is already live and would leak (a dangling Redis channel listener),
+    // so unwind it before bailing.
+    let privateSubscription: Subscription;
+    try {
+      privateSubscription = await pubsub.subscribe(
+        privateChannel(message.room, message.game, message.player),
+        (frame) => connection.send(frame),
+      );
+    } catch (error) {
+      await subscription.unsubscribe();
+      fail(connection, error instanceof Error ? error.message : 'join failed');
+      return;
+    }
     bindings.set(connection, {
       room: message.room,
       game: message.game,
