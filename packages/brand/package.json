@@ -42,6 +42,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./reversi": {
+      "types": "./dist/reversi.d.ts",
+      "import": "./dist/reversi.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"

@@ -181,6 +181,47 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  reversi: {
+    categories: ['classic', 'strategy'],
+    tags: ['two-player', 'spatial', 'turn-based'],
+    rules: {
+      objective: 'Have the most discs of your color on the board when neither side can move.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Reversi is a two-player game on one shared 8x8 board. Four discs start in the middle - ' +
+              'two Violet and two Amber on the diagonals. Violet moves first.',
+          ],
+        },
+        {
+          heading: 'On your turn',
+          body: [
+            'Place one disc of your color on an empty square so that, in a straight line (across, ' +
+              "down, or diagonally), it traps one or more of your opponent's discs between the " +
+              'new disc and another of yours. Every trapped disc in every such line flips to your ' +
+              'color. A placement that traps nothing is not allowed - the board highlights your ' +
+              'legal squares.',
+          ],
+        },
+        {
+          heading: 'Passing',
+          body: [
+            'You must move whenever you have a legal move. If you have none but your opponent does, ' +
+              'your turn is skipped (a pass) and they play again.',
+          ],
+        },
+        {
+          heading: 'Winning',
+          body: [
+            'The game ends when neither side can move - often when the board is full. Whoever has ' +
+              'more discs of their color wins; an equal count is a draw. Grabbing corners, which can ' +
+              'never be flipped, is the key to a strong game.',
+          ],
+        },
+      ],
+    },
+  },
 };
 
 /**
