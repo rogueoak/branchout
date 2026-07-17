@@ -10,6 +10,7 @@ import type { Surface } from '../../lib/surface';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import { GameCard } from '../../components/game/GameCard';
+import { HowToPlayButton } from '../../components/game/HowToPlayButton';
 import { INSIDER_GAME_UI_LIST } from '../../lib/games/registry';
 import { playHref } from '../../lib/games/catalog';
 
@@ -60,33 +61,44 @@ export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surf
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {INSIDER_GAMES.map((game) => (
-              // The whole card links to the room-create deep link for the game, so an insider starts
-              // a room in one tap. The link is RELATIVE (feedback 0029): the insider host now hosts
-              // the room flow (rewritten into /insider/rooms), so play stays on the insider surface
-              // instead of bouncing to the apex. The visible "Play now" is the card's PRIMARY
-              // affordance (feedback 0030) - a styled <span>, not a nested <a>/<button>, so the card
-              // stays one interactive element (no interactive-in-interactive a11y issue) and the CTA
-              // stays on-theme via the button recipe on a SHORT label (the nowrap overflow only bit a
-              // content-bearing wrapper, spec 0029). Hover/focus on the card lifts the whole card.
-              <a
-                key={game.id}
-                href={playHref(game.id)}
-                aria-label={`Play ${game.name} now`}
-                className="flex flex-col rounded-xl transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <GameCard game={game} />
-                {/* The CTA is a short single-line label, so buttonVariants() is right here (the
-                    nowrap it inherits only bites a content-bearing wrapper, spec 0029). aria-hidden +
-                    a plain <span> keeps the card ONE interactive element - the wrapping <a> already
-                    carries the "Play <game> now" accessible name, so a screen reader hears the action
-                    once, not a link inside a link. */}
-                <span
-                  aria-hidden="true"
-                  className={`${buttonVariants({ variant: 'primary', size: 'sm' })} mt-3 self-start`}
+              // A card column: the whole-card play link, then a separate "How to play" control below
+              // it (spec 0051). The play link and the help button are SIBLINGS, not nested, so the
+              // card stays one interactive element and the help sheet is its own control.
+              <div key={game.id} className="flex flex-col">
+                {/* The whole card links to the room-create deep link for the game, so an insider
+                    starts a room in one tap. The link is RELATIVE (feedback 0029): the insider host
+                    now hosts the room flow (rewritten into /insider/rooms), so play stays on the
+                    insider surface instead of bouncing to the apex. The visible "Play now" is the
+                    card's PRIMARY affordance (feedback 0030) - a styled <span>, not a nested
+                    <a>/<button>, so the card stays one interactive element (no interactive-in-
+                    interactive a11y issue) and the CTA stays on-theme via the button recipe on a
+                    SHORT label (the nowrap overflow only bit a content-bearing wrapper, spec 0029).
+                    Hover/focus on the card lifts the whole card. */}
+                <a
+                  href={playHref(game.id)}
+                  aria-label={`Play ${game.name} now`}
+                  className="flex flex-col rounded-xl transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
-                  Play now
-                </span>
-              </a>
+                  <GameCard game={game} />
+                  {/* The CTA is a short single-line label, so buttonVariants() is right here (the
+                      nowrap it inherits only bites a content-bearing wrapper, spec 0029). aria-hidden
+                      + a plain <span> keeps the card ONE interactive element - the wrapping <a>
+                      already carries the "Play <game> now" accessible name, so a screen reader hears
+                      the action once, not a link inside a link. */}
+                  <span
+                    aria-hidden="true"
+                    className={`${buttonVariants({ variant: 'primary', size: 'sm' })} mt-3 self-start`}
+                  >
+                    Play now
+                  </span>
+                </a>
+                {/* A separate control (not the whole-card play link): opens the game's rules in a
+                    sheet, so an insider can read how it plays before starting - insider games have no
+                    public feature page, so this is their only rules surface on the listing page. */}
+                <div className="mt-2 self-start">
+                  <HowToPlayButton game={game.id} />
+                </div>
+              </div>
             ))}
           </div>
         )}

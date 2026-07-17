@@ -459,6 +459,31 @@ describe('GameStage host controls emphasis', () => {
   });
 });
 
+describe('GameStage help sheet (spec 0051)', () => {
+  it('shows an always-present "How to play" control for every mode', () => {
+    for (const mode of ['viewer', 'interactive', 'remote'] as const) {
+      const { unmount } = renderStage({ mode });
+      expect(screen.getByRole('button', { name: /how to play/i })).toBeDefined();
+      unmount();
+    }
+  });
+
+  it('opens the rules sheet showing the objective, without ending or pausing the game', () => {
+    renderStage({ mode: 'interactive' });
+    // No dialog until the help control is tapped.
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /how to play/i }));
+
+    const dialog = screen.getByRole('dialog');
+    // The sheet is a modal dialog (role="dialog" + Radix's focus trap) and shows this game's rules.
+    expect(dialog.getAttribute('role')).toBe('dialog');
+    expect(screen.getByText(/score the most points/i)).toBeDefined();
+    // The live game is untouched behind the sheet - the question is still on screen.
+    expect(screen.getByText('What is H2O?')).toBeDefined();
+  });
+});
+
 describe('GameStage scroll-to-question', () => {
   // Assert against the module-level `window.scrollTo` stub (declared at top); clear between tests
   // rather than restore, so the stub survives for later files/tests (keeps jsdom quiet).

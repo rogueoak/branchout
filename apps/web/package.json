@@ -17,6 +17,7 @@
     "@branchout/theme": "workspace:*",
     "@fontsource-variable/figtree": "^5.2.10",
     "@fontsource-variable/geist-mono": "^5.2.8",
+    "@radix-ui/react-dialog": "1.1.18",
     "@rogueoak/canopy": "^0.11.0",
     "@rogueoak/roots": "^0.10.0",
     "next": "^15.1.3",

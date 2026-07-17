@@ -315,6 +315,17 @@ blocking room creation. The per-game display data the picker cards and the featu
 (`name`, `tagline`, `summary`, `icon`) lives once on the web game registry, so adding a game stays
 "add a module + a registry entry".
 
+The **game library** (`lib/games/library.ts`, spec `0051`) is a third per-game data layer beside the
+registry (how it renders) and the marketing catalog (how it sells): a controlled category + tag
+vocabulary and a structured `GameRules` shape, keyed by slug, with a fail-loud `toLibrary` so adding
+a game must add its taxonomy + rules. It is pure and client-safe (no server-only imports), so the
+in-game help sheet imports it directly. Rules render through one presentational `RulesContent` shared
+by the feature page, the in-game help sheet, and the insider card. The help sheet uses a `Sheet`
+primitive (`components/game/Sheet.tsx`) composed on `@radix-ui/react-dialog` - the same Radix Dialog
+canopy already depends on - to get a side drawer (right on desktop, bottom on mobile) canopy's
+centred `ResponsiveDialog` does not provide, reusing Radix's focus trap, Escape, scroll-lock, and
+`aria-modal` rather than hand-rolling a11y.
+
 ## Deployment
 
 Docker Compose, both locally and on a server. Kubernetes is a someday, not a now.

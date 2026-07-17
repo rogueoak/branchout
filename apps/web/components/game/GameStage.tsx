@@ -13,6 +13,7 @@ import type { ConnectionStatus, GameState } from '../../lib/game-state';
 import { isComplete } from '../../lib/game-state';
 import { getGameUi } from '../../lib/games/registry';
 import { FeedbackDialog } from './FeedbackDialog';
+import { HelpSheet } from './HelpSheet';
 
 /** Every host control the browser can issue, including `advance` (proxied by the control-plane). */
 export type HostControl = 'advance' | 'pause' | 'restart' | 'exit';
@@ -132,6 +133,13 @@ export function GameStage({
     // 0027): the stage is a min-h-0 flex column, the viewer flexes to fill, the host bar sits below.
     // Multi-surface games keep the normal auto-height, scrolling layout.
     <div className={singleSurface ? 'flex min-h-0 flex-1 flex-col gap-2' : 'flex flex-col gap-4'}>
+      {/* A slim toolbar present for EVERY mode (viewer, interactive, remote) and every phase, so the
+          rules are reachable at any time - including mid-round. The help sheet is pure client UI over
+          the game id; opening it does not pause or mutate game state. */}
+      <div className="flex items-center justify-end">
+        <HelpSheet game={game} />
+      </div>
+
       {connectionNote ? (
         <Badge variant="warning" className="w-fit" role="status">
           {connectionNote}
