@@ -10,6 +10,7 @@ import { parentPort } from 'node:worker_threads';
 import { createFsAssetLoaderFactory, type GameModule, type GamePlugin } from '@branchout/game-sdk';
 import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
+import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 import { reversiPlugin } from '@branchout/game-reversi';
 import { checkersPlugin } from '@branchout/game-checkers';
@@ -29,6 +30,7 @@ import type {
 const PLUGINS: readonly GamePlugin[] = [
   triviaPlugin,
   liarLiarPlugin,
+  loneLeafPlugin,
   teeterTowerPlugin,
   reversiPlugin,
   checkersPlugin,

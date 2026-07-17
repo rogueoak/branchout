@@ -82,7 +82,7 @@ What the product does for users, grouped by area. Each capability maps to one or
       minimum players. The picker lives in the lobby ("Your mode") with per-option descriptions and
       defaults in priority order: remembered device mode -> no interactive member yet -> second join
       -> mobile -> interactive (specs `0006`, `0013`, `0050`).
-- [x] Per-game player limits - Trivia 1-8, Liar Liar 2-8, Teeter 1-4, shared via `@branchout/protocol`
+- [x] Per-game player limits - Trivia 1-8, Liar Liar 2-8, Teeter 1-4, Lone Leaf 3-7, shared via `@branchout/protocol`
       so the lobby and the control-plane agree. At the max a playing joiner is clamped to `viewer`;
       below the min Start is blocked. Viewers never count toward the total or paid rounds (spec `0050`).
 - [x] Host - the host has a mode like anyone (defaults to interactive) plus an `isHost` flag: it
@@ -187,6 +187,18 @@ What the product does for users, grouped by area. Each capability maps to one or
       `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
       catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
       client exposes the local player's secret as `state.private` for a game's UI module.
+- [~] Fourth game (insider-only) - Lone Leaf: a COOPERATIVE single-clue word game for 3-7 players and
+      the first game built on the per-player private channel (spec `0057`). Each round one player is the
+      Seeker (the role rotates by seat) and must guess a hidden mystery word - the seed - that they
+      alone cannot see; every other player secretly writes ONE one-word clue (a leaf). Before the Seeker
+      looks, matching or invalid leaves wilt (are cleared, both of a duplicate pair, folding case and a
+      light stem), so only the unique leaves survive. The Seeker sees the survivors and takes one guess;
+      scoring is cooperative - a correct guess banks a point for everyone and all players share the
+      standing. The seed rides the spec `0052` private channel to the non-Seekers ONLY and never the
+      broadcast prompt/viewer/reveal, so the Seeker's device never receives it (a unit test proves the
+      Seeker is absent from the private map, and the e2e proves the seed shows on a non-Seeker's device
+      but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled ~60-word
+      sample seed bank (`@branchout/game-lone-leaf`).
 
 ## Web
 

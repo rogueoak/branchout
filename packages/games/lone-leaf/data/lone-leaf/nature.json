@@ -1,0 +1,12 @@
+[
+  { "id": "nature-001", "word": "river", "category": "nature" },
+  { "id": "nature-002", "word": "mountain", "category": "nature" },
+  { "id": "nature-003", "word": "forest", "category": "nature" },
+  { "id": "nature-004", "word": "thunder", "category": "nature" },
+  { "id": "nature-005", "word": "rainbow", "category": "nature" },
+  { "id": "nature-006", "word": "glacier", "category": "nature" },
+  { "id": "nature-007", "word": "meadow", "category": "nature" },
+  { "id": "nature-008", "word": "volcano", "category": "nature" },
+  { "id": "nature-009", "word": "sunrise", "category": "nature" },
+  { "id": "nature-010", "word": "canyon", "category": "nature" }
+]

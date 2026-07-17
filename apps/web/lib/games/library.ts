@@ -144,6 +144,47 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  'lone-leaf': {
+    categories: ['cooperative', 'word'],
+    tags: ['wordplay', 'small-group', 'turn-based'],
+    rules: {
+      objective:
+        'Work together to help the Seeker guess the hidden seed from your surviving one-word clues.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'The host picks the seed themes and how many rounds to play, then shares the join code. ' +
+              'Everyone plays on their own phone. Lone Leaf needs 3 to 7 players.',
+          ],
+        },
+        {
+          heading: 'The Seeker and the seed',
+          body: [
+            'Each round one player is the Seeker (the role rotates so everyone takes a turn). The ' +
+              'Seeker never sees the seed - the hidden word - but every other player does, privately ' +
+              'on their own phone.',
+          ],
+        },
+        {
+          heading: 'Write one leaf',
+          body: [
+            'Every non-Seeker secretly writes a single one-word clue - a leaf - for the seed. Before ' +
+              'the Seeker looks, any two leaves that match wilt and vanish (a plural or a case change ' +
+              'still counts as a match), so only the clues nobody else thought of survive.',
+          ],
+        },
+        {
+          heading: 'Guess and score',
+          body: [
+            'The Seeker sees only the surviving leaves and takes one guess. Lone Leaf is cooperative: ' +
+              'a correct guess banks a point for the whole grove, and everyone shares the same ' +
+              'standing. Aim for the highest shared score across the rounds.',
+          ],
+        },
+      ],
+    },
+  },
   'teeter-tower': {
     categories: ['strategy'],
     tags: ['spatial', 'real-time', 'quick'],
