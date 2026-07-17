@@ -30,6 +30,18 @@ describe('InsiderHome (spec 0035)', () => {
 
   it('offers a "Play now" CTA that is the RELATIVE play link on the Teeter Tower card (feedback 0030)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
+    // A visible "Play now" affordance sits within each card link (its accessible name). More than one
+    // insider game now ships, so there is a "Play now" per card.
+    expect(screen.getAllByText('Play now').length).toBeGreaterThan(0);
+    const card = screen.getByRole('link', { name: /play teeter tower now/i });
+    expect(card.getAttribute('href')).toBe('/rooms?game=teeter-tower');
+  });
+
+  it('lists the insider test games, each linking into a room on the SAME surface (feedback 0029)', () => {
+    render(<InsiderHome viewer={viewer} surface={surface} />);
+    // Teeter Tower (the first insider-only game) is offered, not the empty state.
+    expect(screen.queryByText(/no test games yet/i)).toBeNull();
+    const card = screen.getByRole('link', { name: /play teeter tower now/i });
     // The "Play now" affordance is itself the play link (the card is no longer the link) - so there is
     // no interactive-in-interactive nesting. Assert the Teeter Tower one specifically (several insider
     // games are listed now), and that it deep-links relative into the room flow.

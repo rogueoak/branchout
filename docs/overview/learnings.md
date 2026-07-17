@@ -617,6 +617,20 @@ Capture durable lessons as they emerge.
   hears one action, not a link nested in a link. A short single-line label may use `buttonVariants()` -
   the inherited `white-space: nowrap` only overflows a content-bearing wrapper (spec `0029`), never a
   two-word pill. (Feedback `0030`.)
+- **A cross-subdomain gate redirect can be collapsed to a host-relative `Location` and loop forever -
+  the middleware unit test won't catch it, only a live browser will.** The insider gate redirects a
+  signed-out visitor to the APEX `/login` (an absolute `http://localhost:3100/login?next=...`). The
+  helper and the middleware unit test both proved the target keeps the apex host. But at RUNTIME,
+  Next's dev/edge layer rewrites a redirect between two hosts under the same registrable name (two
+  `*.localhost`, or two `*.branchout.games`) to a HOST-RELATIVE `Location` (`/login?...`). The browser
+  resolves that against the insider host it is already on, re-enters the gate (still signed out),
+  redirects to itself, and nests `next` deeper each hop until `ERR_TOO_MANY_REDIRECTS`. An anonymous
+  guest could never reach an insider room. The fix is not "make the redirect more absolute" (the
+  runtime overrides it) but to remove the reason `/login` re-enters the gate: exempt the public auth
+  routes (`/login`, `/signup`) from the insider gate so they serve directly and terminate the loop;
+  `/join` and `/rooms/*` stay gated. Lesson: a redirect assertion in a unit test that constructs
+  `NextResponse` is NOT the same as what the running server emits - gate loops must be verified with a
+  real browser hitting the real dev server. (Live-debug of the Zinger e2e, PR `#106`.)
 
 ## Rate limiting and lockouts
 

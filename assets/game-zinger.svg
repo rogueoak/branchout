@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Zinger">
+  <defs>
+    <radialGradient id="zg-bg" cx="0.5" cy="0.42" r="0.78">
+      <stop offset="0" stop-color="#241a3a"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="zg-glow" cx="0.5" cy="0.40" r="0.55">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#zg-bg)"/>
+  <circle cx="256" cy="220" r="210" fill="url(#zg-glow)"/>
+
+  <!-- speech bubble: the setup that lands a zinger -->
+  <path d="M126 132
+           h260 a34 34 0 0 1 34 34
+           v128 a34 34 0 0 1 -34 34
+           h-150 l-58 52 v-52
+           h-52 a34 34 0 0 1 -34 -34
+           v-128 a34 34 0 0 1 34 -34 z"
+        fill="#7c3aed" stroke="#5b21b6" stroke-width="8" stroke-linejoin="round"/>
+
+  <!-- the zinger: a bright zap bolt punching out of the bubble -->
+  <path d="M292 158 l-96 84 h50 l-38 78 l112 -102 h-52 z"
+        fill="#fde047" stroke="#c9a12b" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- the oak stem the bubble sits on -->
+  <rect x="248" y="360" width="16" height="86" rx="8" fill="#3a2f2a"/>
+  <!-- two party leaves branching off the stem -->
+  <path d="M256 402 q-42 -8 -62 -40 q40 -6 62 26 z" fill="#06d6a0" stroke="#049e77" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M256 420 q42 -8 62 -40 q-40 -6 -62 26 z" fill="#118ab2" stroke="#0b6484" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- the single gold root anchoring the mark -->
+  <path d="M256 446 q-6 26 -28 42 M256 446 q6 26 28 42 M256 446 v40"
+        fill="none" stroke="#d2a463" stroke-width="9" stroke-linecap="round"/>
+</svg>

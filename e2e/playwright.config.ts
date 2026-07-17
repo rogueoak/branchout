@@ -45,6 +45,9 @@ export default defineConfig({
         // Teeter Tower: the insider-only live physics game - aim + drop loop and the picker gate
         // (spec 0044, feedback 0023).
         'teeter-tower.spec.ts',
+        // Zinger: the insider-only funny-answer party game - answer, face-off, vote loop and the
+        // picker gate (spec 0053). Runs at a 360px viewport in the spec per rule 1.
+        'zinger.spec.ts',
         // Sketchy: the insider-only draw-and-guess party game - a full 3-player draw/decoy/guess
         // round at a 360px phone viewport, plus the picker gate (spec 0063).
         'sketchy.spec.ts',
