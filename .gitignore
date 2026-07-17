@@ -1,5 +1,10 @@
 # Spectra build worktrees
 .worktrees/
+# Claude Code worktrees
+.claude/worktrees/
+
+# pnpm content-addressable store
+.pnpm-store/
 
 # OS
 .DS_Store
