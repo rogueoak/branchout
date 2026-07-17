@@ -201,6 +201,21 @@ What the product does for users, grouped by area. Each capability maps to one or
       `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
       catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
       client exposes the local player's secret as `state.private` for a game's UI module.
+- [~] Fourth game (insider-only) - Sketchy: a draw-and-guess-with-decoys party game for 3-8 players
+      (`@branchout/game-sketchy`, spec `0063`), the first game to consume the private-payload seam
+      (spec `0052`). Two stages per round on the generic decision lifecycle: a DRAW round deals every
+      player a distinct secret seed - delivered ONLY to that player via `startRound.private`, never in
+      the broadcast prompt - and each player draws it on a phone-sized freehand canvas (pointer
+      events, `touch-action: none`, pointer capture; captured as a compact serializable stroke format:
+      strokes of a palette color + a flat quantized `[x0,y0,...]` point array on a fixed 0..1000
+      logical canvas, bounded so a submission can never be unbounded). Then one SKETCH round per player
+      features their sketch: every other player writes a decoy (a fake seed), and the decoys plus the
+      true seed are shuffled and shown to guess - reusing the Liar Liar attribution/scoring shape
+      (finding the true seed = 100; a decoy fooling a player = 50 to its author). The Viewer replays
+      every sketch read-only; the drawing surface is mobile-first at ~360px. A ~120-prompt sample seed
+      bank ships under the package `data/` with a structural validator. Gated by surface like Teeter
+      (`visibility: 'insider'`). Heaviest UI in the wave; a real 3-player e2e drives draw -> decoy ->
+      guess -> score at a 360px viewport.
 - [~] Fourth game (insider-only) - Whispergrove: a two-team word-grid deduction game (spec `0062`).
       A 5x5 grove of 25 word leaves; a secret key marks 9 leaves for the starting grove, 8 for the
       other, 7 neutral saplings, and 1 instant-loss Deadwood. Each grove has one Whisperer who ALONE

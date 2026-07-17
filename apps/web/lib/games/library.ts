@@ -222,6 +222,53 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  sketchy: {
+    categories: ['drawing', 'party'],
+    tags: ['sketching', 'bluffing', 'wit', 'small-group', 'real-time'],
+    rules: {
+      objective:
+        'Score the most by finding the true seed behind each sketch and by fooling players with ' +
+        'your decoys.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'The host sets the number of rounds and shares the join code. Sketchy is for 3-8 players, ' +
+              'each on their own phone.',
+          ],
+        },
+        {
+          heading: 'Draw your seed',
+          body: [
+            'Every player is privately given a different seed (a short prompt) that only they can ' +
+              'see. Draw it freehand on your phone before the timer ends.',
+          ],
+        },
+        {
+          heading: 'Write a decoy',
+          body: [
+            'One by one, each sketch is shown. For every sketch that is not yours, write a fake seed ' +
+              '(a decoy) you think could pass for the real one. A decoy that matches the true seed or ' +
+              'another player is quietly rejected, so try again.',
+          ],
+        },
+        {
+          heading: 'Find the true seed',
+          body: [
+            'The decoys plus the true seed appear shuffled. Pick the one you think is real before the ' +
+              'guess timer runs out. You cannot pick your own decoy.',
+          ],
+        },
+        {
+          heading: 'Scoring',
+          body: [
+            'Finding the true seed scores 100. Each player your decoy fools scores you 50. The ' +
+              'highest total after the last round wins.',
+          ],
+        },
+      ],
+    },
+  },
   whispergrove: {
     categories: ['word', 'party', 'deduction'],
     tags: ['teams', 'wordplay', 'deduction', 'big-group', 'turn-based'],

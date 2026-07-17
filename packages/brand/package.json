@@ -50,6 +50,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./sketchy": {
+      "types": "./dist/sketchy.d.ts",
+      "import": "./dist/sketchy.js"
+    },
     "./whispergrove": {
       "types": "./dist/whispergrove.d.ts",
       "import": "./dist/whispergrove.js"

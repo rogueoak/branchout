@@ -12,6 +12,7 @@ import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { sketchyPlugin } from '@branchout/game-sketchy';
 import { whispergrovePlugin } from '@branchout/game-whispergrove';
 import { reversiPlugin } from '@branchout/game-reversi';
 import { chessPlugin } from '@branchout/game-chess';
@@ -35,6 +36,7 @@ const PLUGINS: readonly GamePlugin[] = [
   liarLiarPlugin,
   loneLeafPlugin,
   teeterTowerPlugin,
+  sketchyPlugin,
   whispergrovePlugin,
   reversiPlugin,
   chessPlugin,
