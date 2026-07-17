@@ -95,12 +95,14 @@ export interface GameUiModule {
 // from here without a cycle (types are erased; the value import lands last).
 import { triviaGameUi } from './trivia';
 import { liarLiarGameUi } from './liar-liar';
+import { loneLeafGameUi } from './lone-leaf';
 import { teeterTowerGameUi } from './teeter-tower';
 
 /** Every registered game UI module, keyed by game id. Adding a game is adding it here. */
 export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [triviaGameUi.id]: triviaGameUi,
   [liarLiarGameUi.id]: liarLiarGameUi,
+  [loneLeafGameUi.id]: loneLeafGameUi,
   [teeterTowerGameUi.id]: teeterTowerGameUi,
 };
 
@@ -108,6 +110,7 @@ export const GAME_UI_MODULES: Record<string, GameUiModule> = {
 export const GAME_UI_LIST: readonly GameUiModule[] = [
   triviaGameUi,
   liarLiarGameUi,
+  loneLeafGameUi,
   teeterTowerGameUi,
 ];
 
