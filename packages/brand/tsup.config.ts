@@ -19,6 +19,7 @@ export default defineConfig({
     'src/reversi.ts',
     'src/chess.ts',
     'src/checkers.ts',
+    'src/samebranch.ts',
     'src/brand.ts',
     'src/avatar-ids.ts',
     'src/avatars.ts',

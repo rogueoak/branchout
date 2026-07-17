@@ -572,6 +572,48 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  'same-branch': {
+    categories: ['party', 'deduction'],
+    tags: ['wit', 'deduction', 'small-group', 'turn-based'],
+    rules: {
+      objective:
+        'Score points by landing your guess close to the hidden bud - most points wins, or chase a ' +
+        'high shared score together in co-op.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'The host picks the spectrum categories, the number of rounds, and a scoring mode ' +
+              '(free-for-all or co-op), then shares the join code. Everyone plays on their own phone. ' +
+              'The Reader role rotates each round.',
+          ],
+        },
+        {
+          heading: 'The Reader reads the bud',
+          body: [
+            'Each round shows a branch running between two opposites (like cold and hot). One player ' +
+              'is the Reader and alone sees the hidden bud - the sweet spot on the branch - and gives ' +
+              'a one-line hunch that fits where it sits.',
+          ],
+        },
+        {
+          heading: 'The grove guesses',
+          body: [
+            'Everyone else drags the sap line to where they think the bud is, based on the hunch, ' +
+              'then locks it in before the timer ends.',
+          ],
+        },
+        {
+          heading: 'Scoring',
+          body: [
+            'The bud is revealed and each guess scores by closeness: a bullseye is worth 4, a close ' +
+              'guess 3, a near one 2, and a wild miss nothing. In co-op the whole grove pools its ' +
+              'points into one score.',
+          ],
+        },
+      ],
+    },
+  },
 };
 
 /**

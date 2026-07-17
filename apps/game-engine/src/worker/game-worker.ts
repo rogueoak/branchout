@@ -20,6 +20,7 @@ import { reversiPlugin } from '@branchout/game-reversi';
 import { chessPlugin } from '@branchout/game-chess';
 import { oddBirdPlugin } from '@branchout/game-odd-bird';
 import { checkersPlugin } from '@branchout/game-checkers';
+import { sameBranchPlugin } from '@branchout/game-same-branch';
 import type {
   CallMessage,
   EngineToWorker,
@@ -47,6 +48,7 @@ const PLUGINS: readonly GamePlugin[] = [
   chessPlugin,
   oddBirdPlugin,
   checkersPlugin,
+  sameBranchPlugin,
 ];
 
 /** A seeded, deterministic [0,1) rng (Mulberry32), so a build is reproducible from the init seed. */

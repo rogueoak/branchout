@@ -78,6 +78,10 @@
       "types": "./dist/checkers.d.ts",
       "import": "./dist/checkers.js"
     },
+    "./samebranch": {
+      "types": "./dist/samebranch.d.ts",
+      "import": "./dist/samebranch.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"

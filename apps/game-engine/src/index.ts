@@ -23,6 +23,7 @@ import { reversiPlugin } from '@branchout/game-reversi';
 import { chessPlugin } from '@branchout/game-chess';
 import { oddBirdPlugin } from '@branchout/game-odd-bird';
 import { checkersPlugin } from '@branchout/game-checkers';
+import { sameBranchPlugin } from '@branchout/game-same-branch';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -64,6 +65,7 @@ async function main(): Promise<void> {
     chessPlugin,
     oddBirdPlugin,
     checkersPlugin,
+    sameBranchPlugin,
   ]);
   console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);
 

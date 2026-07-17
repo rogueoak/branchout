@@ -22,6 +22,7 @@
     "@branchout/game-odd-bird": "workspace:*",
     "@branchout/game-lone-leaf": "workspace:*",
     "@branchout/game-reversi": "workspace:*",
+    "@branchout/game-same-branch": "workspace:*",
     "@branchout/game-sdk": "workspace:*",
     "@branchout/game-sketchy": "workspace:*",
     "@branchout/game-teeter-tower": "workspace:*",

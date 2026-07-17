@@ -105,6 +105,7 @@ import { reversiGameUi } from './reversi';
 import { chessGameUi } from './chess';
 import { oddBirdGameUi } from './odd-bird';
 import { checkersGameUi } from './checkers';
+import { sameBranchGameUi } from './same-branch';
 
 /** Every registered game UI module, keyed by game id. Adding a game is adding it here. */
 export const GAME_UI_MODULES: Record<string, GameUiModule> = {
@@ -120,6 +121,7 @@ export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [chessGameUi.id]: chessGameUi,
   [oddBirdGameUi.id]: oddBirdGameUi,
   [checkersGameUi.id]: checkersGameUi,
+  [sameBranchGameUi.id]: sameBranchGameUi,
 };
 
 /** The host's game options, in display order. */
@@ -136,6 +138,7 @@ export const GAME_UI_LIST: readonly GameUiModule[] = [
   chessGameUi,
   oddBirdGameUi,
   checkersGameUi,
+  sameBranchGameUi,
 ];
 
 /** The default game a fresh room starts on, and the safe fallback for an unknown id. */
