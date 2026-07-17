@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { InsiderHome } from './InsiderHome';
 
@@ -22,42 +22,63 @@ describe('InsiderHome (spec 0035)', () => {
     expect(heading.className).toContain('text-center');
     expect(screen.getByText(/unreleased games still in testing/i)).toBeDefined();
     expect(screen.getByText(/your feedback shapes what ships/i)).toBeDefined();
-    // The nav still carries the "Insider" surface badge.
-    expect(screen.getByText('Insider')).toBeDefined();
+    // The nav still carries the "Insider" surface badge. Scope to the nav landmark: the insider game
+    // cards now also render an "Insider" catalog badge, so a bare getByText would match several.
+    const nav = screen.getByRole('navigation', { name: /site navigation/i });
+    expect(within(nav).getByText('Insider')).toBeDefined();
   });
 
-  it('offers a "Play now" CTA on the Teeter Tower card (feedback 0030)', () => {
+  it('offers a "Play now" CTA that is the RELATIVE play link on the Teeter Tower card (feedback 0030)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
-    // A visible "Play now" affordance sits within each insider game card link (its accessible name).
-    // There is now more than one insider game (Teeter Tower, Reversi, Checkers, Lone Leaf, Same
-    // Branch), so assert on the Teeter card specifically rather than the bare text.
-    // There is now more than one insider game (Teeter Tower, Nightleaf, Reversi), so assert the
-    // affordance is present rather than unique and pin the assertion to the Teeter card.
-    // Several insider games are now listed (Teeter Tower, Reversi, Sketchy), so assert on the Teeter
-    // card by its accessible name.
-    // Several insider games are listed now (Teeter Tower, Reversi, Whispergrove), so assert at least
-    // one "Play now" and then the Teeter card specifically.
-    // There is now more than one insider game (Teeter Tower, Reversi, Odd Bird), so assert on the
-    // Teeter card.
-    // There is now more than one insider game (Teeter Tower, Reversi, Lone Leaf), so assert on the
-    // Teeter card specifically rather than the bare text.
-    expect(screen.getAllByText('Play now').length).toBeGreaterThan(0);
-    const card = screen.getByRole('link', { name: /play teeter tower now/i });
-    expect(card.textContent).toMatch(/Play now/);
-    expect(card.getAttribute('href')).toBe('/rooms?game=teeter-tower');
-    expect(card.textContent).toContain('Play now');
-  });
-
-  it('lists the insider test games, each linking into a room on the SAME surface (feedback 0029)', () => {
-    render(<InsiderHome viewer={viewer} surface={surface} />);
-    // Teeter Tower (the first insider-only game) is offered, not the empty state.
-    expect(screen.queryByText(/no test games yet/i)).toBeNull();
-    const card = screen.getByRole('link', { name: /play teeter tower now/i });
+    // The "Play now" affordance is itself the play link (the card is no longer the link) - so there is
+    // no interactive-in-interactive nesting. Assert the Teeter Tower one specifically (several insider
+    // games are listed now), and that it deep-links relative into the room flow.
+    const playLink = screen.getByRole('link', { name: /play teeter tower now/i });
+    expect(playLink.textContent).toContain('Play now');
     // Relative deep link even though the surface carries an apex origin: on the insider host it
     // rewrites into /insider/rooms, keeping the player on the insider surface (not bouncing to apex).
-    expect(card.getAttribute('href')).toBe('/rooms?game=teeter-tower');
-    // The card carries the game's mark (via the shared GameCard) - not just a bare title.
-    expect(card.querySelector('svg')).not.toBeNull();
+    expect(playLink.getAttribute('href')).toBe('/rooms?game=teeter-tower');
+  });
+
+  it('lists the insider test games with the shared card (badge + hero mark), not the empty state', () => {
+    render(<InsiderHome viewer={viewer} surface={surface} />);
+    // Teeter Tower (an insider-only game) is offered, not the empty state.
+    expect(screen.queryByText(/no test games yet/i)).toBeNull();
+    // The card renders the game name as a heading and the "Insider" catalog badge (there is at least
+    // one - every insider game carries it), matching the main-site card look.
+    expect(screen.getByRole('heading', { name: 'Teeter Tower' })).toBeDefined();
+    expect(screen.getAllByText('Insider').length).toBeGreaterThan(0);
+  });
+
+  it('renders the "Play now" and "How to play" controls inside each card', () => {
+    render(<InsiderHome viewer={viewer} surface={surface} />);
+    // Both controls sit in the same card body: the play link and its sibling rules button share a
+    // controls row. Locate the Teeter card by its play link, then the shared controls container.
+    const playLink = screen.getByRole('link', { name: /play teeter tower now/i });
+    const controls = playLink.parentElement;
+    expect(controls).not.toBeNull();
+    // The "How to play" trigger is a sibling of the play link in the same controls row (not nested).
+    const howTo = controls?.querySelector('button');
+    expect(howTo?.textContent).toContain('How to play');
+    // The controls stack on mobile (flex-col) and reverse into a row from sm up (Play on the right).
+    expect(controls?.className).toContain('flex-col');
+    expect(controls?.className).toContain('sm:flex-row-reverse');
+  });
+
+  it('opens the rules sheet from an icon-free "How to play" control on this page (spec 0051)', () => {
+    render(<InsiderHome viewer={viewer} surface={surface} />);
+    // No dialog until a rules trigger is clicked.
+    expect(screen.queryByRole('dialog')).toBeNull();
+    // The rules trigger text on this page carries NO icon svg (showIcon={false}) - text only.
+    const howToButtons = screen.getAllByRole('button', { name: /how to play/i });
+    const teeterRules = howToButtons.find((b) =>
+      /teeter tower/i.test(b.getAttribute('aria-label') ?? ''),
+    );
+    expect(teeterRules).toBeDefined();
+    expect(teeterRules?.querySelector('svg')).toBeNull();
+    // Clicking it opens the game's rules sheet.
+    fireEvent.click(teeterRules as HTMLElement);
+    expect(screen.getByRole('dialog')).toBeDefined();
   });
 
   it('renders the shared account menu (main site look and feel)', () => {

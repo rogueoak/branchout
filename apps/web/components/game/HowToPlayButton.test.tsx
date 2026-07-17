@@ -32,6 +32,19 @@ describe('HowToPlayButton', () => {
     expect(screen.queryByRole('button', { name: /how to play/i })).toBeNull();
   });
 
+  it('shows the leading help icon by default (the in-game toolbar keeps it)', () => {
+    render(<HowToPlayButton game="teeter-tower" />);
+    const button = screen.getByRole('button', { name: /how to play/i });
+    expect(button.querySelector('svg')).not.toBeNull();
+  });
+
+  it('renders text-only (no icon) when showIcon is false (the insider hub cards)', () => {
+    render(<HowToPlayButton game="teeter-tower" showIcon={false} />);
+    const button = screen.getByRole('button', { name: /how to play/i });
+    expect(button.querySelector('svg')).toBeNull();
+    expect(button.textContent).toContain('How to play');
+  });
+
   it('is NOT nested inside a play link (stays its own control)', () => {
     // The insider card wraps the play affordance in an <a>; this trigger must sit OUTSIDE that link
     // (interactive-in-interactive is an a11y violation). Here it renders standalone, so the button
