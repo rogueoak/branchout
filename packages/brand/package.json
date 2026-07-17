@@ -46,6 +46,10 @@
       "types": "./dist/nightleaf.d.ts",
       "import": "./dist/nightleaf.js"
     },
+    "./reversi": {
+      "types": "./dist/reversi.d.ts",
+      "import": "./dist/reversi.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"

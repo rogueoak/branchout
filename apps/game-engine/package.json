@@ -16,6 +16,7 @@
   "dependencies": {
     "@branchout/game-liar-liar": "workspace:*",
     "@branchout/game-nightleaf": "workspace:*",
+    "@branchout/game-reversi": "workspace:*",
     "@branchout/game-sdk": "workspace:*",
     "@branchout/game-teeter-tower": "workspace:*",
     "@branchout/game-trivia": "workspace:*",

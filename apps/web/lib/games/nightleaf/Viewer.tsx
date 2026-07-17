@@ -57,10 +57,7 @@ export function NightleafViewer({ state, me }: GameViewProps) {
   if (sim.over) {
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-5">
-        <div
-          className={`rounded-lg p-4 ${sim.won ? 'bg-surface-raised' : 'bg-surface-raised'}`}
-          role="status"
-        >
+        <div className="rounded-lg bg-surface-raised p-4" role="status">
           <h2 className={`text-h2 ${sim.won ? 'text-success' : 'text-danger'}`}>
             {sim.won ? 'The grove wins!' : 'The grove falls'}
           </h2>
@@ -98,14 +95,12 @@ export function NightleafViewer({ state, me }: GameViewProps) {
         <span className="inline-flex items-center gap-1 text-body-sm text-text">
           Buds <Pips filled={sim.buds} total={sim.maxBuds} label="buds" />
         </span>
-        {sim.maxBuds >= 0 && sim.fireflies + sim.hushProposers.length >= 0 ? (
-          <span className="inline-flex items-center gap-1 text-body-sm text-text">
-            Fireflies{' '}
-            <span aria-label={`${sim.fireflies} fireflies left`} className="tabular-nums">
-              {sim.fireflies}
-            </span>
+        <span className="inline-flex items-center gap-1 text-body-sm text-text">
+          Fireflies{' '}
+          <span aria-label={`${sim.fireflies} fireflies left`} className="tabular-nums">
+            {sim.fireflies}
           </span>
-        ) : null}
+        </span>
       </div>
 
       {banner}
