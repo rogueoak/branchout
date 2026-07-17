@@ -1,117 +1,56 @@
-// The reusable single-surface board RENDERER helper (spec 0054). Reversi is the first board game; its
-// board view is the pattern Checkers and Chess follow, so the game-AGNOSTIC layout math lives here,
-// separate from Reversi's disc drawing (in Viewer.tsx). This is pure geometry + token resolution - no
-// React, no game rules - so it is trivially unit-testable (the jsdom canvas the Viewer draws on is not
-// exercisable, but this math is).
+// Reversi's board CHROME (spec 0054): the disc colors, the wood-grain square tints, and the
+// legal-move hint - the Reversi-specific paint that layers on top of the game-agnostic geometry in
+// ../board/geometry.ts. The geometry (layout + hit-test) is reused as-is by Checkers/Chess; the disc
+// semantics here (two disc colors, a side-tinted hint) are Reversi's own, so they live with the
+// Reversi UI rather than in the shared board module.
 //
-// What this owns: the square-board layout (fit an NxN grid into the available box, centered, with a
-// margin), the screen<->cell mapping both directions (draw a cell, and hit-test a tap back to a cell),
-// and resolving the wood-grain + disc theme tokens into concrete canvas color strings. A board game
-// draws its own pieces given a `CellBox`.
+// This file re-exports the agnostic geometry for the Reversi Viewer's convenience, so the Viewer
+// imports one board module. A future Checkers/Chess Viewer imports ../board/geometry directly and
+// defines its OWN chrome.
 
-/** The pixel box of one cell on screen: top-left corner + size (square). */
-export interface CellBox {
-  x: number;
-  y: number;
-  size: number;
-}
+import { readCssVar, type BoardSurface } from '../board/geometry';
 
-/** The board's on-screen layout: where the grid sits and how big each cell is. */
-export interface BoardLayout {
-  /** The board's top-left corner within the canvas (css px). */
-  originX: number;
-  originY: number;
-  /** One cell's side length (css px). */
-  cell: number;
-  /** The grid dimension (cells per side). */
-  size: number;
-}
+// Re-export the agnostic geometry so the Reversi Viewer imports layout + chrome from one place.
+export { cellAt, cellBox, layoutBoard, type BoardLayout, type CellBox } from '../board/geometry';
 
 /**
- * Lay out an `size` x `size` board centered in a `width` x `height` box, as large as fits with a small
- * uniform margin. The board is square (min of the two axes drives the fit), so it reads well from
- * ~360px up. Pure: given the same inputs it returns the same layout, so a tap hit-test and the draw
- * loop agree exactly.
+ * The concrete canvas colors for Reversi: the shared board surface (wood squares + lines + text) plus
+ * the two disc colors and their rims. The legal-move HINT is not a fixed color here - it is tinted to
+ * the side to move at draw time (see the Viewer), so a violet turn shows violet hints and an amber
+ * turn shows amber hints, never a fixed third color that reads as one of the sides.
  */
-export function layoutBoard(width: number, height: number, size: number, margin = 8): BoardLayout {
-  const box = Math.max(0, Math.min(width, height) - margin * 2);
-  const cell = size > 0 ? box / size : 0;
-  const board = cell * size;
-  return {
-    originX: (width - board) / 2,
-    originY: (height - board) / 2,
-    cell,
-    size,
-  };
-}
-
-/** The pixel box of cell `{row,col}` under a layout (for drawing a square/disc). */
-export function cellBox(layout: BoardLayout, row: number, col: number): CellBox {
-  return {
-    x: layout.originX + col * layout.cell,
-    y: layout.originY + row * layout.cell,
-    size: layout.cell,
-  };
-}
-
-/**
- * Hit-test a canvas-local pixel `{px,py}` back to a board cell, or null if it falls outside the grid.
- * The inverse of {@link cellBox}: a tap anywhere on the board resolves to the cell it lands in. Used
- * by the Viewer's tap handler to turn a touch into a placement.
- */
-export function cellAt(
-  layout: BoardLayout,
-  px: number,
-  py: number,
-): { row: number; col: number } | null {
-  if (layout.cell <= 0) return null;
-  const col = Math.floor((px - layout.originX) / layout.cell);
-  const row = Math.floor((py - layout.originY) / layout.cell);
-  if (row < 0 || row >= layout.size || col < 0 || col >= layout.size) return null;
-  return { row, col };
-}
-
-/** The concrete canvas colors for the board scenery + the two disc colors, resolved from theme tokens. */
-export interface BoardChrome {
-  /** The two alternating wood-grain square tints. */
-  light: string;
-  dark: string;
-  /** The grid line + board border. */
-  line: string;
+export interface BoardChrome extends BoardSurface {
   /** The two disc colors (Violet = grape, Amber = sunbeam) and their rims. */
   violet: string;
   violetRim: string;
   amber: string;
   amberRim: string;
-  /** The legal-move hint dot. */
-  hint: string;
-  text: string;
 }
 
 /**
- * Resolve the board chrome from Branch Out theme tokens (the canopy grape/sunbeam families), reading
- * the CSS custom properties off the given element's computed style with on-brand fallbacks for SSR /
- * first paint. NO hardcoded brand hex in the component: the disc colors come from `--color-primary`
- * (grape/violet) and `--color-accent` (sunbeam/amber); the wood grain from surface tones. Fallbacks
- * mirror the token values so a canvas rendered before styles apply still looks right.
+ * Resolve Reversi's board chrome from Branch Out theme tokens, reading the CSS custom properties off
+ * the given element's computed style with fallbacks for SSR / first paint. NO mismatched hardcoded
+ * brand hex: every fallback is the exact value of the token it fronts.
+ *
+ * The board is genuinely WOOD-TONED: the square tints come from the WARM honey ramp (a shared
+ * primitive, theme-independent), not the cool stone surface ramp - so the shipped dark theme renders
+ * warm brown wood, not grey-purple stone, and the pre-paint fallback matches the live look. The disc
+ * colors come from the brand ramps: Violet from grape (`--color-grape-500`), Amber from sunbeam
+ * (`--color-sunbeam-400`).
  */
 export function resolveBoardChrome(el: Element | null): BoardChrome {
-  const read = (name: string, fallback: string): string => {
-    if (!el || typeof window === 'undefined') return fallback;
-    const value = getComputedStyle(el).getPropertyValue(name).trim();
-    return value || fallback;
-  };
+  const read = (name: string, fallback: string): string => readCssVar(el, name, fallback);
   return {
-    // Wood-grain squares from warm surface tones (a checkerboard of two tints).
-    light: read('--color-surface-raised', '#4a3524'),
-    dark: read('--color-border-strong', '#2e2016'),
-    line: read('--color-border', '#1c130c'),
-    // Violet discs = grape (the primary brand ramp); Amber discs = sunbeam (the accent ramp).
-    violet: read('--color-primary', '#7C3AED'),
-    violetRim: read('--color-primary-active', '#5B21B6'),
-    amber: read('--color-accent', '#FACC15'),
-    amberRim: read('--color-accent-strong', '#A16207'),
-    hint: read('--color-ring', '#A78BFA'),
+    // Wood-grain squares from the WARM honey ramp (theme-independent primitives). Fallbacks are the
+    // exact honey token hex, so the pre-paint canvas already looks like warm wood, not cool stone.
+    light: read('--color-honey-800', '#92400e'),
+    dark: read('--color-honey-950', '#451a03'),
+    line: read('--color-honey-900', '#78350f'),
     text: read('--color-text', '#f4f4f5'),
+    // Violet discs = grape (the primary brand ramp); Amber discs = sunbeam (the accent ramp).
+    violet: read('--color-grape-500', '#8b5cf6'),
+    violetRim: read('--color-grape-700', '#6d28d9'),
+    amber: read('--color-sunbeam-400', '#facc15'),
+    amberRim: read('--color-sunbeam-600', '#ca8a04'),
   };
 }

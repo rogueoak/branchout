@@ -73,6 +73,9 @@ function drawBoard(
   showHints: boolean,
 ): void {
   const legal = new Set(showHints ? sim.legal.map((m) => `${m.row},${m.col}`) : []);
+  // Tint the legal-move hint to the side to move, so a violet turn shows violet hints and an amber
+  // turn amber - the affordance always matches whose turn it is, never a fixed third color.
+  const hintColor = sim.toMove === 'amber' ? chrome.amber : chrome.violet;
   for (let row = 0; row < sim.size; row += 1) {
     for (let col = 0; col < sim.size; col += 1) {
       const box = cellBox(layout, row, col);
@@ -92,7 +95,7 @@ function drawBoard(
         const cy = box.y + box.size / 2;
         ctx.beginPath();
         ctx.arc(cx, cy, box.size * 0.12, 0, Math.PI * 2);
-        ctx.fillStyle = chrome.hint;
+        ctx.fillStyle = hintColor;
         ctx.globalAlpha = 0.7;
         ctx.fill();
         ctx.globalAlpha = 1;
@@ -167,6 +170,12 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
   const toMove = sim?.toMove ?? null;
   const activeName = sim && sim.activePlayer ? nicknameOf(state, sim.activePlayer) : null;
 
+  // A side's tally is emphasized when it is that side's turn (mid-game) OR, once the game is over, when
+  // that side WON - so at game over the winner's count still pops (it is the number a player looks to
+  // first). A draw highlights neither.
+  const highlightViolet = sim?.over ? sim.outcome === 'violet' : toMove === 'violet';
+  const highlightAmber = sim?.over ? sim.outcome === 'amber' : toMove === 'amber';
+
   const turnLine = sim?.over
     ? sim.outcome === 'draw'
       ? 'Game over - a draw.'
@@ -179,8 +188,15 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
         ? `Waiting for ${activeName} (${toMove ? SIDE_LABEL[toMove] : ''}).`
         : 'Waiting for the next move.';
 
+  // The forced-pass notice is broadcast to both devices, so phrase it relative to `me`: if I now hold
+  // the turn again the OTHER side was skipped (I got an extra turn); otherwise it was MY turn that got
+  // skipped. A single fixed vantage would read backwards on the skipped player's phone.
   const passLine =
-    sim?.passed && !sim.over ? 'No legal move for the other side - they passed.' : '';
+    sim?.passed && !sim.over
+      ? isActive
+        ? 'The other side had no legal move - your turn again.'
+        : 'You had no legal move - your turn was skipped.'
+      : '';
 
   return (
     // Fill the single-surface stage height so the whole board fits the viewport without page scroll.
@@ -189,7 +205,7 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
       <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-raised px-3 py-2">
         <span
           className={`flex items-center gap-2 text-body-sm font-semibold ${
-            toMove === 'violet' && !sim?.over ? 'text-primary' : 'text-text'
+            highlightViolet ? 'text-primary' : 'text-text'
           }`}
         >
           <span
@@ -200,7 +216,7 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
         </span>
         <span
           className={`flex items-center gap-2 text-body-sm font-semibold ${
-            toMove === 'amber' && !sim?.over ? 'text-accent-strong' : 'text-text'
+            highlightAmber ? 'text-accent-strong' : 'text-text'
           }`}
         >
           Amber {amber}

@@ -198,7 +198,7 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
           heading: 'On your turn',
           body: [
             'Place one disc of your color on an empty square so that, in a straight line (across, ' +
-              'down, or diagonally), it traps one or more of your opponent’s discs between the ' +
+              "down, or diagonally), it traps one or more of your opponent's discs between the " +
               'new disc and another of yours. Every trapped disc in every such line flips to your ' +
               'color. A placement that traps nothing is not allowed - the board highlights your ' +
               'legal squares.',

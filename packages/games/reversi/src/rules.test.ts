@@ -3,7 +3,7 @@
 // These are pure over the board - no engine, no rng - so they pin the correctness-heavy core exactly.
 
 import { describe, it, expect } from 'vitest';
-import { emptyGrid, gridFromCells, type Seat } from './board';
+import { emptyGrid, gridFromCells, type Seat } from '@branchout/game-board';
 import {
   applyMove,
   BOARD_SIZE,
@@ -336,6 +336,28 @@ describe('forced pass + game over', () => {
     expect(hasLegalMove(allViolet, VIOLET)).toBe(false);
     expect(hasLegalMove(allViolet, AMBER)).toBe(false);
     expect(isGameOver(allViolet)).toBe(true);
+  });
+
+  it('is game over when both sides must pass with empty squares remaining', () => {
+    // The realistic ending: the board is NOT full, but neither side can bracket. A lone 2x2 block of
+    // same-color discs in the corner cannot be bracketed by anyone - every empty neighbor lacks an OWN
+    // disc on the far side to close a bracket - so both seats are stuck while empties remain. This is
+    // the partition a full board never exercises.
+    const stuck = board([
+      'VV......',
+      'VV......',
+      EMPTY_ROW,
+      EMPTY_ROW,
+      EMPTY_ROW,
+      EMPTY_ROW,
+      EMPTY_ROW,
+      EMPTY_ROW,
+    ]);
+    // Empty squares remain, yet neither side has a legal move.
+    expect(stuck.count((c) => c === 'empty')).toBeGreaterThan(0);
+    expect(hasLegalMove(stuck, VIOLET)).toBe(false);
+    expect(hasLegalMove(stuck, AMBER)).toBe(false);
+    expect(isGameOver(stuck)).toBe(true);
   });
 });
 

@@ -14,7 +14,7 @@
 //     (your turn is skipped). If NEITHER side has a legal move, the game is over.
 //   - The winner is whoever has more discs of their color when it ends (equal discs is a draw).
 
-import { ALL_DIRECTIONS, emptyGrid, Grid, type Coord, type Seat } from './board';
+import { ALL_DIRECTIONS, emptyGrid, Grid, type Coord, type Seat } from '@branchout/game-board';
 
 /** The board is 8x8, the standard Reversi size. */
 export const BOARD_SIZE = 8;

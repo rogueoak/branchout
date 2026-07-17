@@ -1,6 +1,6 @@
-// Unit tests for the reusable board harness (spec 0054): the Grid value type, the compass steps, and
-// two-player turn/seat management. These are game-agnostic - Checkers and Chess reuse this exact
-// machinery, so pinning it here protects all three.
+// Unit tests for the reusable, game-agnostic board harness (spec 0054): the Grid value type, the
+// compass steps, and two-player turn/seat management. These are game-agnostic - Reversi, Checkers,
+// and Chess all reuse this exact machinery, so pinning it here protects every consumer.
 
 import { describe, it, expect } from 'vitest';
 import {

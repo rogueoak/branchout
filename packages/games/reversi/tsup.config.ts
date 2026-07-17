@@ -10,5 +10,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: false,
-  external: ['@branchout/protocol', '@branchout/game-sdk'],
+  external: ['@branchout/protocol', '@branchout/game-sdk', '@branchout/game-board'],
 });

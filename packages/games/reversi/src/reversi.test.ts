@@ -102,6 +102,24 @@ describe('collectMove - turn + legality enforcement', () => {
     expect(res.rejected).toEqual({ reason: 'malformed move' });
   });
 
+  it('rejects any move once the game is over', () => {
+    const game = createReversiGame();
+    // A finished board (over: true). Even the seat to move is refused - the game accepts no more moves.
+    const full = cellsFrom([
+      'VVVVVVVV',
+      'VVVVVVVV',
+      'VVVVVVVV',
+      'VVVVVVVV',
+      'AAAAAAAA',
+      'AAAAAAAA',
+      'AAAAAAAA',
+      'AAAAAAAA',
+    ]);
+    const scratch = { cells: full, seats: ['violet', 'amber'], turn: 0, passed: false, over: true };
+    const res = game.collectMove(ctx({ scratch }), 'violet', mv(0, 0));
+    expect(res.rejected).toEqual({ reason: 'game over' });
+  });
+
   it('applies a legal move: flips the bracketed disc and passes the turn to amber', () => {
     const game = createReversiGame();
     const scratch = game.configure({}, players('violet', 'amber')).scratch;
@@ -173,6 +191,42 @@ describe('game over + standings', () => {
     expect(amber?.rank).toBe(2);
     expect(violet?.score).toBe(40);
     expect(amber?.score).toBe(24);
+  });
+
+  it('reaches over through a real move on a near-terminal board (not a pre-set flag)', () => {
+    const game = createReversiGame();
+    // A near-terminal position (verified by search): the board is full except (0,0). Violet has NO
+    // legal move; amber's ONLY legal move is (0,0), which along the top row brackets the whole run of
+    // violet discs up to amber at (0,7). Filling it makes the board full, so AFTER the move neither
+    // side can move and the game ends - driven entirely through collectMove -> resolveTurn's over
+    // branch, not an injected over:true. A regression that stops setting `over` on the last move
+    // would fail here.
+    const cells = cellsFrom([
+      '.VVVVVVA',
+      'VVVVVVVV',
+      'VVVVVVVV',
+      'VVVVVVVV',
+      'VVVVVVVV',
+      'VVVVVVVV',
+      'VVVVVVVV',
+      'VVVVVVVV',
+    ]);
+    // turn 1 = amber to move (the only side with a move); over is NOT pre-set.
+    const scratch = { cells, seats: ['violet', 'amber'], turn: 1, passed: false, over: false };
+    const res = game.collectMove(ctx({ scratch }), 'amber', mv(0, 0));
+    expect(res.rejected).toBeUndefined();
+    const s = res.scratch as { over: boolean; cells: Cell[] };
+    // The over flag was produced by the move, not injected.
+    expect(s.over).toBe(true);
+    expect(s.cells.includes('empty')).toBe(false);
+    // And a subsequent tick agrees the game is over.
+    const sim = tick(game, ctx({ scratch: res.scratch }));
+    expect(sim.over).toBe(true);
+    expect(sim.toMove).toBeNull();
+    // Amber's last move flips the top-row violets, but violet still holds the board majority.
+    expect(sim.outcome).toBe('violet');
+    expect(sim.violet).toBe(56);
+    expect(sim.amber).toBe(8);
   });
 
   it('reports a draw and shared rank on an equal disc count', () => {

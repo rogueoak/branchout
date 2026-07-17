@@ -28,7 +28,7 @@ import type {
   SessionPlayer,
   StartRoundResult,
 } from '@branchout/game-sdk';
-import { assignSeats, gridFromCells, otherSeat, Turns, type Seat } from './board';
+import { assignSeats, gridFromCells, otherSeat, Turns, type Seat } from '@branchout/game-board';
 import {
   applyMove,
   BOARD_SIZE,

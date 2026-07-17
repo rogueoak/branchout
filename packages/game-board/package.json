@@ -1,8 +1,8 @@
 {
-  "name": "@branchout/game-reversi",
+  "name": "@branchout/game-board",
   "version": "1.0.0",
   "private": true,
-  "description": "Reversi: the classic disc-flip board game, as a @branchout/game-sdk live-model plugin (spec 0054). First of the board-game family; its board harness is reused by Checkers and Chess.",
+  "description": "The game-agnostic board harness for Branch out's board-game family (spec 0054): a serializable square Grid, the eight compass ray steps, and two-seat turn/seat management. Reversi is the first consumer; Checkers and Chess reuse the same primitives without depending on any one game's package.",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -22,9 +22,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@branchout/protocol": "workspace:*",
-    "@branchout/game-sdk": "workspace:*",
-    "@branchout/game-board": "workspace:*"
+    "@branchout/game-sdk": "workspace:*"
   },
   "devDependencies": {
     "@branchout/config": "workspace:*",

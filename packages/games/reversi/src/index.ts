@@ -8,22 +8,10 @@ export {
   type ReversiConfig,
 } from './reversi';
 
-// The reusable board harness (Checkers and Chess build on these; re-exported so a sibling game can
-// import them from the family's first package or lift them to a shared package later).
-export {
-  Grid,
-  gridFromCells,
-  emptyGrid,
-  Turns,
-  assignSeats,
-  otherSeat,
-  ORTHOGONAL,
-  DIAGONAL,
-  ALL_DIRECTIONS,
-  type Coord,
-  type Step,
-  type Seat,
-} from './board';
+// The reusable board harness (Grid, compass rays, Turns/assignSeats) now lives in its OWN shared
+// package, @branchout/game-board, so Checkers and Chess depend on the harness directly rather than on
+// this Reversi package. Reversi consumes those primitives internally (see rules.ts / reversi.ts) but
+// no longer re-exports them - a sibling game imports them from @branchout/game-board.
 
 // Reversi's rules (pure, unit-tested).
 export {

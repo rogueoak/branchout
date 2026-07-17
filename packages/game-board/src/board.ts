@@ -1,14 +1,16 @@
-// The reusable board harness (spec 0054). Reversi is the FIRST board game on the platform; Checkers
-// and Chess will follow, so the generic, game-agnostic board machinery lives here - deliberately
-// separate from Reversi's rules (reversi.ts). Anything a square-grid, two-player, turn-based board
-// game needs is here; anything about DISCS and FLIPPING is not.
+// The reusable, game-AGNOSTIC board harness (spec 0054). Reversi is the FIRST board game on the
+// platform; Checkers and Chess follow, so the generic square-grid machinery lives in this shared
+// package - deliberately separate from any one game's rules. Anything a square-grid, two-player,
+// turn-based board game needs is here; anything about a specific game's PIECES (Reversi's discs and
+// flipping, Chess's six piece types, Checkers's men/kings) is not. A board game depends on THIS
+// package for the primitives, never on a sibling game's package.
 //
 // What this module owns (all pure + fully serializable - no in-process world, so a live board module
 // has no `disposeLive`):
 //   - A `Grid<T>` value type: a square board of cells, addressable by {row,col}, that round-trips
 //     through scratch as a flat array (JSON-safe).
 //   - Coordinate helpers: bounds checks, index<->coord conversion, and the eight compass directions
-//     (the ray-walk primitive both Reversi's flips and a future queen/rook slide are built on).
+//     (the ray-walk primitive a Reversi flip, a rook slide, and a bishop slide are all built on).
 //   - Turn management: a two-player seat model that maps engine `SessionPlayer`s to board sides and
 //     tracks whose turn it is, with a helper to resolve the active player id.
 // A board GAME layers its rules (legal-move generation, applying a move, end/scoring) on top by

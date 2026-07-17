@@ -117,11 +117,33 @@ describe('ReversiViewer single interactive surface', () => {
     expect(onMove).not.toHaveBeenCalled();
   });
 
-  it('announces a forced pass', () => {
+  it('announces a forced pass from the skipped player vantage (it was my turn)', () => {
+    // activePlayer is p1, so from p2's phone p2 was the one skipped (they do not hold the turn).
     render(
-      <ReversiViewer state={state({ sim: reversiSim({ passed: true }) })} me="p2" onMove={noop} />,
+      <ReversiViewer
+        state={state({ sim: reversiSim({ passed: true, activePlayer: 'p1' }) })}
+        me="p2"
+        onMove={noop}
+      />,
     );
-    expect(screen.getByRole('status').textContent).toMatch(/passed/i);
+    const text = screen.getByRole('status').textContent ?? '';
+    expect(text).toMatch(/your turn was skipped/i);
+    // The skipped player must NOT be told the other side passed - that reads backwards.
+    expect(text).not.toMatch(/your turn again/i);
+  });
+
+  it('announces a forced pass from the extra-turn vantage (the other side was skipped)', () => {
+    // activePlayer is p1 and me is p1, so p1 kept the turn - the OTHER side had no move.
+    render(
+      <ReversiViewer
+        state={state({ sim: reversiSim({ passed: true, activePlayer: 'p1' }) })}
+        me="p1"
+        onMove={noop}
+      />,
+    );
+    const text = screen.getByRole('status').textContent ?? '';
+    expect(text).toMatch(/your turn again/i);
+    expect(text).not.toMatch(/your turn was skipped/i);
   });
 
   it('announces the winner when the game is over', () => {
@@ -133,6 +155,24 @@ describe('ReversiViewer single interactive surface', () => {
       />,
     );
     expect(screen.getByRole('status').textContent).toMatch(/amber wins/i);
+  });
+
+  it('keeps the winning tally highlighted at game over', () => {
+    render(
+      <ReversiViewer
+        state={state({
+          sim: reversiSim({ over: true, toMove: null, outcome: 'amber', violet: 20, amber: 44 }),
+        })}
+        me="p1"
+        onMove={noop}
+      />,
+    );
+    // Amber won: its tally keeps the accent highlight; Violet's drops to plain text.
+    const amberSpan = screen.getByText(/Amber 44/).closest('span')!;
+    const violetSpan = screen.getByText(/Violet 20/).closest('span')!;
+    expect(amberSpan.className).toContain('text-accent-strong');
+    expect(violetSpan.className).toContain('text-text');
+    expect(violetSpan.className).not.toContain('text-primary');
   });
 
   it('renders the reject alert copy when the engine rejected a move', () => {
