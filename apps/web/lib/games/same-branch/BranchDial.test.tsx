@@ -9,6 +9,8 @@ describe('BranchDial', () => {
     expect(screen.getByText('hot')).toBeDefined();
     const slider = screen.getByRole('slider', { name: 'the branch' });
     expect(slider.getAttribute('aria-valuenow')).toBe('40');
+    // The valuetext names the two ends so a screen reader conveys which way the value leans.
+    expect(slider.getAttribute('aria-valuetext')).toBe('40 of 100, between cold and hot');
   });
 
   it('moves the sap line with the keyboard when interactive', () => {

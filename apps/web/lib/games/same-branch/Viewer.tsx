@@ -1,10 +1,10 @@
 'use client';
 
-// Same Branch viewer: the shared screen everyone watches. It shows the branch (its two ends), who the
-// Reader is, and - once given - the Reader's hunch, while the grove sets the sap line. At reveal it
-// paints the bud and every guess on the branch and shows who landed where. The bud is NEVER shown here
-// before the reveal - the viewer only ever reads the broadcast prompt/reveal, never the private secret.
-// It reads state; it never drives the game.
+// Same Branch viewer: the shared screen everyone watches. It shows the branch (its two ends) and who
+// the Reader is while the grove sets the sap line; the Reader reads the hunch aloud (it is not
+// broadcast mid-round). At reveal it paints the bud, the Reader's hunch, and every guess on the branch
+// and shows who landed where. The bud is NEVER shown here before the reveal - the viewer only ever
+// reads the broadcast prompt/reveal, never the private secret. It reads state; it never drives the game.
 
 import type { PlayerView } from '@branchout/protocol';
 import { Badge } from '@rogueoak/canopy';

@@ -119,8 +119,8 @@ export function SameBranchRemote({
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <p className="text-body text-text">
-          {prompt.reader ? `The Reader's hunch is on the viewer. ` : ''}Move the sap line to where
-          you think the bud is.
+          Listen for the Reader&apos;s hunch, then move the sap line to where you think the bud is.
+          The hunch and the bud show on the viewer at the reveal.
         </p>
         <BranchDial
           left={prompt.left}

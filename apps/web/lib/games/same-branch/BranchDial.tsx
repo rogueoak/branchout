@@ -129,6 +129,9 @@ export function BranchDial({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={value ?? undefined}
+        aria-valuetext={
+          value === null ? undefined : `${value} of 100, between ${left} and ${right}`
+        }
         aria-disabled={disabled || undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
