@@ -1,0 +1,122 @@
+[
+  {
+    "id": "people-001",
+    "category": "people",
+    "left": "a follower",
+    "right": "a leader"
+  },
+  {
+    "id": "people-002",
+    "category": "people",
+    "left": "an introvert",
+    "right": "an extrovert"
+  },
+  {
+    "id": "people-003",
+    "category": "people",
+    "left": "a realist",
+    "right": "a dreamer"
+  },
+  {
+    "id": "people-004",
+    "category": "people",
+    "left": "a rule-breaker",
+    "right": "a rule-follower"
+  },
+  {
+    "id": "people-005",
+    "category": "people",
+    "left": "a night owl",
+    "right": "an early bird"
+  },
+  {
+    "id": "people-006",
+    "category": "people",
+    "left": "a saver",
+    "right": "a spender"
+  },
+  {
+    "id": "people-007",
+    "category": "people",
+    "left": "a planner",
+    "right": "a free spirit"
+  },
+  {
+    "id": "people-008",
+    "category": "people",
+    "left": "a listener",
+    "right": "a talker"
+  },
+  {
+    "id": "people-009",
+    "category": "people",
+    "left": "a skeptic",
+    "right": "a believer"
+  },
+  {
+    "id": "people-010",
+    "category": "people",
+    "left": "a homebody",
+    "right": "an adventurer"
+  },
+  {
+    "id": "people-011",
+    "category": "people",
+    "left": "a pessimist",
+    "right": "an optimist"
+  },
+  {
+    "id": "people-012",
+    "category": "people",
+    "left": "a beginner",
+    "right": "an expert"
+  },
+  {
+    "id": "people-013",
+    "category": "people",
+    "left": "a villain",
+    "right": "a hero"
+  },
+  {
+    "id": "people-014",
+    "category": "people",
+    "left": "a sidekick",
+    "right": "a main character"
+  },
+  {
+    "id": "people-015",
+    "category": "people",
+    "left": "a lightweight",
+    "right": "a heavyweight"
+  },
+  {
+    "id": "people-016",
+    "category": "people",
+    "left": "a rookie",
+    "right": "a veteran"
+  },
+  {
+    "id": "people-017",
+    "category": "people",
+    "left": "low-key",
+    "right": "famous"
+  },
+  {
+    "id": "people-018",
+    "category": "people",
+    "left": "a minimalist",
+    "right": "a collector"
+  },
+  {
+    "id": "people-019",
+    "category": "people",
+    "left": "a peacemaker",
+    "right": "a troublemaker"
+  },
+  {
+    "id": "people-020",
+    "category": "people",
+    "left": "a quiet genius",
+    "right": "a loud show-off"
+  }
+]

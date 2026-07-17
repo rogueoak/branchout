@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Same Branch">
+  <defs>
+    <linearGradient id="sb-spark" gradientUnits="userSpaceOnUse" x1="96" y1="300" x2="416" y2="300">
+      <stop offset="0"   stop-color="#7C3AED"/>
+      <stop offset="0.5" stop-color="#EC4899"/>
+      <stop offset="1"   stop-color="#FBBF24"/>
+    </linearGradient>
+    <radialGradient id="sb-bg" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0" stop-color="#221836"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="sb-glow" cx="0.5" cy="0.55" r="0.5">
+      <stop offset="0" stop-color="#EC4899" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#EC4899" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sb-bg)"/>
+  <circle cx="256" cy="300" r="200" fill="url(#sb-glow)"/>
+
+  <!-- The branch: a dial arc spanning two opposite ends (root at left, tip at right). -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M96 340 A200 200 0 0 1 416 340" stroke="url(#sb-spark)" stroke-width="18" opacity="0.18"/>
+    <path d="M96 340 A200 200 0 0 1 416 340" stroke="url(#sb-spark)" stroke-width="9"/>
+  </g>
+
+  <!-- The bud: the hidden sweet spot, a bright band on the branch (upper right of the arc). -->
+  <g fill="none" stroke="#4ADE80" stroke-linecap="round">
+    <path d="M330 178 A200 200 0 0 1 372 214" stroke-width="20" opacity="0.35"/>
+    <path d="M330 178 A200 200 0 0 1 372 214" stroke-width="11"/>
+  </g>
+  <circle cx="351" cy="195" r="7" fill="#bbf7d0"/>
+
+  <!-- The two branch ends: leaf nodes marking the opposite extremes. -->
+  <circle cx="96"  cy="340" r="16" fill="#7C3AED"/>
+  <circle cx="96"  cy="340" r="8"  fill="#A78BFA"/>
+  <circle cx="416" cy="340" r="16" fill="#FBBF24"/>
+  <circle cx="416" cy="340" r="8"  fill="#FDE047"/>
+
+  <!-- The sap line: the pointer the grove swings to guess, pivoting from the gold root. -->
+  <g stroke-linecap="round">
+    <line x1="256" y1="340" x2="204" y2="178" stroke="#c9d2da" stroke-width="10" opacity="0.25"/>
+    <line x1="256" y1="340" x2="204" y2="178" stroke="#f4f6f8" stroke-width="5"/>
+  </g>
+  <circle cx="204" cy="178" r="8" fill="#f4f6f8"/>
+
+  <!-- Gold root node: the pivot of the dial and the base of the branch. -->
+  <circle cx="256" cy="340" r="22" fill="#0d0a15"/>
+  <circle cx="256" cy="340" r="15" fill="#d2a463"/>
+  <circle cx="256" cy="340" r="6"  fill="#f0d9b5"/>
+</svg>

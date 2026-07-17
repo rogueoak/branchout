@@ -1,0 +1,12 @@
+[
+  { "id": "feelings-001", "word": "wonder", "category": "feelings" },
+  { "id": "feelings-002", "word": "courage", "category": "feelings" },
+  { "id": "feelings-003", "word": "nostalgia", "category": "feelings" },
+  { "id": "feelings-004", "word": "gratitude", "category": "feelings" },
+  { "id": "feelings-005", "word": "curiosity", "category": "feelings" },
+  { "id": "feelings-006", "word": "relief", "category": "feelings" },
+  { "id": "feelings-007", "word": "delight", "category": "feelings" },
+  { "id": "feelings-008", "word": "patience", "category": "feelings" },
+  { "id": "feelings-009", "word": "mischief", "category": "feelings" },
+  { "id": "feelings-010", "word": "serenity", "category": "feelings" }
+]

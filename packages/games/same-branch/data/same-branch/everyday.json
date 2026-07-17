@@ -1,0 +1,122 @@
+[
+  {
+    "id": "everyday-001",
+    "category": "everyday",
+    "left": "cheap",
+    "right": "expensive"
+  },
+  {
+    "id": "everyday-002",
+    "category": "everyday",
+    "left": "boring chore",
+    "right": "fun task"
+  },
+  {
+    "id": "everyday-003",
+    "category": "everyday",
+    "left": "useless",
+    "right": "useful"
+  },
+  {
+    "id": "everyday-004",
+    "category": "everyday",
+    "left": "ugly",
+    "right": "beautiful"
+  },
+  {
+    "id": "everyday-005",
+    "category": "everyday",
+    "left": "messy",
+    "right": "tidy"
+  },
+  {
+    "id": "everyday-006",
+    "category": "everyday",
+    "left": "slow",
+    "right": "fast"
+  },
+  {
+    "id": "everyday-007",
+    "category": "everyday",
+    "left": "old-fashioned",
+    "right": "modern"
+  },
+  {
+    "id": "everyday-008",
+    "category": "everyday",
+    "left": "common",
+    "right": "rare"
+  },
+  {
+    "id": "everyday-009",
+    "category": "everyday",
+    "left": "simple",
+    "right": "complicated"
+  },
+  {
+    "id": "everyday-010",
+    "category": "everyday",
+    "left": "unhealthy snack",
+    "right": "healthy snack"
+  },
+  {
+    "id": "everyday-011",
+    "category": "everyday",
+    "left": "casual outfit",
+    "right": "formal outfit"
+  },
+  {
+    "id": "everyday-012",
+    "category": "everyday",
+    "left": "weak coffee",
+    "right": "strong coffee"
+  },
+  {
+    "id": "everyday-013",
+    "category": "everyday",
+    "left": "guilty pleasure",
+    "right": "respectable hobby"
+  },
+  {
+    "id": "everyday-014",
+    "category": "everyday",
+    "left": "overrated",
+    "right": "underrated"
+  },
+  {
+    "id": "everyday-015",
+    "category": "everyday",
+    "left": "badly written",
+    "right": "well written"
+  },
+  {
+    "id": "everyday-016",
+    "category": "everyday",
+    "left": "cluttered room",
+    "right": "minimalist room"
+  },
+  {
+    "id": "everyday-017",
+    "category": "everyday",
+    "left": "leftovers",
+    "right": "fresh meal"
+  },
+  {
+    "id": "everyday-018",
+    "category": "everyday",
+    "left": "a bad gift",
+    "right": "a great gift"
+  },
+  {
+    "id": "everyday-019",
+    "category": "everyday",
+    "left": "low effort",
+    "right": "high effort"
+  },
+  {
+    "id": "everyday-020",
+    "category": "everyday",
+    "left": "flimsy",
+    "right": "sturdy"
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "feelings-001",
+    "category": "feelings",
+    "left": "calm",
+    "right": "anxious"
+  },
+  {
+    "id": "feelings-002",
+    "category": "feelings",
+    "left": "sad",
+    "right": "happy"
+  },
+  {
+    "id": "feelings-003",
+    "category": "feelings",
+    "left": "bored",
+    "right": "thrilled"
+  },
+  {
+    "id": "feelings-004",
+    "category": "feelings",
+    "left": "angry",
+    "right": "peaceful"
+  },
+  {
+    "id": "feelings-005",
+    "category": "feelings",
+    "left": "shy",
+    "right": "bold"
+  },
+  {
+    "id": "feelings-006",
+    "category": "feelings",
+    "left": "tired",
+    "right": "energetic"
+  },
+  {
+    "id": "feelings-007",
+    "category": "feelings",
+    "left": "scared",
+    "right": "brave"
+  },
+  {
+    "id": "feelings-008",
+    "category": "feelings",
+    "left": "confused",
+    "right": "clear-headed"
+  },
+  {
+    "id": "feelings-009",
+    "category": "feelings",
+    "left": "lonely",
+    "right": "connected"
+  },
+  {
+    "id": "feelings-010",
+    "category": "feelings",
+    "left": "tense",
+    "right": "relaxed"
+  },
+  {
+    "id": "feelings-011",
+    "category": "feelings",
+    "left": "jealous",
+    "right": "content"
+  },
+  {
+    "id": "feelings-012",
+    "category": "feelings",
+    "left": "hopeless",
+    "right": "hopeful"
+  },
+  {
+    "id": "feelings-013",
+    "category": "feelings",
+    "left": "embarrassed",
+    "right": "proud"
+  },
+  {
+    "id": "feelings-014",
+    "category": "feelings",
+    "left": "annoyed",
+    "right": "delighted"
+  },
+  {
+    "id": "feelings-015",
+    "category": "feelings",
+    "left": "numb",
+    "right": "moved"
+  },
+  {
+    "id": "feelings-016",
+    "category": "feelings",
+    "left": "distracted",
+    "right": "focused"
+  },
+  {
+    "id": "feelings-017",
+    "category": "feelings",
+    "left": "guilty",
+    "right": "carefree"
+  },
+  {
+    "id": "feelings-018",
+    "category": "feelings",
+    "left": "grumpy",
+    "right": "cheerful"
+  },
+  {
+    "id": "feelings-019",
+    "category": "feelings",
+    "left": "nervous",
+    "right": "confident"
+  },
+  {
+    "id": "feelings-020",
+    "category": "feelings",
+    "left": "grief",
+    "right": "joy"
+  }
+]

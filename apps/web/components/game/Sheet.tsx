@@ -7,7 +7,7 @@
 // scroll lock (RemoveScroll), a portal, and it marks the rest of the page inert/aria-hidden via
 // DismissableLayer - i.e. it provides modal SEMANTICS, though it does NOT set an explicit `aria-modal`
 // attribute in this version - so we do not hand-roll a11y, only the position:
-//   phone:   fixed to the bottom edge, rounded top, up to 85vh tall, slides up.
+//   phone:   fixed to the bottom edge, rounded top, up to 80dvh (80% of the visible viewport), slides up.
 //   desktop: pinned to the right edge, full height, capped width, slides in from the right.
 // Motion (spec 0051's intent): keyed off Radix's `data-[state=open|closed]` on Content/Overlay, using
 // the roots `bottom-sheet`/`fade` presets on phone + overlay and a right-drawer keyframe (in
@@ -42,8 +42,13 @@ export function Sheet({ open, onOpenChange, title, trigger, children }: SheetPro
           aria-describedby={undefined}
           className={
             // Phone: pinned to the bottom edge, rounded top, capped height, scrollable body inside.
-            // Slides up from the bottom edge on open, back down on close.
-            'fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-xl ' +
+            // Slides up from the bottom edge on open, back down on close. The cap is 80dvh (80% of the
+            // DYNAMIC viewport = the actual visible area) not 80vh: `vh` is the LARGE viewport behind
+            // the mobile browser toolbar, so a bottom-anchored `vh` sheet runs off the top of the
+            // screen (its header/close land above the visible area) when the toolbar is showing - long
+            // rules (e.g. Checkers) hit that. `dvh` tracks the visible height, and the body already
+            // scrolls (min-h-0 flex-1 overflow-y-auto below), so long content scrolls inside the cap.
+            'fixed inset-x-0 bottom-0 z-50 flex max-h-[80dvh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-xl ' +
             'data-[state=open]:animate-bottom-sheet-in data-[state=closed]:animate-bottom-sheet-out ' +
             // Desktop: pinned to the right edge, full height, capped width, square corners. Slides in
             // from the right edge on open, back out on close (a right-anchored drawer keyframe lives in

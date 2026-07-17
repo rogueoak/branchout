@@ -1,0 +1,122 @@
+[
+  {
+    "id": "nature-001",
+    "category": "nature",
+    "left": "a puddle",
+    "right": "an ocean"
+  },
+  {
+    "id": "nature-002",
+    "category": "nature",
+    "left": "a pebble",
+    "right": "a mountain"
+  },
+  {
+    "id": "nature-003",
+    "category": "nature",
+    "left": "a breeze",
+    "right": "a hurricane"
+  },
+  {
+    "id": "nature-004",
+    "category": "nature",
+    "left": "a seedling",
+    "right": "an ancient tree"
+  },
+  {
+    "id": "nature-005",
+    "category": "nature",
+    "left": "a stream",
+    "right": "a waterfall"
+  },
+  {
+    "id": "nature-006",
+    "category": "nature",
+    "left": "a firefly",
+    "right": "the sun"
+  },
+  {
+    "id": "nature-007",
+    "category": "nature",
+    "left": "a desert",
+    "right": "a rainforest"
+  },
+  {
+    "id": "nature-008",
+    "category": "nature",
+    "left": "an ant",
+    "right": "an elephant"
+  },
+  {
+    "id": "nature-009",
+    "category": "nature",
+    "left": "a snowflake",
+    "right": "a glacier"
+  },
+  {
+    "id": "nature-010",
+    "category": "nature",
+    "left": "a spark",
+    "right": "a wildfire"
+  },
+  {
+    "id": "nature-011",
+    "category": "nature",
+    "left": "a raindrop",
+    "right": "a monsoon"
+  },
+  {
+    "id": "nature-012",
+    "category": "nature",
+    "left": "a hill",
+    "right": "a cliff"
+  },
+  {
+    "id": "nature-013",
+    "category": "nature",
+    "left": "a pond",
+    "right": "a lake"
+  },
+  {
+    "id": "nature-014",
+    "category": "nature",
+    "left": "dawn",
+    "right": "noon"
+  },
+  {
+    "id": "nature-015",
+    "category": "nature",
+    "left": "a meadow",
+    "right": "a jungle"
+  },
+  {
+    "id": "nature-016",
+    "category": "nature",
+    "left": "a twig",
+    "right": "a log"
+  },
+  {
+    "id": "nature-017",
+    "category": "nature",
+    "left": "a tame animal",
+    "right": "a wild animal"
+  },
+  {
+    "id": "nature-018",
+    "category": "nature",
+    "left": "a garden",
+    "right": "a wilderness"
+  },
+  {
+    "id": "nature-019",
+    "category": "nature",
+    "left": "a cool day",
+    "right": "a heatwave"
+  },
+  {
+    "id": "nature-020",
+    "category": "nature",
+    "left": "a trickle",
+    "right": "a flood"
+  }
+]

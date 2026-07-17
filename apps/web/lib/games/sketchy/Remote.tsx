@@ -1,0 +1,234 @@
+'use client';
+
+// Sketchy's remote: the private controller a player acts on (spec 0063). Its content depends on the
+// round stage the engine reports:
+//   - DRAW round (`collecting`, prompt.stage === 'draw'): show the player's OWN secret seed (read from
+//     `state.private`, spec 0052) and the drawing surface; on submit, serialize the sketch to the move
+//     channel.
+//   - SKETCH round (`collecting`, prompt.stage === 'sketch'): re-show the featured sketch (read-only)
+//     and take a decoy (a fake seed). The featured author instead waits. A rejected decoy (a duplicate
+//     or the true seed) shows the vague notice and lets them retype.
+//   - SKETCH round (`guessing`): offer the shuffled options to pick the true seed from, hiding the
+//     player's own decoy, which they cannot pick.
+// It never runs a timer or tallies; it sends frames and reflects the phase the engine reports.
+
+import { Badge, Button, Input } from '@rogueoak/canopy';
+import { useEffect, useState } from 'react';
+import type { GameRemoteProps } from '../registry';
+import { FinalResults } from '../../../components/game/FinalResults';
+import { Leaderboard } from '../../../components/game/Leaderboard';
+import { asSketchyPrompt, asSketchySeedSecret, pickOptions } from './protocol';
+import { DrawCanvas } from './DrawCanvas';
+import { SketchReplay } from './SketchReplay';
+import { emptySketch, isDrawn, serializeSketch, type Sketch } from './strokes';
+
+function normalize(text: string): string {
+  return text.trim().toLowerCase();
+}
+
+export function SketchyRemote({
+  state,
+  me,
+  showResults = false,
+  isHost = false,
+  onMove,
+  onVote,
+}: GameRemoteProps) {
+  const { phase, round } = state;
+  const prompt = asSketchyPrompt(state.prompt);
+  const secret = asSketchySeedSecret(state.private);
+
+  // Draw-stage local state: the in-progress sketch and whether it was submitted this round.
+  const [sketch, setSketch] = useState<Sketch>(emptySketch());
+  const [drawSubmittedRound, setDrawSubmittedRound] = useState<number | null>(null);
+  // Decoy-stage local state.
+  const [draft, setDraft] = useState('');
+  const [myDecoy, setMyDecoy] = useState('');
+  const [decoyRound, setDecoyRound] = useState<number | null>(null);
+  const [guessedRound, setGuessedRound] = useState<number | null>(null);
+
+  useEffect(() => {
+    setSketch(emptySketch());
+    setDrawSubmittedRound(null);
+    setDraft('');
+    setMyDecoy('');
+    setDecoyRound(null);
+    setGuessedRound(null);
+  }, [round]);
+
+  // ---- DRAW round ----
+  if (phase === 'collecting' && prompt?.stage === 'draw') {
+    const submitted = drawSubmittedRound === round;
+    const canSubmit = isDrawn(sketch) && !submitted;
+    return (
+      <section aria-label="Your controller" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-body-sm font-medium text-text">Your seed - draw it!</span>
+          {secret ? (
+            <Badge variant="primary" className="w-fit">
+              {secret.seed}
+            </Badge>
+          ) : (
+            <p className="text-body-sm text-text-subtle">Waiting for your secret seed...</p>
+          )}
+        </div>
+        <DrawCanvas sketch={sketch} onChange={setSketch} disabled={submitted} />
+        <Button
+          type="button"
+          variant="primary"
+          disabled={!canSubmit && !submitted}
+          onClick={() => {
+            if (!isDrawn(sketch)) return;
+            onMove(round, serializeSketch(sketch));
+            setDrawSubmittedRound(round);
+          }}
+        >
+          {submitted ? 'Resend sketch' : 'Submit sketch'}
+        </Button>
+        {submitted ? (
+          <p role="status" className="text-body-sm text-success">
+            Sketch submitted! Waiting for the others...
+          </p>
+        ) : (
+          <p className="text-body-sm text-text-subtle">
+            Draw your seed with a twig. Others will guess what it was.
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  // ---- SKETCH round, decoy stage ----
+  if (phase === 'collecting' && prompt?.stage === 'sketch') {
+    const iAmFeatured = prompt.featured === me;
+    if (iAmFeatured) {
+      return (
+        <section aria-label="Your controller" className="flex flex-col gap-3">
+          <p className="text-body text-text">This is your sketch! Sit tight.</p>
+          {prompt.sketch ? <SketchReplay sketch={prompt.sketch} label="Your sketch" /> : null}
+          <p className="text-body-sm text-text-subtle">
+            Everyone else is writing a fake seed for your drawing.
+          </p>
+        </section>
+      );
+    }
+    const trimmed = draft.trim();
+    const submitted = decoyRound === round && trimmed.length > 0 && trimmed === myDecoy;
+    const rejected = state.rejected !== null && decoyRound === round && trimmed === myDecoy;
+    const submit = () => {
+      if (!trimmed) return;
+      onMove(round, trimmed);
+      setMyDecoy(trimmed);
+      setDecoyRound(round);
+    };
+    return (
+      <section aria-label="Your controller" className="flex flex-col gap-3">
+        <p className="text-body-sm font-medium text-text">What was this a drawing of?</p>
+        {prompt.sketch ? <SketchReplay sketch={prompt.sketch} label="The sketch to guess" /> : null}
+        <div className="flex gap-2">
+          <Input
+            id="sketchy-decoy-input"
+            value={draft}
+            autoComplete="off"
+            placeholder="A convincing fake seed"
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') submit();
+            }}
+          />
+          <Button type="button" variant="primary" onClick={submit} disabled={!trimmed}>
+            {submitted && !rejected ? 'Resend' : 'Submit'}
+          </Button>
+        </div>
+        {rejected ? (
+          <Badge variant="danger" className="w-fit" role="alert">
+            {state.rejected} - try another.
+          </Badge>
+        ) : submitted ? (
+          <p role="status" className="text-body-sm text-success">
+            Decoy submitted! Waiting for the others...
+          </p>
+        ) : (
+          <p className="text-body-sm text-text-subtle">
+            Write a fake seed good enough to fool the room - but not the real one.
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  // ---- SKETCH round, guess stage ----
+  if (phase === 'guessing') {
+    const guess = pickOptions(state.reveals);
+    const options = guess?.options ?? [];
+    const iAmFeatured = guess?.featured === me;
+    // A player cannot pick their own decoy; hide it - but only when accepted.
+    const ownDecoy =
+      decoyRound === round && state.rejected === null && myDecoy ? normalize(myDecoy) : null;
+    const guessable = ownDecoy
+      ? options.filter((option) => normalize(option.text) !== ownDecoy)
+      : options;
+    const guessed = guessedRound === round;
+    if (iAmFeatured) {
+      return (
+        <section aria-label="Your controller" className="flex flex-col gap-3">
+          <p className="text-body text-text">Your sketch is up for guessing - sit this one out.</p>
+        </section>
+      );
+    }
+    return (
+      <section aria-label="Your controller" className="flex flex-col gap-3">
+        {showResults && guess?.sketch ? (
+          <SketchReplay sketch={guess.sketch} label="The sketch to guess" />
+        ) : null}
+        <p className="text-body text-text">Which one is the true seed?</p>
+        {guessed ? (
+          <p role="status" className="text-body-sm text-success">
+            Locked in! Waiting for the others...
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {guessable.map((option) => (
+              <Button
+                key={option.id}
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  onVote(round, option.id, true);
+                  setGuessedRound(round);
+                }}
+              >
+                {option.text}
+              </Button>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  if (showResults && phase === 'complete') {
+    return <FinalResults standings={state.standings} me={me} />;
+  }
+
+  if (showResults && phase === 'leaderboard') {
+    return (
+      <section aria-label="Your controller" className="flex flex-col gap-3">
+        <Leaderboard standings={state.standings} me={me} />
+        <p className="text-body-sm text-text-muted">
+          {isHost
+            ? 'Tap Next when you are ready for the next round.'
+            : 'Waiting for the host to start the next round.'}
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <p className="text-body-sm text-text-muted">
+      {phase === 'complete'
+        ? 'The game is over - see the results on the viewer.'
+        : 'Watch the viewer - the next round is coming up.'}
+    </p>
+  );
+}
