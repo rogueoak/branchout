@@ -31,7 +31,7 @@ const account = {
   id: 'a1',
   gamerTag: 'AdaL',
   nickname: 'Ada',
-  avatar: 'sprout',
+  avatar: 'fox',
   visibility: 'public' as const,
 };
 
@@ -49,16 +49,16 @@ describe('AccountClient', () => {
       'public',
     );
     // The picker offers every avatar.
-    expect(screen.getByRole('button', { name: 'Choose the berry avatar' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Choose the frog avatar' })).toBeDefined();
   });
 
   it('picks an avatar', async () => {
     api.fetchMe.mockResolvedValue({ kind: 'account', account });
-    api.setAvatar.mockResolvedValue({ ...account, avatar: 'berry' });
+    api.setAvatar.mockResolvedValue({ ...account, avatar: 'frog' });
     render(<AccountClient />);
     await screen.findByRole('heading', { name: 'Ada' });
-    fireEvent.click(screen.getByRole('button', { name: 'Choose the berry avatar' }));
-    await waitFor(() => expect(api.setAvatar).toHaveBeenCalledWith('berry'));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose the frog avatar' }));
+    await waitFor(() => expect(api.setAvatar).toHaveBeenCalledWith('frog'));
   });
 
   it('changes visibility through the native select', async () => {
@@ -85,10 +85,10 @@ describe('AccountClient', () => {
 
   it('confirms after saving an avatar', async () => {
     api.fetchMe.mockResolvedValue({ kind: 'account', account });
-    api.setAvatar.mockResolvedValue({ ...account, avatar: 'berry' });
+    api.setAvatar.mockResolvedValue({ ...account, avatar: 'frog' });
     render(<AccountClient />);
     await screen.findByRole('heading', { name: 'Ada' });
-    fireEvent.click(screen.getByRole('button', { name: 'Choose the berry avatar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose the frog avatar' }));
     expect(await screen.findByText('Avatar updated.')).toBeDefined();
   });
 
@@ -97,14 +97,14 @@ describe('AccountClient', () => {
     api.setAvatar.mockRejectedValue(new Error('network down'));
     render(<AccountClient />);
     await screen.findByRole('heading', { name: 'Ada' });
-    fireEvent.click(screen.getByRole('button', { name: 'Choose the berry avatar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose the frog avatar' }));
     expect(await screen.findByRole('alert')).toBeDefined();
     // Confirm-then-reflect: a failed write leaves the prior avatar selected (nothing to revert).
     expect(
-      screen.getByRole('button', { name: 'Choose the sprout avatar' }).getAttribute('aria-pressed'),
+      screen.getByRole('button', { name: 'Choose the fox avatar' }).getAttribute('aria-pressed'),
     ).toBe('true');
     expect(
-      screen.getByRole('button', { name: 'Choose the berry avatar' }).getAttribute('aria-pressed'),
+      screen.getByRole('button', { name: 'Choose the frog avatar' }).getAttribute('aria-pressed'),
     ).toBe('false');
   });
 

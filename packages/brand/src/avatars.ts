@@ -4,33 +4,33 @@
 // Web renders these; the pure id list + validators live in the sibling `./avatar-ids` (server-safe).
 
 import type { AvatarId } from './avatar-ids';
-import sprout from '../../../assets/avatars/avatar-sprout.svg';
-import berry from '../../../assets/avatars/avatar-berry.svg';
-import sunny from '../../../assets/avatars/avatar-sunny.svg';
-import bloom from '../../../assets/avatars/avatar-bloom.svg';
-import pebble from '../../../assets/avatars/avatar-pebble.svg';
-import maple from '../../../assets/avatars/avatar-maple.svg';
-import coral from '../../../assets/avatars/avatar-coral.svg';
-import indigo from '../../../assets/avatars/avatar-indigo.svg';
-import mint from '../../../assets/avatars/avatar-mint.svg';
-import plum from '../../../assets/avatars/avatar-plum.svg';
-import ember from '../../../assets/avatars/avatar-ember.svg';
-import sky from '../../../assets/avatars/avatar-sky.svg';
+import fox from '../../../assets/avatars/avatar-fox.svg';
+import frog from '../../../assets/avatars/avatar-frog.svg';
+import owl from '../../../assets/avatars/avatar-owl.svg';
+import bear from '../../../assets/avatars/avatar-bear.svg';
+import deer from '../../../assets/avatars/avatar-deer.svg';
+import hedgehog from '../../../assets/avatars/avatar-hedgehog.svg';
+import bee from '../../../assets/avatars/avatar-bee.svg';
+import ladybug from '../../../assets/avatars/avatar-ladybug.svg';
+import mushroom from '../../../assets/avatars/avatar-mushroom.svg';
+import cactus from '../../../assets/avatars/avatar-cactus.svg';
+import sunflower from '../../../assets/avatars/avatar-sunflower.svg';
+import acorn from '../../../assets/avatars/avatar-acorn.svg';
 
 /** Every avatar's SVG string, keyed by id. */
 export const AVATAR_SVGS: Record<AvatarId, string> = {
-  sprout,
-  berry,
-  sunny,
-  bloom,
-  pebble,
-  maple,
-  coral,
-  indigo,
-  mint,
-  plum,
-  ember,
-  sky,
+  fox,
+  frog,
+  owl,
+  bear,
+  deer,
+  hedgehog,
+  bee,
+  ladybug,
+  mushroom,
+  cactus,
+  sunflower,
+  acorn,
 };
 
 /** The avatar SVG for an id, or `undefined` for an unknown id (caller renders a fallback). */

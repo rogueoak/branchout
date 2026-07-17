@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="mushroom avatar">
+  <rect width="256" height="256" rx="56" fill="#0EA5E9"/>
+  <circle cx="40" cy="54" r="6" fill="#FFFFFF"/>
+  <rect x="198" y="38" width="12" height="12" rx="3" fill="#FBBF24" transform="rotate(24 204 44)"/>
+  <circle cx="214" cy="206" r="6" fill="#F472B6"/>
+  <rect x="36" y="198" width="12" height="12" rx="3" fill="#7C3AED" transform="rotate(-18 42 204)"/>
+  <path d="M96 132 h64 l-8 62 q-24 12 -48 0 z" fill="#FDF3E7"/>
+  <path d="M60 134 a68 52 0 0 1 136 0 q-68 20 -136 0 z" fill="#EF4444"/>
+  <circle cx="98" cy="104" r="11" fill="#FFF7ED"/>
+  <circle cx="150" cy="98" r="9" fill="#FFF7ED"/>
+  <circle cx="128" cy="122" r="8" fill="#FFF7ED"/>
+  <circle cx="74" cy="122" r="7" fill="#FFF7ED"/>
+  <circle cx="176" cy="120" r="7" fill="#FFF7ED"/>
+  <circle cx="112" cy="158" r="8" fill="#1E1B2E"/>
+  <circle cx="144" cy="158" r="8" fill="#1E1B2E"/>
+  <circle cx="100" cy="172" r="7" fill="#F9A8D4" opacity="0.6"/>
+  <circle cx="156" cy="172" r="7" fill="#F9A8D4" opacity="0.6"/>
+  <path d="M116 174 q12 10 24 0" fill="none" stroke="#1E1B2E" stroke-width="6" stroke-linecap="round"/>
+</svg>

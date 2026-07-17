@@ -39,9 +39,17 @@ their recent games. We add per-account play history here so the profile has real
 
 In:
 
-- **Avatar art** - a fixed set (~12) of cartoon-character avatars as SVG source in `assets/`,
-  exported from `packages/brand` as strings (the "marks are code" pattern from specs `0003`/`0025`),
-  each on-theme (Confetti palette). A deterministic `defaultAvatarFor(gamerTag)` picker.
+- **Avatar art** - a fixed set (12) of **nature-party** avatars as SVG source in `assets/`, exported
+  from `packages/brand` as strings (the "marks are code" pattern from specs `0003`/`0025`), each
+  on-theme (Confetti palette). The cast is a cohesive set of friendly woodland critters, bugs, and
+  plants - `fox`, `frog`, `owl`, `bear`, `deer`, `hedgehog`, `bee`, `ladybug`, `mushroom`, `cactus`,
+  `sunflower`, `acorn` - each a bold flat character on a palette tile with a scatter of confetti, so
+  every player reads as a distinct, recognizable creature rather than a random blob. A deterministic
+  `defaultAvatarFor(gamerTag)` picker.
+  - **Refreshing the set** (a later revision of this spec): replacing the cast retires the old ids,
+    so it ships with a one-time migration that **randomly reassigns** every existing account to a new
+    id (old picks are not preserved - a deliberate product call) and repoints the column default off
+    any retired id. Never edit a shipped migration; append the next id.
 - **control-plane**:
   - Migration: add `avatar` and `profile_visibility` to the accounts table (both defaulted so
     existing rows stay valid - see the versioned-envelope learning). Never edit a shipped migration.

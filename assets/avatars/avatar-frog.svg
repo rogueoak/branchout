@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="frog avatar">
+  <rect width="256" height="256" rx="56" fill="#FBBF24"/>
+  <circle cx="40" cy="54" r="6" fill="#FFFFFF"/>
+  <rect x="198" y="38" width="12" height="12" rx="3" fill="#7C3AED" transform="rotate(24 204 44)"/>
+  <circle cx="214" cy="206" r="6" fill="#F472B6"/>
+  <rect x="36" y="198" width="12" height="12" rx="3" fill="#38BDF8" transform="rotate(-18 42 204)"/>
+  <circle cx="100" cy="96" r="26" fill="#34D399"/>
+  <circle cx="156" cy="96" r="26" fill="#34D399"/>
+  <circle cx="128" cy="150" r="60" fill="#34D399"/>
+  <circle cx="100" cy="92" r="17" fill="#FFF7ED"/>
+  <circle cx="156" cy="92" r="17" fill="#FFF7ED"/>
+  <circle cx="100" cy="94" r="8" fill="#1E1B2E"/>
+  <circle cx="156" cy="94" r="8" fill="#1E1B2E"/>
+  <circle cx="94" cy="162" r="8" fill="#6EE7B7" opacity="0.8"/>
+  <circle cx="162" cy="162" r="8" fill="#6EE7B7" opacity="0.8"/>
+  <path d="M92 158 q36 32 72 0" fill="none" stroke="#1E1B2E" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="118" cy="150" r="4" fill="#1E1B2E"/>
+  <circle cx="138" cy="150" r="4" fill="#1E1B2E"/>
+</svg>

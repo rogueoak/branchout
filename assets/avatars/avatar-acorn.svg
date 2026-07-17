@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="acorn avatar">
+  <rect width="256" height="256" rx="56" fill="#EC4899"/>
+  <circle cx="40" cy="54" r="6" fill="#FFFFFF"/>
+  <rect x="198" y="38" width="12" height="12" rx="3" fill="#FBBF24" transform="rotate(24 204 44)"/>
+  <circle cx="214" cy="206" r="6" fill="#34D399"/>
+  <rect x="36" y="198" width="12" height="12" rx="3" fill="#38BDF8" transform="rotate(-18 42 204)"/>
+  <rect x="121" y="58" width="14" height="26" rx="6" fill="#6B4423"/>
+  <path d="M84 130 q44 22 88 0 q-8 54 -44 68 q-36 -14 -44 -68 z" fill="#d2a463"/>
+  <path d="M74 122 a54 40 0 0 1 108 0 q-54 20 -108 0 z" fill="#8B5E34"/>
+  <path d="M92 116 v14 M112 122 v14 M132 123 v14 M152 122 v14 M172 116 v14" stroke="#6B4423" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="110" cy="152" r="8" fill="#1E1B2E"/>
+  <circle cx="146" cy="152" r="8" fill="#1E1B2E"/>
+  <circle cx="98" cy="164" r="7" fill="#F9A8D4" opacity="0.6"/>
+  <circle cx="158" cy="164" r="7" fill="#F9A8D4" opacity="0.6"/>
+  <path d="M116 166 q12 12 24 0" fill="none" stroke="#1E1B2E" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -196,8 +196,8 @@ describe('AccountService profile fields (spec 0027)', () => {
   });
 
   it('changes the avatar to a known id and rejects an unknown one', async () => {
-    const updated = await service.changeAvatar(accountId, 'berry');
-    expect(updated.avatar).toBe('berry');
+    const updated = await service.changeAvatar(accountId, 'frog');
+    expect(updated.avatar).toBe('frog');
     await expect(service.changeAvatar(accountId, 'not-a-real-avatar')).rejects.toBeInstanceOf(
       ValidationError,
     );

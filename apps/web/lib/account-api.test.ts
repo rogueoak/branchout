@@ -15,17 +15,17 @@ describe('account-api', () => {
       id: 'a1',
       gamerTag: 'AdaL',
       nickname: 'Ada',
-      avatar: 'berry',
+      avatar: 'frog',
       visibility: 'public',
     };
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okJson({ account }));
 
-    const result = await setAvatar('berry');
+    const result = await setAvatar('frog');
     expect(result).toEqual(account);
     const [url, init] = fetchSpy.mock.calls[0]!;
     expect(url).toContain('/v1/auth/avatar');
     expect(init).toMatchObject({ method: 'PATCH', credentials: 'include' });
-    expect(JSON.parse(init!.body as string)).toEqual({ avatar: 'berry' });
+    expect(JSON.parse(init!.body as string)).toEqual({ avatar: 'frog' });
   });
 
   it('setVisibility sends the chosen value', async () => {
@@ -33,7 +33,7 @@ describe('account-api', () => {
       id: 'a1',
       gamerTag: 'AdaL',
       nickname: 'Ada',
-      avatar: 'berry',
+      avatar: 'frog',
       visibility: 'private',
     };
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okJson({ account }));
@@ -47,7 +47,7 @@ describe('account-api', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ error: 'Sign in to change your avatar.' }), { status: 401 }),
     );
-    const err = await setAvatar('berry').catch((e) => e);
+    const err = await setAvatar('frog').catch((e) => e);
     expect(err).toBeInstanceOf(AccountApiError);
     expect((err as AccountApiError).status).toBe(401);
     expect((err as AccountApiError).message).toBe('Sign in to change your avatar.');
