@@ -144,6 +144,36 @@ const MARKETING: Record<string, GameMarketing> = {
       'Teeter Tower is a phone-first physics stacking game in insider testing. Spin a googly-eyed ' +
       'piece, lock its angle, and drop it to build toward the target line across three levels.',
   },
+  whispergrove: {
+    description:
+      'Whispergrove is a two-team word-grid game for phones. Twenty-five leaves fill a grove; a ' +
+      'secret key marks nine for one grove, eight for the other, seven saplings, and one Deadwood. ' +
+      'Each grove has one Whisperer who alone sees the key and gives a one-word whisper plus a ' +
+      'number; their grove taps leaves to link them. First grove to reveal all its leaves wins - ' +
+      'but tap the Deadwood and your grove falls. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Deal the grove',
+        body: 'Two groves form. Each grove picks one Whisperer, who alone sees the secret key on the 25-leaf grove.',
+      },
+      {
+        title: 'Whisper a link',
+        body: 'On your grove turn the Whisperer gives one word and a number, hinting how many leaves it links.',
+      },
+      {
+        title: 'Tap and race',
+        body: 'Your grove taps leaves. Link all yours first to win - but never wake the Deadwood.',
+      },
+    ],
+    categories: ['Word', 'Teams', 'Deduction'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Whispergrove',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Whispergrove - a two-team word-grid game | Branch Out Games',
+    seoDescription:
+      'Whispergrove is a phone-first two-team word-grid game in insider testing. A Whisperer who ' +
+      'alone sees the secret key gives one-word whispers; your grove taps leaves to link them first.',
+  },
 };
 
 /** A game's full marketing + display data - the registry basics plus the catalog copy. */

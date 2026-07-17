@@ -14,6 +14,7 @@ import { WorkerRuntimeProvider } from './worker/runtime';
 import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { whispergrovePlugin } from '@branchout/game-whispergrove';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -46,6 +47,7 @@ async function main(): Promise<void> {
     triviaPlugin,
     liarLiarPlugin,
     teeterTowerPlugin,
+    whispergrovePlugin,
   ]);
   console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);
 

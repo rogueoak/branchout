@@ -42,6 +42,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./whispergrove": {
+      "types": "./dist/whispergrove.d.ts",
+      "import": "./dist/whispergrove.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"

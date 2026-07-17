@@ -181,6 +181,47 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  whispergrove: {
+    categories: ['word', 'party', 'deduction'],
+    tags: ['teams', 'wordplay', 'deduction', 'big-group', 'turn-based'],
+    rules: {
+      objective: 'Be the first grove to reveal all of your own leaves - without ever waking the Deadwood.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Whispergrove needs four or more players in two groves: Violet and Amber. Twenty-five ' +
+              'word leaves fill a 5x5 grove. A secret key marks nine leaves for the starting grove, ' +
+              'eight for the other, seven neutral saplings, and one instant-loss Deadwood.',
+            'Each grove has one Whisperer who alone sees the key on their own device; everyone else ' +
+              'sees only the words.',
+          ],
+        },
+        {
+          heading: 'Give a whisper',
+          body: [
+            'On your grove turn, the Whisperer gives ONE word plus a number - the whisper - hinting ' +
+              'how many of your leaves the word links. The word cannot be one printed on the grove.',
+          ],
+        },
+        {
+          heading: 'Tap your leaves',
+          body: [
+            'Your grove taps leaves. A leaf of your own colour keeps your turn going (up to one tap ' +
+              'past the number). A sapling or an enemy leaf ends your turn; the Deadwood loses the ' +
+              'game for your grove instantly.',
+          ],
+        },
+        {
+          heading: 'Win the grove',
+          body: [
+            'Groves alternate whispering and tapping. The first grove to reveal all of its own ' +
+              'leaves wins. Tapping the Deadwood hands the win to the other grove.',
+          ],
+        },
+      ],
+    },
+  },
 };
 
 /**
