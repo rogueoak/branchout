@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Brambles">
+  <defs>
+    <radialGradient id="br-bg" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0" stop-color="#152615"/>
+      <stop offset="1" stop-color="#0a0f0a"/>
+    </radialGradient>
+    <radialGradient id="br-glow" cx="0.5" cy="0.42" r="0.5">
+      <stop offset="0" stop-color="#4ADE80" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#4ADE80" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="br-vine" gradientUnits="userSpaceOnUse" x1="150" y1="404" x2="360" y2="150">
+      <stop offset="0"   stop-color="#4ADE80"/>
+      <stop offset="0.6" stop-color="#22A65A"/>
+      <stop offset="1"   stop-color="#166534"/>
+    </linearGradient>
+    <linearGradient id="br-leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#86EFAC"/>
+      <stop offset="1" stop-color="#22A65A"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#br-bg)"/>
+  <circle cx="256" cy="210" r="210" fill="url(#br-glow)"/>
+  <!-- The oak skeleton bent into a climbing, thorny bramble vine, rising from the gold root. -->
+  <g fill="none" stroke="url(#br-vine)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- soft under-stroke for depth -->
+    <path d="M256 404 C256 356 214 340 216 296 C218 252 292 250 296 208 C300 166 236 152 232 118"
+          stroke-width="26" opacity="0.16"/>
+    <!-- the main winding stem -->
+    <path d="M256 404 C256 356 214 340 216 296 C218 252 292 250 296 208 C300 166 236 152 232 118"
+          stroke-width="12"/>
+    <!-- side branches off the vine -->
+    <path d="M216 296 C182 288 160 268 150 244" stroke-width="9"/>
+    <path d="M296 208 C332 202 356 182 366 156" stroke-width="9"/>
+  </g>
+  <!-- Thorns: short spikes jutting from the vine (the game's forbidden words). -->
+  <g fill="url(#br-vine)">
+    <path d="M228 344 l-22 -8 l16 16 Z"/>
+    <path d="M234 300 l22 -6 l-14 18 Z"/>
+    <path d="M282 232 l-22 -6 l16 18 Z"/>
+    <path d="M290 178 l22 -4 l-16 18 Z"/>
+    <path d="M244 146 l-22 -6 l16 18 Z"/>
+    <path d="M170 258 l-18 6 l18 8 Z"/>
+    <path d="M348 168 l18 6 l-18 8 Z"/>
+  </g>
+  <!-- The bloom: a bright leaf-flower at the tip (the target word), with a highlight. -->
+  <path fill="url(#br-leaf)" stroke="#166534" stroke-width="4" stroke-linejoin="round"
+        d="M232 118 C204 96 200 60 224 40 C248 60 252 96 232 118 C260 100 296 108 308 136 C280 152 246 142 232 118 Z"/>
+  <circle cx="232" cy="90" r="9" fill="#F0FDF4" opacity="0.85"/>
+  <!-- a small berry cluster on the amber-team side -->
+  <g fill="#EF4444" opacity="0.9">
+    <circle cx="360" cy="150" r="9"/>
+    <circle cx="376" cy="160" r="8"/>
+    <circle cx="358" cy="168" r="7"/>
+  </g>
+  <!-- gold root node: the base of the bramble -->
+  <circle cx="256" cy="404" r="11" fill="#d2a463"/>
+</svg>

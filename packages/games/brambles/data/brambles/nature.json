@@ -1,0 +1,218 @@
+[
+  {
+    "id": "nature-001",
+    "category": "nature",
+    "bloom": "mountain",
+    "thorns": ["peak", "climb", "summit", "high", "range"]
+  },
+  {
+    "id": "nature-002",
+    "category": "nature",
+    "bloom": "river",
+    "thorns": ["water", "flow", "stream", "bank", "boat"]
+  },
+  {
+    "id": "nature-003",
+    "category": "nature",
+    "bloom": "ocean",
+    "thorns": ["sea", "water", "wave", "salt", "blue"]
+  },
+  {
+    "id": "nature-004",
+    "category": "nature",
+    "bloom": "forest",
+    "thorns": ["tree", "wood", "green", "leaf", "trail"]
+  },
+  {
+    "id": "nature-005",
+    "category": "nature",
+    "bloom": "desert",
+    "thorns": ["sand", "dry", "hot", "camel", "dune"]
+  },
+  {
+    "id": "nature-006",
+    "category": "nature",
+    "bloom": "volcano",
+    "thorns": ["lava", "erupt", "mountain", "ash", "fire"]
+  },
+  {
+    "id": "nature-007",
+    "category": "nature",
+    "bloom": "rainbow",
+    "thorns": ["color", "rain", "sky", "arc", "sun"]
+  },
+  {
+    "id": "nature-008",
+    "category": "nature",
+    "bloom": "thunder",
+    "thorns": ["storm", "loud", "lightning", "sky", "boom"]
+  },
+  {
+    "id": "nature-009",
+    "category": "nature",
+    "bloom": "glacier",
+    "thorns": ["ice", "cold", "melt", "slow", "frozen"]
+  },
+  {
+    "id": "nature-010",
+    "category": "nature",
+    "bloom": "waterfall",
+    "thorns": ["water", "drop", "cliff", "flow", "splash"]
+  },
+  {
+    "id": "nature-011",
+    "category": "nature",
+    "bloom": "island",
+    "thorns": ["water", "land", "beach", "sea", "alone"]
+  },
+  {
+    "id": "nature-012",
+    "category": "nature",
+    "bloom": "cave",
+    "thorns": ["dark", "rock", "underground", "bat", "hollow"]
+  },
+  {
+    "id": "nature-013",
+    "category": "nature",
+    "bloom": "sunset",
+    "thorns": ["sun", "orange", "evening", "sky", "horizon"]
+  },
+  {
+    "id": "nature-014",
+    "category": "nature",
+    "bloom": "meadow",
+    "thorns": ["grass", "field", "flower", "green", "open"]
+  },
+  {
+    "id": "nature-015",
+    "category": "nature",
+    "bloom": "canyon",
+    "thorns": ["deep", "rock", "grand", "gorge", "wall"]
+  },
+  {
+    "id": "nature-016",
+    "category": "nature",
+    "bloom": "coral",
+    "thorns": ["reef", "ocean", "colorful", "fish", "sea"]
+  },
+  {
+    "id": "nature-017",
+    "category": "nature",
+    "bloom": "tornado",
+    "thorns": ["wind", "spin", "storm", "funnel", "twist"]
+  },
+  {
+    "id": "nature-018",
+    "category": "nature",
+    "bloom": "iceberg",
+    "thorns": ["ice", "float", "cold", "ocean", "tip"]
+  },
+  {
+    "id": "nature-019",
+    "category": "nature",
+    "bloom": "swamp",
+    "thorns": ["wet", "mud", "marsh", "bog", "gator"]
+  },
+  {
+    "id": "nature-020",
+    "category": "nature",
+    "bloom": "aurora",
+    "thorns": ["light", "sky", "north", "green", "night"]
+  },
+  {
+    "id": "nature-021",
+    "category": "nature",
+    "bloom": "prairie",
+    "thorns": ["grass", "flat", "plain", "wide", "open"]
+  },
+  {
+    "id": "nature-022",
+    "category": "nature",
+    "bloom": "jungle",
+    "thorns": ["tree", "green", "dense", "vine", "wild"]
+  },
+  {
+    "id": "nature-023",
+    "category": "nature",
+    "bloom": "sunflower",
+    "thorns": ["yellow", "tall", "seed", "sun", "petal"]
+  },
+  {
+    "id": "nature-024",
+    "category": "nature",
+    "bloom": "acorn",
+    "thorns": ["oak", "nut", "tree", "seed", "squirrel"]
+  },
+  {
+    "id": "nature-025",
+    "category": "nature",
+    "bloom": "blizzard",
+    "thorns": ["snow", "storm", "cold", "wind", "white"]
+  },
+  {
+    "id": "nature-026",
+    "category": "nature",
+    "bloom": "comet",
+    "thorns": ["space", "tail", "ice", "sky", "streak"]
+  },
+  {
+    "id": "nature-027",
+    "category": "nature",
+    "bloom": "pebble",
+    "thorns": ["stone", "small", "rock", "smooth", "beach"]
+  },
+  {
+    "id": "nature-028",
+    "category": "nature",
+    "bloom": "tide",
+    "thorns": ["ocean", "water", "high", "low", "moon"]
+  },
+  {
+    "id": "nature-029",
+    "category": "nature",
+    "bloom": "fog",
+    "thorns": ["mist", "cloud", "thick", "gray", "low"]
+  },
+  {
+    "id": "nature-030",
+    "category": "nature",
+    "bloom": "boulder",
+    "thorns": ["rock", "big", "heavy", "stone", "roll"]
+  },
+  {
+    "id": "nature-031",
+    "category": "nature",
+    "bloom": "maple",
+    "thorns": ["tree", "syrup", "leaf", "red", "sap"]
+  },
+  {
+    "id": "nature-032",
+    "category": "nature",
+    "bloom": "moss",
+    "thorns": ["green", "soft", "grow", "rock", "damp"]
+  },
+  {
+    "id": "nature-033",
+    "category": "nature",
+    "bloom": "cliff",
+    "thorns": ["edge", "high", "drop", "rock", "fall"]
+  },
+  {
+    "id": "nature-034",
+    "category": "nature",
+    "bloom": "lagoon",
+    "thorns": ["water", "blue", "shallow", "reef", "calm"]
+  },
+  {
+    "id": "nature-035",
+    "category": "nature",
+    "bloom": "dune",
+    "thorns": ["sand", "hill", "desert", "wind", "shift"]
+  },
+  {
+    "id": "nature-036",
+    "category": "nature",
+    "bloom": "geyser",
+    "thorns": ["water", "hot", "spout", "steam", "erupt"]
+  }
+]

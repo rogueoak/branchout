@@ -181,6 +181,46 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  brambles: {
+    categories: ['word', 'party'],
+    tags: ['teams', 'wordplay', 'big-group', 'real-time'],
+    rules: {
+      objective:
+        'Get your grove to say the hidden bloom without your Guide ever touching a thorn. Most ' +
+        'blooms across the sprints wins.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Brambles needs at least four players split into two groves (Violet and Amber), assigned ' +
+              'by seat. Each grove takes timed turns called sprints; the groves alternate.',
+          ],
+        },
+        {
+          heading: 'The Guide',
+          body: [
+            'On your grove sprint, your Guide alone sees the card: a bloom (the target word) and five ' +
+              'thorns (forbidden words). Only the Guide gets this - the other grove never sees it.',
+          ],
+        },
+        {
+          heading: 'Clue and guess',
+          body: [
+            'The Guide types clues without saying the bloom, a thorn, or an obvious variant. The rest ' +
+              'of the grove types guesses; a correct guess scores a bloom and draws the next card.',
+          ],
+        },
+        {
+          heading: 'Pricks and skips',
+          body: [
+            'If a clue contains the bloom or a thorn, the card is pricked - it wilts for no point and ' +
+              'a new card is drawn. The Guide may also skip a card. When time runs out, the other ' +
+              'grove takes its sprint.',
+          ],
+        },
+      ],
+    },
+  },
 };
 
 /**

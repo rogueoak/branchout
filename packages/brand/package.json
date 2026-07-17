@@ -42,6 +42,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./brambles": {
+      "types": "./dist/brambles.d.ts",
+      "import": "./dist/brambles.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"

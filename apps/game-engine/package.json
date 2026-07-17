@@ -14,6 +14,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@branchout/game-brambles": "workspace:*",
     "@branchout/game-liar-liar": "workspace:*",
     "@branchout/game-sdk": "workspace:*",
     "@branchout/game-teeter-tower": "workspace:*",
