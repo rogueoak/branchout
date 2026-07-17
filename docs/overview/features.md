@@ -37,7 +37,10 @@ What the product does for users, grouped by area. Each capability maps to one or
       anonymous session with no account row. Redis-backed sessions behind an httpOnly cookie;
       `/signup` and `/login` pages in `apps/web`.
 - [x] Public profile - gamer tag (always public), nickname, an avatar chosen from a fixed set of
-      12 on-theme cartoon characters (bundled brand SVGs, deterministic default seeded from the tag),
+      12 on-theme nature-party creatures - woodland critters, bugs, and plants (fox, frog, owl, bear,
+      deer, hedgehog, bee, ladybug, mushroom, cactus, sunflower, acorn), each a bold flat character
+      on a Confetti tile with confetti (bundled brand SVGs, deterministic default seeded from the tag;
+      a set refresh randomly reassigns existing accounts via an appended migration),
       a total-stars badge, and a recent-plays timeline, at `/u/[gamerTag]`; a signed-in player
       manages nickname/avatar/visibility and logs out at `/account`. Per-account game history is
       recorded at the game-complete intake (mapping each standing's `playerId` -> the room member's
