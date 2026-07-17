@@ -144,6 +144,10 @@ const MARKETING: Record<string, GameMarketing> = {
       'Teeter Tower is a phone-first physics stacking game in insider testing. Spin a googly-eyed ' +
       'piece, lock its angle, and drop it to build toward the target line across three levels.',
   },
+  // Whispergrove is insider-only (spec 0062): the entry exists so the build-time "every registered
+  // game needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so it never
+  // appears on the public /games index, the feature pages, or the sitemap. Its share card is a
+  // placeholder (no public raster is generated for an insider game); it satisfies the shape check.
   whispergrove: {
     description:
       'Whispergrove is a two-team word-grid game for phones. Twenty-five leaves fill a grove; a ' +
@@ -173,6 +177,38 @@ const MARKETING: Record<string, GameMarketing> = {
     seoDescription:
       'Whispergrove is a phone-first two-team word-grid game in insider testing. A Whisperer who ' +
       'alone sees the secret key gives one-word whispers; your grove taps leaves to link them first.',
+  },
+  // Reversi is insider-only (spec 0054): the entry exists so the build-time "every registered game
+  // needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so it never
+  // appears on the public /games index, the feature pages, or the sitemap. Its share card is a
+  // placeholder (no public raster is generated for an insider game); it satisfies the shape check.
+  reversi: {
+    description:
+      'Reversi is the classic disc-flip strategy game for two, built for phones. Place a Violet or ' +
+      "Amber disc to bracket a straight line of your opponent's discs and flip them all to your " +
+      'color. Corners and edges win games. When neither side can move, the most discs takes it.',
+    howToPlay: [
+      {
+        title: 'Bracket a line',
+        body: 'On your turn, place a disc so it traps one or more of the other color in a straight line ending on your disc.',
+      },
+      {
+        title: 'Flip the discs',
+        body: 'Every trapped disc between your two flips to your color, in any of the eight directions at once.',
+      },
+      {
+        title: 'Own the board',
+        body: 'Must move if you can, else pass. When neither side can move, the most discs of your color wins.',
+      },
+    ],
+    categories: ['Classic', 'Strategy', 'Two-player'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Reversi',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Reversi - the classic disc-flip strategy game | Branch Out Games',
+    seoDescription:
+      'Reversi is a phone-first two-player disc-flip strategy game in insider testing. Bracket a ' +
+      "line of your opponent's discs to flip them; the most discs of your color wins.",
   },
 };
 

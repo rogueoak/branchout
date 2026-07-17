@@ -15,6 +15,7 @@ import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 import { whispergrovePlugin } from '@branchout/game-whispergrove';
+import { reversiPlugin } from '@branchout/game-reversi';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -48,6 +49,7 @@ async function main(): Promise<void> {
     liarLiarPlugin,
     teeterTowerPlugin,
     whispergrovePlugin,
+    reversiPlugin,
   ]);
   console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);
 
