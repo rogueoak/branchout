@@ -8,7 +8,7 @@
 // Insider games have no public feature page, so this is their only rules surface on the listing page.
 
 import { Button } from '@rogueoak/canopy';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { GAME_CATALOG } from '../../lib/games/catalog';
 import { getGameRules } from '../../lib/games/library';
 import { HelpIcon } from './icons';
@@ -29,9 +29,20 @@ interface HowToPlayButtonProps {
    * passes a plain "How to play" since there is only one.
    */
   label?: string;
+  /**
+   * Whether to show the leading help "?" icon. Defaults to true (the in-game GameStage toolbar keeps
+   * its icon); the insider hub cards pass `false` for a text-only control that reads cleaner next to
+   * the primary "Play now" button in the card's controls row.
+   */
+  showIcon?: boolean;
 }
 
-export function HowToPlayButton({ game, variant = 'outline', label }: HowToPlayButtonProps) {
+export function HowToPlayButton({
+  game,
+  variant = 'outline',
+  label,
+  showIcon = true,
+}: HowToPlayButtonProps) {
   const [open, setOpen] = useState(false);
   const rules = getGameRules(game);
   const entry = GAME_CATALOG.find((e) => e.slug === game);
@@ -39,6 +50,12 @@ export function HowToPlayButton({ game, variant = 'outline', label }: HowToPlayB
   if (!rules || !entry) return null;
 
   const buttonLabel = label ?? `How to play ${entry.name}`;
+  // Hoisted so the trigger JSX carries no inline ternary (conventions.md). The insider hub passes
+  // showIcon={false} for a text-only control.
+  let icon: ReactNode = null;
+  if (showIcon) {
+    icon = <HelpIcon />;
+  }
 
   return (
     <Sheet
@@ -47,7 +64,7 @@ export function HowToPlayButton({ game, variant = 'outline', label }: HowToPlayB
       title={`How to play ${entry.name}`}
       trigger={
         <Button type="button" variant={variant} size="sm" aria-label={buttonLabel}>
-          <HelpIcon />
+          {icon}
           <span>How to play</span>
         </Button>
       }
