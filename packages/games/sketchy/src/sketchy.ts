@@ -47,6 +47,16 @@ export const DRAW_WINDOW_MS = 90_000;
 export const DECOY_WINDOW_MS = 60_000;
 /** Players have 30s to guess which option is the true seed. */
 export const GUESS_WINDOW_MS = 30_000;
+/**
+ * The draw round has no guess: `reveal` returns NO decision, so the engine takes the DISPUTE path
+ * (spec 0020) - `collecting -> reveal -> disputing -> leaderboard`. Sketchy raises no disputes, so
+ * its dispute window is a short, automatic bridge to the gallery leaderboard. It MUST be > 0: the
+ * engine only arms the dispute-window timer when the window is positive (a 0 window means "the host
+ * advances it manually"), so a 0 here would strand the draw round in `disputing` - a phase no Sketchy
+ * client renders - until the host happened to press Next. A few seconds lets everyone see the "banked
+ * the sketches" beat before the gallery, then the round finalizes on its own.
+ */
+export const DRAW_DISPUTE_WINDOW_MS = 4_000;
 
 /** Guessing the true seed scores this. */
 export const CORRECT_POINTS = 100;
@@ -196,7 +206,16 @@ export function createSketchyGame(
         attribution: {},
         guesses: {},
       };
-      return { scratch: toRecord(scratch), rounds: engineRounds, moveWindowMs: DRAW_WINDOW_MS };
+      return {
+        scratch: toRecord(scratch),
+        rounds: engineRounds,
+        moveWindowMs: DRAW_WINDOW_MS,
+        // The draw round takes the no-decision dispute path; a positive window lets its empty dispute
+        // stage auto-finalize to the gallery leaderboard instead of stranding the round in `disputing`
+        // (which no Sketchy client renders) until the host manually advances. Sketch rounds open a
+        // guess `decision` instead, so this window never applies to them.
+        disputeWindowMs: DRAW_DISPUTE_WINDOW_MS,
+      };
     },
 
     startRound(ctx: RoundContext): StartRoundResult {

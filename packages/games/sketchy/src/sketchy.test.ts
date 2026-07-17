@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '@branchout/game-sdk/testing';
 import type { RoundContext, SessionPlayer } from '@branchout/game-sdk';
-import { CORRECT_POINTS, FOOL_POINTS, createSketchyGame, stageForRound } from './sketchy';
+import {
+  CORRECT_POINTS,
+  DRAW_DISPUTE_WINDOW_MS,
+  FOOL_POINTS,
+  createSketchyGame,
+  stageForRound,
+} from './sketchy';
 import { serializeSketch, type Sketch } from './strokes';
 import type { SketchySeed } from './seeds';
 
@@ -79,6 +85,19 @@ describe('per-player seed secrecy (spec 0052)', () => {
 });
 
 describe('draw round', () => {
+  it('declares a POSITIVE dispute window so the no-decision draw round auto-finalizes', () => {
+    // The draw round's reveal returns no decision, so the engine takes the dispute path
+    // (collecting -> reveal -> disputing -> leaderboard). The engine only arms the dispute-window
+    // timer when the window is > 0; a 0 window ("host advances manually") would strand the draw round
+    // in `disputing` - a phase no Sketchy client renders - and hang the whole game. Guard the fix:
+    // configure must hand the engine a positive dispute window so the round bridges to the gallery
+    // leaderboard on its own.
+    const game = createSketchyGame(BANK, mulberry32(1));
+    const configured = game.configure({ rounds: 1 }, roster);
+    expect(configured.disputeWindowMs).toBe(DRAW_DISPUTE_WINDOW_MS);
+    expect(configured.disputeWindowMs).toBeGreaterThan(0);
+  });
+
   it('rejects a blank or malformed sketch and banks a real one', () => {
     const game = createSketchyGame(BANK, mulberry32(1));
     let scratch = game.configure({ rounds: 1 }, roster).scratch;

@@ -425,6 +425,19 @@ Capture durable lessons as they emerge.
   scratch) paints the same banner. A client-only banner would race the server's instant `advanceLevel` and
   desync a rejoin. When a beat must be seen and must gate input, model it as authoritative state, not a local
   animation. (Feedback `0032`.)
+- **A round that reveals with NO decision needs a POSITIVE `disputeWindowMs`, or it strands in
+  `disputing`.** The engine's round lifecycle is `collecting -> reveal -> (guessing | disputing) ->
+  leaderboard`: a `reveal` that returns a `decision` opens a timed guess window, but a `reveal` with no
+  decision falls to the dispute path and `armWindow` only schedules the auto-advance when the window is
+  `> 0` (a `0` window is the "host advances manually" contract). Sketchy's draw round reveals a gallery
+  with no decision but `configure` left `disputeWindowMs` unset (defaulting to `0`), so the draw round
+  sat in `disputing` forever - a phase no Sketchy client renders (it shows the "Get ready" fallback), so
+  there was nothing to click and the whole game hung on the e2e's first cycle. The fix: `configure`
+  declares a short positive `disputeWindowMs` so the empty dispute stage auto-finalizes to the gallery
+  leaderboard. Lesson: if a game takes the no-decision path AND has no genuine dispute step for the host
+  to sit through, it must still hand the engine a positive dispute window - otherwise the round only
+  advances on a manual host `advance`, which is invisible to the player and easy to miss. (Live-debug of
+  the Sketchy e2e, spec `0063`.)
 
 ## Client-server contracts
 
