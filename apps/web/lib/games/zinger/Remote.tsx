@@ -2,9 +2,12 @@
 
 // Zinger's remote: the private controller a player acts on. While the round collects it takes the
 // player's zinger (and, if the engine rejects an empty one, lets them retype); while the face-off is
-// live it offers the two zingers to vote on - hiding this player's own zinger when it is one of the
-// two, since a face-off author cannot vote on their own face-off (the engine also ignores such a vote
-// by author id as a backstop). It never runs a timer or tallies; it sends frames and reflects the
+// live it offers the two zingers to vote on - and if THIS player is one of the two contestants it
+// tells them to sit the vote out, since a face-off author cannot vote on their own face-off (the
+// engine also ignores such a vote by author id as a backstop). It decides "am I a contestant" by
+// author IDENTITY - the face-off payload names which two players are the authors - never by matching
+// the player's own text against the options (two players who typed the same short answer must not
+// disenfranchise each other). It never runs a timer or tallies; it sends frames and reflects the
 // phase the engine reports.
 
 import { Badge, Button, Input } from '@rogueoak/canopy';
@@ -13,10 +16,6 @@ import type { GameRemoteProps } from '../registry';
 import { FinalResults } from '../../../components/game/FinalResults';
 import { Leaderboard } from '../../../components/game/Leaderboard';
 import { asZingerPrompt, pickFaceOff } from './protocol';
-
-function normalize(text: string): string {
-  return text.trim().toLowerCase();
-}
 
 export function ZingerRemote({
   state,
@@ -30,7 +29,8 @@ export function ZingerRemote({
   const prompt = asZingerPrompt(state.prompt);
   const [draft, setDraft] = useState('');
   // The zinger this player submitted this round, and the rounds they submitted / voted in. Reset each
-  // round. `myZinger` also gates hiding the player's own option during the vote.
+  // round. `myZinger` tracks the submit/resend + rejected-empty UI, not the vote sit-out (that is
+  // gated on author identity from the face-off payload, not on this text).
   const [myZinger, setMyZinger] = useState('');
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
   const [votedRound, setVotedRound] = useState<number | null>(null);
@@ -105,11 +105,11 @@ export function ZingerRemote({
   if (phase === 'guessing') {
     const faceOff = pickFaceOff(state.reveals);
     const options = faceOff?.options ?? [];
-    // A face-off author cannot vote on their own face-off; hide this player's zinger when it is one of
-    // the two shown. The engine also ignores a self-vote by author id as a backstop.
-    const mine = submittedRound === round && myZinger ? normalize(myZinger) : null;
-    const isAuthor = mine !== null && options.some((option) => normalize(option.text) === mine);
-    const votable = mine ? options.filter((option) => normalize(option.text) !== mine) : options;
+    // A face-off author cannot vote on their own face-off. Gate the sit-out on IDENTITY - is my
+    // playerId one of the two contestant authors the engine named - never on my text. Matching text
+    // would wrongly disenfranchise a non-author who happened to type the same short answer. The engine
+    // also ignores a self-vote by author id as a backstop.
+    const isAuthor = me != null && (faceOff?.authorIds.includes(me) ?? false);
     const voted = votedRound === round;
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
@@ -130,7 +130,7 @@ export function ZingerRemote({
               </p>
             ) : (
               <div className="flex flex-col gap-2">
-                {votable.map((option) => (
+                {options.map((option) => (
                   <Button
                     key={option.id}
                     type="button"

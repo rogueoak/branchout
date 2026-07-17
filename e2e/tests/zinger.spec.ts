@@ -84,6 +84,21 @@ test('an insider host and two players play a full one-round Zinger game at 360px
       expect(voted).toBe(true);
     }).toPass({ timeout: 60_000 });
 
+    // The vote must actually score someone (spec Acceptance 4/5), not merely reach the end. At the
+    // leaderboard the viewer renders the face-off result - the winning zinger tagged "(winner)" and a
+    // vote tally. Assert that before advancing to the final results, so "it finished" becomes "it
+    // scored the right person". The host is interactive (a screen + a player), so its viewer shows the
+    // result list. (Race note: the 1-round game may auto-advance past the leaderboard, so accept the
+    // final results as a fallback and still prove scoring there.)
+    // The round finalizes to the leaderboard (engine.finalizeRound) and dwells there until the host
+    // advances, so the viewer's face-off result list is reliably up first. Assert it shows the outcome
+    // - the winning zinger tagged "(winner)" and a vote tally - so "it finished" becomes "it scored the
+    // right person".
+    const resultList = host.getByRole('list', { name: /face-off result/i });
+    await expect(resultList).toBeVisible({ timeout: 60_000 });
+    await expect(resultList.getByText(/\(winner\)/i)).toBeVisible();
+    await expect(resultList.getByText(/\d+ votes?/i).first()).toBeVisible();
+
     // Drive the (last) round to completion; auto-advance may also do it, so click Next when offered.
     await expect(async () => {
       const next = host.getByRole('button', { name: /^next$/i });

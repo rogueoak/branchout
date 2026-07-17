@@ -213,7 +213,7 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
           heading: 'Scoring',
           body: [
             'The winning zinger scores its author one point per vote. A unanimous vote is a clean ' +
-              'sweep and adds a bonus; a tie splits no points. The highest total after the last ' +
+              'sweep and adds a +3 bonus; a tie splits no points. The highest total after the last ' +
               'round wins.',
           ],
         },

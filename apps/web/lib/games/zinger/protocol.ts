@@ -30,11 +30,14 @@ export interface ZingerOption {
   text: string;
 }
 
-/** The face-off reveal: the two zingers to vote on, WITHOUT their authors or tallies. */
+/** The face-off reveal: the two zingers to vote on, WITHOUT the option->author mapping or tallies.
+ * `authorIds` names only WHICH TWO PLAYERS are the contestants (so a remote gates its sit-out on
+ * identity, not text) - it is not keyed to the options, so anonymity holds. */
 export interface ZingerFaceOff {
   round: number;
   setup: string;
   options: ZingerOption[];
+  authorIds: string[];
 }
 
 function asOption(value: unknown): ZingerOption | null {
@@ -47,12 +50,15 @@ export function asZingerFaceOff(value: unknown): ZingerFaceOff | null {
   if (!isRecord(value)) return null;
   // The result reveal carries a `winner` field; that is what distinguishes it from the face-off.
   if ('winner' in value) return null;
-  const { round, setup, options } = value;
+  const { round, setup, options, authorIds } = value;
   if (typeof round !== 'number' || typeof setup !== 'string' || !Array.isArray(options))
     return null;
   const decoded = options.map(asOption);
   if (decoded.some((o) => o === null)) return null;
-  return { round, setup, options: decoded as ZingerOption[] };
+  const authors = Array.isArray(authorIds)
+    ? authorIds.filter((id): id is string => typeof id === 'string')
+    : [];
+  return { round, setup, options: decoded as ZingerOption[], authorIds: authors };
 }
 
 /** One option in the final result: text, its author, its vote tally, and whether it won. */

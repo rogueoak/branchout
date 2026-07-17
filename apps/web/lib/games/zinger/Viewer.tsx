@@ -44,7 +44,7 @@ export function ZingerViewer({ state, me }: GameViewProps) {
               </Badge>
               {result.cleanSweep ? (
                 <Badge variant="success" className="w-fit">
-                  Clean sweep!
+                  Clean sweep! +3 bonus
                 </Badge>
               ) : null}
             </div>
@@ -86,11 +86,15 @@ export function ZingerViewer({ state, me }: GameViewProps) {
     );
   }
 
-  if (faceOff && phase === 'guessing') {
+  if (phase === 'guessing') {
+    // Gate the shell (heading/round badge) on the phase, not on `faceOff`: a momentarily-absent
+    // reveal (not yet in state.reveals) must still render the face-off frame rather than fall through
+    // to the "get ready" default. Only the options list is conditional on `faceOff`. (Matches Liar
+    // Liar.)
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="info">Round {faceOff.round}</Badge>
+          <Badge variant="info">Round {faceOff?.round ?? state.round}</Badge>
           <Badge variant="neutral">The face-off</Badge>
           {secondsLeft !== null ? (
             <Badge variant={secondsLeft <= 10 ? 'warning' : 'neutral'}>
@@ -100,21 +104,26 @@ export function ZingerViewer({ state, me }: GameViewProps) {
             </Badge>
           ) : null}
         </div>
-        <h2 className="text-h2 text-text">{faceOff.setup}</h2>
+        {faceOff ? <h2 className="text-h2 text-text">{faceOff.setup}</h2> : null}
         <p className="text-body text-text-muted">
           Which zinger landed hardest? Vote on your phone.
         </p>
-        <ol aria-label="Zingers to vote on" className="flex flex-col gap-2">
-          {faceOff.options.map((option, index) => (
-            <li
-              key={option.id}
-              className="flex items-baseline gap-3 rounded-md bg-surface-raised px-3 py-2"
-            >
-              <span className="tabular-nums text-text-subtle">{index + 1}</span>
-              <span className="break-words text-body text-text">{option.text}</span>
-            </li>
-          ))}
-        </ol>
+        <p className="text-body-sm text-text-subtle">The two authors sit this one out.</p>
+        {faceOff ? (
+          <ol aria-label="Zingers to vote on" className="flex flex-col gap-2">
+            {faceOff.options.map((option, index) => (
+              <li
+                key={option.id}
+                className="flex items-baseline gap-3 rounded-md bg-surface-raised px-3 py-2"
+              >
+                <span className="tabular-nums text-text-subtle">{index + 1}</span>
+                <span className="break-words text-body text-text">{option.text}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-body-sm text-text-muted">Setting up the face-off...</p>
+        )}
       </section>
     );
   }

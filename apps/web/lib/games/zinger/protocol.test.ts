@@ -14,6 +14,7 @@ const faceOffReveal = {
     { id: '0', text: 'The Titanic 2' },
     { id: '1', text: 'Wet Bandit' },
   ],
+  authorIds: ['p1', 'p2'],
 };
 
 const resultReveal = {
@@ -35,11 +36,16 @@ describe('zinger decoders', () => {
     expect(asZingerPrompt(null)).toBeNull();
   });
 
-  it('decodes the face-off but not the result', () => {
+  it('decodes the face-off (with contestant author ids) but not the result', () => {
     expect(asZingerFaceOff(faceOffReveal)).toEqual(faceOffReveal);
     // A result carries a `winner`, so it is not a face-off.
     expect(asZingerFaceOff(resultReveal)).toBeNull();
     expect(asZingerFaceOff({ round: 1, setup: 'x' })).toBeNull();
+  });
+
+  it('tolerates a face-off missing authorIds (decodes to an empty list)', () => {
+    const noAuthors = { round: 1, setup: faceOffReveal.setup, options: faceOffReveal.options };
+    expect(asZingerFaceOff(noAuthors)?.authorIds).toEqual([]);
   });
 
   it('decodes the result but not the face-off', () => {

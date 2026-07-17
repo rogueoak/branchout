@@ -46,6 +46,17 @@ describe('ZingerViewer', () => {
     expect(screen.getByText('The Titanic 2')).toBeDefined();
     expect(screen.getByText('Wet Bandit')).toBeDefined();
     expect(screen.getByText(/vote on your phone/i)).toBeDefined();
+    // Watchers are told the two authors do not vote (so a face-off author is not left wondering).
+    expect(screen.getByText(/two authors sit this one out/i)).toBeDefined();
+  });
+
+  it('renders the face-off shell during guessing even before the reveal arrives', () => {
+    // phase === 'guessing' but no reveal in state yet: still show the face-off frame (round + prompt
+    // to come), NOT the "get ready / first setup on its way" default.
+    render(<ZingerViewer state={state({ phase: 'guessing', reveals: [] })} me="p1" />);
+    // The face-off frame (round badge + "The face-off" + a setting-up note) renders, not the default.
+    expect(screen.getByText(/setting up the face-off/i)).toBeDefined();
+    expect(screen.queryByText(/first setup is on its way/i)).toBeNull();
   });
 
   it('shows the result with the winner, authors, tallies, and a clean sweep', () => {

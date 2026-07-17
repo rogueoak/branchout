@@ -292,6 +292,76 @@ describe('createZingerGame - scoring', () => {
     expect((resolved.reveal as { cleanSweep: boolean }).cleanSweep).toBe(true);
   });
 
+  it('does NOT award a clean sweep at the MIN_SWEEP_VOTERS boundary (1 eligible voter, 1-0)', () => {
+    // 2 authors + exactly 1 eligible voter, whose single vote is unanimous for one option. The bonus
+    // needs at least MIN_SWEEP_VOTERS (2) eligible voters, so this 1-0 must score 1 point and NO
+    // clean sweep - pinning the lower boundary the code comments claim.
+    const roster = players('p1', 'p2', 'p3');
+    const { game, scratch } = toFaceOff(2, 20, roster, {
+      p1: 'a',
+      p2: 'b',
+      p3: 'c',
+    });
+    const authors = peek(scratch).authors;
+    const winnerOption = '0';
+    const voters = roster
+      .filter((p) => !Object.values(authors).includes(p.player))
+      .map((p) => p.player);
+    expect(voters).toHaveLength(1);
+    const s = game.collectVote(ctxOf(scratch, 1, roster, 'guessing'), {
+      player: voters[0]!,
+      target: winnerOption,
+      agree: true,
+    }).scratch;
+    const resolved = game.resolveDecision!(ctxOf(s, 1, roster, 'guessing'));
+    const winnerAuthor = authors[winnerOption]!;
+    const total = resolved.scores
+      .filter((e) => e.player === winnerAuthor)
+      .reduce((sum, e) => sum + e.points, 0);
+    expect(total).toBe(1 * POINTS_PER_VOTE);
+    expect(resolved.scores.some((e) => e.reason === 'a clean sweep')).toBe(false);
+    expect((resolved.reveal as { cleanSweep: boolean }).cleanSweep).toBe(false);
+  });
+
+  it('does NOT award a clean sweep on a partial-timeout vote (2 of 4 eligible, both to winner)', () => {
+    // resolveDecision also runs on the vote-window timeout. With 4 eligible voters but only 2 having
+    // voted - both for one option - the cast votes are "unanimous" but the eligible population is not,
+    // so this must NOT be a sweep (the fix gates on eligibleVoterCount, not totalVotes).
+    const roster = players('p1', 'p2', 'p3', 'p4', 'p5', 'p6');
+    const { game, scratch } = toFaceOff(11, 20, roster, {
+      p1: 'a',
+      p2: 'b',
+      p3: 'c',
+      p4: 'd',
+      p5: 'e',
+      p6: 'f',
+    });
+    const authors = peek(scratch).authors;
+    const winnerOption = '0';
+    const voters = roster
+      .filter((p) => !Object.values(authors).includes(p.player))
+      .map((p) => p.player);
+    expect(voters).toHaveLength(4);
+    // Only 2 of the 4 eligible voters vote, both for the winner (a partial but "unanimous" cast).
+    let s = scratch;
+    for (const v of voters.slice(0, 2)) {
+      s = game.collectVote(ctxOf(s, 1, roster, 'guessing'), {
+        player: v,
+        target: winnerOption,
+        agree: true,
+      }).scratch;
+    }
+    const resolved = game.resolveDecision!(ctxOf(s, 1, roster, 'guessing'));
+    const winnerAuthor = authors[winnerOption]!;
+    const total = resolved.scores
+      .filter((e) => e.player === winnerAuthor)
+      .reduce((sum, e) => sum + e.points, 0);
+    // 2 votes for the winner, but NOT a clean sweep (2 of 4 eligible voted).
+    expect(total).toBe(2 * POINTS_PER_VOTE);
+    expect(resolved.scores.some((e) => e.reason === 'a clean sweep')).toBe(false);
+    expect((resolved.reveal as { cleanSweep: boolean }).cleanSweep).toBe(false);
+  });
+
   it('splits no points on a tie', () => {
     const roster = players('p1', 'p2', 'p3', 'p4');
     const { game, scratch } = toFaceOff(9, 20, roster, {

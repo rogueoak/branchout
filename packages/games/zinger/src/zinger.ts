@@ -216,8 +216,11 @@ export function createZingerGame(
       scratch.votes = {};
       return {
         scratch: toRecord(scratch),
-        // The face-off shows both zingers but not their authors.
-        reveal: { round: ctx.round, setup: setup.setup, options },
+        // The face-off shows both zingers but not their authors. `authorIds` reveals only WHICH TWO
+        // PLAYERS are the contestants (so their remotes can gate the sit-out on identity, never on
+        // text) - it is deliberately NOT keyed to the options, so the option->author mapping (whose
+        // zinger is whose) stays hidden and anonymity holds.
+        reveal: { round: ctx.round, setup: setup.setup, options, authorIds: pair },
         scores: [],
         decision: { windowMs: VOTE_WINDOW_MS },
       };
@@ -253,8 +256,15 @@ export function createZingerGame(
         if (optionId in tally) tally[optionId] = (tally[optionId] ?? 0) + 1;
       }
 
-      const totalVotes = Object.values(tally).reduce((sum, n) => sum + n, 0);
       const scores: ScoreEvent[] = [];
+
+      // The clean sweep is measured against every ELIGIBLE voter (connected non-authors), not merely
+      // the votes actually cast: resolveDecision also runs on the vote-window timeout, so a partial
+      // vote (say 2 of 4 eligible) that all landed on one option must NOT count as unanimous.
+      const authorIds = new Set(Object.values(scratch.authors));
+      const eligibleVoterCount = ctx.players.filter(
+        (p) => p.connected && !authorIds.has(p.player),
+      ).length;
 
       // The winner is the option with strictly more votes. A tie splits no points.
       let winnerId: string | null = null;
@@ -277,8 +287,9 @@ export function createZingerGame(
             reason: 'won the face-off',
           });
         }
-        // A clean sweep: every vote went to the winner and there were enough voters to make it count.
-        if (winnerVotes === totalVotes && totalVotes >= MIN_SWEEP_VOTERS) {
+        // A clean sweep: every eligible voter voted for the winner (not just every cast vote), and
+        // there were enough eligible voters to make it count.
+        if (winnerVotes === eligibleVoterCount && eligibleVoterCount >= MIN_SWEEP_VOTERS) {
           cleanSweep = true;
           scores.push({
             player: winnerAuthor,
