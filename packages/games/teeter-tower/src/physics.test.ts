@@ -631,3 +631,14 @@ describe('clampDropYToLine (feedback 0032: below-line drop -> clamp up, not bloc
     expect(clampDropYToLine(held, null)).toBe(aboveCy); // no line -> unchanged
   });
 });
+
+describe('level + piece tuning (feedback 0032 r3)', () => {
+  it('walls level 2 (Reach for the sky) like level 1 so the base course cannot slide off', () => {
+    expect(LEVELS[0]!.walls).toBe(true); // level 1 (warm-up)
+    expect(LEVELS[1]!.walls).toBe(true); // level 2 now walled too
+  });
+
+  it('makes the heavy reinforcement trapezoid 5x a normal piece', () => {
+    expect(TRAP_DENSITY_MULT).toBe(5);
+  });
+});

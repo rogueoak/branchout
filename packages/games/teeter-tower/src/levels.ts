@@ -19,9 +19,10 @@ export const DEATH_Y = GROUND_TOP + 260;
 // clamped to 1), so kinetic friction is raised well past 1 for real grip on the sliding landing contact.
 // `PIECE_FRICTION_AIR` bleeds off horizontal slide energy, and a lower `MAX_FALL_SPEED` softens the
 // landing so a piece knocks the tower around less. `frictionStatic` stays high to pin a settled piece.
-// Both raised a bit (feedback 0032 follow-up) for more grip on every contact, floor and piece-on-piece.
-export const PIECE_FRICTION = 4.0;
-export const PIECE_FRICTION_STATIC = 45;
+// Both raised again (feedback 0032 r3) for still more grip on every contact, floor and piece-on-piece
+// - a landing piece (including an asymmetric L on a corner) should bite, not creep or slide backwards.
+export const PIECE_FRICTION = 5.5;
+export const PIECE_FRICTION_STATIC = 60;
 export const PIECE_FRICTION_AIR = 0.08;
 export const PIECE_DENSITY = 0.0016;
 // Extra floor-only static grip (feedback 0032). Matter combines a contact PAIR as `friction = min(a, b)`
@@ -31,8 +32,8 @@ export const PIECE_DENSITY = 0.0016;
 // (set in makePlatform) - raising it above the piece would be inert (min caps it at the piece), so the
 // floor's landing-slide grip rides the piece's kinetic value. This is the "bottom row creeps along the
 // platform" lever: it pins a settled base row to the floor, on top of the piece bump above.
-// Raised again (feedback 0032 follow-up) for still more floor grip so the base course holds firm.
-export const FLOOR_FRICTION_STATIC = 220;
+// Raised again (feedback 0032 r3) for still more floor grip so the base course holds firm.
+export const FLOOR_FRICTION_STATIC = 320;
 /** Caps drop velocity so a piece lands soft and can't slam the tower off center. */
 export const MAX_FALL_SPEED = 6;
 
@@ -81,9 +82,10 @@ export const PAR_PENALTY = 10;
 
 export const LEVELS: readonly Level[] = [
   // Level 1's target is 450 (feedback 0023: 25% lower than the old 600) for an easier warm-up, on a
-  // near-full-width walled platform so pieces do not slide off the edges. Levels 2/3 keep the narrower
-  // open platform and the prototype's 620 target. `par` is an initial estimate of the pieces it takes
-  // to reach the target (feedback 0026) - tune by playtest.
+  // near-full-width walled platform so pieces do not slide off the edges. Levels 2 and 3 use the
+  // narrower platform at the prototype's 620 target; level 2 is now walled too (feedback 0032 r3),
+  // level 3 stays open. `par` is an initial estimate of the pieces to reach the target (feedback
+  // 0026) - tune by playtest.
   {
     name: 'Warm-up',
     target: 450,
@@ -100,7 +102,9 @@ export const LEVELS: readonly Level[] = [
     par: 13,
     pendulum: false,
     platformWidth: PLATFORM_W,
-    walls: false,
+    // Short side curbs like level 1 (feedback 0032 r3) so the base course does not slide off the
+    // narrower open platform while the tower grows.
+    walls: true,
   },
   {
     name: 'The Pendulum',
