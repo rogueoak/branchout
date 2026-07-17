@@ -222,6 +222,51 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  chess: {
+    categories: ['classic', 'strategy'],
+    tags: ['two-player', 'spatial', 'turn-based'],
+    rules: {
+      objective: 'Checkmate the opponent king - attack it so it has no legal escape.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Chess is a two-player game on one shared 8x8 board. Each side starts with eight pawns, ' +
+              'two rooks, two knights, two bishops, a queen, and a king. Violet (White) moves first, ' +
+              'then the two sides alternate.',
+          ],
+        },
+        {
+          heading: 'On your turn',
+          body: [
+            'Tap one of your pieces to select it and its legal squares light up, then tap a ' +
+              'highlighted square to move. Each piece moves its own way - the rook in straight lines, ' +
+              'the bishop on diagonals, the queen both, the knight in an L, the king one square, and ' +
+              'the pawn forward (capturing diagonally). You may never make a move that leaves your own ' +
+              'king in check.',
+          ],
+        },
+        {
+          heading: 'Special moves',
+          body: [
+            'Castling tucks your king toward a corner behind an unmoved rook when the path is clear ' +
+              'and the king does not pass through check. En passant lets a pawn capture an enemy pawn ' +
+              'that just slipped past it on a two-square advance - but only on the very next move. A ' +
+              'pawn reaching the far rank promotes to a queen, rook, bishop, or knight.',
+          ],
+        },
+        {
+          heading: 'Winning',
+          body: [
+            'You win by checkmate: the enemy king is attacked and cannot escape, block, or capture ' +
+              'the attacker. If the side to move has no legal move but is not in check, the game is a ' +
+              'stalemate draw; bare kings (or too little material to mate) also draw. You may resign ' +
+              'at any time.',
+          ],
+        },
+      ],
+    },
+  },
 };
 
 /**
