@@ -12,7 +12,13 @@
 
 import type { LeafRole, PublicLeaf, Team } from './protocol';
 
-/** Fill + text classes for a leaf whose role is known (revealed, or the Whisperer's ring source). */
+// The grove's palette is game-specific chrome (the two grove identities + the sapling/Deadwood
+// markers) with no canopy token to reuse. The grove hex values are Violet #7c3aed and Amber #f59e0b;
+// they recur below in the fill, the Whisperer's secret ring, and the header dot. NOTE: Tailwind's JIT
+// only emits an arbitrary-value class it can see as a complete static string, so these classes are
+// written out in full (not interpolated) - keep the two grove hexes in sync across the helpers below.
+
+/** Fill + text classes for a leaf whose role is known (revealed). */
 export function roleFill(role: LeafRole): string {
   switch (role) {
     case 'violet':

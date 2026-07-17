@@ -88,6 +88,11 @@ test('four insiders play a full two-team Whispergrove match to a winner', async 
       { whisperer: p1, seeker: p3 },
     ];
 
+    // Termination invariant: every accepted tap reveals one of the 25 leaves and never un-reveals one,
+    // so the hidden-leaf count is strictly monotonic down. A grove clears (all its leaves revealed) or
+    // wakes the Deadwood within a bounded number of taps, so this retry loop cannot livelock - it drives
+    // real progress toward `over` on each pass. The end reason (a clear or a Deadwood loss) is left to
+    // the engine; the test only asserts a real scored end is reached.
     await expect(async () => {
       // If a winner banner is up anywhere, we are done.
       const done = await host

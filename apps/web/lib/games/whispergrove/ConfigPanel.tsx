@@ -16,11 +16,12 @@ export function WhispergroveConfigPanel({ value, onChange, disabled }: GameConfi
 
   const toggle = (category: string) => {
     const isOn = selected.includes(category as (typeof CATEGORIES)[number]);
-    // Never let the host clear the last category - keep at least one so the grove can fill.
+    // The host may toggle any category, including clearing the last one; the "Pick at least one"
+    // badge below and the shell's Start gating (validateWhispergroveConfig) block an empty selection.
     const next = isOn
       ? selected.filter((c) => c !== category)
       : [...selected, category as (typeof CATEGORIES)[number]];
-    onChange({ categories: next.length > 0 ? next : selected });
+    onChange({ categories: next });
   };
 
   return (
