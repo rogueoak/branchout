@@ -55,6 +55,38 @@ describe('client game frames', () => {
     };
     const parsed = parseMessage(JSON.stringify(raw)) as JoinMessage;
     expect(parsed).toEqual(raw);
+    // The token is optional/additive (spec 0064): a join without one omits the field entirely.
+    expect('token' in parsed).toBe(false);
+  });
+
+  it('parses a join carrying an auth token (spec 0064, additive)', () => {
+    const raw = {
+      v: PROTOCOL_VERSION,
+      type: 'join',
+      room: 'r1',
+      game: 'stub',
+      player: 'p1',
+      nickname: 'Ada',
+      token: 'r1.stub.p1.9999999999.sig',
+    };
+    const parsed = parseMessage(JSON.stringify(raw)) as JoinMessage;
+    expect(parsed).toEqual(raw);
+    expect(parsed.token).toBe('r1.stub.p1.9999999999.sig');
+  });
+
+  it('drops a non-string join token to undefined (a bad token is an auth reject, not a parse error)', () => {
+    const parsed = parseMessage(
+      JSON.stringify({
+        v: PROTOCOL_VERSION,
+        type: 'join',
+        room: 'r1',
+        game: 'stub',
+        player: 'p1',
+        nickname: 'Ada',
+        token: 42,
+      }),
+    ) as JoinMessage;
+    expect(parsed.token).toBeUndefined();
   });
 
   it('parses a move', () => {

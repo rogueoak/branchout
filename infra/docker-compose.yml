@@ -98,6 +98,10 @@ services:
       REDIS_URL: ${REDIS_URL}
       # The engine is a separate container; reach it by service name, not the localhost default.
       ENGINE_URL: http://game-engine:4001
+      # Engine-join auth (spec 0064): control-plane mints the join token with this shared secret; the
+      # game-engine (below) verifies it with the SAME value. Set in infra/.env so the real auth path
+      # runs locally; unset -> the token endpoint returns "not configured" and the engine skips it.
+      ENGINE_AUTH_SECRET: ${ENGINE_AUTH_SECRET:-}
       # Host in-game feedback (spec 0048). Unset RESEND_API_KEY -> the endpoint returns a clear
       # "not configured" response instead of sending; the per-IP cap knobs fall back to defaults.
       RESEND_API_KEY: ${RESEND_API_KEY:-}
@@ -130,6 +134,9 @@ services:
     environment:
       PORT: 4001
       REDIS_URL: ${REDIS_URL}
+      # Engine-join auth (spec 0064): the SAME shared secret control-plane uses to mint the join
+      # token. Set -> the engine REQUIRES a valid token on every WebSocket join. Unset -> skipped.
+      ENGINE_AUTH_SECRET: ${ENGINE_AUTH_SECRET:-}
     ports:
       - '${GAME_ENGINE_PORT:-4001}:4001'
     depends_on:

@@ -1,5 +1,13 @@
 # 0033 - Engine join is unauthenticated, so private payloads are only as secret as that gate
 
+> **RESOLVED** by spec `0064` (engine-join authentication). The deferred token/session check on the
+> socket connection now exists: when `ENGINE_AUTH_SECRET` is set (dev/e2e/prod), the WebSocket `join`
+> REQUIRES a short-lived HMAC token the control-plane mints over the caller's OWN membership and the
+> engine verifies (binding the socket to the authenticated player). A device can no longer join as
+> another player and subscribe to their `private:` channel, so spec `0052`'s per-player secrecy now
+> genuinely holds - proven by the engine "secrecy holds WITH auth" test. The accepted residual risk
+> below is closed.
+
 Captured from persona review of spec `0052` (per-player private payloads, PR #105). The seam
 delivers a per-player secret over a per-player channel, but the whole secrecy guarantee rests on
 one gate that does not actually authenticate who is asking.

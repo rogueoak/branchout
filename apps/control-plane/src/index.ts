@@ -156,6 +156,7 @@ async function main(): Promise<void> {
     adminCookie: config.adminCookie,
     webOrigins: config.webOrigins,
     ...(config.internalToken ? { internalToken: config.internalToken } : {}),
+    ...(config.engineAuthSecret ? { engineAuthSecret: config.engineAuthSecret } : {}),
     limiter,
     rateLimit: config.rateLimit,
     ...(feedbackMailer ? { feedbackMailer } : {}),

@@ -114,6 +114,10 @@ services:
       # The engine is a separate container on `edge`; reach it by service name (the config
       # default is localhost, which would hit the control-plane's own port in a split deploy).
       ENGINE_URL: http://game-engine:4001
+      # ENGINE_AUTH_SECRET (spec 0064) reaches control-plane via .env.prod (env_file above), written by
+      # release.yml from the ENGINE_AUTH_SECRET GitHub secret. Control-plane MINTS the per-connection
+      # join token; game-engine VERIFIES it with the SAME value (also from .env.prod). NOT listed here
+      # so an unset value never blanks the env_file entry.
       # Host in-game feedback (spec 0048). RESEND_API_KEY is written to .env.prod by release.yml
       # (loaded via env_file); until an operator provisions it the endpoint returns a clear
       # "not configured" response and never crashes. These per-IP cap knobs are inert defaults.
@@ -166,6 +170,10 @@ services:
     environment:
       NODE_ENV: production
       GAME_DATA_DIR: /srv/game-data
+      # ENGINE_AUTH_SECRET (spec 0064) reaches game-engine via .env.prod (env_file above) - the SAME
+      # value control-plane uses to mint the join token. With it set, the engine REQUIRES a valid
+      # token on every WebSocket join, so a device cannot impersonate another player. NOT listed here
+      # so an unset value never blanks the env_file entry (it would silently disable enforcement).
     healthcheck:
       test: ['CMD-SHELL', 'curl -fsS http://localhost:4001/health -o /dev/null || exit 1']
       interval: 10s

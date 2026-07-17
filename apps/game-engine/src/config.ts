@@ -24,6 +24,14 @@ export interface ServiceConfig {
   workerMax: number;
   /** Per-call worker timeout in ms (spec 0045); a call/init past this kills the worker as hung. */
   workerCallTimeoutMs: number;
+  /**
+   * Shared HMAC secret the engine uses to verify a join token (spec 0064). When set, the WebSocket
+   * `join` REQUIRES a valid token that binds the connecting device to its claimed player, so a
+   * device cannot impersonate another player and read their private payloads. Present on the
+   * control-plane (which mints) and the engine (which verifies) in dev/e2e/prod; left unset only in
+   * pure-unit tests that never exercise the auth path.
+   */
+  engineAuthSecret?: string;
 }
 
 /** Read service config from the environment. `REDIS_URL` is required with no default. */
@@ -38,5 +46,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     // 2s covers a slow module build (Trivia loads ~1600 questions) and a fat physics tick with wide
     // headroom over the 40ms cadence, while still killing a truly wedged worker within a beat.
     workerCallTimeoutMs: positiveIntEnv(env.GAME_WORKER_CALL_TIMEOUT_MS, 2000),
+    ...(env.ENGINE_AUTH_SECRET ? { engineAuthSecret: env.ENGINE_AUTH_SECRET } : {}),
   };
 }

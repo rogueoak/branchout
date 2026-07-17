@@ -47,6 +47,14 @@ export function useGameClient(options: GameClientOptions | null): UseGameClientR
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity]);
 
+  // Push a refreshed engine-join token (spec 0064) into the live client WITHOUT rebuilding the
+  // socket - the token is short-lived, so a long game refreshes it out-of-band, and a rebuild would
+  // needlessly drop a healthy connection. The new token takes effect on the next (re)join. This runs
+  // after the mount effect above so a token change on an existing client is applied in place.
+  useEffect(() => {
+    clientRef.current?.updateToken(options?.token);
+  }, [options?.token]);
+
   return {
     state,
     submitMove: (round, move) => clientRef.current?.submitMove(round, move),

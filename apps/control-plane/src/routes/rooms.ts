@@ -1,3 +1,4 @@
+import { mintEngineToken } from '@branchout/protocol';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { SessionCookieConfig } from '../config';
 import type { ControlAction } from '../rooms/engine-client';
@@ -11,6 +12,12 @@ export interface RoomRoutesDeps {
   rooms: RoomService;
   sessions: SessionStore;
   cookie: SessionCookieConfig;
+  /**
+   * Shared HMAC secret for engine-join authentication (spec 0064). When set,
+   * `GET /rooms/:code/engine-token` mints a token binding the caller's OWN membership to the engine
+   * join. Unset -> that endpoint returns a 503 "not configured" (dev/tests).
+   */
+  engineAuthSecret?: string;
 }
 
 /** Read a string field from an unknown JSON body without trusting its type. */
@@ -59,7 +66,7 @@ function statusFor(code: RoomError['code']): number {
  * server-to-server surface (routes/engine.ts).
  */
 export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): void {
-  const { rooms, sessions, cookie } = deps;
+  const { rooms, sessions, cookie, engineAuthSecret } = deps;
 
   const currentSession = async (request: FastifyRequest): Promise<Session | null> => {
     const id = request.cookies[cookie.name];
@@ -204,6 +211,35 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
       const { code } = request.params as { code: string };
       const { room, membership } = await rooms.resume(code, session);
       return reply.code(200).send({ room, membership });
+    }),
+  );
+
+  // Engine join token (spec 0064): mint a short-lived HMAC token that authenticates THIS caller's
+  // WebSocket join to the engine. Session-authenticated + resolved over the caller's OWN membership,
+  // so a device can only ever get a token for its own playerId - never another player's. The token
+  // binds `{room.id, selectedGame, player}`; the engine verifies it before honouring the join, which
+  // is what makes the spec-0052 per-player secrecy guarantee actually hold. 401 (no session), 404
+  // (not a member), 409 (no game selected yet), 503 (secret not configured - dev/tests).
+  app.get('/rooms/:code/engine-token', async (request, reply) =>
+    withSession(request, reply, async (session) => {
+      if (!engineAuthSecret) {
+        return reply.code(503).send({ error: 'Engine authentication is not configured.' });
+      }
+      const { code } = request.params as { code: string };
+      // `resume` resolves the caller to their own membership (and re-seats a returning host), throwing
+      // `not_member` (404) for a genuine non-member - so the token is minted only for a real seat.
+      const { room, membership } = await rooms.resume(code, session);
+      if (!room.selectedGame) {
+        // No game is selected, so there is nothing to authenticate a join to yet.
+        return reply.code(409).send({ error: 'No game is selected for this room yet.' });
+      }
+      // Bind to room.id (the engine's room key, which the browser sends as the join `room`), the
+      // selected game, and the caller's OWN public playerId (never their sessionId).
+      const token = mintEngineToken(
+        { room: room.id, game: room.selectedGame, player: membership.player },
+        engineAuthSecret,
+      );
+      return reply.code(200).send({ token });
     }),
   );
 

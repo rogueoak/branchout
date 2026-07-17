@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ENGINE_ROUNDS_SUBPATH, V1_PREFIX } from '@branchout/protocol';
+import { ENGINE_ROUNDS_SUBPATH, V1_PREFIX, verifyEngineToken } from '@branchout/protocol';
 import type { PasswordHasher } from './accounts/hasher';
 import { InMemoryAccountRepository } from './accounts/repository.memory';
 import { AccountService } from './accounts/service';
@@ -66,6 +66,8 @@ interface MakeAppOptions {
   feedbackMailer?: FeedbackMailer;
   /** Override the feedback per-IP cap for a rate-limit test. */
   feedbackRateLimit?: FeedbackRateLimitConfig;
+  /** Engine-join HMAC secret (spec 0064); omit to simulate an unset ENGINE_AUTH_SECRET (503 path). */
+  engineAuthSecret?: string;
 }
 
 function makeApp(
@@ -112,6 +114,7 @@ function makeApp(
     ...(feedbackMailer ? { feedbackMailer } : {}),
     feedbackRateLimit,
     subscribe: defaultSubscribe,
+    ...(options.engineAuthSecret ? { engineAuthSecret: options.engineAuthSecret } : {}),
   });
   return {
     app,
@@ -778,6 +781,136 @@ describe('GET /rooms/:code/me - returning host resume (feedback 0021)', () => {
     const { room } = create.json();
     const res = await app.inject({ method: 'GET', url: `/v1/rooms/${room.code}/me` });
     expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+});
+
+describe('GET /rooms/:code/engine-token (spec 0064)', () => {
+  const SECRET = 'test-engine-secret';
+
+  /** Create a room, select a game, and return the host cookie + the room view. */
+  async function hostedRoom(app: ReturnType<typeof makeApp>['app']) {
+    const hostCookie = await withHost(app);
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { room, playerId } = create.json();
+    await app.inject({
+      method: 'POST',
+      url: `/v1/rooms/${room.code}/select`,
+      headers: { cookie: hostCookie },
+      payload: { game: 'trivia', config: {} },
+    });
+    return { hostCookie, room, hostPlayerId: playerId };
+  }
+
+  it('mints a token bound to the CALLER OWN membership (host)', async () => {
+    const { app } = makeApp(undefined, undefined, { engineAuthSecret: SECRET });
+    const { hostCookie, room, hostPlayerId } = await hostedRoom(app);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/rooms/${room.code}/engine-token`,
+      headers: { cookie: hostCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const { token } = res.json();
+    const verified = verifyEngineToken(token, SECRET);
+    expect(verified.ok).toBe(true);
+    if (!verified.ok) return;
+    // Bound to room.id (the engine's room key), the selected game, and the host's OWN playerId.
+    expect(verified.claims).toMatchObject({ room: room.id, game: 'trivia', player: hostPlayerId });
+    await app.close();
+  });
+
+  it('gives a joiner a token for THEIR OWN player id, never the host s', async () => {
+    const { app } = makeApp(undefined, undefined, { engineAuthSecret: SECRET });
+    const { room, hostPlayerId } = await hostedRoom(app);
+    // A second player joins the room.
+    const joinerSignup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { email: 'joiner@example.com', password: 'supersecret', gamerTag: 'Joiner' },
+    });
+    const joinerCookie = sessionCookie(joinerSignup);
+    const join = await app.inject({
+      method: 'POST',
+      url: `/v1/rooms/${room.code}/join`,
+      headers: { cookie: joinerCookie },
+      payload: { nickname: 'Joiner', mode: 'interactive' },
+    });
+    const joinerPlayerId = join.json().playerId;
+    expect(joinerPlayerId).not.toBe(hostPlayerId);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/rooms/${room.code}/engine-token`,
+      headers: { cookie: joinerCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const verified = verifyEngineToken(res.json().token, SECRET);
+    expect(verified.ok).toBe(true);
+    if (!verified.ok) return;
+    // The caller can ONLY ever get a token for their own id - the crux of the secrecy guarantee.
+    expect(verified.claims.player).toBe(joinerPlayerId);
+    expect(verified.claims.player).not.toBe(hostPlayerId);
+    await app.close();
+  });
+
+  it('401s a request with no session', async () => {
+    const { app } = makeApp(undefined, undefined, { engineAuthSecret: SECRET });
+    const { room } = await hostedRoom(app);
+    const res = await app.inject({ method: 'GET', url: `/v1/rooms/${room.code}/engine-token` });
+    expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('404s a non-member (a stranger cannot get a token for a room they are not in)', async () => {
+    const { app } = makeApp(undefined, undefined, { engineAuthSecret: SECRET });
+    const { room } = await hostedRoom(app);
+    const strangerSignup = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { email: 'stranger@example.com', password: 'supersecret', gamerTag: 'Stranger' },
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/rooms/${room.code}/engine-token`,
+      headers: { cookie: sessionCookie(strangerSignup) },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().code).toBe('not_member');
+    await app.close();
+  });
+
+  it('409s when no game is selected yet (nothing to authenticate a join to)', async () => {
+    const { app } = makeApp(undefined, undefined, { engineAuthSecret: SECRET });
+    const hostCookie = await withHost(app);
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/rooms',
+      headers: { cookie: hostCookie },
+    });
+    const { room } = create.json();
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/rooms/${room.code}/engine-token`,
+      headers: { cookie: hostCookie },
+    });
+    expect(res.statusCode).toBe(409);
+    await app.close();
+  });
+
+  it('503s when ENGINE_AUTH_SECRET is unset (not configured; dev/tests)', async () => {
+    const { app } = makeApp(); // no engineAuthSecret
+    const { hostCookie, room } = await hostedRoom(app);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/rooms/${room.code}/engine-token`,
+      headers: { cookie: hostCookie },
+    });
+    expect(res.statusCode).toBe(503);
     await app.close();
   });
 });

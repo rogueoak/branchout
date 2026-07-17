@@ -110,6 +110,12 @@ jobs:
           GITHUB_ACTOR_NAME: ${{ github.actor }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          # Shared HMAC secret for engine-join authentication (spec 0064). Same value reaches BOTH
+          # control-plane (mints the join token) and game-engine (verifies it) via .env.prod's
+          # env_file. Required in prod: with it unset the engine would not enforce the token and the
+          # per-player secrecy guarantee (spec 0052) would not hold. Generate once (e.g.
+          # `openssl rand -hex 32`) and set it as the ENGINE_AUTH_SECRET repo secret.
+          ENGINE_AUTH_SECRET: ${{ secrets.ENGINE_AUTH_SECRET }}
           # Host in-game feedback email via Resend (spec 0048). Optional: unset -> the endpoint returns
           # a clear "not configured" response and never crashes, so a box with no key still boots. Set
           # it AND verify rogueoak.com as a Resend sending domain to actually deliver.
@@ -270,6 +276,9 @@ jobs:
           {
             printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
             printf 'SESSION_SECRET=%s\n' "$SESSION_SECRET"
+            # Engine-join auth secret (spec 0064). One value, shared by control-plane (mints the join
+            # token) and game-engine (verifies it) - both read this same .env.prod via env_file.
+            printf 'ENGINE_AUTH_SECRET=%s\n' "$ENGINE_AUTH_SECRET"
             # Host feedback email key (spec 0048). Empty when the secret is unset -> control-plane
             # config leaves it unset and the endpoint stays inert (a clear "not configured" reply).
             printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY"

@@ -64,6 +64,34 @@ describe('GameClient', () => {
       player: 'p1',
       nickname: 'Ada',
     });
+    // With no token supplied the join omits the field (additive, spec 0064).
+    expect('token' in join).toBe(false);
+  });
+
+  it('includes the engine-join auth token in the join frame when supplied (spec 0064)', () => {
+    const { client, sockets } = makeClient({ token: 'room1.trivia.p1.9999999999.sig' });
+    client.connect();
+    sockets[0]!.onopen?.();
+    const join = sockets[0]!.frames()[0] as ClientMessage & { token?: string };
+    expect(join).toMatchObject({ type: 'join', player: 'p1' });
+    expect(join.token).toBe('room1.trivia.p1.9999999999.sig');
+  });
+
+  it('sends a refreshed token on the NEXT join after updateToken (reconnect uses the fresh one)', () => {
+    vi.useFakeTimers();
+    const { client, sockets } = makeClient({ token: 'first-token' });
+    client.connect();
+    sockets[0]!.onopen?.();
+    expect((sockets[0]!.frames()[0] as { token?: string }).token).toBe('first-token');
+
+    // A refresh arrives mid-game; it must NOT be sent until the next (re)join.
+    client.updateToken('second-token');
+    // The socket drops and reconnects.
+    sockets[0]!.onclose?.();
+    vi.advanceTimersByTime(20);
+    sockets[1]!.onopen?.();
+    expect((sockets[1]!.frames()[0] as { token?: string }).token).toBe('second-token');
+    client.close();
   });
 
   it('folds an incoming state frame into subscribed state', () => {
