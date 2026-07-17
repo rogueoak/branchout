@@ -13,9 +13,14 @@ import { createWorkerSpawn } from './worker/spawn';
 import { WorkerRuntimeProvider } from './worker/runtime';
 import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
+import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 import { sketchyPlugin } from '@branchout/game-sketchy';
+import { whispergrovePlugin } from '@branchout/game-whispergrove';
 import { reversiPlugin } from '@branchout/game-reversi';
+import { chessPlugin } from '@branchout/game-chess';
+import { oddBirdPlugin } from '@branchout/game-odd-bird';
+import { checkersPlugin } from '@branchout/game-checkers';
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -47,9 +52,14 @@ async function main(): Promise<void> {
   const { gameIds, configSchemas } = collectManifests([
     triviaPlugin,
     liarLiarPlugin,
+    loneLeafPlugin,
     teeterTowerPlugin,
     sketchyPlugin,
+    whispergrovePlugin,
     reversiPlugin,
+    chessPlugin,
+    oddBirdPlugin,
+    checkersPlugin,
   ]);
   console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);
 
