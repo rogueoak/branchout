@@ -263,6 +263,48 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  'odd-bird': {
+    categories: ['deduction', 'party'],
+    tags: ['hidden-role', 'deduction', 'bluffing', 'small-group', 'real-time'],
+    rules: {
+      objective:
+        'The flock wins by voting out the odd bird; the odd bird wins by surviving the vote or naming the roost.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Odd Bird seats 3 to 8 players. A roost (a shared location) is drawn: everyone gets the ' +
+              'same roost plus a distinct perch (a role at it) on their own phone - except one random ' +
+              'odd bird, who is told only that they are the odd bird and do not know the roost.',
+          ],
+        },
+        {
+          heading: 'Question the flock',
+          body: [
+            'Take turns asking each other pointed questions out loud. Answers must fit the roost ' +
+              'without naming it. The odd bird bluffs and listens for clues to work out where everyone ' +
+              'else is.',
+          ],
+        },
+        {
+          heading: 'Call the flush',
+          body: [
+            'When the flock is ready (or the timer runs out), anyone can call the flush. Everyone ' +
+              'votes for who they think the odd bird is; the odd bird instead gets one guess at the ' +
+              'roost.',
+          ],
+        },
+        {
+          heading: 'Scoring',
+          body: [
+            'If the flock flushes the odd bird, every member of the flock scores. If the odd bird ' +
+              'slips the vote, they score for surviving. Naming the roost scores the odd bird a bonus ' +
+              'either way.',
+          ],
+        },
+      ],
+    },
+  },
   checkers: {
     categories: ['classic', 'strategy'],
     tags: ['two-player', 'spatial', 'turn-based'],

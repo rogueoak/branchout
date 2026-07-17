@@ -187,6 +187,19 @@ What the product does for users, grouped by area. Each capability maps to one or
       `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
       catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
       client exposes the local player's secret as `state.private` for a game's UI module.
+- [~] Fourth game (insider-only) - Odd Bird: a hidden-role location deduction game, the first to ride
+      the per-player private channel (spec `0052`). A roost (a location) is drawn; every player is
+      dealt the SAME roost plus a distinct perch (a role) - except one random odd bird, who is told
+      only that they are the odd bird. Each player's card (roost + perch, or "you are the odd bird") is
+      delivered ONLY to that player via the `private` frame and NEVER broadcast, so the shared viewer
+      never shows it (a test proves player B never receives player A's card and the odd bird never
+      receives the roost). Runs on the generic decision lifecycle: `startRound` deals the cards and
+      runs a long question window (the flock questions each other out loud, out of band), anyone calls
+      the flush to open the vote, the flock accuses a player and the odd bird gets one roost guess, and
+      `resolveDecision` scores both outcomes - the flock scores when it flushes the odd bird; the odd
+      bird scores for surviving or for naming the roost. Ships as `@branchout/game-odd-bird` with a
+      ~30-roost sample bank (`validateRoostBank`: schema, `<category>-NNN` id, distinct perches),
+      insider-gated by surface (spec `0043`), 3-8 players (`@branchout/game-odd-bird`, spec `0059`).
 - [~] Fourth game (insider-only) - Lone Leaf: a COOPERATIVE single-clue word game for 3-7 players and
       the first game built on the per-player private channel (spec `0057`). Each round one player is the
       Seeker (the role rotates by seat) and must guess a hidden mystery word - the seed - that they

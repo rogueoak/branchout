@@ -16,6 +16,7 @@ import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 import { reversiPlugin } from '@branchout/game-reversi';
+import { oddBirdPlugin } from '@branchout/game-odd-bird';
 import { checkersPlugin } from '@branchout/game-checkers';
 
 async function main(): Promise<void> {
@@ -51,6 +52,7 @@ async function main(): Promise<void> {
     loneLeafPlugin,
     teeterTowerPlugin,
     reversiPlugin,
+    oddBirdPlugin,
     checkersPlugin,
   ]);
   console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);

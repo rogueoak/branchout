@@ -30,6 +30,10 @@
       "types": "./dist/liarliar.d.ts",
       "import": "./dist/liarliar.js"
     },
+    "./oddbird": {
+      "types": "./dist/oddbird.d.ts",
+      "import": "./dist/oddbird.js"
+    },
     "./loneleaf": {
       "types": "./dist/loneleaf.d.ts",
       "import": "./dist/loneleaf.js"
