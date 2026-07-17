@@ -11,6 +11,7 @@ import { createFsAssetLoaderFactory, type GameModule, type GamePlugin } from '@b
 import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { reversiPlugin } from '@branchout/game-reversi';
 import { oddBirdPlugin } from '@branchout/game-odd-bird';
 import type {
   CallMessage,
@@ -29,6 +30,7 @@ const PLUGINS: readonly GamePlugin[] = [
   triviaPlugin,
   liarLiarPlugin,
   teeterTowerPlugin,
+  reversiPlugin,
   oddBirdPlugin,
 ];
 

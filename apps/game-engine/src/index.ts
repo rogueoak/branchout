@@ -14,6 +14,7 @@ import { WorkerRuntimeProvider } from './worker/runtime';
 import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { reversiPlugin } from '@branchout/game-reversi';
 import { oddBirdPlugin } from '@branchout/game-odd-bird';
 
 async function main(): Promise<void> {
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
     triviaPlugin,
     liarLiarPlugin,
     teeterTowerPlugin,
+    reversiPlugin,
     oddBirdPlugin,
   ]);
   console.log(`[game-engine] registered games: ${gameIds.join(', ')}`);

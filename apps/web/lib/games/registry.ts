@@ -96,6 +96,7 @@ export interface GameUiModule {
 import { triviaGameUi } from './trivia';
 import { liarLiarGameUi } from './liar-liar';
 import { teeterTowerGameUi } from './teeter-tower';
+import { reversiGameUi } from './reversi';
 import { oddBirdGameUi } from './odd-bird';
 
 /** Every registered game UI module, keyed by game id. Adding a game is adding it here. */
@@ -103,6 +104,7 @@ export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [triviaGameUi.id]: triviaGameUi,
   [liarLiarGameUi.id]: liarLiarGameUi,
   [teeterTowerGameUi.id]: teeterTowerGameUi,
+  [reversiGameUi.id]: reversiGameUi,
   [oddBirdGameUi.id]: oddBirdGameUi,
 };
 
@@ -111,6 +113,7 @@ export const GAME_UI_LIST: readonly GameUiModule[] = [
   triviaGameUi,
   liarLiarGameUi,
   teeterTowerGameUi,
+  reversiGameUi,
   oddBirdGameUi,
 ];
 

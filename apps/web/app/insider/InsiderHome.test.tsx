@@ -28,8 +28,10 @@ describe('InsiderHome (spec 0035)', () => {
 
   it('offers a "Play now" CTA on the Teeter Tower card (feedback 0030)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
-    // A visible "Play now" affordance sits within the Teeter Tower card link (its accessible name).
-    // Multiple insider games each carry a "Play now" CTA, so scope to the Teeter card.
+    // A visible "Play now" affordance sits within each insider game card link (its accessible name).
+    // There is now more than one insider game (Teeter Tower, Reversi, Odd Bird), so assert on the
+    // Teeter card.
+    expect(screen.getAllByText('Play now').length).toBeGreaterThan(0);
     const card = screen.getByRole('link', { name: /play teeter tower now/i });
     expect(card.textContent).toMatch(/Play now/);
     expect(card.getAttribute('href')).toBe('/rooms?game=teeter-tower');
