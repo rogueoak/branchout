@@ -5,6 +5,7 @@ import {
   serializeMessage,
   type MoveMessage,
   type JoinMessage,
+  type PrivateMessage,
   type ProtocolMessage,
   type VoteMessage,
 } from './messages';
@@ -134,6 +135,24 @@ describe('client game frames', () => {
         }),
       ),
     ).toThrow(ProtocolError);
+  });
+
+  it('serializes a private frame and never parses one off the wire (server-only, spec 0052)', () => {
+    // A targeted hidden-information frame round-trips through `serializeMessage` (JSON), so the engine
+    // can encode it for the wire...
+    const message: PrivateMessage = {
+      v: PROTOCOL_VERSION,
+      type: 'private',
+      room: 'r1',
+      game: 'stub',
+      round: 1,
+      player: 'p1',
+      private: { key: ['red', 'blue'] },
+    };
+    expect(JSON.parse(serializeMessage(message))).toEqual(message);
+    // ...but ingress REJECTS it, exactly like `move_rejected`: the server only ever sends it, so a
+    // hostile client cannot inject a secret by replaying the frame.
+    expect(() => parseMessage(serializeMessage(message))).toThrow(ProtocolError);
   });
 
   it('rejects an identity field with an unsafe character (channel/key injection)', () => {

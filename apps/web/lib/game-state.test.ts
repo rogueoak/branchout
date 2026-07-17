@@ -165,6 +165,36 @@ describe('reduceGameState', () => {
     expect(second.sim).toEqual({ bodies: [{ id: 2 }], height: 20 });
   });
 
+  it('stores the local private payload, clears it on a new round, and a reconnect frame restores it (spec 0052)', () => {
+    // The engine already targeted this frame to this device, so the reducer just stores its payload.
+    let next = reduceGameState(initialGameState(), {
+      v: 1,
+      type: 'private',
+      room: ROOM,
+      game: GAME,
+      round: 1,
+      player: 'p1',
+      private: { key: ['red', 'blue'] },
+    });
+    expect(next.private).toEqual({ key: ['red', 'blue'] });
+
+    // A new round (prompt) supersedes the secret: it must clear so nothing bleeds into the question.
+    next = reduceGameState(next, prompt());
+    expect(next.private).toBeNull();
+
+    // A reconnect replays the catch-up private frame, re-hydrating the local secret.
+    const restored = reduceGameState(next, {
+      v: 1,
+      type: 'private',
+      room: ROOM,
+      game: GAME,
+      round: 2,
+      player: 'p1',
+      private: { key: ['green'] },
+    });
+    expect(restored.private).toEqual({ key: ['green'] });
+  });
+
   it('folds the leaderboard standings', () => {
     const leaderboard: LeaderboardMessage = {
       v: 1,

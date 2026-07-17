@@ -56,6 +56,14 @@ export interface StartRoundResult {
   scratch: Record<string, unknown>;
   /** Opaque, game-defined prompt payload streamed to devices. */
   prompt: unknown;
+  /**
+   * Per-player secret payloads for this frame: playerId -> that player's opaque private data. The
+   * engine delivers each entry ONLY to that player's device(s) (never broadcast), persists the latest
+   * per player for join catch-up, and clears it when the next round starts. A player absent from the
+   * map simply has no secret this frame. Optional and additive: a game that never sets it is
+   * unaffected.
+   */
+  private?: Record<string, unknown>;
 }
 
 export interface RevealResult {
@@ -72,6 +80,14 @@ export interface RevealResult {
    * opt-in - the two post-reveal shapes never mix in one game.
    */
   decision?: { windowMs?: number };
+  /**
+   * Per-player secret payloads for this frame: playerId -> that player's opaque private data. The
+   * engine delivers each entry ONLY to that player's device(s) (never broadcast), persists the latest
+   * per player for join catch-up, and clears it when the next round starts. A player absent from the
+   * map simply has no secret this frame. Optional and additive: a game that never sets it is
+   * unaffected.
+   */
+  private?: Record<string, unknown>;
 }
 
 export interface DisputeWindowResult {
@@ -107,6 +123,15 @@ export interface LiveTickResult {
   sim: unknown;
   /** True when the game is over; the engine ends it and stops the sim loop. */
   over: boolean;
+  /**
+   * Per-player secret payloads for this frame: playerId -> that player's opaque private data. The
+   * engine delivers each entry ONLY to that player's device(s) (never broadcast), persists the latest
+   * per player for join catch-up, and clears it when the next round starts. A player absent from the
+   * map simply has no secret this frame. Optional and additive: a game that never sets it is
+   * unaffected. For a live game whose secret can change (a shifting private hand), re-emit it here so
+   * the update re-sends.
+   */
+  private?: Record<string, unknown>;
 }
 
 /** The result of resolving a guess phase: scores to apply and an optional final reveal. */

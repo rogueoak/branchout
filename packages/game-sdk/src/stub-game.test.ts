@@ -44,6 +44,26 @@ describe('stubGame reveal scoring', () => {
   });
 });
 
+describe('stubGame private payloads (spec 0052)', () => {
+  it('returns no private map by default (unchanged no-secret path)', () => {
+    const scratch = stubGame.configure({ secrets: ['blue'] }, players).scratch;
+    expect(stubGame.startRound(ctx({ scratch })).private).toBeUndefined();
+  });
+
+  it('deals the configured per-round per-player secret map at round start', () => {
+    const scratch = stubGame.configure(
+      { secrets: ['blue', 'green'], privates: [{ p1: 'secretA', p2: 'secretB' }, { p1: 'r2A' }] },
+      players,
+    ).scratch;
+    expect(stubGame.startRound(ctx({ scratch, round: 1 })).private).toEqual({
+      p1: 'secretA',
+      p2: 'secretB',
+    });
+    // Round 2's map is distinct, so a later round never re-serves round 1's secrets.
+    expect(stubGame.startRound(ctx({ scratch, round: 2 })).private).toEqual({ p1: 'r2A' });
+  });
+});
+
 describe('stubGame end ranking', () => {
   it('ranks final standings by score with shared ranks on ties', () => {
     const standings = stubGame.endGame(ctx({ scores: { p1: 100, p2: 100 } }));

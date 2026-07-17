@@ -9,6 +9,7 @@ import {
   type MoveRejectedMessage,
   type GameCompleteReport,
   type LeaderboardMessage,
+  type PrivateMessage,
   type PromptMessage,
   type RevealMessage,
   type RoundReport,
@@ -24,7 +25,7 @@ import type { ConfigSchema } from '@branchout/game-sdk';
 import type { RoundContext } from './lifecycle';
 import type { ControlPlaneReporter } from './reporter';
 import { realScheduler, type Scheduler } from './scheduler';
-import { streamChannel, type PubSub } from './pubsub';
+import { privateChannel, streamChannel, type PubSub } from './pubsub';
 import { sessionKey, type SessionState, type SessionStore } from './session';
 import { UnknownGameError } from './registry';
 import type { GameRuntimeProvider, SessionRuntime } from './worker/runtime';
@@ -263,12 +264,17 @@ export class GameEngine {
       await this.store.save(state);
       // Others see the (re)connection and any resume; the joiner gets the catch-up frames.
       await this.publish(state, this.stateMessage(state));
-      return this.catchUpFrames(state);
+      return this.catchUpFrames(state, player);
     });
   }
 
-  /** The ordered frames that reconstruct the current phase for a joining device (see {@link join}). */
-  private catchUpFrames(state: SessionState): ServerMessage[] {
+  /**
+   * The ordered frames that reconstruct the current phase for a joining device (see {@link join}).
+   * These are returned to the socket and sent to the joining connection alone, so appending THIS
+   * player's stored private payload (spec 0052) restores its secret on reconnect without ever
+   * exposing it to another device - the frame never touches the broadcast channel.
+   */
+  private catchUpFrames(state: SessionState, player: string): ServerMessage[] {
     const frames: ServerMessage[] = [];
     if (state.prompt !== undefined) frames.push(this.promptMessage(state, state.prompt));
     if (state.reveal !== undefined) frames.push(this.revealMessage(state, state.reveal));
@@ -281,6 +287,10 @@ export class GameEngine {
     const sim = this.lastSim.get(sessionKey(state.room, state.game));
     if (sim != null) frames.push(this.simMessage(state, sim));
     frames.push(this.stateMessage(state));
+    // Restore the joining player's OWN private payload (spec 0052), if this round dealt them one. It
+    // is keyed by playerId, so only this device's secret is ever looked up - never another player's.
+    const secret = state.privatePayloads?.[player];
+    if (secret !== undefined) frames.push(this.privateMessage(state, player, secret));
     return frames;
   }
 
@@ -479,6 +489,10 @@ export class GameEngine {
     state.prompt = result.prompt;
     state.reveal = undefined;
     state.standings = undefined;
+    // Clear the prior round's per-player secrets before this round deals its own (spec 0052), so a
+    // stale payload never leaks into a later round - the same per-round pruning `reveal`/`standings`
+    // get above. `deliverPrivate` below repopulates it from this round's `startRound.private`.
+    state.privatePayloads = {};
     // A live game (spec 0044) sits in `collecting` and never opens a move window or auto-advances -
     // the sim loop drives streaming and game end. A turn-based game opens its answer window as usual.
     const live = runtime.live;
@@ -487,6 +501,9 @@ export class GameEngine {
       !live && state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
     await this.publish(state, this.stateMessage(state));
+    // Deal-time secrets (spec 0052): hand each player their own private payload, targeted, after the
+    // public prompt/state so a device already has the round context when its secret arrives.
+    await this.deliverPrivate(state, result.private);
     if (state.moveDeadline !== undefined) this.armMoveWindow(state, state.moveWindowMs);
     // Start (or self-heal) the per-session sim loop for a live game once the round is open.
     if (live) this.startSimLoop(state, runtime);
@@ -536,6 +553,9 @@ export class GameEngine {
           await this.publish(state, this.stateMessage(state));
           this.armWindow(state, 'disputing');
         }
+        // A reveal may disclose a secret differently per player (spec 0052); deliver it targeted
+        // after the public reveal, on whichever post-reveal path the game took.
+        await this.deliverPrivate(state, result.private);
         break;
       }
       case 'disputing': {
@@ -819,6 +839,9 @@ export class GameEngine {
         // tick saves again.
         const anyConnected = current.players.some((p) => p.connected);
         if (anyConnected) {
+          // A live game whose secret can change re-emits it here (spec 0052); persist the update in
+          // `privatePayloads` (for catch-up) before the save, and send it targeted to each recipient.
+          await this.deliverPrivate(current, result.private);
           await this.store.save(current);
           if (result.sim != null) await this.publish(current, this.simMessage(current, result.sim));
         }
@@ -927,6 +950,36 @@ export class GameEngine {
     await this.pubsub.publish(streamChannel(state.room, state.game), message);
   }
 
+  /**
+   * Deliver a lifecycle result's per-player private payloads (spec 0052). For each (playerId ->
+   * payload) entry the engine stores the latest payload in `state.privatePayloads` (so a reconnect
+   * recovers it via catch-up) and, when that player has a live connection, publishes a `PrivateMessage`
+   * to that player's OWN private channel - never the broadcast channel, so no other device receives it.
+   * The module runs in a worker and returns plain data; this main-thread path owns the sockets and does
+   * the targeted send, mirroring the `move_rejected` reply. A no-op when the result carried no `private`.
+   */
+  private async deliverPrivate(
+    state: SessionState,
+    payloads: Record<string, unknown> | undefined,
+  ): Promise<void> {
+    if (!payloads) return;
+    const store = (state.privatePayloads ??= {});
+    for (const [player, payload] of Object.entries(payloads)) {
+      const target = state.players.find((p) => p.player === player);
+      // A payload for a player not in the roster is ignored: it is game-defined data we cannot route.
+      if (!target) continue;
+      store[player] = payload;
+      // Persist for catch-up regardless of connection, but only send now when the device is live -
+      // a disconnected player recovers this payload from the store on its next join catch-up.
+      if (target.connected) {
+        await this.pubsub.publish(
+          privateChannel(state.room, state.game, player),
+          this.privateMessage(state, player, payload),
+        );
+      }
+    }
+  }
+
   private stateMessage(state: SessionState): StateMessage {
     return {
       v: PROTOCOL_VERSION,
@@ -997,6 +1050,19 @@ export class GameEngine {
       room: state.room,
       game: state.game,
       standings,
+    };
+  }
+
+  /** A targeted per-player secret frame (spec 0052), delivered only to `player`'s device(s). */
+  private privateMessage(state: SessionState, player: string, payload: unknown): PrivateMessage {
+    return {
+      v: PROTOCOL_VERSION,
+      type: 'private',
+      room: state.room,
+      game: state.game,
+      round: state.round,
+      player,
+      private: payload,
     };
   }
 

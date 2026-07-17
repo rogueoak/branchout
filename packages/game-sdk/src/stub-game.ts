@@ -30,10 +30,18 @@ export interface StubConfig {
   moveWindowMs?: number;
   /** The correct answer for each round; the last entry repeats if there are more rounds. */
   secrets?: string[];
+  /**
+   * Per-player private (hidden-information) payloads to hand out at each round's start (spec 0052),
+   * indexed by round (0-based). `startRound` returns `privates[round - 1]` as its `private` map, so a
+   * test can prove the engine delivers `{ A: secretA, B: secretB }` to A and B alone. Omitted by the
+   * default stub, which returns no `private` and exercises the unchanged (no-secret) path.
+   */
+  privates?: Record<string, unknown>[];
 }
 
 interface StubScratch {
   secrets: string[];
+  privates: Record<string, unknown>[];
   submitted: Record<string, Record<string, string>>;
   correct: Record<string, string[]>;
   disputers: Record<string, string[]>;
@@ -47,6 +55,7 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): StubScratch {
   const s = scratch as Partial<StubScratch>;
   return {
     secrets: s.secrets ?? [],
+    privates: s.privates ?? [],
     submitted: s.submitted ?? {},
     correct: s.correct ?? {},
     disputers: s.disputers ?? {},
@@ -77,6 +86,7 @@ export const stubGame: GameModule = {
     const secrets = cfg.secrets ?? Array.from({ length: rounds }, () => 'answer');
     const scratch: StubScratch = {
       secrets,
+      privates: cfg.privates ?? [],
       submitted: {},
       correct: {},
       disputers: {},
@@ -94,9 +104,13 @@ export const stubGame: GameModule = {
     const scratch = clone(asScratch(ctx.scratch));
     const key = String(ctx.round);
     scratch.submitted[key] ??= {};
+    // Deal this round's per-player secret map when the config supplied one (spec 0052). Omitted (the
+    // default) leaves `private` undefined, so the stub still drives the unchanged no-secret path.
+    const privatePayloads = scratch.privates[ctx.round - 1];
     return {
       scratch: scratch as unknown as Record<string, unknown>,
       prompt: { round: ctx.round, question: `stub round ${ctx.round}` },
+      ...(privatePayloads ? { private: privatePayloads } : {}),
     };
   },
 

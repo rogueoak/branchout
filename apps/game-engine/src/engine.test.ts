@@ -29,7 +29,7 @@ import {
   deciderGame,
   DECIDER_GAME_ID,
 } from '@branchout/game-sdk/testing';
-import { InMemoryPubSub, streamChannel } from './pubsub';
+import { InMemoryPubSub, privateChannel, streamChannel } from './pubsub';
 import { InProcessRuntimeProvider } from './worker/runtime';
 import type { ControlPlaneReporter } from './reporter';
 import { InMemorySessionStore } from './session';
@@ -672,6 +672,118 @@ describe('join catch-up', () => {
     expect(frames.some((f) => f.type === 'reveal')).toBe(false);
     expect(frames.some((f) => f.type === 'leaderboard')).toBe(false);
     expect(frames.find((f) => f.type === 'prompt')).toMatchObject({ round: 2 });
+  });
+});
+
+describe('per-player private payloads (spec 0052)', () => {
+  let h: Harness;
+  beforeEach(() => {
+    h = harness();
+  });
+
+  // A handoff whose stub deals a distinct secret to each of p1 (A) and p2 (B) at each round start.
+  const secretHandoff = () =>
+    handoff({
+      config: {
+        rounds: 2,
+        secrets: ['blue', 'green'],
+        privates: [
+          { p1: 'secretA', p2: 'secretB' },
+          { p1: 'r2-secretA', p2: 'r2-secretB' },
+        ],
+      },
+    });
+
+  /** Capture every frame each channel carries: p1's private channel, p2's, and the broadcast. */
+  function taps() {
+    const p1: ServerMessage[] = [];
+    const p2: ServerMessage[] = [];
+    const broadcast: ServerMessage[] = [];
+    return {
+      p1,
+      p2,
+      broadcast,
+      subscribe: async () => {
+        await h.pubsub.subscribe(privateChannel('r1', STUB_GAME_ID, 'p1'), (f) => p1.push(f));
+        await h.pubsub.subscribe(privateChannel('r1', STUB_GAME_ID, 'p2'), (f) => p2.push(f));
+        await h.pubsub.subscribe(streamChannel('r1', STUB_GAME_ID), (f) => broadcast.push(f));
+      },
+    };
+  }
+
+  it('delivers each secret only to its own player and never onto the broadcast channel', async () => {
+    await h.engine.start(secretHandoff());
+    // Both devices connect (the round-1 secret was stored at start, before anyone subscribed).
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+
+    const tap = taps();
+    await tap.subscribe();
+
+    // Advance to round 2 so startRound re-deals its private map with both devices connected.
+    await playRoundNoDispute(h.engine, 'r1'); // round 1 -> leaderboard
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> round 2 (deals r2 secrets)
+
+    const p1Privates = tap.p1.filter((f) => f.type === 'private');
+    const p2Privates = tap.p2.filter((f) => f.type === 'private');
+    // A gets ITS secret, B gets ITS secret...
+    expect(p1Privates).toHaveLength(1);
+    expect(p1Privates[0]).toMatchObject({ player: 'p1', private: 'r2-secretA', round: 2 });
+    expect(p2Privates).toHaveLength(1);
+    expect(p2Privates[0]).toMatchObject({ player: 'p2', private: 'r2-secretB', round: 2 });
+    // ...and A NEVER sees B's secret, nor B A's - the load-bearing secrecy guarantee.
+    expect(JSON.stringify(tap.p1)).not.toContain('r2-secretB');
+    expect(JSON.stringify(tap.p2)).not.toContain('r2-secretA');
+    // Nothing private ever lands on the broadcast channel every device reads.
+    expect(tap.broadcast.some((f) => f.type === 'private')).toBe(false);
+    expect(JSON.stringify(tap.broadcast)).not.toContain('secretA');
+    expect(JSON.stringify(tap.broadcast)).not.toContain('secretB');
+  });
+
+  it('restores a re-joining player its current secret via catch-up, never another player s', async () => {
+    await h.engine.start(secretHandoff());
+    // p1 joins mid-round-1: catch-up must hand back its OWN round-1 secret.
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    const priv = frames.filter((f) => f.type === 'private');
+    expect(priv).toHaveLength(1);
+    expect(priv[0]).toMatchObject({ player: 'p1', private: 'secretA', round: 1 });
+    // p2's secret is never in p1's catch-up.
+    expect(JSON.stringify(frames)).not.toContain('secretB');
+
+    // A reconnect (disconnect then rejoin) re-hydrates the same secret.
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p1');
+    const again = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    expect(again.filter((f) => f.type === 'private')).toMatchObject([
+      { player: 'p1', private: 'secretA' },
+    ]);
+  });
+
+  it('clears the prior round s secrets when a new round starts', async () => {
+    await h.engine.start(secretHandoff());
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', STUB_GAME_ID, 'p2', 'Bo');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.privatePayloads).toEqual({
+      p1: 'secretA',
+      p2: 'secretB',
+    });
+    // Advancing into round 2 replaces round 1's map - no stale secret survives into the new round.
+    await playRoundNoDispute(h.engine, 'r1');
+    await h.engine.control('r1', STUB_GAME_ID, 'advance');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.privatePayloads).toEqual({
+      p1: 'r2-secretA',
+      p2: 'r2-secretB',
+    });
+  });
+
+  it('does not deliver a private frame to a disconnected player but persists it for catch-up', async () => {
+    await h.engine.start(secretHandoff());
+    // Nobody connected when round 1 dealt: the payload is stored, not sent.
+    const tap = taps();
+    await tap.subscribe();
+    expect(tap.p1.filter((f) => f.type === 'private')).toHaveLength(0);
+    // It is still recoverable on join.
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada');
+    expect(frames.some((f) => f.type === 'private')).toBe(true);
   });
 });
 

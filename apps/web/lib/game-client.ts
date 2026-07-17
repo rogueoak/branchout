@@ -80,7 +80,8 @@ function asServerFrame(value: unknown): ServerMessage | { type: 'error'; message
     type === 'sim' ||
     type === 'leaderboard' ||
     type === 'state' ||
-    type === 'move_rejected'
+    type === 'move_rejected' ||
+    type === 'private'
   ) {
     return value as ServerMessage;
   }

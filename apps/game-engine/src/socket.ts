@@ -7,14 +7,21 @@ import type {
 } from '@branchout/protocol';
 import { createWsServer } from '@branchout/protocol/ws';
 import type { GameEngine } from './engine';
-import { streamChannel, type PubSub, type Subscription } from './pubsub';
+import { privateChannel, streamChannel, type PubSub, type Subscription } from './pubsub';
 
-/** Per-connection binding: which session this device joined and its stream subscription. */
+/** Per-connection binding: which session this device joined and its stream subscriptions. */
 interface Bound {
   room: string;
   game: string;
   player: string;
+  /** The session broadcast subscription (every device's public frames). */
   subscription: Subscription;
+  /**
+   * The per-player private subscription (spec 0052): this device's own hidden-information channel.
+   * Only this player's connection(s) subscribe to it, so a targeted `private` frame the engine
+   * publishes reaches this device alone and never any other player - the secrecy guarantee.
+   */
+  privateSubscription: Subscription;
 }
 
 /**
@@ -46,11 +53,20 @@ export function attachGameSocket(
       streamChannel(message.room, message.game),
       (frame) => connection.send(frame),
     );
+    // Also subscribe to this device's OWN private channel (spec 0052), so a targeted hidden-info
+    // `private` frame the engine publishes reaches only this player's connection. Subscribing before
+    // the join means a payload dealt during join is not missed; the join catch-up also replays the
+    // current one for a reconnect that subscribes after the deal.
+    const privateSubscription = await pubsub.subscribe(
+      privateChannel(message.room, message.game, message.player),
+      (frame) => connection.send(frame),
+    );
     bindings.set(connection, {
       room: message.room,
       game: message.game,
       player: message.player,
       subscription,
+      privateSubscription,
     });
     try {
       // The engine returns the ordered catch-up frames (prompt/reveal/leaderboard/state) this
@@ -65,6 +81,7 @@ export function attachGameSocket(
       for (const frame of frames) connection.send(frame);
     } catch (error) {
       await subscription.unsubscribe();
+      await privateSubscription.unsubscribe();
       bindings.delete(connection);
       fail(connection, error instanceof Error ? error.message : 'join failed');
     }
@@ -113,6 +130,7 @@ export function attachGameSocket(
     if (!bound) return;
     bindings.delete(connection);
     void bound.subscription.unsubscribe();
+    void bound.privateSubscription.unsubscribe();
     void engine.disconnect(bound.room, bound.game, bound.player);
   };
 

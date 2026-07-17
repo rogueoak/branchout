@@ -50,6 +50,15 @@ export interface GameState {
    */
   sim: unknown;
   /**
+   * This device's own private (hidden-information) payload for the current round (spec 0052's
+   * `private` frame), or null when this player has no secret. The frame is already targeted to this
+   * device by the engine, so the reducer just stores its `private` field - replaced on each new one,
+   * cleared when a new prompt (round) lands, and restored from the reconnect catch-up frame. A game's
+   * UI module reads `state.private` to render what only this player may see. Opaque; the module
+   * decodes it.
+   */
+  private: unknown;
+  /**
    * The reason the engine rejected this device's last submission (spec 0020's `move_rejected`), or
    * null. Set on the targeted reject frame, cleared on the next prompt. The remote clears it too on a
    * fresh submit; a game that never rejects leaves it null.
@@ -74,6 +83,7 @@ export function initialGameState(): GameState {
     reveals: [],
     standings: [],
     sim: null,
+    private: null,
     rejected: null,
     error: null,
   };
@@ -123,6 +133,9 @@ export function reduceGameState(
         prompt: frame.prompt,
         reveals: [],
         standings: [],
+        // A new round supersedes the prior round's secret; clear it so a stale private payload never
+        // bleeds into the new question (spec 0052). The engine re-deals this round's secret targeted.
+        private: null,
         rejected: null,
       };
 
@@ -138,6 +151,11 @@ export function reduceGameState(
 
     case 'leaderboard':
       return { ...state, standings: frame.standings };
+
+    case 'private':
+      // The frame is already targeted to this device (spec 0052): store this player's own secret,
+      // replacing any prior one. A reconnect restores it from the catch-up frame the same way.
+      return { ...state, private: frame.private };
 
     case 'move_rejected':
       return { ...state, rejected: frame.reason };
