@@ -201,6 +201,19 @@ What the product does for users, grouped by area. Each capability maps to one or
       `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
       catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
       client exposes the local player's secret as `state.private` for a game's UI module.
+- [~] Fourth game (insider-only) - Brambles: a two-team, forbidden-words describing game (spec
+      `0061`, `@branchout/game-brambles`). Players split into two groves by seat. Each timed **sprint**
+      one grove is on the clock: its **Guide** alone receives the current card's **bloom** (target
+      word) and five **thorns** (forbidden words) via the spec `0052` `private` frame - the opposing
+      grove and even the guessing teammates never receive it. The Guide types clues; the engine
+      auto-referees each one and **pricks** the card (burns it, no point) if it contains the bloom, a
+      thorn, or an obvious variant; teammates type guesses that the server fuzzy-matches (a match
+      scores the grove +1 and draws the next card); the Guide may skip. Built on the LIVE lifecycle
+      (spec `0044`) so the sim loop streams the shared sprint state AND re-delivers the Guide's secret
+      each tick. No engine team support: team membership + scores live in scratch, and the two grove
+      scores map to per-player standings so every member shares the grove's rank (build kit item 16).
+      A ~200-card sample bank (bloom + five thorns) ships under `data/brambles/`. Insider-gated by
+      surface like Teeter; four-player minimum.
 - [~] Fourth game (insider-only) - Nightleaf: a cooperative, real-time, SILENT ascending-number game
       for 2-6 players, and the first game built on the private-hand seam (spec `0052`, spec `0060`).
       Each player holds a secret hand of numbered leaves (1-100, unique) delivered ONLY to their own

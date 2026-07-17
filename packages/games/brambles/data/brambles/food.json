@@ -1,0 +1,194 @@
+[
+  {
+    "id": "food-001",
+    "category": "food",
+    "bloom": "pancake",
+    "thorns": ["syrup", "flat", "breakfast", "flip", "stack"]
+  },
+  {
+    "id": "food-002",
+    "category": "food",
+    "bloom": "popcorn",
+    "thorns": ["corn", "pop", "movie", "butter", "snack"]
+  },
+  {
+    "id": "food-003",
+    "category": "food",
+    "bloom": "spaghetti",
+    "thorns": ["pasta", "noodle", "sauce", "italian", "fork"]
+  },
+  {
+    "id": "food-004",
+    "category": "food",
+    "bloom": "pineapple",
+    "thorns": ["fruit", "tropical", "spiky", "sweet", "yellow"]
+  },
+  {
+    "id": "food-005",
+    "category": "food",
+    "bloom": "sandwich",
+    "thorns": ["bread", "lunch", "filling", "slice", "stack"]
+  },
+  {
+    "id": "food-006",
+    "category": "food",
+    "bloom": "pretzel",
+    "thorns": ["salt", "twist", "bake", "snack", "knot"]
+  },
+  {
+    "id": "food-007",
+    "category": "food",
+    "bloom": "strawberry",
+    "thorns": ["fruit", "red", "seed", "sweet", "berry"]
+  },
+  {
+    "id": "food-008",
+    "category": "food",
+    "bloom": "omelette",
+    "thorns": ["egg", "fold", "breakfast", "pan", "cheese"]
+  },
+  {
+    "id": "food-009",
+    "category": "food",
+    "bloom": "cupcake",
+    "thorns": ["cake", "frosting", "small", "sweet", "sprinkle"]
+  },
+  {
+    "id": "food-010",
+    "category": "food",
+    "bloom": "taco",
+    "thorns": ["shell", "mexican", "fill", "crunch", "salsa"]
+  },
+  {
+    "id": "food-011",
+    "category": "food",
+    "bloom": "dumpling",
+    "thorns": ["dough", "fill", "steam", "asian", "wrap"]
+  },
+  {
+    "id": "food-012",
+    "category": "food",
+    "bloom": "waffle",
+    "thorns": ["syrup", "grid", "breakfast", "crisp", "square"]
+  },
+  {
+    "id": "food-013",
+    "category": "food",
+    "bloom": "smoothie",
+    "thorns": ["blend", "fruit", "drink", "cold", "straw"]
+  },
+  {
+    "id": "food-014",
+    "category": "food",
+    "bloom": "pizza",
+    "thorns": ["cheese", "slice", "crust", "topping", "round"]
+  },
+  {
+    "id": "food-015",
+    "category": "food",
+    "bloom": "burrito",
+    "thorns": ["wrap", "bean", "mexican", "roll", "fill"]
+  },
+  {
+    "id": "food-016",
+    "category": "food",
+    "bloom": "muffin",
+    "thorns": ["bake", "blueberry", "breakfast", "cup", "sweet"]
+  },
+  {
+    "id": "food-017",
+    "category": "food",
+    "bloom": "noodle",
+    "thorns": ["pasta", "soup", "long", "slurp", "asian"]
+  },
+  {
+    "id": "food-018",
+    "category": "food",
+    "bloom": "pudding",
+    "thorns": ["sweet", "spoon", "dessert", "creamy", "soft"]
+  },
+  {
+    "id": "food-019",
+    "category": "food",
+    "bloom": "bagel",
+    "thorns": ["bread", "hole", "round", "cream", "toast"]
+  },
+  {
+    "id": "food-020",
+    "category": "food",
+    "bloom": "cookie",
+    "thorns": ["sweet", "bake", "chip", "round", "crumb"]
+  },
+  {
+    "id": "food-021",
+    "category": "food",
+    "bloom": "soup",
+    "thorns": ["bowl", "hot", "spoon", "broth", "warm"]
+  },
+  {
+    "id": "food-022",
+    "category": "food",
+    "bloom": "pie",
+    "thorns": ["crust", "fruit", "bake", "slice", "sweet"]
+  },
+  {
+    "id": "food-023",
+    "category": "food",
+    "bloom": "salad",
+    "thorns": ["green", "bowl", "lettuce", "fresh", "toss"]
+  },
+  {
+    "id": "food-024",
+    "category": "food",
+    "bloom": "donut",
+    "thorns": ["sweet", "hole", "glaze", "round", "fry"]
+  },
+  {
+    "id": "food-025",
+    "category": "food",
+    "bloom": "toast",
+    "thorns": ["bread", "brown", "butter", "crisp", "pop"]
+  },
+  {
+    "id": "food-026",
+    "category": "food",
+    "bloom": "sushi",
+    "thorns": ["rice", "fish", "roll", "japan", "raw"]
+  },
+  {
+    "id": "food-027",
+    "category": "food",
+    "bloom": "pickle",
+    "thorns": ["sour", "cucumber", "brine", "crunch", "jar"]
+  },
+  {
+    "id": "food-028",
+    "category": "food",
+    "bloom": "cheese",
+    "thorns": ["dairy", "yellow", "milk", "slice", "melt"]
+  },
+  {
+    "id": "food-029",
+    "category": "food",
+    "bloom": "honey",
+    "thorns": ["bee", "sweet", "gold", "sticky", "jar"]
+  },
+  {
+    "id": "food-030",
+    "category": "food",
+    "bloom": "jam",
+    "thorns": ["fruit", "spread", "sweet", "toast", "jar"]
+  },
+  {
+    "id": "food-031",
+    "category": "food",
+    "bloom": "soda",
+    "thorns": ["fizz", "drink", "bubble", "can", "sweet"]
+  },
+  {
+    "id": "food-032",
+    "category": "food",
+    "bloom": "chili",
+    "thorns": ["spicy", "hot", "pepper", "bowl", "bean"]
+  }
+]

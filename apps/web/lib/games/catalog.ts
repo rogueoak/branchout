@@ -177,6 +177,37 @@ const MARKETING: Record<string, GameMarketing> = {
       'Teeter Tower is a phone-first physics stacking game in insider testing. Spin a googly-eyed ' +
       'piece, lock its angle, and drop it to build toward the target line across three levels.',
   },
+  // Brambles is insider-only (spec 0043): the entry exists so the build-time completeness check
+  // passes; PUBLIC_GAME_CATALOG excludes it so it never surfaces publicly. Share card is a placeholder.
+  brambles: {
+    description:
+      'Brambles is a two-team word game for phones. Each turn, one grove is on the clock: their ' +
+      'Guide gets a hidden target word (the bloom) and five forbidden words (the thorns) and types ' +
+      'clues, while the grove races to guess the bloom. Say a thorn and the card wilts. Most blooms ' +
+      'across the sprints wins. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Guide the grove',
+        body: 'Your grove Guide sees a hidden bloom and its thorns, and types clues without saying any of them.',
+      },
+      {
+        title: 'Guess the bloom',
+        body: 'The rest of the grove types guesses. A correct guess scores a bloom and draws the next card.',
+      },
+      {
+        title: 'Dodge the thorns',
+        body: 'Touch a thorn or the bloom in a clue and the card wilts. Score the most blooms to win.',
+      },
+    ],
+    categories: ['Word', 'Teams', 'Party'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Brambles',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Brambles - a two-team forbidden-words game | Branch Out Games',
+    seoDescription:
+      'Brambles is a phone-first, two-team word game in insider testing. Your grove Guide describes a ' +
+      'hidden bloom while dodging forbidden thorns, and your grove races to guess it.',
+  },
   nightleaf: {
     description:
       'Nightleaf is a cooperative, silent card climb for phones. Everyone holds a hidden hand of ' +
