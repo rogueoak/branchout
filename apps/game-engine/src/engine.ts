@@ -62,13 +62,6 @@ export class NoSessionError extends Error {
   }
 }
 
-export class UnknownPlayerError extends Error {
-  constructor(player: string) {
-    super(`player "${player}" is not in this session's roster`);
-    this.name = 'UnknownPlayerError';
-  }
-}
-
 export interface EngineDeps {
   /** Supplies each session's game runtime (a worker in production, in-process in tests), spec 0045. */
   runtimeProvider: GameRuntimeProvider;
@@ -240,7 +233,16 @@ export class GameEngine {
       const state = await this.requireState(room, game);
       const existing = state.players.find((p) => p.player === player);
       if (!existing) {
-        throw new UnknownPlayerError(player);
+        // A device not in the roster is a read-only SPECTATOR (a `viewer`, spec 0050): the
+        // control-plane hands off only the PLAYING roster, so a viewer's device never has a seat.
+        // It must still be able to WATCH - subscribe to the broadcast and render the current phase -
+        // so return the shared catch-up frames without touching the roster. It gets no private
+        // payload (catchUpFrames keys the secret by playerId, and a spectator has none), and it can
+        // never act: submitMove/submitVote route through the game runtime by player id, which does
+        // not know this id, and the socket layer refuses a move on behalf of another player. Without
+        // this, a viewer join was rejected as an unknown player and the observer was stranded on
+        // "connecting", never seeing the game or its final results.
+        return this.catchUpFrames(state, player);
       }
       existing.connected = true;
       if (nickname) existing.nickname = nickname;

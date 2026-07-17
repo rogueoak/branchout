@@ -377,11 +377,18 @@ describe('game-engine websocket', () => {
       socket.close();
     });
 
-    it('rejects a join for a player not in the roster', async () => {
+    it('admits a device not in the roster as a read-only spectator (a viewer can watch)', async () => {
+      // A `viewer` device (spec 0050) is never in the handed-off PLAYING roster, but must still be
+      // able to WATCH: the join returns the shared `state` frame rather than an error, so the
+      // observer renders the game. It never gets a seat and never receives a private payload.
       const socket = await open();
-      const err = waitFor(socket, 'error');
-      join(socket, { player: 'intruder' });
-      expect((await err).message).toMatch(/roster/);
+      const joined = waitFor(socket, 'state');
+      join(socket, { player: 'observer' });
+      const state = await joined;
+      expect(state.type).toBe('state');
+      expect((state.players as { player: string }[]).some((p) => p.player === 'observer')).toBe(
+        false,
+      );
       socket.close();
     });
   });

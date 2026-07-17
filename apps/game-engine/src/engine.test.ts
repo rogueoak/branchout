@@ -8,13 +8,7 @@ import type {
 } from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import type { GameModule } from '@branchout/game-sdk';
-import {
-  GameEngine,
-  NoSessionError,
-  UnknownPlayerError,
-  AUTO_ADVANCE_MS,
-  MAX_SIM_TICK_FAILURES,
-} from './engine';
+import { GameEngine, NoSessionError, AUTO_ADVANCE_MS, MAX_SIM_TICK_FAILURES } from './engine';
 
 /** `join` returns the ordered catch-up frames; the authoritative `state` frame is the last one. */
 function stateFrame(frames: ServerMessage[]): StateMessage {
@@ -609,11 +603,20 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
   });
 
-  it('rejects a join for a player not in the handed-off roster', async () => {
+  it('admits a device not in the roster as a read-only spectator (a viewer can watch)', async () => {
+    // The control-plane hands off only the PLAYING roster, so a `viewer` device (spec 0050) never
+    // has a seat. It must still be able to WATCH: joining returns the shared catch-up frames rather
+    // than throwing, so the observer renders the game instead of being stranded on "connecting".
     await h.engine.start(handoff());
-    await expect(h.engine.join('r1', STUB_GAME_ID, 'intruder', 'Mallory')).rejects.toThrow(
-      UnknownPlayerError,
-    );
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'observer', 'Nosey');
+    // It gets the broadcast state frame it needs to render the current phase...
+    const state = stateFrame(frames);
+    expect(state.type).toBe('state');
+    // ...but is never added to the roster (only the handed-off players are seats)...
+    expect(state.players.some((p) => p.player === 'observer')).toBe(false);
+    // ...and never receives a private (hidden-info) payload - the secret is keyed by playerId and a
+    // spectator has none, so secrecy holds for the observer.
+    expect(frames.some((f) => f.type === 'private')).toBe(false);
   });
 
   it('exit ends the game, reports completion, and drops the session', async () => {
