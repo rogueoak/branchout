@@ -30,6 +30,10 @@
       "types": "./dist/liarliar.d.ts",
       "import": "./dist/liarliar.js"
     },
+    "./oddbird": {
+      "types": "./dist/oddbird.d.ts",
+      "import": "./dist/oddbird.js"
+    },
     "./loneleaf": {
       "types": "./dist/loneleaf.d.ts",
       "import": "./dist/loneleaf.js"
@@ -46,9 +50,29 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./brambles": {
+      "types": "./dist/brambles.d.ts",
+      "import": "./dist/brambles.js"
+    },
+    "./nightleaf": {
+      "types": "./dist/nightleaf.d.ts",
+      "import": "./dist/nightleaf.js"
+    },
+    "./sketchy": {
+      "types": "./dist/sketchy.d.ts",
+      "import": "./dist/sketchy.js"
+    },
+    "./whispergrove": {
+      "types": "./dist/whispergrove.d.ts",
+      "import": "./dist/whispergrove.js"
+    },
     "./reversi": {
       "types": "./dist/reversi.d.ts",
       "import": "./dist/reversi.js"
+    },
+    "./chess": {
+      "types": "./dist/chess.d.ts",
+      "import": "./dist/chess.js"
     },
     "./checkers": {
       "types": "./dist/checkers.d.ts",

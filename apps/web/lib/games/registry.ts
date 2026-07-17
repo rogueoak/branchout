@@ -97,7 +97,13 @@ import { triviaGameUi } from './trivia';
 import { liarLiarGameUi } from './liar-liar';
 import { loneLeafGameUi } from './lone-leaf';
 import { teeterTowerGameUi } from './teeter-tower';
+import { bramblesGameUi } from './brambles';
+import { nightleafGameUi } from './nightleaf';
+import { sketchyGameUi } from './sketchy';
+import { whispergroveGameUi } from './whispergrove';
 import { reversiGameUi } from './reversi';
+import { chessGameUi } from './chess';
+import { oddBirdGameUi } from './odd-bird';
 import { checkersGameUi } from './checkers';
 import { sameBranchGameUi } from './same-branch';
 
@@ -107,7 +113,13 @@ export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [liarLiarGameUi.id]: liarLiarGameUi,
   [loneLeafGameUi.id]: loneLeafGameUi,
   [teeterTowerGameUi.id]: teeterTowerGameUi,
+  [bramblesGameUi.id]: bramblesGameUi,
+  [nightleafGameUi.id]: nightleafGameUi,
+  [sketchyGameUi.id]: sketchyGameUi,
+  [whispergroveGameUi.id]: whispergroveGameUi,
   [reversiGameUi.id]: reversiGameUi,
+  [chessGameUi.id]: chessGameUi,
+  [oddBirdGameUi.id]: oddBirdGameUi,
   [checkersGameUi.id]: checkersGameUi,
   [sameBranchGameUi.id]: sameBranchGameUi,
 };
@@ -118,7 +130,13 @@ export const GAME_UI_LIST: readonly GameUiModule[] = [
   liarLiarGameUi,
   loneLeafGameUi,
   teeterTowerGameUi,
+  bramblesGameUi,
+  nightleafGameUi,
+  sketchyGameUi,
+  whispergroveGameUi,
   reversiGameUi,
+  chessGameUi,
+  oddBirdGameUi,
   checkersGameUi,
   sameBranchGameUi,
 ];

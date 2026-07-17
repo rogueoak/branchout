@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Sketchy">
+  <defs>
+    <linearGradient id="sk-spark" gradientUnits="userSpaceOnUse" x1="150" y1="404" x2="360" y2="150">
+      <stop offset="0"    stop-color="#FBBF24"/>
+      <stop offset="0.5"  stop-color="#EC4899"/>
+      <stop offset="1"    stop-color="#7C3AED"/>
+    </linearGradient>
+    <radialGradient id="sk-bg" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0" stop-color="#221836"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="sk-glow" cx="0.5" cy="0.4" r="0.5">
+      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sk-wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9884a"/>
+      <stop offset="1" stop-color="#9c6636"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sk-bg)"/>
+  <circle cx="256" cy="205" r="210" fill="url(#sk-glow)"/>
+  <!-- The freehand sketch scribble on the bark: a doodled leaf drawn in one spark stroke. -->
+  <g fill="none" stroke="url(#sk-spark)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 250 C150 190 210 150 256 150 C302 150 362 190 362 250 C362 300 310 330 256 330 C210 330 150 300 150 250 Z"
+          stroke-width="14" opacity="0.16"/>
+    <path d="M150 250 C150 190 210 150 256 150 C302 150 362 190 362 250 C362 300 310 330 256 330 C210 330 150 300 150 250 Z"
+          stroke-width="7"/>
+    <!-- the leaf's central vein, sketched -->
+    <path d="M256 150 L256 330" stroke-width="6"/>
+    <path d="M256 210 L210 190 M256 210 L302 190 M256 260 L206 240 M256 260 L306 240" stroke-width="4" opacity="0.85"/>
+  </g>
+  <!-- The twig: a pencil-like drawing tool angled over the bark, tip meeting the scribble. -->
+  <g transform="rotate(38 340 300)">
+    <rect x="322" y="150" width="36" height="150" rx="10" fill="url(#sk-wood)" stroke="url(#sk-spark)" stroke-width="5"/>
+    <!-- ferrule band -->
+    <rect x="322" y="290" width="36" height="14" fill="#A78BFA" opacity="0.7"/>
+    <!-- sharpened tip down to the drawing surface -->
+    <path d="M322 304 L358 304 L340 344 Z" fill="#37244f" stroke="url(#sk-spark)" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M334 328 L346 328 L340 344 Z" fill="#0d0a15"/>
+  </g>
+  <!-- decorative sparks along the sketch, one dimmed (the decoy) -->
+  <circle cx="150" cy="250" r="9" fill="#FDE047"/>
+  <circle cx="362" cy="250" r="9" fill="#22D3EE" opacity="0.5"/>
+  <!-- the stem down to the gold root -->
+  <g stroke-linecap="round" fill="none" stroke="url(#sk-spark)">
+    <path d="M256 330 L256 404" stroke-width="14" opacity="0.16"/>
+    <path d="M256 330 L256 404" stroke-width="7"/>
+  </g>
+  <!-- gold root node: the base of the sketch's stem -->
+  <circle cx="256" cy="404" r="11" fill="#d2a463"/>
+</svg>

@@ -1,0 +1,36 @@
+{
+  "name": "@branchout/game-chess",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chess: classic two-player chess with full legal-move generation, check/checkmate/stalemate, as a @branchout/game-sdk live-model plugin (spec 0056). Third of the board-game family; reuses the @branchout/game-board harness proven by Reversi and Checkers.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@branchout/protocol": "workspace:*",
+    "@branchout/game-sdk": "workspace:*",
+    "@branchout/game-board": "workspace:*"
+  },
+  "devDependencies": {
+    "@branchout/config": "workspace:*",
+    "@types/node": "^20.17.10",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

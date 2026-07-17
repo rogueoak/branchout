@@ -1,0 +1,107 @@
+[
+  {
+    "id": "everyday-001",
+    "category": "everyday",
+    "name": "A busy coffee shop",
+    "perches": [
+      "Barista",
+      "Regular customer",
+      "First-time visitor",
+      "Pastry baker",
+      "Cafe manager",
+      "Delivery courier",
+      "Health inspector",
+      "Local student"
+    ]
+  },
+  {
+    "id": "everyday-002",
+    "category": "everyday",
+    "name": "A public library",
+    "perches": [
+      "Head librarian",
+      "Late-fee dodger",
+      "Story-time volunteer",
+      "Research student",
+      "Shelving assistant",
+      "Rare-books archivist",
+      "Napping visitor",
+      "Book-club host"
+    ]
+  },
+  {
+    "id": "everyday-003",
+    "category": "everyday",
+    "name": "A hospital waiting room",
+    "perches": [
+      "Triage nurse",
+      "Anxious patient",
+      "Visiting relative",
+      "On-call doctor",
+      "Receptionist",
+      "Pharmacy runner",
+      "Cleaning staff",
+      "Insurance rep"
+    ]
+  },
+  {
+    "id": "everyday-004",
+    "category": "everyday",
+    "name": "A grocery store",
+    "perches": [
+      "Cashier",
+      "Stock clerk",
+      "Coupon shopper",
+      "Store manager",
+      "Butcher",
+      "Sample server",
+      "Cart wrangler",
+      "Produce buyer"
+    ]
+  },
+  {
+    "id": "everyday-005",
+    "category": "everyday",
+    "name": "A gym",
+    "perches": [
+      "Personal trainer",
+      "New member",
+      "Front-desk clerk",
+      "Yoga instructor",
+      "Weightlifter",
+      "Towel attendant",
+      "Equipment technician",
+      "Smoothie-bar server"
+    ]
+  },
+  {
+    "id": "everyday-006",
+    "category": "everyday",
+    "name": "A hair salon",
+    "perches": [
+      "Stylist",
+      "Nervous first-timer",
+      "Receptionist",
+      "Colorist",
+      "Apprentice",
+      "Regular client",
+      "Product sales rep",
+      "Shampoo assistant"
+    ]
+  },
+  {
+    "id": "everyday-007",
+    "category": "everyday",
+    "name": "An office break room",
+    "perches": [
+      "Overworked intern",
+      "Coffee snob",
+      "Office manager",
+      "Vending-machine restocker",
+      "Gossiping coworker",
+      "Remote worker on a visit",
+      "New hire",
+      "Birthday-cake bringer"
+    ]
+  }
+]

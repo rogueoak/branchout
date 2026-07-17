@@ -15,7 +15,13 @@ import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { bramblesPlugin } from '@branchout/game-brambles';
+import { nightleafPlugin } from '@branchout/game-nightleaf';
+import { sketchyPlugin } from '@branchout/game-sketchy';
+import { whispergrovePlugin } from '@branchout/game-whispergrove';
 import { reversiPlugin } from '@branchout/game-reversi';
+import { chessPlugin } from '@branchout/game-chess';
+import { oddBirdPlugin } from '@branchout/game-odd-bird';
 import { checkersPlugin } from '@branchout/game-checkers';
 import { sameBranchPlugin } from '@branchout/game-same-branch';
 
@@ -51,7 +57,13 @@ async function main(): Promise<void> {
     liarLiarPlugin,
     loneLeafPlugin,
     teeterTowerPlugin,
+    bramblesPlugin,
+    nightleafPlugin,
+    sketchyPlugin,
+    whispergrovePlugin,
     reversiPlugin,
+    chessPlugin,
+    oddBirdPlugin,
     checkersPlugin,
     sameBranchPlugin,
   ]);

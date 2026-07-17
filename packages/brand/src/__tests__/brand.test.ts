@@ -4,8 +4,14 @@ import { faviconSvg } from '../favicon.js';
 import { logoSvg } from '../logo.js';
 import { triviaSvg } from '../trivia.js';
 import { liarLiarSvg } from '../liarliar.js';
+import { bramblesSvg } from '../brambles.js';
+import { nightleafSvg } from '../nightleaf.js';
+import { sketchySvg } from '../sketchy.js';
+import { whispergroveSvg } from '../whispergrove.js';
 import { loneLeafSvg } from '../loneleaf.js';
 import { reversiSvg } from '../reversi.js';
+import { chessSvg } from '../chess.js';
+import { oddBirdSvg } from '../oddbird.js';
 import { checkersSvg } from '../checkers.js';
 import { sameBranchSvg } from '../samebranch.js';
 import { heroTriviaSvg } from '../hero-trivia.js';
@@ -31,8 +37,14 @@ describe('SVG exports', () => {
   it.each([
     ['triviaSvg', triviaSvg],
     ['liarLiarSvg', liarLiarSvg],
+    ['bramblesSvg', bramblesSvg],
+    ['nightleafSvg', nightleafSvg],
+    ['sketchySvg', sketchySvg],
+    ['whispergroveSvg', whispergroveSvg],
     ['loneLeafSvg', loneLeafSvg],
     ['reversiSvg', reversiSvg],
+    ['chessSvg', chessSvg],
+    ['oddBirdSvg', oddBirdSvg],
     ['checkersSvg', checkersSvg],
     ['sameBranchSvg', sameBranchSvg],
   ])(

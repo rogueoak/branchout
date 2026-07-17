@@ -1,0 +1,194 @@
+[
+  {
+    "id": "people-001",
+    "category": "people",
+    "bloom": "teacher",
+    "thorns": ["school", "class", "lesson", "student", "learn"]
+  },
+  {
+    "id": "people-002",
+    "category": "people",
+    "bloom": "firefighter",
+    "thorns": ["fire", "hose", "truck", "rescue", "flame"]
+  },
+  {
+    "id": "people-003",
+    "category": "people",
+    "bloom": "astronaut",
+    "thorns": ["space", "rocket", "moon", "suit", "orbit"]
+  },
+  {
+    "id": "people-004",
+    "category": "people",
+    "bloom": "chef",
+    "thorns": ["cook", "kitchen", "food", "recipe", "hat"]
+  },
+  {
+    "id": "people-005",
+    "category": "people",
+    "bloom": "pilot",
+    "thorns": ["plane", "fly", "cockpit", "sky", "wing"]
+  },
+  {
+    "id": "people-006",
+    "category": "people",
+    "bloom": "doctor",
+    "thorns": ["patient", "sick", "hospital", "heal", "nurse"]
+  },
+  {
+    "id": "people-007",
+    "category": "people",
+    "bloom": "farmer",
+    "thorns": ["crop", "field", "tractor", "grow", "harvest"]
+  },
+  {
+    "id": "people-008",
+    "category": "people",
+    "bloom": "plumber",
+    "thorns": ["pipe", "water", "leak", "wrench", "sink"]
+  },
+  {
+    "id": "people-009",
+    "category": "people",
+    "bloom": "sailor",
+    "thorns": ["boat", "sea", "ship", "ocean", "anchor"]
+  },
+  {
+    "id": "people-010",
+    "category": "people",
+    "bloom": "painter",
+    "thorns": ["brush", "color", "canvas", "art", "wall"]
+  },
+  {
+    "id": "people-011",
+    "category": "people",
+    "bloom": "dentist",
+    "thorns": ["teeth", "drill", "mouth", "clean", "cavity"]
+  },
+  {
+    "id": "people-012",
+    "category": "people",
+    "bloom": "librarian",
+    "thorns": ["book", "quiet", "shelf", "read", "borrow"]
+  },
+  {
+    "id": "people-013",
+    "category": "people",
+    "bloom": "gardener",
+    "thorns": ["plant", "soil", "grow", "flower", "water"]
+  },
+  {
+    "id": "people-014",
+    "category": "people",
+    "bloom": "carpenter",
+    "thorns": ["wood", "hammer", "build", "nail", "saw"]
+  },
+  {
+    "id": "people-015",
+    "category": "people",
+    "bloom": "electrician",
+    "thorns": ["wire", "power", "light", "shock", "plug"]
+  },
+  {
+    "id": "people-016",
+    "category": "people",
+    "bloom": "photographer",
+    "thorns": ["camera", "photo", "picture", "lens", "shoot"]
+  },
+  {
+    "id": "people-017",
+    "category": "people",
+    "bloom": "detective",
+    "thorns": ["clue", "solve", "crime", "mystery", "case"]
+  },
+  {
+    "id": "people-018",
+    "category": "people",
+    "bloom": "barber",
+    "thorns": ["hair", "cut", "scissors", "shave", "chair"]
+  },
+  {
+    "id": "people-019",
+    "category": "people",
+    "bloom": "waiter",
+    "thorns": ["restaurant", "serve", "order", "table", "food"]
+  },
+  {
+    "id": "people-020",
+    "category": "people",
+    "bloom": "scientist",
+    "thorns": ["lab", "experiment", "research", "study", "test"]
+  },
+  {
+    "id": "people-021",
+    "category": "people",
+    "bloom": "lifeguard",
+    "thorns": ["pool", "water", "rescue", "beach", "swim"]
+  },
+  {
+    "id": "people-022",
+    "category": "people",
+    "bloom": "tailor",
+    "thorns": ["sew", "cloth", "measure", "suit", "thread"]
+  },
+  {
+    "id": "people-023",
+    "category": "people",
+    "bloom": "nurse",
+    "thorns": ["care", "hospital", "patient", "doctor", "heal"]
+  },
+  {
+    "id": "people-024",
+    "category": "people",
+    "bloom": "coach",
+    "thorns": ["team", "sport", "train", "whistle", "player"]
+  },
+  {
+    "id": "people-025",
+    "category": "people",
+    "bloom": "banker",
+    "thorns": ["money", "bank", "account", "loan", "save"]
+  },
+  {
+    "id": "people-026",
+    "category": "people",
+    "bloom": "author",
+    "thorns": ["write", "book", "story", "word", "page"]
+  },
+  {
+    "id": "people-027",
+    "category": "people",
+    "bloom": "florist",
+    "thorns": ["flower", "bouquet", "shop", "petal", "arrange"]
+  },
+  {
+    "id": "people-028",
+    "category": "people",
+    "bloom": "mechanic",
+    "thorns": ["car", "fix", "engine", "tool", "garage"]
+  },
+  {
+    "id": "people-029",
+    "category": "people",
+    "bloom": "baker",
+    "thorns": ["bread", "oven", "bake", "flour", "cake"]
+  },
+  {
+    "id": "people-030",
+    "category": "people",
+    "bloom": "clown",
+    "thorns": ["circus", "funny", "nose", "laugh", "makeup"]
+  },
+  {
+    "id": "people-031",
+    "category": "people",
+    "bloom": "magician",
+    "thorns": ["trick", "magic", "hat", "rabbit", "wand"]
+  },
+  {
+    "id": "people-032",
+    "category": "people",
+    "bloom": "referee",
+    "thorns": ["game", "whistle", "rule", "call", "sport"]
+  }
+]

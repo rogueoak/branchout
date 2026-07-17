@@ -1,0 +1,194 @@
+[
+  {
+    "id": "places-001",
+    "category": "places",
+    "bloom": "library",
+    "thorns": ["book", "quiet", "read", "shelf", "borrow"]
+  },
+  {
+    "id": "places-002",
+    "category": "places",
+    "bloom": "airport",
+    "thorns": ["plane", "fly", "gate", "travel", "luggage"]
+  },
+  {
+    "id": "places-003",
+    "category": "places",
+    "bloom": "hospital",
+    "thorns": ["doctor", "sick", "nurse", "bed", "patient"]
+  },
+  {
+    "id": "places-004",
+    "category": "places",
+    "bloom": "bakery",
+    "thorns": ["bread", "cake", "oven", "fresh", "sweet"]
+  },
+  {
+    "id": "places-005",
+    "category": "places",
+    "bloom": "museum",
+    "thorns": ["art", "history", "exhibit", "display", "tour"]
+  },
+  {
+    "id": "places-006",
+    "category": "places",
+    "bloom": "stadium",
+    "thorns": ["sport", "game", "crowd", "field", "seat"]
+  },
+  {
+    "id": "places-007",
+    "category": "places",
+    "bloom": "lighthouse",
+    "thorns": ["light", "coast", "ship", "tower", "warn"]
+  },
+  {
+    "id": "places-008",
+    "category": "places",
+    "bloom": "aquarium",
+    "thorns": ["fish", "water", "tank", "sea", "glass"]
+  },
+  {
+    "id": "places-009",
+    "category": "places",
+    "bloom": "farm",
+    "thorns": ["crop", "animal", "field", "barn", "grow"]
+  },
+  {
+    "id": "places-010",
+    "category": "places",
+    "bloom": "castle",
+    "thorns": ["king", "stone", "moat", "tower", "knight"]
+  },
+  {
+    "id": "places-011",
+    "category": "places",
+    "bloom": "playground",
+    "thorns": ["swing", "slide", "kid", "park", "play"]
+  },
+  {
+    "id": "places-012",
+    "category": "places",
+    "bloom": "harbor",
+    "thorns": ["boat", "dock", "ship", "water", "port"]
+  },
+  {
+    "id": "places-013",
+    "category": "places",
+    "bloom": "pharmacy",
+    "thorns": ["medicine", "drug", "pill", "health", "store"]
+  },
+  {
+    "id": "places-014",
+    "category": "places",
+    "bloom": "greenhouse",
+    "thorns": ["plant", "glass", "grow", "warm", "garden"]
+  },
+  {
+    "id": "places-015",
+    "category": "places",
+    "bloom": "campsite",
+    "thorns": ["tent", "fire", "outdoor", "sleep", "trail"]
+  },
+  {
+    "id": "places-016",
+    "category": "places",
+    "bloom": "subway",
+    "thorns": ["train", "underground", "city", "track", "ride"]
+  },
+  {
+    "id": "places-017",
+    "category": "places",
+    "bloom": "orchard",
+    "thorns": ["fruit", "tree", "apple", "pick", "grow"]
+  },
+  {
+    "id": "places-018",
+    "category": "places",
+    "bloom": "gym",
+    "thorns": ["exercise", "weight", "workout", "muscle", "fit"]
+  },
+  {
+    "id": "places-019",
+    "category": "places",
+    "bloom": "bookstore",
+    "thorns": ["book", "buy", "read", "shelf", "author"]
+  },
+  {
+    "id": "places-020",
+    "category": "places",
+    "bloom": "theater",
+    "thorns": ["play", "stage", "act", "seat", "show"]
+  },
+  {
+    "id": "places-021",
+    "category": "places",
+    "bloom": "barn",
+    "thorns": ["farm", "animal", "hay", "red", "cow"]
+  },
+  {
+    "id": "places-022",
+    "category": "places",
+    "bloom": "bridge",
+    "thorns": ["cross", "river", "span", "road", "over"]
+  },
+  {
+    "id": "places-023",
+    "category": "places",
+    "bloom": "market",
+    "thorns": ["buy", "sell", "stall", "food", "shop"]
+  },
+  {
+    "id": "places-024",
+    "category": "places",
+    "bloom": "temple",
+    "thorns": ["pray", "worship", "holy", "sacred", "quiet"]
+  },
+  {
+    "id": "places-025",
+    "category": "places",
+    "bloom": "zoo",
+    "thorns": ["animal", "cage", "lion", "visit", "wild"]
+  },
+  {
+    "id": "places-026",
+    "category": "places",
+    "bloom": "arcade",
+    "thorns": ["game", "coin", "play", "machine", "token"]
+  },
+  {
+    "id": "places-027",
+    "category": "places",
+    "bloom": "bakehouse",
+    "thorns": ["bread", "bake", "oven", "flour", "loaf"]
+  },
+  {
+    "id": "places-028",
+    "category": "places",
+    "bloom": "pier",
+    "thorns": ["water", "walk", "dock", "ocean", "fish"]
+  },
+  {
+    "id": "places-029",
+    "category": "places",
+    "bloom": "clinic",
+    "thorns": ["doctor", "health", "visit", "nurse", "exam"]
+  },
+  {
+    "id": "places-030",
+    "category": "places",
+    "bloom": "workshop",
+    "thorns": ["tool", "build", "craft", "make", "wood"]
+  },
+  {
+    "id": "places-031",
+    "category": "places",
+    "bloom": "tunnel",
+    "thorns": ["dark", "through", "road", "underground", "car"]
+  },
+  {
+    "id": "places-032",
+    "category": "places",
+    "bloom": "dam",
+    "thorns": ["water", "block", "river", "wall", "power"]
+  }
+]

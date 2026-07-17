@@ -164,6 +164,20 @@ What the product does for users, grouped by area. Each capability maps to one or
       a single-surface board renderer with the layout + tap hit-test in a game-agnostic `board-render.ts`.
       Themed Violet vs Amber discs (canopy grape/sunbeam tokens, no hardcoded hex) on a wood-grain
       board (`@branchout/game-reversi`). Insider-gated by SURFACE like Teeter (feedback `0029`).
+- [~] Chess (insider-only) - classic two-player chess, the correctness-heaviest board game, reusing the
+      `@branchout/game-board` harness (spec `0056`). Full standard rules: all six pieces, castling
+      (both sides with the through/into/out-of-check conditions), en passant (the one-move window),
+      promotion, and check / checkmate / stalemate / insufficient-material draw; a move is illegal if it
+      leaves the mover's own king in check. LIVE model with the whole FEN-like position (board, side to
+      move, castling rights, en-passant target, move counters) in **scratch** (no in-process world). A
+      move is `{ from, to, promotion? }` on the generic `move` channel; the engine validates FULL
+      legality (rejecting illegal/out-of-turn to that device only) plus a `resign` move, streams the
+      whole position on the `sim` frame, and ends on mate/stalemate/draw/resign (custom 2-player
+      standings: win 2, draw 1, loss 0). PERFECT information, so no per-player private channel. The
+      single-surface Viewer draws Unicode piece glyphs (Violet White vs Amber Black on a wood board) and
+      uses a two-tap move (tap a piece, then a highlighted square) with a promotion picker + resign. The
+      fifty-move and threefold-repetition counters are tracked but NOT auto-claimed (documented). Rules
+      are exhaustively unit-tested (`@branchout/game-chess`). Insider-gated by SURFACE.
 - [~] Checkers (insider-only) - classic English draughts, the SECOND board game and the first to reuse
       the shared board harness Reversi factored out (spec `0055`). It reuses the `@branchout/game-board`
       package (`Grid`, the `DIAGONAL` rays, `Turns`/`assignSeats`) and the shared web `../board/geometry`
@@ -187,6 +201,71 @@ What the product does for users, grouped by area. Each capability maps to one or
       `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
       catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
       client exposes the local player's secret as `state.private` for a game's UI module.
+- [~] Fourth game (insider-only) - Brambles: a two-team, forbidden-words describing game (spec
+      `0061`, `@branchout/game-brambles`). Players split into two groves by seat. Each timed **sprint**
+      one grove is on the clock: its **Guide** alone receives the current card's **bloom** (target
+      word) and five **thorns** (forbidden words) via the spec `0052` `private` frame - the opposing
+      grove and even the guessing teammates never receive it. The Guide types clues; the engine
+      auto-referees each one and **pricks** the card (burns it, no point) if it contains the bloom, a
+      thorn, or an obvious variant; teammates type guesses that the server fuzzy-matches (a match
+      scores the grove +1 and draws the next card); the Guide may skip. Built on the LIVE lifecycle
+      (spec `0044`) so the sim loop streams the shared sprint state AND re-delivers the Guide's secret
+      each tick. No engine team support: team membership + scores live in scratch, and the two grove
+      scores map to per-player standings so every member shares the grove's rank (build kit item 16).
+      A ~200-card sample bank (bloom + five thorns) ships under `data/brambles/`. Insider-gated by
+      surface like Teeter; four-player minimum.
+- [~] Fourth game (insider-only) - Nightleaf: a cooperative, real-time, SILENT ascending-number game
+      for 2-6 players, and the first game built on the private-hand seam (spec `0052`, spec `0060`).
+      Each player holds a secret hand of numbered leaves (1-100, unique) delivered ONLY to their own
+      device; together, in silence, the grove must play every leaf onto one shared trunk in strictly
+      ascending order. A leaf played while a lower one is still held anywhere loses a bud (life); zero
+      buds loses. Clearing a tier (every hand emptied) climbs to a bigger one (tier N deals N leaves
+      each); clearing the final tier wins. An optional hush - once every holder proposes it - spends a
+      shared firefly and discards everyone's lowest leaf. A live game (spec `0044`): the shared grove
+      (trunk, buds, tier, fireflies, per-player leaf COUNTS) streams on the broadcast `sim`, while each
+      player's exact leaves ride the per-player `private` channel and never touch a broadcast frame -
+      a test proves a player never receives another player's hand. Purely cooperative: everyone shares
+      one final standing. Deterministic per-tier deal from a seeded rng; no content bank. The shared
+      Viewer paints the grove; each player's Remote shows their own hand + the play/hush moves
+      (`@branchout/game-nightleaf`).
+- [~] Fourth game (insider-only) - Sketchy: a draw-and-guess-with-decoys party game for 3-8 players
+      (`@branchout/game-sketchy`, spec `0063`), the first game to consume the private-payload seam
+      (spec `0052`). Two stages per round on the generic decision lifecycle: a DRAW round deals every
+      player a distinct secret seed - delivered ONLY to that player via `startRound.private`, never in
+      the broadcast prompt - and each player draws it on a phone-sized freehand canvas (pointer
+      events, `touch-action: none`, pointer capture; captured as a compact serializable stroke format:
+      strokes of a palette color + a flat quantized `[x0,y0,...]` point array on a fixed 0..1000
+      logical canvas, bounded so a submission can never be unbounded). Then one SKETCH round per player
+      features their sketch: every other player writes a decoy (a fake seed), and the decoys plus the
+      true seed are shuffled and shown to guess - reusing the Liar Liar attribution/scoring shape
+      (finding the true seed = 100; a decoy fooling a player = 50 to its author). The Viewer replays
+      every sketch read-only; the drawing surface is mobile-first at ~360px. A ~120-prompt sample seed
+      bank ships under the package `data/` with a structural validator. Gated by surface like Teeter
+      (`visibility: 'insider'`). Heaviest UI in the wave; a real 3-player e2e drives draw -> decoy ->
+      guess -> score at a 360px viewport.
+- [~] Fourth game (insider-only) - Whispergrove: a two-team word-grid deduction game (spec `0062`).
+      A 5x5 grove of 25 word leaves; a secret key marks 9 leaves for the starting grove, 8 for the
+      other, 7 neutral saplings, and 1 instant-loss Deadwood. Each grove has one Whisperer who ALONE
+      sees the key (delivered over the spec `0052` private channel to the two Whisperers only, never
+      broadcast) and gives a one-word-plus-number whisper; their grove taps leaves - an own leaf keeps
+      the turn going, a sapling or enemy leaf ends it, the Deadwood loses instantly. First grove to
+      reveal all its leaves wins. Built on the LIVE model (grid state in scratch, streamed via `sim`);
+      teams tracked in scratch and mapped to shared per-player standings. A ~400-word single-noun
+      sample bank is bundled (`@branchout/game-whispergrove`). Insider-only by surface like the other
+      insider games; needs 4+ players (two groves of 2+).
+- [~] Fourth game (insider-only) - Odd Bird: a hidden-role location deduction game, the first to ride
+      the per-player private channel (spec `0052`). A roost (a location) is drawn; every player is
+      dealt the SAME roost plus a distinct perch (a role) - except one random odd bird, who is told
+      only that they are the odd bird. Each player's card (roost + perch, or "you are the odd bird") is
+      delivered ONLY to that player via the `private` frame and NEVER broadcast, so the shared viewer
+      never shows it (a test proves player B never receives player A's card and the odd bird never
+      receives the roost). Runs on the generic decision lifecycle: `startRound` deals the cards and
+      runs a long question window (the flock questions each other out loud, out of band), anyone calls
+      the flush to open the vote, the flock accuses a player and the odd bird gets one roost guess, and
+      `resolveDecision` scores both outcomes - the flock scores when it flushes the odd bird; the odd
+      bird scores for surviving or for naming the roost. Ships as `@branchout/game-odd-bird` with a
+      ~30-roost sample bank (`validateRoostBank`: schema, `<category>-NNN` id, distinct perches),
+      insider-gated by surface (spec `0043`), 3-8 players (`@branchout/game-odd-bird`, spec `0059`).
 - [~] Fourth game (insider-only) - Lone Leaf: a COOPERATIVE single-clue word game for 3-7 players and
       the first game built on the per-player private channel (spec `0057`). Each round one player is the
       Seeker (the role rotates by seat) and must guess a hidden mystery word - the seed - that they
