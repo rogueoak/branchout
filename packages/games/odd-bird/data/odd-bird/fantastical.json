@@ -1,0 +1,92 @@
+[
+  {
+    "id": "fantastical-001",
+    "category": "fantastical",
+    "name": "A wizard's tower",
+    "perches": [
+      "Head wizard",
+      "Bumbling apprentice",
+      "Potion brewer",
+      "Talking raven",
+      "Rune scholar",
+      "Broom-closet keeper",
+      "Visiting alchemist",
+      "Spellbook librarian"
+    ]
+  },
+  {
+    "id": "fantastical-002",
+    "category": "fantastical",
+    "name": "A pirate ship",
+    "perches": [
+      "Ship's captain",
+      "Cabin boy",
+      "Cook",
+      "Navigator",
+      "Lookout in the crow's nest",
+      "Treasure keeper",
+      "Deckhand",
+      "Parrot handler"
+    ]
+  },
+  {
+    "id": "fantastical-003",
+    "category": "fantastical",
+    "name": "A space station",
+    "perches": [
+      "Station commander",
+      "Rookie astronaut",
+      "Robotics engineer",
+      "Botanist in the greenhouse",
+      "Communications officer",
+      "Docking technician",
+      "Medical officer",
+      "Cargo pilot"
+    ]
+  },
+  {
+    "id": "fantastical-004",
+    "category": "fantastical",
+    "name": "A dragon's lair",
+    "perches": [
+      "Treasure-hoarding dragon",
+      "Would-be knight",
+      "Captured princess",
+      "Nervous squire",
+      "Gold appraiser",
+      "Cave mapper",
+      "Wandering bard",
+      "Fireproof blacksmith"
+    ]
+  },
+  {
+    "id": "fantastical-005",
+    "category": "fantastical",
+    "name": "A haunted mansion",
+    "perches": [
+      "Resident ghost",
+      "Curious ghost hunter",
+      "Skeptical caretaker",
+      "Lost tourist",
+      "Medium",
+      "Cobweb-dusting butler",
+      "Antiques appraiser",
+      "Trapped guest"
+    ]
+  },
+  {
+    "id": "fantastical-006",
+    "category": "fantastical",
+    "name": "An underwater city",
+    "perches": [
+      "Merfolk mayor",
+      "Pearl diver",
+      "Submarine pilot",
+      "Coral gardener",
+      "Sea-creature wrangler",
+      "Kelp-market vendor",
+      "Deep-sea explorer",
+      "Bubble-lamp lighter"
+    ]
+  }
+]

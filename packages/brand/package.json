@@ -30,6 +30,14 @@
       "types": "./dist/liarliar.d.ts",
       "import": "./dist/liarliar.js"
     },
+    "./oddbird": {
+      "types": "./dist/oddbird.d.ts",
+      "import": "./dist/oddbird.js"
+    },
+    "./loneleaf": {
+      "types": "./dist/loneleaf.d.ts",
+      "import": "./dist/loneleaf.js"
+    },
     "./hero-trivia": {
       "types": "./dist/hero-trivia.d.ts",
       "import": "./dist/hero-trivia.js"
@@ -42,6 +50,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./whispergrove": {
+      "types": "./dist/whispergrove.d.ts",
+      "import": "./dist/whispergrove.js"
+    },
     "./reversi": {
       "types": "./dist/reversi.d.ts",
       "import": "./dist/reversi.js"
@@ -49,6 +61,10 @@
     "./chess": {
       "types": "./dist/chess.d.ts",
       "import": "./dist/chess.js"
+    },
+    "./checkers": {
+      "types": "./dist/checkers.d.ts",
+      "import": "./dist/checkers.js"
     },
     "./brand": {
       "types": "./dist/brand.d.ts",

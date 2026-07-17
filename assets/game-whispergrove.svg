@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Whispergrove">
+  <defs>
+    <radialGradient id="wg-bg" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#241a3a"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="wg-glow" cx="0.5" cy="0.38" r="0.55">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#wg-bg)"/>
+  <circle cx="256" cy="216" r="205" fill="url(#wg-glow)"/>
+
+  <!-- the trunk rising from a single gold root into the grove of leaves -->
+  <path d="M251 396 L251 300 Q251 286 240 278 L214 258 M261 396 L261 300 Q261 286 272 278 L298 258"
+        fill="none" stroke="#6b4f2a" stroke-width="9" stroke-linecap="round"/>
+  <rect x="250" y="300" width="12" height="100" rx="5" fill="#6b4f2a"/>
+
+  <!-- the grove grid: a 3x3 canopy of leaf tiles, two groves + saplings + one deadwood -->
+  <g stroke-width="4">
+    <!-- row 1 -->
+    <rect x="150" y="96"  width="60" height="60" rx="14" fill="#7c3aed" stroke="#5b21b6"/>
+    <rect x="226" y="96"  width="60" height="60" rx="14" fill="#f59e0b" stroke="#b45309"/>
+    <rect x="302" y="96"  width="60" height="60" rx="14" fill="#7c3aed" stroke="#5b21b6"/>
+    <!-- row 2 -->
+    <rect x="150" y="172" width="60" height="60" rx="14" fill="#f59e0b" stroke="#b45309"/>
+    <rect x="226" y="172" width="60" height="60" rx="14" fill="#5b6b4a" stroke="#3f4a33"/>
+    <rect x="302" y="172" width="60" height="60" rx="14" fill="#7c3aed" stroke="#5b21b6"/>
+    <!-- row 3 -->
+    <rect x="150" y="248" width="60" height="60" rx="14" fill="#f59e0b" stroke="#b45309"/>
+    <rect x="226" y="248" width="60" height="60" rx="14" fill="#7c3aed" stroke="#5b21b6"/>
+    <rect x="302" y="248" width="60" height="60" rx="14" fill="#5b6b4a" stroke="#3f4a33"/>
+  </g>
+
+  <!-- the deadwood leaf: a stark bare mark in the middle of the grove -->
+  <path d="M256 186 L256 218 M244 198 L256 206 M268 198 L256 206"
+        fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- the single gold root anchoring the whole grove -->
+  <circle cx="256" cy="404" r="20" fill="#d2a463"/>
+  <path d="M256 424 Q236 444 214 452 M256 424 Q276 444 298 452"
+        fill="none" stroke="#d2a463" stroke-width="7" stroke-linecap="round"/>
+</svg>

@@ -144,6 +144,47 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  'lone-leaf': {
+    categories: ['cooperative', 'word'],
+    tags: ['wordplay', 'small-group', 'turn-based'],
+    rules: {
+      objective:
+        'Work together to help the Seeker guess the hidden seed from your surviving one-word clues.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'The host picks the seed themes and how many rounds to play, then shares the join code. ' +
+              'Everyone plays on their own phone. Lone Leaf needs 3 to 7 players.',
+          ],
+        },
+        {
+          heading: 'The Seeker and the seed',
+          body: [
+            'Each round one player is the Seeker (the role rotates so everyone takes a turn). The ' +
+              'Seeker never sees the seed - the hidden word - but every other player does, privately ' +
+              'on their own phone.',
+          ],
+        },
+        {
+          heading: 'Write one leaf',
+          body: [
+            'Every non-Seeker secretly writes a single one-word clue - a leaf - for the seed. Before ' +
+              'the Seeker looks, any two leaves that match wilt and vanish (a plural or a case change ' +
+              'still counts as a match), so only the clues nobody else thought of survive.',
+          ],
+        },
+        {
+          heading: 'Guess and score',
+          body: [
+            'The Seeker sees only the surviving leaves and takes one guess. Lone Leaf is cooperative: ' +
+              'a correct guess banks a point for the whole grove, and everyone shares the same ' +
+              'standing. Aim for the highest shared score across the rounds.',
+          ],
+        },
+      ],
+    },
+  },
   'teeter-tower': {
     categories: ['strategy'],
     tags: ['spatial', 'real-time', 'quick'],
@@ -176,6 +217,48 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
           body: [
             'Stack piece on piece until the tower reaches the target line to clear the level. Keep ' +
               'the stack balanced - a piece that slides off is lost.',
+          ],
+        },
+      ],
+    },
+  },
+  whispergrove: {
+    categories: ['word', 'party', 'deduction'],
+    tags: ['teams', 'wordplay', 'deduction', 'big-group', 'turn-based'],
+    rules: {
+      objective:
+        'Be the first grove to reveal all of your own leaves - without ever waking the Deadwood.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Whispergrove needs four or more players in two groves: Violet and Amber. Twenty-five ' +
+              'word leaves fill a 5x5 grove. A secret key marks nine leaves for the starting grove, ' +
+              'eight for the other, seven neutral saplings, and one instant-loss Deadwood.',
+            'Each grove has one Whisperer who alone sees the key on their own device; everyone else ' +
+              'sees only the words.',
+          ],
+        },
+        {
+          heading: 'Give a whisper',
+          body: [
+            'On your grove turn, the Whisperer gives ONE word plus a number - the whisper - hinting ' +
+              'how many of your leaves the word links. The word cannot be one printed on the grove.',
+          ],
+        },
+        {
+          heading: 'Tap your leaves',
+          body: [
+            'Your grove taps leaves. A leaf of your own color keeps your turn going (up to one tap ' +
+              'past the number). A sapling or an enemy leaf ends your turn; the Deadwood loses the ' +
+              'game for your grove instantly.',
+          ],
+        },
+        {
+          heading: 'Win the grove',
+          body: [
+            'Groves alternate whispering and tapping. The first grove to reveal all of its own ' +
+              'leaves wins. Tapping the Deadwood hands the win to the other grove.',
           ],
         },
       ],
@@ -262,6 +345,90 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
               'the attacker. If the side to move has no legal move but is not in check, the game is a ' +
               'stalemate draw; bare kings (or too little material to mate) also draw. You may resign ' +
               'at any time.',
+          ],
+        },
+      ],
+    },
+  },
+  'odd-bird': {
+    categories: ['deduction', 'party'],
+    tags: ['hidden-role', 'deduction', 'bluffing', 'small-group', 'real-time'],
+    rules: {
+      objective:
+        'The flock wins by voting out the odd bird; the odd bird wins by surviving the vote or naming the roost.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Odd Bird seats 3 to 8 players. A roost (a shared location) is drawn: everyone gets the ' +
+              'same roost plus a distinct perch (a role at it) on their own phone - except one random ' +
+              'odd bird, who is told only that they are the odd bird and do not know the roost.',
+          ],
+        },
+        {
+          heading: 'Question the flock',
+          body: [
+            'Take turns asking each other pointed questions out loud. Answers must fit the roost ' +
+              'without naming it. The odd bird bluffs and listens for clues to work out where everyone ' +
+              'else is.',
+          ],
+        },
+        {
+          heading: 'Call the flush',
+          body: [
+            'When the flock is ready (or the timer runs out), anyone can call the flush. Everyone ' +
+              'votes for who they think the odd bird is; the odd bird instead gets one guess at the ' +
+              'roost.',
+          ],
+        },
+        {
+          heading: 'Scoring',
+          body: [
+            'If the flock flushes the odd bird, every member of the flock scores. If the odd bird ' +
+              'slips the vote, they score for surviving. Naming the roost scores the odd bird a bonus ' +
+              'either way.',
+          ],
+        },
+      ],
+    },
+  },
+  checkers: {
+    categories: ['classic', 'strategy'],
+    tags: ['two-player', 'spatial', 'turn-based'],
+    rules: {
+      objective:
+        'Capture all of your opponent pieces, or leave them with no legal move, to win the game.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Checkers (English draughts) is a two-player game on one shared 8x8 board, played on the ' +
+              'dark squares only. Each side starts with 12 men on the dark squares of its three home ' +
+              'rows - Amber along the top, Violet along the bottom. Violet moves first.',
+          ],
+        },
+        {
+          heading: 'Moving',
+          body: [
+            'A man moves one square diagonally forward to an empty dark square (Violet moves up the ' +
+              'board, Amber down). The board highlights your legal squares - tap a piece, then tap ' +
+              'where it goes.',
+          ],
+        },
+        {
+          heading: 'Capturing',
+          body: [
+            'Jump over a touching opponent piece into the empty square just beyond to capture it. If ' +
+              'the piece can jump again after landing, it must keep jumping in the same turn (a ' +
+              'multi-jump). If any jump is available to you, you must take a jump that turn.',
+          ],
+        },
+        {
+          heading: 'Kings and winning',
+          body: [
+            'A man that stops on the far row is crowned a King, which moves and jumps diagonally in ' +
+              'all four directions. You win by capturing every opponent piece, or by leaving your ' +
+              'opponent with no legal move on their turn.',
           ],
         },
       ],
