@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { signUp, spanSessionToInsider, joinRoom } from '../lib/helpers';
+import { signUp, spanSessionToInsider } from '../lib/helpers';
 import { INSIDER_URL, WEB_PORT, grantCredits, grantInsider } from '../lib/stack';
 
 // End-to-end proof of Sketchy (spec 0063): the insider-only, draw-and-guess party game. It exercises
@@ -13,6 +13,14 @@ import { INSIDER_URL, WEB_PORT, grantCredits, grantInsider } from '../lib/stack'
 // interactive; the other two are remote-only players who also see the between-round results).
 
 const PHONE = { width: 360, height: 780 };
+
+/** A guest joins the insider room by code on the insider host and lands in the lobby. */
+async function joinInsider(page: Page, code: string, nickname: string): Promise<void> {
+  await page.goto(`${INSIDER_URL}/join?code=${code}`);
+  await page.getByLabel('Your name').fill(nickname);
+  await page.getByRole('button', { name: /join room/i }).click();
+  await page.waitForURL(new RegExp(`/rooms/${code}$`));
+}
 
 /** Draw a few strokes on the sketch canvas with pointer moves, then submit. */
 async function drawAndSubmit(page: Page): Promise<void> {
@@ -62,8 +70,8 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
     await host.waitForURL(new RegExp(`/rooms/${code}(?![?/])`));
 
     // Two more players join (on the insider surface).
-    await joinRoom(p2, code, 'Player Two');
-    await joinRoom(p3, code, 'Player Three');
+    await joinInsider(p2, code, 'Player Two');
+    await joinInsider(p3, code, 'Player Three');
 
     // One cycle keeps the run short.
     await host.locator('#sketchy-rounds').fill('1');
