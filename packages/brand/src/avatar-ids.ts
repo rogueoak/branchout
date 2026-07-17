@@ -3,20 +3,26 @@
 // list to validate a stored avatar without pulling the browser-facing SVG payload or build deps.
 // The SVG strings that render each id live in the sibling `./avatars` module, which web consumes.
 
-/** Every avatar a player can choose, in display order. A stored avatar is one of these ids. */
+/**
+ * Every avatar a player can choose, in display order. A stored avatar is one of these ids.
+ *
+ * The set is a cohesive nature-party cast - woodland critters, bugs, and plants, each a friendly
+ * face on a Confetti-palette tile with a scatter of confetti (spec 0027). Picking a creature (not a
+ * random blob) gives every player a distinct, recognizable identity.
+ */
 export const AVATAR_IDS = [
-  'sprout',
-  'berry',
-  'sunny',
-  'bloom',
-  'pebble',
-  'maple',
-  'coral',
-  'indigo',
-  'mint',
-  'plum',
-  'ember',
-  'sky',
+  'fox',
+  'frog',
+  'owl',
+  'bear',
+  'deer',
+  'hedgehog',
+  'bee',
+  'ladybug',
+  'mushroom',
+  'cactus',
+  'sunflower',
+  'acorn',
 ] as const;
 
 /** One of the known avatar ids. */

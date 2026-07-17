@@ -14,7 +14,7 @@ import { identifyPlayer, resetAnalytics } from '../lib/analytics';
 import { AccountMenu } from './AccountMenu';
 
 function open() {
-  render(<AccountMenu gamerTag="CoolCat" nickname="Cat" avatar="sprout" />);
+  render(<AccountMenu gamerTag="CoolCat" nickname="Cat" avatar="fox" />);
   const trigger = screen.getByRole('button', { name: /account menu for cat/i });
   fireEvent.click(trigger);
   return trigger;
@@ -26,7 +26,7 @@ describe('AccountMenu', () => {
   });
 
   it('is closed until the avatar is clicked (aria-expanded reflects state)', () => {
-    render(<AccountMenu gamerTag="CoolCat" nickname="Cat" avatar="sprout" />);
+    render(<AccountMenu gamerTag="CoolCat" nickname="Cat" avatar="fox" />);
     const trigger = screen.getByRole('button', { name: /account menu for cat/i });
     expect(trigger).toHaveProperty('ariaExpanded', 'false');
     expect(screen.queryByRole('menu')).toBeNull();
@@ -77,7 +77,7 @@ describe('AccountMenu', () => {
   });
 
   it('identifies the signed-in player by gamer tag on mount', () => {
-    render(<AccountMenu gamerTag="CoolCat" nickname="Cat" avatar="sprout" />);
+    render(<AccountMenu gamerTag="CoolCat" nickname="Cat" avatar="fox" />);
     expect(identifyPlayer).toHaveBeenCalledWith('CoolCat');
   });
 

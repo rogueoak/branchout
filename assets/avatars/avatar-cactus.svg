@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="cactus avatar">
+  <rect width="256" height="256" rx="56" fill="#FBBF24"/>
+  <circle cx="40" cy="54" r="6" fill="#FFFFFF"/>
+  <rect x="198" y="38" width="12" height="12" rx="3" fill="#7C3AED" transform="rotate(24 204 44)"/>
+  <circle cx="214" cy="206" r="6" fill="#F472B6"/>
+  <rect x="36" y="198" width="12" height="12" rx="3" fill="#38BDF8" transform="rotate(-18 42 204)"/>
+  <rect x="70" y="128" width="30" height="22" rx="11" fill="#10B981"/>
+  <rect x="70" y="104" width="22" height="46" rx="11" fill="#10B981"/>
+  <rect x="156" y="120" width="30" height="22" rx="11" fill="#10B981"/>
+  <rect x="164" y="96" width="22" height="46" rx="11" fill="#10B981"/>
+  <rect x="102" y="80" width="52" height="124" rx="26" fill="#10B981"/>
+  <circle cx="128" cy="80" r="14" fill="#F472B6"/>
+  <circle cx="128" cy="80" r="6" fill="#FBBF24"/>
+  <circle cx="118" cy="140" r="7" fill="#1E1B2E"/>
+  <circle cx="138" cy="140" r="7" fill="#1E1B2E"/>
+  <circle cx="106" cy="152" r="6" fill="#34D399" opacity="0.7"/>
+  <circle cx="150" cy="152" r="6" fill="#34D399" opacity="0.7"/>
+  <path d="M118 156 q10 10 20 0" fill="none" stroke="#1E1B2E" stroke-width="6" stroke-linecap="round"/>
+  <path d="M128 96 v8 M118 116 h-6 M138 116 h6 M118 176 h-6 M138 176 h6" stroke="#FFF7ED" stroke-width="4" stroke-linecap="round"/>
+</svg>

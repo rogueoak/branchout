@@ -27,7 +27,7 @@ test('account edits reflect on the public profile, gated by visibility', async (
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Nickname saved.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Choose the berry avatar' }).click();
+  await page.getByRole('button', { name: 'Choose the frog avatar' }).click();
   await expect(page.getByText('Avatar updated.')).toBeVisible();
 
   await page.getByLabel('Who can see your full profile').selectOption('private');

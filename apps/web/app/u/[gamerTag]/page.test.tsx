@@ -23,7 +23,7 @@ describe('public profile page', () => {
       visibility: 'public',
       restricted: false,
       nickname: 'Ada',
-      avatar: 'sprout',
+      avatar: 'fox',
       recentPlays: [{ game: 'trivia', rank: 1, stars: 3, playedAt: '2026-07-10T00:00:00.000Z' }],
     });
     await renderPage();
@@ -69,7 +69,7 @@ describe('public profile page', () => {
       visibility: 'public',
       restricted: false,
       nickname: 'Ada',
-      avatar: 'sprout',
+      avatar: 'fox',
       recentPlays: [],
     });
     await renderPage();

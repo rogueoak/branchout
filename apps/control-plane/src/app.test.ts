@@ -1067,13 +1067,13 @@ describe('profile endpoints (spec 0027)', () => {
       method: 'PATCH',
       url: '/v1/auth/avatar',
       headers: { cookie },
-      payload: { avatar: 'berry' },
+      payload: { avatar: 'frog' },
     });
     expect(ok.statusCode).toBe(200);
-    expect(ok.json().account.avatar).toBe('berry');
+    expect(ok.json().account.avatar).toBe('frog');
 
     const me = await app.inject({ method: 'GET', url: '/v1/auth/me', headers: { cookie } });
-    expect(me.json().account).toMatchObject({ avatar: 'berry', visibility: 'public' });
+    expect(me.json().account).toMatchObject({ avatar: 'frog', visibility: 'public' });
 
     // Unknown avatar id -> 400.
     const bad = await app.inject({
@@ -1088,7 +1088,7 @@ describe('profile endpoints (spec 0027)', () => {
     const anon = await app.inject({
       method: 'PATCH',
       url: '/v1/auth/avatar',
-      payload: { avatar: 'berry' },
+      payload: { avatar: 'frog' },
     });
     expect(anon.statusCode).toBe(401);
     await app.close();

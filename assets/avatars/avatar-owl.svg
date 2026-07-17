@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="owl avatar">
+  <rect width="256" height="256" rx="56" fill="#0EA5E9"/>
+  <circle cx="40" cy="54" r="6" fill="#FFFFFF"/>
+  <rect x="198" y="38" width="12" height="12" rx="3" fill="#FBBF24" transform="rotate(24 204 44)"/>
+  <circle cx="214" cy="206" r="6" fill="#F472B6"/>
+  <rect x="36" y="198" width="12" height="12" rx="3" fill="#FFF7ED" transform="rotate(-18 42 204)"/>
+  <path d="M92 86 L106 58 L120 92 Z" fill="#7C3AED"/>
+  <path d="M164 86 L150 58 L136 92 Z" fill="#7C3AED"/>
+  <circle cx="128" cy="140" r="62" fill="#7C3AED"/>
+  <path d="M74 132 a58 58 0 0 1 108 0 q-54 26 -108 0 z" fill="#8B5CF6"/>
+  <circle cx="104" cy="124" r="26" fill="#FFF7ED"/>
+  <circle cx="152" cy="124" r="26" fill="#FFF7ED"/>
+  <circle cx="104" cy="126" r="11" fill="#1E1B2E"/>
+  <circle cx="152" cy="126" r="11" fill="#1E1B2E"/>
+  <path d="M118 140 L138 140 L128 158 Z" fill="#FBBF24"/>
+  <path d="M104 182 q10 10 24 10 q14 0 24 -10" fill="none" stroke="#5B21B6" stroke-width="6" stroke-linecap="round"/>
+</svg>

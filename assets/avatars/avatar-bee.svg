@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="bee avatar">
+  <rect width="256" height="256" rx="56" fill="#7C3AED"/>
+  <circle cx="40" cy="54" r="6" fill="#FFFFFF"/>
+  <rect x="198" y="38" width="12" height="12" rx="3" fill="#FBBF24" transform="rotate(24 204 44)"/>
+  <circle cx="214" cy="206" r="6" fill="#F472B6"/>
+  <rect x="36" y="198" width="12" height="12" rx="3" fill="#38BDF8" transform="rotate(-18 42 204)"/>
+  <path d="M104 82 q-14 -22 -30 -22 M152 82 q14 -22 30 -22" fill="none" stroke="#1E1B2E" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="72" cy="58" r="7" fill="#1E1B2E"/>
+  <circle cx="184" cy="58" r="7" fill="#1E1B2E"/>
+  <ellipse cx="82" cy="118" rx="26" ry="18" fill="#FFFFFF" opacity="0.85" transform="rotate(-24 82 118)"/>
+  <ellipse cx="174" cy="118" rx="26" ry="18" fill="#FFFFFF" opacity="0.85" transform="rotate(24 174 118)"/>
+  <ellipse cx="128" cy="148" rx="52" ry="50" fill="#FBBF24"/>
+  <path d="M80 138 q48 -18 96 0 l0 16 q-48 18 -96 0 z" fill="#1E1B2E"/>
+  <path d="M90 178 q38 20 76 0 q-8 20 -38 24 q-30 -4 -38 -24 z" fill="#1E1B2E"/>
+  <circle cx="110" cy="122" r="8" fill="#1E1B2E"/>
+  <circle cx="146" cy="122" r="8" fill="#1E1B2E"/>
+  <path d="M114 132 q14 12 28 0" fill="none" stroke="#1E1B2E" stroke-width="6" stroke-linecap="round"/>
+</svg>

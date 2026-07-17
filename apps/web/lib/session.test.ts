@@ -3,7 +3,7 @@ import { getSignedIn, getViewer } from './session';
 
 const ACCOUNT_ME = {
   kind: 'account',
-  account: { gamerTag: 'CoolCat', nickname: 'Cat', avatar: 'sprout' },
+  account: { gamerTag: 'CoolCat', nickname: 'Cat', avatar: 'fox' },
 };
 
 // Mock next/headers so getSignedIn's cookie read is controllable in a unit test. The factory
@@ -42,7 +42,7 @@ describe('getSignedIn - server-side session check', () => {
       signedIn: true,
       gamerTag: 'CoolCat',
       nickname: 'Cat',
-      avatar: 'sprout',
+      avatar: 'fox',
       // Absent in the /auth/me payload -> defaults to a non-insider (spec 0035).
       insider: false,
     });

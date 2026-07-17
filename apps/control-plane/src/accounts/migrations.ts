@@ -63,4 +63,21 @@ export const accountMigrations: Migration[] = [
         ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
     `,
   },
+  {
+    // Spec 0027 (avatar refresh): the avatar set was replaced with the nature-party cast, so the
+    // old ids ('sprout', 'berry', ...) are no longer valid. Randomly reassign every existing row to
+    // one of the new ids (no old id is preserved - a deliberate product call) and repoint the column
+    // default off the retired 'sprout' so a default-only insert still lands on a valid id. random()
+    // is evaluated per row, so each account gets an independent pick. This runs once (tracked by id).
+    id: 9,
+    name: 'reassign_avatars_nature_party',
+    sql: `
+      ALTER TABLE accounts ALTER COLUMN avatar SET DEFAULT 'fox';
+      UPDATE accounts
+        SET avatar = (ARRAY[
+          'fox','frog','owl','bear','deer','hedgehog',
+          'bee','ladybug','mushroom','cactus','sunflower','acorn'
+        ])[floor(random() * 12) + 1];
+    `,
+  },
 ];

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="ladybug avatar">
+  <rect width="256" height="256" rx="56" fill="#34D399"/>
+  <circle cx="40" cy="54" r="6" fill="#FFFFFF"/>
+  <rect x="198" y="38" width="12" height="12" rx="3" fill="#FBBF24" transform="rotate(24 204 44)"/>
+  <circle cx="214" cy="206" r="6" fill="#F472B6"/>
+  <rect x="36" y="198" width="12" height="12" rx="3" fill="#7C3AED" transform="rotate(-18 42 204)"/>
+  <path d="M100 96 q-16 -18 -30 -30 M156 96 q16 -18 30 -30" fill="none" stroke="#1E1B2E" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="68" cy="62" r="7" fill="#1E1B2E"/>
+  <circle cx="188" cy="62" r="7" fill="#1E1B2E"/>
+  <circle cx="128" cy="150" r="58" fill="#EF4444"/>
+  <path d="M78 128 a52 52 0 0 1 100 0 q-50 20 -100 0 z" fill="#1E1B2E"/>
+  <path d="M128 122 V206" stroke="#1E1B2E" stroke-width="8"/>
+  <circle cx="112" cy="112" r="9" fill="#FFF7ED"/>
+  <circle cx="144" cy="112" r="9" fill="#FFF7ED"/>
+  <circle cx="112" cy="112" r="4" fill="#1E1B2E"/>
+  <circle cx="144" cy="112" r="4" fill="#1E1B2E"/>
+  <circle cx="102" cy="152" r="8" fill="#1E1B2E"/>
+  <circle cx="154" cy="152" r="8" fill="#1E1B2E"/>
+  <circle cx="110" cy="182" r="7" fill="#1E1B2E"/>
+  <circle cx="146" cy="182" r="7" fill="#1E1B2E"/>
+</svg>
