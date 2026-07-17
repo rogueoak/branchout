@@ -34,6 +34,24 @@ function nicknameOf(state: GameViewProps['state'], id: string): string {
   return state.players.find((player) => player.player === id)?.nickname ?? id;
 }
 
+/** The turn/outcome status line, phrased from `me`'s vantage. */
+function turnLineFor(
+  sim: ReversiSim | null,
+  isActive: boolean,
+  toMove: 'violet' | 'amber' | null,
+  activeName: string | null,
+): string {
+  if (sim?.over) {
+    if (sim.outcome === 'draw') return 'Game over - a draw.';
+    if (sim.outcome) return `Game over - ${SIDE_LABEL[sim.outcome]} wins.`;
+    return 'Game over.';
+  }
+  const side = toMove ? SIDE_LABEL[toMove] : '';
+  if (isActive) return `Your turn (${side}) - tap a highlighted square.`;
+  if (activeName) return `Waiting for ${activeName} (${side}).`;
+  return 'Waiting for the next move.';
+}
+
 /** Map an engine rejection reason to player-clear copy. */
 function rejectionMessage(reason: string): string {
   const map: Record<string, string> = {
@@ -175,50 +193,48 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
   // first). A draw highlights neither.
   const highlightViolet = sim?.over ? sim.outcome === 'violet' : toMove === 'violet';
   const highlightAmber = sim?.over ? sim.outcome === 'amber' : toMove === 'amber';
+  const violetTone = highlightViolet ? 'text-primary' : 'text-text';
+  const amberTone = highlightAmber ? 'text-accent-strong' : 'text-text';
+  const boardLabel = isActive ? 'Tap a highlighted square to place your disc' : 'Reversi board';
 
-  const turnLine = sim?.over
-    ? sim.outcome === 'draw'
-      ? 'Game over - a draw.'
-      : sim?.outcome
-        ? `Game over - ${SIDE_LABEL[sim.outcome]} wins.`
-        : 'Game over.'
-    : isActive
-      ? `Your turn (${toMove ? SIDE_LABEL[toMove] : ''}) - tap a highlighted square.`
-      : activeName
-        ? `Waiting for ${activeName} (${toMove ? SIDE_LABEL[toMove] : ''}).`
-        : 'Waiting for the next move.';
+  const turnLine = turnLineFor(sim, isActive, toMove, activeName);
 
   // The forced-pass notice is broadcast to both devices, so phrase it relative to `me`: if I now hold
   // the turn again the OTHER side was skipped (I got an extra turn); otherwise it was MY turn that got
   // skipped. A single fixed vantage would read backwards on the skipped player's phone.
-  const passLine =
-    sim?.passed && !sim.over
-      ? isActive
-        ? 'The other side had no legal move - your turn again.'
-        : 'You had no legal move - your turn was skipped.'
-      : '';
+  let passLine = '';
+  if (sim?.passed && !sim.over) {
+    passLine = isActive
+      ? 'The other side had no legal move - your turn again.'
+      : 'You had no legal move - your turn was skipped.';
+  }
+  const statusLine = passLine ? `${turnLine} ${passLine}` : turnLine;
+
+  let rejectedBanner = null;
+  if (state.rejected) {
+    rejectedBanner = (
+      <p
+        role="alert"
+        className="absolute inset-x-0 top-2 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
+      >
+        {rejectionMessage(state.rejected)}
+      </p>
+    );
+  }
 
   return (
     // Fill the single-surface stage height so the whole board fits the viewport without page scroll.
     <section aria-label="Game viewer" className="flex h-full min-h-0 flex-col gap-2">
       {/* Scoreboard: the two disc counts, the side to move called out. Big + legible at 360px. */}
       <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-raised px-3 py-2">
-        <span
-          className={`flex items-center gap-2 text-body-sm font-semibold ${
-            highlightViolet ? 'text-primary' : 'text-text'
-          }`}
-        >
+        <span className={`flex items-center gap-2 text-body-sm font-semibold ${violetTone}`}>
           <span
             aria-hidden
             className="inline-block h-4 w-4 rounded-full bg-primary ring-1 ring-primary-active"
           />
           Violet {violet}
         </span>
-        <span
-          className={`flex items-center gap-2 text-body-sm font-semibold ${
-            highlightAmber ? 'text-accent-strong' : 'text-text'
-          }`}
-        >
+        <span className={`flex items-center gap-2 text-body-sm font-semibold ${amberTone}`}>
           Amber {amber}
           <span
             aria-hidden
@@ -229,8 +245,7 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
 
       {/* The turn + pass state as text (screen readers + tests read this; the canvas is opaque to both). */}
       <p className="text-center text-body-sm text-text-muted" role="status" aria-live="polite">
-        {turnLine}
-        {passLine ? ` ${passLine}` : ''}
+        {statusLine}
       </p>
 
       {/* The single game surface: the board. touch-action:none + no user-select keep a tap from
@@ -249,18 +264,11 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
       >
         <canvas
           ref={canvasRef}
-          aria-label={isActive ? 'Tap a highlighted square to place your disc' : 'Reversi board'}
+          aria-label={boardLabel}
           role="img"
           className="block h-full w-full"
         />
-        {state.rejected ? (
-          <p
-            role="alert"
-            className="absolute inset-x-0 top-2 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
-          >
-            {rejectionMessage(state.rejected)}
-          </p>
-        ) : null}
+        {rejectedBanner}
       </div>
     </section>
   );

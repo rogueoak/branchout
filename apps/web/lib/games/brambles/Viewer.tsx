@@ -53,6 +53,23 @@ export function BramblesViewer({ state, me }: GameViewProps) {
   }
 
   const guideName = nicknameOf(players, sim.guide);
+  const timerVariant = sim.secondsLeft <= 10 ? 'warning' : 'neutral';
+
+  let logItems;
+  if (sim.log.length === 0) {
+    logItems = <li className="text-body-sm text-text-subtle">Waiting for the first clue...</li>;
+  } else {
+    logItems = sim.log.map((entry, i) => {
+      let toneClass = 'text-text';
+      if (entry.kind === 'guess') toneClass = 'text-success';
+      else if (entry.kind === 'prick') toneClass = 'text-danger';
+      return (
+        <li key={i} className={`text-body-sm ${toneClass}`}>
+          {logLine(entry, players)}
+        </li>
+      );
+    });
+  }
 
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-4">
@@ -60,7 +77,7 @@ export function BramblesViewer({ state, me }: GameViewProps) {
         <Badge variant="info">
           Sprint {sim.sprint} of {sim.totalSprints}
         </Badge>
-        <Badge variant={sim.secondsLeft <= 10 ? 'warning' : 'neutral'}>
+        <Badge variant={timerVariant}>
           <span role="timer" aria-label={`${sim.secondsLeft} seconds left`}>
             {sim.secondsLeft}s left
           </span>
@@ -71,20 +88,17 @@ export function BramblesViewer({ state, me }: GameViewProps) {
       <div className="grid grid-cols-2 gap-2">
         {([0, 1] as const).map((team) => {
           const active = sim.activeTeam === team;
+          const cardClass = active ? 'bg-surface-raised ring-2 ring-primary' : 'bg-surface-raised';
+          const status = active ? (
+            <span className="text-caption text-primary">On the clock - Guide: {guideName}</span>
+          ) : (
+            <span className="text-caption text-text-subtle">Watching</span>
+          );
           return (
-            <div
-              key={team}
-              className={`flex flex-col gap-1 rounded-lg p-3 ${
-                active ? 'bg-surface-raised ring-2 ring-primary' : 'bg-surface-raised'
-              }`}
-            >
+            <div key={team} className={`flex flex-col gap-1 rounded-lg p-3 ${cardClass}`}>
               <span className="text-body-sm font-medium text-text">{TEAM_NAMES[team]}</span>
               <span className="text-h2 tabular-nums text-text">{sim.teamScores[team]}</span>
-              {active ? (
-                <span className="text-caption text-primary">On the clock - Guide: {guideName}</span>
-              ) : (
-                <span className="text-caption text-text-subtle">Watching</span>
-              )}
+              {status}
             </div>
           );
         })}
@@ -98,24 +112,7 @@ export function BramblesViewer({ state, me }: GameViewProps) {
       <div className="flex flex-col gap-1">
         <span className="text-body-sm font-medium text-text">This sprint</span>
         <ul aria-label="Sprint log" className="flex flex-col gap-1">
-          {sim.log.length === 0 ? (
-            <li className="text-body-sm text-text-subtle">Waiting for the first clue...</li>
-          ) : (
-            sim.log.map((entry, i) => (
-              <li
-                key={i}
-                className={`text-body-sm ${
-                  entry.kind === 'guess'
-                    ? 'text-success'
-                    : entry.kind === 'prick'
-                      ? 'text-danger'
-                      : 'text-text'
-                }`}
-              >
-                {logLine(entry, players)}
-              </li>
-            ))
-          )}
+          {logItems}
         </ul>
       </div>
     </section>

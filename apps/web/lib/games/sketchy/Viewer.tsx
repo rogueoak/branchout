@@ -7,6 +7,7 @@
 // drives the game. The opaque prompt/reveals are decoded at the render boundary. A player's own seed
 // is NEVER on the shared screen (it lives only in that player's private payload).
 
+import type { ReactNode } from 'react';
 import type { PlayerView } from '@branchout/protocol';
 import { Badge } from '@rogueoak/canopy';
 import type { GameViewProps } from '../registry';
@@ -18,6 +19,40 @@ import { SketchReplay } from './SketchReplay';
 
 function nicknameOf(players: PlayerView[], id: string): string {
   return players.find((player) => player.player === id)?.nickname ?? id;
+}
+
+/** The countdown badge shown while a round is timed; null once the timer has stopped. */
+function timerBadge(secondsLeft: number | null, warnAt: number): ReactNode {
+  if (secondsLeft === null) return null;
+  const variant = secondsLeft <= warnAt ? 'warning' : 'neutral';
+  return (
+    <Badge variant={variant}>
+      <span role="timer" aria-label={`${secondsLeft} seconds left`}>
+        {secondsLeft}s left
+      </span>
+    </Badge>
+  );
+}
+
+/** The "<name>'s sketch" badge, or null when there is no featured player. */
+function featuredBadge(featured: string | null | undefined, players: PlayerView[]): ReactNode {
+  if (!featured) return null;
+  return <Badge variant="neutral">{nicknameOf(players, featured)}&apos;s sketch</Badge>;
+}
+
+/** The attribution line under a round-result option (own decoy / another's decoy / the real seed). */
+function optionAuthorLabel(
+  option: { kind: 'truth' | 'decoy'; author?: string | null },
+  me: string | undefined,
+  players: PlayerView[],
+): ReactNode {
+  if (option.kind === 'decoy' && option.author === me) {
+    return <strong className="text-secondary">Your decoy</strong>;
+  }
+  if (option.kind === 'decoy' && option.author) {
+    return `Decoy by ${nicknameOf(players, option.author)}`;
+  }
+  return 'The real seed';
 }
 
 export function SketchyViewer({ state, me }: GameViewProps) {
@@ -37,78 +72,89 @@ export function SketchyViewer({ state, me }: GameViewProps) {
   }
 
   if (phase === 'leaderboard') {
-    return (
-      <section aria-label="Game viewer" className="flex flex-col gap-5">
-        {result ? (
-          <div className="flex flex-col gap-3 rounded-lg bg-surface-raised p-4">
-            <Badge variant="primary" className="w-fit">
-              Round {result.round} - the true seed
-            </Badge>
-            {result.sketch ? (
-              <div className="mx-auto w-full max-w-xs">
-                <SketchReplay
-                  sketch={result.sketch}
-                  label={`Sketch by ${result.featured ? nicknameOf(players, result.featured) : 'a player'}`}
-                />
-              </div>
-            ) : null}
-            <p className="text-h3 text-success">{result.trueSeed}</p>
-            <ul aria-label="Round result" className="flex flex-col gap-2">
-              {result.options.map((option) => (
+    let roundRecap = null;
+    if (result) {
+      const featuredName = result.featured ? nicknameOf(players, result.featured) : 'a player';
+      let resultSketch = null;
+      if (result.sketch) {
+        resultSketch = (
+          <div className="mx-auto w-full max-w-xs">
+            <SketchReplay sketch={result.sketch} label={`Sketch by ${featuredName}`} />
+          </div>
+        );
+      }
+      const guessersLine =
+        result.correctGuessers.length === 0
+          ? 'Nobody found the true seed!'
+          : `Found the true seed: ${result.correctGuessers
+              .map((id) => nicknameOf(players, id))
+              .join(', ')}`;
+      roundRecap = (
+        <div className="flex flex-col gap-3 rounded-lg bg-surface-raised p-4">
+          <Badge variant="primary" className="w-fit">
+            Round {result.round} - the true seed
+          </Badge>
+          {resultSketch}
+          <p className="text-h3 text-success">{result.trueSeed}</p>
+          <ul aria-label="Round result" className="flex flex-col gap-2">
+            {result.options.map((option) => {
+              const isTruth = option.kind === 'truth';
+              const textTone = isTruth ? 'font-medium text-success' : 'text-text';
+              const truthSuffix = isTruth ? ' (the true seed)' : '';
+              const fooled =
+                option.kind === 'decoy' && option.pickedBy.length > 0
+                  ? ` - fooled ${option.pickedBy.map((id) => nicknameOf(players, id)).join(', ')}`
+                  : '';
+              return (
                 <li key={option.id} className="flex flex-col gap-0.5">
-                  <span
-                    className={`break-words text-body ${
-                      option.kind === 'truth' ? 'font-medium text-success' : 'text-text'
-                    }`}
-                  >
+                  <span className={`break-words text-body ${textTone}`}>
                     {option.text}
-                    {option.kind === 'truth' ? ' (the true seed)' : ''}
+                    {truthSuffix}
                   </span>
                   <span className="text-caption text-text-subtle">
-                    {option.kind === 'decoy' && option.author === me ? (
-                      <strong className="text-secondary">Your decoy</strong>
-                    ) : option.kind === 'decoy' && option.author ? (
-                      `Decoy by ${nicknameOf(players, option.author)}`
-                    ) : (
-                      'The real seed'
-                    )}
-                    {option.kind === 'decoy' && option.pickedBy.length > 0
-                      ? ` - fooled ${option.pickedBy.map((id) => nicknameOf(players, id)).join(', ')}`
-                      : ''}
+                    {optionAuthorLabel(option, me, players)}
+                    {fooled}
                   </span>
                 </li>
-              ))}
-            </ul>
-            <p className="text-body-sm text-text">
-              {result.correctGuessers.length === 0
-                ? 'Nobody found the true seed!'
-                : `Found the true seed: ${result.correctGuessers
-                    .map((id) => nicknameOf(players, id))
-                    .join(', ')}`}
-            </p>
-          </div>
-        ) : gallery ? (
-          <div className="flex flex-col gap-3 rounded-lg bg-surface-raised p-4">
-            <Badge variant="primary" className="w-fit">
-              Round {gallery.round} - the sketches
-            </Badge>
-            <ul aria-label="The sketches" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {gallery.gallery.map((entry) => (
+              );
+            })}
+          </ul>
+          <p className="text-body-sm text-text">{guessersLine}</p>
+        </div>
+      );
+    } else if (gallery) {
+      roundRecap = (
+        <div className="flex flex-col gap-3 rounded-lg bg-surface-raised p-4">
+          <Badge variant="primary" className="w-fit">
+            Round {gallery.round} - the sketches
+          </Badge>
+          <ul aria-label="The sketches" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {gallery.gallery.map((entry) => {
+              let entrySketch = null;
+              if (entry.sketch) {
+                entrySketch = (
+                  <SketchReplay
+                    sketch={entry.sketch}
+                    label={`Sketch by ${nicknameOf(players, entry.player)}`}
+                  />
+                );
+              }
+              return (
                 <li key={entry.player} className="flex flex-col gap-1">
-                  {entry.sketch ? (
-                    <SketchReplay
-                      sketch={entry.sketch}
-                      label={`Sketch by ${nicknameOf(players, entry.player)}`}
-                    />
-                  ) : null}
+                  {entrySketch}
                   <span className="text-caption text-text-subtle">
                     {nicknameOf(players, entry.player)}
                   </span>
                 </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+              );
+            })}
+          </ul>
+        </div>
+      );
+    }
+    return (
+      <section aria-label="Game viewer" className="flex flex-col gap-5">
+        {roundRecap}
         <Leaderboard standings={standings} me={me} />
         <p className="text-body-sm text-text-muted">
           Waiting for the host to start the next round.
@@ -118,26 +164,22 @@ export function SketchyViewer({ state, me }: GameViewProps) {
   }
 
   if (phase === 'guessing' && options) {
+    let sketchToGuess = null;
+    if (options.sketch) {
+      sketchToGuess = (
+        <div className="mx-auto w-full max-w-sm">
+          <SketchReplay sketch={options.sketch} label="The sketch to guess" />
+        </div>
+      );
+    }
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="info">Round {options.round}</Badge>
-          {options.featured ? (
-            <Badge variant="neutral">{nicknameOf(players, options.featured)}&apos;s sketch</Badge>
-          ) : null}
-          {secondsLeft !== null ? (
-            <Badge variant={secondsLeft <= 10 ? 'warning' : 'neutral'}>
-              <span role="timer" aria-label={`${secondsLeft} seconds left`}>
-                {secondsLeft}s left
-              </span>
-            </Badge>
-          ) : null}
+          {featuredBadge(options.featured, players)}
+          {timerBadge(secondsLeft, 10)}
         </div>
-        {options.sketch ? (
-          <div className="mx-auto w-full max-w-sm">
-            <SketchReplay sketch={options.sketch} label="The sketch to guess" />
-          </div>
-        ) : null}
+        {sketchToGuess}
         <p className="text-body text-text-muted">
           Which one is the true seed? Pick the real prompt on your phone.
         </p>
@@ -157,26 +199,22 @@ export function SketchyViewer({ state, me }: GameViewProps) {
   }
 
   if (phase === 'collecting' && prompt?.stage === 'sketch') {
+    let featuredSketch = null;
+    if (prompt.sketch) {
+      featuredSketch = (
+        <div className="mx-auto w-full max-w-sm">
+          <SketchReplay sketch={prompt.sketch} label="The featured sketch" />
+        </div>
+      );
+    }
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="info">Round {prompt.round}</Badge>
-          {prompt.featured ? (
-            <Badge variant="neutral">{nicknameOf(players, prompt.featured)}&apos;s sketch</Badge>
-          ) : null}
-          {secondsLeft !== null ? (
-            <Badge variant={secondsLeft <= 10 ? 'warning' : 'neutral'}>
-              <span role="timer" aria-label={`${secondsLeft} seconds left`}>
-                {secondsLeft}s left
-              </span>
-            </Badge>
-          ) : null}
+          {featuredBadge(prompt.featured, players)}
+          {timerBadge(secondsLeft, 10)}
         </div>
-        {prompt.sketch ? (
-          <div className="mx-auto w-full max-w-sm">
-            <SketchReplay sketch={prompt.sketch} label="The featured sketch" />
-          </div>
-        ) : null}
+        {featuredSketch}
         <p className="text-body text-text-muted">
           Everyone is writing a fake seed for this sketch. Fool your friends!
         </p>
@@ -189,13 +227,7 @@ export function SketchyViewer({ state, me }: GameViewProps) {
       <section aria-label="Game viewer" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="info">Round {prompt.round}</Badge>
-          {secondsLeft !== null ? (
-            <Badge variant={secondsLeft <= 15 ? 'warning' : 'neutral'}>
-              <span role="timer" aria-label={`${secondsLeft} seconds left`}>
-                {secondsLeft}s left
-              </span>
-            </Badge>
-          ) : null}
+          {timerBadge(secondsLeft, 15)}
         </div>
         <h2 className="text-h2 text-text">Everyone is drawing their secret seed</h2>
         <p className="text-body text-text-muted">

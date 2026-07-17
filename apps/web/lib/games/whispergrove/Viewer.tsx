@@ -25,6 +25,56 @@ export function WhispergroveViewer({ state, me }: GameViewProps) {
 
   const over = sim.phase === 'over' && sim.winner;
 
+  let statusPanel;
+  if (over) {
+    const endLine =
+      sim.endReason === 'deadwood'
+        ? 'The other grove woke the Deadwood and fell.'
+        : 'They linked every one of their leaves first.';
+    statusPanel = (
+      <div className="flex flex-col gap-1 rounded-lg bg-surface-raised p-4">
+        <Badge variant="primary" className="w-fit">
+          {teamName(sim.winner!)} wins
+        </Badge>
+        <p className="text-body-sm text-text-muted">{endLine}</p>
+      </div>
+    );
+  } else {
+    const turnLine = sim.phase === 'whispering' ? ' is whispering...' : ' is tapping leaves';
+    let whisperLine;
+    if (sim.whisper) {
+      const tapWord = sim.guessesLeft === 1 ? 'tap' : 'taps';
+      whisperLine = (
+        <p className="text-h3 text-text">
+          &ldquo;{sim.whisper.word}&rdquo; - {sim.whisper.count}
+          <span className="ml-2 text-body-sm text-text-muted">
+            {sim.guessesLeft} {tapWord} left
+          </span>
+        </p>
+      );
+    } else {
+      whisperLine = (
+        <p className="text-body-sm text-text-muted">
+          Waiting on the Whisperer&apos;s one-word whisper.
+        </p>
+      );
+    }
+    statusPanel = (
+      <div className="flex flex-col gap-1 rounded-lg bg-surface-raised p-3">
+        <div className="flex items-center gap-2">
+          <GroveDot team={sim.turn} />
+          <span className="text-body-sm font-medium text-text">
+            {teamName(sim.turn)}
+            {turnLine}
+          </span>
+        </div>
+        {whisperLine}
+      </div>
+    );
+  }
+
+  const finalResults = over ? <FinalResults standings={state.standings} me={me} /> : null;
+
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-4">
       {/* The leaves-left race for both groves. */}
@@ -39,44 +89,11 @@ export function WhispergroveViewer({ state, me }: GameViewProps) {
         </div>
       </div>
 
-      {over ? (
-        <div className="flex flex-col gap-1 rounded-lg bg-surface-raised p-4">
-          <Badge variant="primary" className="w-fit">
-            {teamName(sim.winner!)} wins
-          </Badge>
-          <p className="text-body-sm text-text-muted">
-            {sim.endReason === 'deadwood'
-              ? 'The other grove woke the Deadwood and fell.'
-              : 'They linked every one of their leaves first.'}
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1 rounded-lg bg-surface-raised p-3">
-          <div className="flex items-center gap-2">
-            <GroveDot team={sim.turn} />
-            <span className="text-body-sm font-medium text-text">
-              {teamName(sim.turn)}
-              {sim.phase === 'whispering' ? ' is whispering...' : ' is tapping leaves'}
-            </span>
-          </div>
-          {sim.whisper ? (
-            <p className="text-h3 text-text">
-              &ldquo;{sim.whisper.word}&rdquo; - {sim.whisper.count}
-              <span className="ml-2 text-body-sm text-text-muted">
-                {sim.guessesLeft} {sim.guessesLeft === 1 ? 'tap' : 'taps'} left
-              </span>
-            </p>
-          ) : (
-            <p className="text-body-sm text-text-muted">
-              Waiting on the Whisperer&apos;s one-word whisper.
-            </p>
-          )}
-        </div>
-      )}
+      {statusPanel}
 
       <Grove leaves={sim.leaves} />
 
-      {over ? <FinalResults standings={state.standings} me={me} /> : null}
+      {finalResults}
     </section>
   );
 }

@@ -43,9 +43,11 @@ export function OddBirdRemote({
   const decided = decidedRound === round;
 
   // The player's secret card - always shown at the top while a round is live, never broadcast.
-  const cardPanel = card ? (
-    <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">
-      {isOddBird ? (
+  let cardPanel = null;
+  if (card) {
+    let cardBody;
+    if (isOddBird) {
+      cardBody = (
         <>
           <Badge variant="danger" className="w-fit">
             You are the odd bird
@@ -55,24 +57,47 @@ export function OddBirdRemote({
             else is.
           </p>
         </>
-      ) : (
+      );
+    } else {
+      const roost = card.role === 'flock' ? card.roost : '';
+      const perch = card.role === 'flock' ? card.perch : '';
+      cardBody = (
         <>
           <Badge variant="primary" className="w-fit">
             The roost
           </Badge>
-          <p className="text-h3 text-text">{card.role === 'flock' ? card.roost : ''}</p>
+          <p className="text-h3 text-text">{roost}</p>
           <p className="text-body-sm text-text-muted">
-            Your perch:{' '}
-            <span className="font-medium text-secondary">
-              {card.role === 'flock' ? card.perch : ''}
-            </span>
+            Your perch: <span className="font-medium text-secondary">{perch}</span>
           </p>
         </>
-      )}
-    </div>
-  ) : null;
+      );
+    }
+    cardPanel = (
+      <div className="flex flex-col gap-2 rounded-lg bg-surface-raised p-4">{cardBody}</div>
+    );
+  }
 
   if (phase === 'collecting') {
+    let flushControl = (
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          onMove(round, 'flush');
+          setFlushCalled(true);
+        }}
+      >
+        Call the flush
+      </Button>
+    );
+    if (flushCalled) {
+      flushControl = (
+        <p role="status" className="text-body-sm text-success">
+          Flush called - the vote is opening.
+        </p>
+      );
+    }
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         {cardPanel}
@@ -80,84 +105,87 @@ export function OddBirdRemote({
           Ask each other pointed questions out loud. When the flock is ready to vote, anyone can
           call the flush.
         </p>
-        {flushCalled ? (
-          <p role="status" className="text-body-sm text-success">
-            Flush called - the vote is opening.
-          </p>
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              onMove(round, 'flush');
-              setFlushCalled(true);
-            }}
-          >
-            Call the flush
-          </Button>
-        )}
+        {flushControl}
       </section>
     );
   }
 
   if (phase === 'guessing') {
     const flush = pickFlush(state.reveals);
+    let guessBody;
+    if (isOddBird) {
+      let roostChoices;
+      if (decided) {
+        roostChoices = (
+          <p role="status" className="text-body-sm text-success">
+            Guess locked in! Waiting for the flock...
+          </p>
+        );
+      } else {
+        roostChoices = (
+          <div className="flex flex-col gap-2">
+            {(flush?.roostOptions ?? []).map((option) => (
+              <Button
+                key={option.id}
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  onVote(round, `${ROOST_GUESS_TARGET_PREFIX}${option.id}`, true);
+                  setDecidedRound(round);
+                }}
+              >
+                {option.name}
+              </Button>
+            ))}
+          </div>
+        );
+      }
+      guessBody = (
+        <>
+          <p className="text-body text-text">Guess the roost to steal the win:</p>
+          {roostChoices}
+        </>
+      );
+    } else {
+      let accusations;
+      if (decided) {
+        accusations = (
+          <p role="status" className="text-body-sm text-success">
+            Accusation locked in! Waiting for the flock...
+          </p>
+        );
+      } else {
+        accusations = (
+          <div className="flex flex-col gap-2">
+            {(flush?.players ?? [])
+              .filter((id) => id !== me)
+              .map((id) => (
+                <Button
+                  key={id}
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    onVote(round, id, true);
+                    setDecidedRound(round);
+                  }}
+                >
+                  {nicknameOf(players, id)}
+                </Button>
+              ))}
+          </div>
+        );
+      }
+      guessBody = (
+        <>
+          <p className="text-body text-text">Who is the odd bird?</p>
+          {accusations}
+        </>
+      );
+    }
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         {cardPanel}
-        {isOddBird ? (
-          <>
-            <p className="text-body text-text">Guess the roost to steal the win:</p>
-            {decided ? (
-              <p role="status" className="text-body-sm text-success">
-                Guess locked in! Waiting for the flock...
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {(flush?.roostOptions ?? []).map((option) => (
-                  <Button
-                    key={option.id}
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      onVote(round, `${ROOST_GUESS_TARGET_PREFIX}${option.id}`, true);
-                      setDecidedRound(round);
-                    }}
-                  >
-                    {option.name}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <p className="text-body text-text">Who is the odd bird?</p>
-            {decided ? (
-              <p role="status" className="text-body-sm text-success">
-                Accusation locked in! Waiting for the flock...
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {(flush?.players ?? [])
-                  .filter((id) => id !== me)
-                  .map((id) => (
-                    <Button
-                      key={id}
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        onVote(round, id, true);
-                        setDecidedRound(round);
-                      }}
-                    >
-                      {nicknameOf(players, id)}
-                    </Button>
-                  ))}
-              </div>
-            )}
-          </>
-        )}
+        {guessBody}
       </section>
     );
   }
@@ -167,21 +195,18 @@ export function OddBirdRemote({
   }
 
   if (showResults && phase === 'leaderboard') {
+    const hostHint = isHost ? 'Tap Next to wrap up.' : 'Waiting for the host.';
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <Leaderboard standings={state.standings} me={me} />
-        <p className="text-body-sm text-text-muted">
-          {isHost ? 'Tap Next to wrap up.' : 'Waiting for the host.'}
-        </p>
+        <p className="text-body-sm text-text-muted">{hostHint}</p>
       </section>
     );
   }
 
-  return (
-    <p className="text-body-sm text-text-muted">
-      {phase === 'complete'
-        ? 'The game is over - see the results on the viewer.'
-        : 'Watch the viewer - your card is coming up.'}
-    </p>
-  );
+  const fallbackLine =
+    phase === 'complete'
+      ? 'The game is over - see the results on the viewer.'
+      : 'Watch the viewer - your card is coming up.';
+  return <p className="text-body-sm text-text-muted">{fallbackLine}</p>;
 }

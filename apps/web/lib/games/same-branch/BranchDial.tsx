@@ -41,6 +41,13 @@ function clamp(value: number): number {
   return Math.round(value);
 }
 
+/** The border+fill classes for a marker dot, keyed by its tone. */
+function markerToneClass(tone: DialMarker['tone']): string {
+  if (tone === 'bud') return 'border-success bg-success/40';
+  if (tone === 'me') return 'border-primary bg-primary/40';
+  return 'border-text-subtle bg-text-subtle/30';
+}
+
 export function BranchDial({
   left,
   right,
@@ -54,6 +61,14 @@ export function BranchDial({
   const interactive = typeof onChange === 'function' && !disabled;
   // The rendered sap-line position: the value, or the middle of the branch before the player moves it.
   const shown = value ?? 50;
+  const trackCursor = interactive ? 'cursor-pointer' : '';
+  const valueText = value === null ? undefined : `${value} of 100, between ${left} and ${right}`;
+  const thumbTone = value === null ? 'bg-text-subtle opacity-60' : 'bg-text';
+
+  let hintLine = `Sap line at ${value}.`;
+  if (value === null) {
+    hintLine = interactive ? 'Drag the sap line to your guess.' : 'Waiting for the sap line.';
+  }
 
   const setFromClientX = useCallback(
     (clientX: number) => {
@@ -129,45 +144,41 @@ export function BranchDial({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={value ?? undefined}
-        aria-valuetext={
-          value === null ? undefined : `${value} of 100, between ${left} and ${right}`
-        }
+        aria-valuetext={valueText}
         aria-disabled={disabled || undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onKeyDown={onKeyDown}
-        className={`relative h-14 w-full touch-none select-none rounded-full bg-surface-raised ${
-          interactive ? 'cursor-pointer' : ''
-        }`}
+        className={`relative h-14 w-full touch-none select-none rounded-full bg-surface-raised ${trackCursor}`}
         data-testid="branch-dial"
       >
         {/* The branch line running root -> tip. */}
         <div className="pointer-events-none absolute inset-x-3 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-secondary via-text-subtle to-primary" />
 
         {/* Read-only markers (the bud, other guesses). */}
-        {markers.map((marker, index) => (
-          <div
-            key={`${marker.tone}-${index}`}
-            className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `calc(${clamp(marker.position)}% )` }}
-          >
-            <div
-              className={`h-6 w-6 rounded-full border-2 ${
-                marker.tone === 'bud'
-                  ? 'border-success bg-success/40'
-                  : marker.tone === 'me'
-                    ? 'border-primary bg-primary/40'
-                    : 'border-text-subtle bg-text-subtle/30'
-              }`}
-              aria-hidden="true"
-            />
-            {marker.label ? (
+        {markers.map((marker, index) => {
+          let markerLabel = null;
+          if (marker.label) {
+            markerLabel = (
               <span className="absolute left-1/2 top-7 -translate-x-1/2 whitespace-nowrap text-caption text-text-subtle">
                 {marker.label}
               </span>
-            ) : null}
-          </div>
-        ))}
+            );
+          }
+          return (
+            <div
+              key={`${marker.tone}-${index}`}
+              className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `calc(${clamp(marker.position)}% )` }}
+            >
+              <div
+                className={`h-6 w-6 rounded-full border-2 ${markerToneClass(marker.tone)}`}
+                aria-hidden="true"
+              />
+              {markerLabel}
+            </div>
+          );
+        })}
 
         {/* The sap-line thumb. Rendered muted until the player has actually set a value. */}
         <div
@@ -175,20 +186,12 @@ export function BranchDial({
           style={{ left: `calc(${shown}% )` }}
         >
           <div
-            className={`h-9 w-9 rounded-full border-4 border-surface shadow-md ${
-              value === null ? 'bg-text-subtle opacity-60' : 'bg-text'
-            }`}
+            className={`h-9 w-9 rounded-full border-4 border-surface shadow-md ${thumbTone}`}
             aria-hidden="true"
           />
         </div>
       </div>
-      <p className="text-caption text-text-subtle">
-        {value === null
-          ? interactive
-            ? 'Drag the sap line to your guess.'
-            : 'Waiting for the sap line.'
-          : `Sap line at ${value}.`}
-      </p>
+      <p className="text-caption text-text-subtle">{hintLine}</p>
     </div>
   );
 }

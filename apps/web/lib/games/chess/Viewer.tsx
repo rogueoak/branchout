@@ -59,6 +59,41 @@ function sameSquare(a: Square, b: Square): boolean {
   return a.row === b.row && a.col === b.col;
 }
 
+/** The game-over line: draw (with reason) or a win (by checkmate or resignation). */
+function resultLineFor(sim: ChessSim | null): string {
+  if (!sim?.over) return '';
+  if (sim.outcome === 'draw') {
+    let why = 'a draw';
+    if (sim.endReason === 'stalemate') why = 'stalemate';
+    else if (sim.endReason === 'insufficient') why = 'insufficient material';
+    return `Game over - draw (${why}).`;
+  }
+  if (sim.outcome === 'white' || sim.outcome === 'black') {
+    const how = sim.endReason === 'resign' ? 'by resignation' : 'by checkmate';
+    return `Game over - ${SIDE_LABEL[sim.outcome]} wins ${how}.`;
+  }
+  return 'Game over.';
+}
+
+/** The turn line while the game is live, phrased from `me`'s vantage. */
+function liveTurnLineFor(
+  sim: ChessSim | null,
+  isActive: boolean,
+  toMove: 'white' | 'black' | null,
+  activeName: string | null,
+): string {
+  const side = toMove ? SIDE_LABEL[toMove] : '';
+  if (isActive) {
+    const check = sim?.check ? ' - you are in check' : '';
+    return `Your turn (${side})${check} - tap a piece, then a highlighted square.`;
+  }
+  if (activeName) {
+    const check = sim?.check ? ' - in check' : '';
+    return `Waiting for ${activeName} (${side})${check}.`;
+  }
+  return 'Waiting for the next move.';
+}
+
 /** The legal destinations for a selected from-square (deduped across promotion variants). */
 function destinationsFor(sim: ChessSim, from: Square): Square[] {
   const seen = new Set<string>();
@@ -268,52 +303,74 @@ export function ChessViewer({ state, me, onMove }: GameViewProps) {
   const toMove = sim?.toMove ?? null;
   const activeName = sim && sim.activePlayer ? nicknameOf(state, sim.activePlayer) : null;
 
-  const resultLine = ((): string => {
-    if (!sim?.over) return '';
-    if (sim.outcome === 'draw') {
-      const why =
-        sim.endReason === 'stalemate'
-          ? 'stalemate'
-          : sim.endReason === 'insufficient'
-            ? 'insufficient material'
-            : 'a draw';
-      return `Game over - draw (${why}).`;
-    }
-    if (sim.outcome === 'white' || sim.outcome === 'black') {
-      const how = sim.endReason === 'resign' ? 'by resignation' : 'by checkmate';
-      return `Game over - ${SIDE_LABEL[sim.outcome]} wins ${how}.`;
-    }
-    return 'Game over.';
-  })();
-
   const turnLine = sim?.over
-    ? resultLine
-    : isActive
-      ? `Your turn (${toMove ? SIDE_LABEL[toMove] : ''})${sim?.check ? ' - you are in check' : ''} - tap a piece, then a highlighted square.`
-      : activeName
-        ? `Waiting for ${activeName} (${toMove ? SIDE_LABEL[toMove] : ''})${sim?.check ? ' - in check' : ''}.`
-        : 'Waiting for the next move.';
+    ? resultLineFor(sim)
+    : liveTurnLineFor(sim, isActive, toMove, activeName);
+
+  const violetTone = toMove === 'white' && !sim?.over ? 'text-primary' : 'text-text';
+  const amberTone = toMove === 'black' && !sim?.over ? 'text-accent-strong' : 'text-text';
+  const boardLabel = isActive ? 'Tap a piece, then a highlighted square, to move' : 'Chess board';
+
+  let promoPicker = null;
+  if (pendingPromo) {
+    promoPicker = (
+      <div
+        role="dialog"
+        aria-label="Choose promotion"
+        className="absolute inset-x-0 bottom-2 mx-2 flex items-center justify-center gap-2 rounded-lg bg-surface-raised px-3 py-2"
+      >
+        <span className="text-body-sm text-text-muted">Promote to</span>
+        {(['Q', 'R', 'B', 'N'] as PromotionType[]).map((p) => (
+          <button
+            key={p}
+            type="button"
+            className="rounded-md bg-primary px-3 py-1.5 text-body-sm font-semibold text-white"
+            onClick={() => submit(pendingPromo.from, pendingPromo.to, p)}
+          >
+            {PROMO_LABEL[p]}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  let rejectedBanner = null;
+  if (state.rejected) {
+    rejectedBanner = (
+      <p
+        role="alert"
+        className="absolute inset-x-0 top-2 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
+      >
+        {rejectionMessage(state.rejected)}
+      </p>
+    );
+  }
+
+  let resignButton = null;
+  if (isActive) {
+    resignButton = (
+      <button
+        type="button"
+        className="mx-auto rounded-md border border-border px-4 py-1.5 text-body-sm text-text-muted"
+        onClick={() => onMove?.(state.round, JSON.stringify({ resign: true }))}
+      >
+        Resign
+      </button>
+    );
+  }
 
   return (
     <section aria-label="Game viewer" className="flex h-full min-h-0 flex-col gap-2">
       {/* The two armies + the side to move. Big + legible at 360px. */}
       <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-raised px-3 py-2">
-        <span
-          className={`flex items-center gap-2 text-body-sm font-semibold ${
-            toMove === 'white' && !sim?.over ? 'text-primary' : 'text-text'
-          }`}
-        >
+        <span className={`flex items-center gap-2 text-body-sm font-semibold ${violetTone}`}>
           <span
             aria-hidden
             className="inline-block h-4 w-4 rounded-full bg-primary ring-1 ring-primary-active"
           />
           Violet
         </span>
-        <span
-          className={`flex items-center gap-2 text-body-sm font-semibold ${
-            toMove === 'black' && !sim?.over ? 'text-accent-strong' : 'text-text'
-          }`}
-        >
+        <span className={`flex items-center gap-2 text-body-sm font-semibold ${amberTone}`}>
           Amber
           <span
             aria-hidden
@@ -340,52 +397,19 @@ export function ChessViewer({ state, me, onMove }: GameViewProps) {
       >
         <canvas
           ref={canvasRef}
-          aria-label={isActive ? 'Tap a piece, then a highlighted square, to move' : 'Chess board'}
+          aria-label={boardLabel}
           role="img"
           className="block h-full w-full"
         />
 
         {/* Promotion picker: raised when a pawn move reaches the last rank; pick the piece to promote. */}
-        {pendingPromo ? (
-          <div
-            role="dialog"
-            aria-label="Choose promotion"
-            className="absolute inset-x-0 bottom-2 mx-2 flex items-center justify-center gap-2 rounded-lg bg-surface-raised px-3 py-2"
-          >
-            <span className="text-body-sm text-text-muted">Promote to</span>
-            {(['Q', 'R', 'B', 'N'] as PromotionType[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                className="rounded-md bg-primary px-3 py-1.5 text-body-sm font-semibold text-white"
-                onClick={() => submit(pendingPromo.from, pendingPromo.to, p)}
-              >
-                {PROMO_LABEL[p]}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        {promoPicker}
 
-        {state.rejected ? (
-          <p
-            role="alert"
-            className="absolute inset-x-0 top-2 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
-          >
-            {rejectionMessage(state.rejected)}
-          </p>
-        ) : null}
+        {rejectedBanner}
       </div>
 
       {/* Resign concedes the game to the other side. Only offered on the local player's turn. */}
-      {isActive ? (
-        <button
-          type="button"
-          className="mx-auto rounded-md border border-border px-4 py-1.5 text-body-sm text-text-muted"
-          onClick={() => onMove?.(state.round, JSON.stringify({ resign: true }))}
-        >
-          Resign
-        </button>
-      ) : null}
+      {resignButton}
     </section>
   );
 }

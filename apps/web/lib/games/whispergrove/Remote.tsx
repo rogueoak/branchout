@@ -72,114 +72,134 @@ export function WhispergroveRemote({ state, me, showResults = false, onMove }: G
 
   const canTap = myTurn && sim.phase === 'guessing' && !isWhisperer && sim.guessesLeft > 0;
 
+  // The turn/phase status block, phrased from this player's grove + seat. Built by role/phase so the
+  // render tree stays flat (no deep nested ternary in JSX).
+  let turnStatus;
+  if (!myTurn) {
+    const waiting =
+      sim.phase === 'whispering' ? ' is whispering. Hold tight.' : ' is guessing. Hold tight.';
+    turnStatus = (
+      <p className="text-body-sm text-text-muted">
+        {teamName(sim.turn)}
+        {waiting}
+      </p>
+    );
+  } else if (isWhisperer && sim.phase === 'whispering') {
+    const whisperHint = state.rejected ? (
+      <Badge variant="danger" className="w-fit" role="alert">
+        {state.rejected}
+      </Badge>
+    ) : (
+      <p className="text-body-sm text-text-subtle">
+        The whisper cannot be a word on the grove. Your seekers get one bonus tap.
+      </p>
+    );
+    turnStatus = (
+      <div className="flex flex-col gap-2">
+        <p className="text-body-sm font-medium text-text">Your turn - give one word and a count.</p>
+        <div className="flex gap-2">
+          <Input
+            id="whisper-word"
+            value={word}
+            autoComplete="off"
+            aria-label="Whisper word"
+            placeholder="One word"
+            onChange={(event) => setWord(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') submitWhisper();
+            }}
+          />
+          <Input
+            id="whisper-count"
+            value={count}
+            inputMode="numeric"
+            aria-label="Whisper count"
+            className="w-16"
+            onChange={(event) => setCount(event.target.value.replace(/[^0-9]/g, ''))}
+          />
+          <Button type="button" variant="primary" onClick={submitWhisper} disabled={!word.trim()}>
+            Whisper
+          </Button>
+        </div>
+        {whisperHint}
+      </div>
+    );
+  } else if (isWhisperer) {
+    turnStatus = (
+      <p className="text-body-sm text-text-muted">
+        Your seekers are tapping - you cannot help now.
+      </p>
+    );
+  } else if (sim.phase === 'guessing') {
+    const tapWord = sim.guessesLeft === 1 ? 'tap' : 'taps';
+    turnStatus = (
+      <p className="text-body-sm font-medium text-text">
+        Your turn - tap a leaf. {sim.guessesLeft} {tapWord} left.
+      </p>
+    );
+  } else {
+    turnStatus = (
+      <p className="text-body-sm text-text-muted">Wait for your Whisperer&apos;s whisper.</p>
+    );
+  }
+
+  const tapReject =
+    state.rejected && canTap ? (
+      <Badge variant="danger" className="w-fit" role="alert">
+        {state.rejected}
+      </Badge>
+    ) : null;
+
+  let whispererHint = null;
+  if (isWhisperer) {
+    whispererHint = (
+      <p className="text-body-sm text-text-subtle">
+        The rings show your secret key: violet, amber, sapling (grey), and the red Deadwood. Do not
+        say a word that lands your grove on a sapling, the enemy, or the Deadwood.
+      </p>
+    );
+  }
+
+  const seatBadgeVariant = seat.team === 'violet' ? 'primary' : 'info';
+  const seatRoleLabel = isWhisperer ? 'Whisperer' : 'Seeker';
+
+  let body;
+  if (over) {
+    const winVariant = sim.winner === seat.team ? 'success' : 'danger';
+    const winText = sim.winner === seat.team ? 'Your grove wins!' : `${teamName(sim.winner!)} wins`;
+    const finalResults = showResults ? <FinalResults standings={state.standings} me={me} /> : null;
+    body = (
+      <>
+        <Badge variant={winVariant} className="w-fit" role="status">
+          {winText}
+        </Badge>
+        {finalResults}
+      </>
+    );
+  } else {
+    body = (
+      <>
+        {/* Turn / phase status, phrased from this player's grove. */}
+        {turnStatus}
+        {tapReject}
+        {/* The grove: the Whisperer sees the secret key rings; a seeker taps when allowed. */}
+        <Grove leaves={sim.leaves} keyView={keyView} onTap={tap} canTap={canTap} />
+        {whispererHint}
+      </>
+    );
+  }
+
   return (
     <section aria-label="Your controller" className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <Badge variant={seat.team === 'violet' ? 'primary' : 'info'} className="w-fit">
+        <Badge variant={seatBadgeVariant} className="w-fit">
           {teamName(seat.team)}
         </Badge>
         <Badge variant="neutral" className="w-fit">
-          {isWhisperer ? 'Whisperer' : 'Seeker'}
+          {seatRoleLabel}
         </Badge>
       </div>
-
-      {over ? (
-        <>
-          <Badge
-            variant={sim.winner === seat.team ? 'success' : 'danger'}
-            className="w-fit"
-            role="status"
-          >
-            {sim.winner === seat.team ? 'Your grove wins!' : `${teamName(sim.winner!)} wins`}
-          </Badge>
-          {showResults ? <FinalResults standings={state.standings} me={me} /> : null}
-        </>
-      ) : (
-        <>
-          {/* Turn / phase status, phrased from this player's grove. */}
-          {!myTurn ? (
-            <p className="text-body-sm text-text-muted">
-              {teamName(sim.turn)}
-              {sim.phase === 'whispering'
-                ? ' is whispering. Hold tight.'
-                : ' is guessing. Hold tight.'}
-            </p>
-          ) : isWhisperer ? (
-            sim.phase === 'whispering' ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-body-sm font-medium text-text">
-                  Your turn - give one word and a count.
-                </p>
-                <div className="flex gap-2">
-                  <Input
-                    id="whisper-word"
-                    value={word}
-                    autoComplete="off"
-                    aria-label="Whisper word"
-                    placeholder="One word"
-                    onChange={(event) => setWord(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') submitWhisper();
-                    }}
-                  />
-                  <Input
-                    id="whisper-count"
-                    value={count}
-                    inputMode="numeric"
-                    aria-label="Whisper count"
-                    className="w-16"
-                    onChange={(event) => setCount(event.target.value.replace(/[^0-9]/g, ''))}
-                  />
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={submitWhisper}
-                    disabled={!word.trim()}
-                  >
-                    Whisper
-                  </Button>
-                </div>
-                {state.rejected ? (
-                  <Badge variant="danger" className="w-fit" role="alert">
-                    {state.rejected}
-                  </Badge>
-                ) : (
-                  <p className="text-body-sm text-text-subtle">
-                    The whisper cannot be a word on the grove. Your seekers get one bonus tap.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-body-sm text-text-muted">
-                Your seekers are tapping - you cannot help now.
-              </p>
-            )
-          ) : sim.phase === 'guessing' ? (
-            <p className="text-body-sm font-medium text-text">
-              Your turn - tap a leaf. {sim.guessesLeft} {sim.guessesLeft === 1 ? 'tap' : 'taps'}{' '}
-              left.
-            </p>
-          ) : (
-            <p className="text-body-sm text-text-muted">Wait for your Whisperer&apos;s whisper.</p>
-          )}
-
-          {state.rejected && canTap ? (
-            <Badge variant="danger" className="w-fit" role="alert">
-              {state.rejected}
-            </Badge>
-          ) : null}
-
-          {/* The grove: the Whisperer sees the secret key rings; a seeker taps when allowed. */}
-          <Grove leaves={sim.leaves} keyView={keyView} onTap={tap} canTap={canTap} />
-
-          {isWhisperer ? (
-            <p className="text-body-sm text-text-subtle">
-              The rings show your secret key: violet, amber, sapling (grey), and the red Deadwood.
-              Do not say a word that lands your grove on a sapling, the enemy, or the Deadwood.
-            </p>
-          ) : null}
-        </>
-      )}
+      {body}
     </section>
   );
 }

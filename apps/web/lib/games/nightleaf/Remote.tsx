@@ -26,15 +26,15 @@ export function NightleafRemote({ state, me, showResults = false, onMove }: Game
   }
 
   if (sim.over) {
-    return showResults ? (
-      <FinalResults standings={state.standings} me={me} />
-    ) : (
+    if (showResults) {
+      return <FinalResults standings={state.standings} me={me} />;
+    }
+    const overLine = sim.won
+      ? 'The grove wins - well played!'
+      : 'Out of buds - see the results on the viewer.';
+    return (
       <section aria-label="Your controller" className="flex flex-col gap-2">
-        <p className="text-body-sm text-text-muted">
-          {sim.won
-            ? 'The grove wins - well played!'
-            : 'Out of buds - see the results on the viewer.'}
-        </p>
+        <p className="text-body-sm text-text-muted">{overLine}</p>
       </section>
     );
   }
@@ -47,39 +47,89 @@ export function NightleafRemote({ state, me, showResults = false, onMove }: Game
   const proposedHush = sim.hushProposers.includes(me);
   const canHush = sim.fireflies > 0 && !empty && !proposedHush && !holding;
 
+  let statusBadges = null;
+  if (showResults) {
+    statusBadges = (
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="info">
+          Tier {sim.tier} / {sim.finalTier}
+        </Badge>
+        <Badge variant="neutral">{sim.buds} buds</Badge>
+      </div>
+    );
+  }
+
+  let handList;
+  if (empty) {
+    handList = (
+      <p className="text-body text-text-muted">
+        Your hand is empty - watch the grove finish the tier.
+      </p>
+    );
+  } else {
+    handList = (
+      <ol aria-label="Your hand, lowest first" className="flex flex-wrap gap-2">
+        {leaves.map((leaf, i) => {
+          const leafTone =
+            leaf === lowest ? 'bg-secondary text-white font-medium' : 'bg-surface-raised text-text';
+          return (
+            <li
+              key={`${leaf}-${i}`}
+              className={`tabular-nums rounded-md px-3 py-2 text-body ${leafTone}`}
+            >
+              {leaf}
+            </li>
+          );
+        })}
+      </ol>
+    );
+  }
+
+  const playLabel = empty ? 'No leaves to play' : `Play your lowest (${lowest})`;
+
+  let hushButton = null;
+  if (sim.fireflies > 0 || proposedHush) {
+    const hushLabel = proposedHush ? 'Hush proposed - waiting for others' : 'Propose a hush';
+    hushButton = (
+      <Button
+        type="button"
+        variant="outline"
+        disabled={!canHush}
+        onClick={() => onMove(round, encodeMove({ kind: 'hush' }))}
+      >
+        {hushLabel}
+      </Button>
+    );
+  }
+
+  let footer;
+  if (holding) {
+    let holdingLine = 'Hold on...';
+    if (sim.phase === 'misplay') {
+      holdingLine = 'A leaf went out of order - the grove settles for a moment.';
+    } else if (sim.phase === 'tier-cleared') {
+      holdingLine = 'Tier cleared - the next leaves are on their way.';
+    }
+    footer = (
+      <p role="status" className="text-body-sm text-text-muted">
+        {holdingLine}
+      </p>
+    );
+  } else {
+    const trunkLine =
+      sim.top > 0
+        ? `Top of the trunk: ${sim.top}.`
+        : 'The trunk is empty - the lowest leaf goes first.';
+    footer = <p className="text-caption text-text-subtle">{trunkLine}</p>;
+  }
+
   return (
     <section aria-label="Your controller" className="flex flex-col gap-4">
-      {showResults ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="info">
-            Tier {sim.tier} / {sim.finalTier}
-          </Badge>
-          <Badge variant="neutral">{sim.buds} buds</Badge>
-        </div>
-      ) : null}
+      {statusBadges}
 
       <div className="flex flex-col gap-2">
         <h2 className="text-h3 text-text">Your leaves</h2>
-        {empty ? (
-          <p className="text-body text-text-muted">
-            Your hand is empty - watch the grove finish the tier.
-          </p>
-        ) : (
-          <ol aria-label="Your hand, lowest first" className="flex flex-wrap gap-2">
-            {leaves.map((leaf, i) => (
-              <li
-                key={`${leaf}-${i}`}
-                className={`tabular-nums rounded-md px-3 py-2 text-body ${
-                  leaf === lowest
-                    ? 'bg-secondary text-white font-medium'
-                    : 'bg-surface-raised text-text'
-                }`}
-              >
-                {leaf}
-              </li>
-            ))}
-          </ol>
-        )}
+        {handList}
         <p className="text-caption text-text-subtle">
           No talking about numbers. Play your lowest leaf when you think it is next.
         </p>
@@ -92,36 +142,13 @@ export function NightleafRemote({ state, me, showResults = false, onMove }: Game
           disabled={empty || holding}
           onClick={() => onMove(round, encodeMove({ kind: 'play' }))}
         >
-          {empty ? 'No leaves to play' : `Play your lowest (${lowest})`}
+          {playLabel}
         </Button>
 
-        {sim.fireflies > 0 || proposedHush ? (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!canHush}
-            onClick={() => onMove(round, encodeMove({ kind: 'hush' }))}
-          >
-            {proposedHush ? 'Hush proposed - waiting for others' : 'Propose a hush'}
-          </Button>
-        ) : null}
+        {hushButton}
       </div>
 
-      {holding ? (
-        <p role="status" className="text-body-sm text-text-muted">
-          {sim.phase === 'misplay'
-            ? 'A leaf went out of order - the grove settles for a moment.'
-            : sim.phase === 'tier-cleared'
-              ? 'Tier cleared - the next leaves are on their way.'
-              : 'Hold on...'}
-        </p>
-      ) : (
-        <p className="text-caption text-text-subtle">
-          {sim.top > 0
-            ? `Top of the trunk: ${sim.top}.`
-            : 'The trunk is empty - the lowest leaf goes first.'}
-        </p>
-      )}
+      {footer}
     </section>
   );
 }

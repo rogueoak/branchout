@@ -47,27 +47,48 @@ export function SameBranchRemote({
       const markers: DialMarker[] = secret
         ? [{ position: secret.bud, label: 'the bud', tone: 'bud' }]
         : [];
+      let budView = <p className="text-body-sm text-text-subtle">Revealing the bud to you...</p>;
+      if (secret) {
+        budView = (
+          <>
+            <p className="text-body-sm text-text-muted">
+              Only you can see the bud. Give a one-line hunch that fits where it sits.
+            </p>
+            <BranchDial
+              left={secret.left}
+              right={secret.right}
+              value={secret.bud}
+              markers={markers}
+              ariaLabel="The bud on the branch (only you can see this)"
+            />
+          </>
+        );
+      }
+      const sendLabel = submitted && !rejected ? 'Resend' : 'Send';
+      let hunchStatus = (
+        <p className="text-body-sm text-text-subtle">
+          Keep it to one line - not too obvious, not too cryptic.
+        </p>
+      );
+      if (rejected) {
+        hunchStatus = (
+          <Badge variant="danger" className="w-fit" role="alert">
+            {state.rejected} - try again.
+          </Badge>
+        );
+      } else if (submitted) {
+        hunchStatus = (
+          <p role="status" className="text-body-sm text-success">
+            Hunch sent! Waiting for the grove to guess...
+          </p>
+        );
+      }
       return (
         <section aria-label="Your controller" className="flex flex-col gap-3">
           <Badge variant="primary" className="w-fit">
             You are the Reader
           </Badge>
-          {secret ? (
-            <>
-              <p className="text-body-sm text-text-muted">
-                Only you can see the bud. Give a one-line hunch that fits where it sits.
-              </p>
-              <BranchDial
-                left={secret.left}
-                right={secret.right}
-                value={secret.bud}
-                markers={markers}
-                ariaLabel="The bud on the branch (only you can see this)"
-              />
-            </>
-          ) : (
-            <p className="text-body-sm text-text-subtle">Revealing the bud to you...</p>
-          )}
+          {budView}
           <label htmlFor="hunch-input" className="text-body-sm font-medium text-text">
             Your hunch
           </label>
@@ -95,27 +116,39 @@ export function SameBranchRemote({
                 setSubmittedRound(round);
               }}
             >
-              {submitted && !rejected ? 'Resend' : 'Send'}
+              {sendLabel}
             </Button>
           </div>
-          {rejected ? (
-            <Badge variant="danger" className="w-fit" role="alert">
-              {state.rejected} - try again.
-            </Badge>
-          ) : submitted ? (
-            <p role="status" className="text-body-sm text-success">
-              Hunch sent! Waiting for the grove to guess...
-            </p>
-          ) : (
-            <p className="text-body-sm text-text-subtle">
-              Keep it to one line - not too obvious, not too cryptic.
-            </p>
-          )}
+          {hunchStatus}
         </section>
       );
     }
 
     // A guesser: drag the sap line, then lock in.
+    const lockAction =
+      submitted && !rejected ? (
+        <p role="status" className="text-body-sm text-success">
+          Locked in at {position}. Waiting for the others...
+        </p>
+      ) : (
+        <Button
+          type="button"
+          variant="primary"
+          disabled={position === null}
+          onClick={() => {
+            if (position === null) return;
+            onMove(round, String(position));
+            setSubmittedRound(round);
+          }}
+        >
+          Lock in my guess
+        </Button>
+      );
+    const guessRejected = rejected ? (
+      <Badge variant="danger" className="w-fit" role="alert">
+        {state.rejected}
+      </Badge>
+    ) : null;
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <p className="text-body text-text">
@@ -130,29 +163,8 @@ export function SameBranchRemote({
           disabled={submitted}
           ariaLabel="Move the sap line to your guess"
         />
-        {submitted && !rejected ? (
-          <p role="status" className="text-body-sm text-success">
-            Locked in at {position}. Waiting for the others...
-          </p>
-        ) : (
-          <Button
-            type="button"
-            variant="primary"
-            disabled={position === null}
-            onClick={() => {
-              if (position === null) return;
-              onMove(round, String(position));
-              setSubmittedRound(round);
-            }}
-          >
-            Lock in my guess
-          </Button>
-        )}
-        {rejected ? (
-          <Badge variant="danger" className="w-fit" role="alert">
-            {state.rejected}
-          </Badge>
-        ) : null}
+        {lockAction}
+        {guessRejected}
       </section>
     );
   }
@@ -162,23 +174,20 @@ export function SameBranchRemote({
   }
 
   if (showResults && phase === 'leaderboard') {
+    const nextHint = isHost
+      ? 'Tap Next when you are ready for the next round.'
+      : 'Waiting for the host to start the next round.';
     return (
       <section aria-label="Your controller" className="flex flex-col gap-3">
         <Leaderboard standings={state.standings} me={me} />
-        <p className="text-body-sm text-text-muted">
-          {isHost
-            ? 'Tap Next when you are ready for the next round.'
-            : 'Waiting for the host to start the next round.'}
-        </p>
+        <p className="text-body-sm text-text-muted">{nextHint}</p>
       </section>
     );
   }
 
-  return (
-    <p className="text-body-sm text-text-muted">
-      {phase === 'complete'
-        ? 'The game is over - see the results on the viewer.'
-        : 'Watch the viewer - the next branch is coming up.'}
-    </p>
-  );
+  const fallback =
+    phase === 'complete'
+      ? 'The game is over - see the results on the viewer.'
+      : 'Watch the viewer - the next branch is coming up.';
+  return <p className="text-body-sm text-text-muted">{fallback}</p>;
 }

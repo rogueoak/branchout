@@ -5,6 +5,7 @@
 // parent (the lobby shell) owns the value and Start gating, matching the generic `GameConfigPanelProps`
 // every game uses. Validates against the engine's rules so the host cannot start an invalid game.
 
+import type { ReactNode } from 'react';
 import { Badge, Button, Input, Label } from '@rogueoak/canopy';
 import type { GameConfigPanelProps } from '../registry';
 import {
@@ -42,6 +43,59 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
     set({ categories: next });
   };
 
+  const categoriesError = errorFor(errors, 'categories');
+  const roundsError = errorFor(errors, 'rounds');
+  const roundsValue = Number.isNaN(config.rounds) ? '' : config.rounds;
+
+  const categoriesErrorLine = categoriesError ? (
+    <p role="alert" className="text-body-sm text-danger">
+      {categoriesError}
+    </p>
+  ) : null;
+  const roundsErrorLine = roundsError ? (
+    <p id="lone-leaf-rounds-error" role="alert" className="text-body-sm text-danger">
+      {roundsError}
+    </p>
+  ) : null;
+
+  let themePicker: ReactNode;
+  if (!random) {
+    themePicker = (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Choose up to 3 themes">
+          {CATEGORIES.map((category) => {
+            const on = selected.includes(category);
+            const buttonVariant = on ? 'secondary' : 'outline';
+            return (
+              <Button
+                key={category}
+                type="button"
+                size="sm"
+                variant={buttonVariant}
+                aria-pressed={on}
+                // Cap at three: an unchecked theme is disabled once the cap is reached.
+                disabled={disabled || (!on && atCap)}
+                onClick={() => toggleCategory(category)}
+              >
+                {label(category)}
+              </Button>
+            );
+          })}
+        </div>
+        <p className="text-caption text-text-subtle">
+          {selected.length}/{MAX_CATEGORIES} chosen. Pick 1-3 themes, or switch to Random.
+        </p>
+        {categoriesErrorLine}
+      </div>
+    );
+  } else {
+    themePicker = (
+      <Badge variant="neutral" className="w-fit">
+        Drawing from all {CATEGORIES.length} themes
+      </Badge>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -67,41 +121,7 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
           </Button>
         </div>
 
-        {!random ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Choose up to 3 themes">
-              {CATEGORIES.map((category) => {
-                const on = selected.includes(category);
-                return (
-                  <Button
-                    key={category}
-                    type="button"
-                    size="sm"
-                    variant={on ? 'secondary' : 'outline'}
-                    aria-pressed={on}
-                    // Cap at three: an unchecked theme is disabled once the cap is reached.
-                    disabled={disabled || (!on && atCap)}
-                    onClick={() => toggleCategory(category)}
-                  >
-                    {label(category)}
-                  </Button>
-                );
-              })}
-            </div>
-            <p className="text-caption text-text-subtle">
-              {selected.length}/{MAX_CATEGORIES} chosen. Pick 1-3 themes, or switch to Random.
-            </p>
-            {errorFor(errors, 'categories') ? (
-              <p role="alert" className="text-body-sm text-danger">
-                {errorFor(errors, 'categories')}
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <Badge variant="neutral" className="w-fit">
-            Drawing from all {CATEGORIES.length} themes
-          </Badge>
-        )}
+        {themePicker}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -113,16 +133,12 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
           min={MIN_ROUNDS}
           max={MAX_ROUNDS}
           disabled={disabled}
-          value={Number.isNaN(config.rounds) ? '' : config.rounds}
+          value={roundsValue}
           onChange={(event) => set({ rounds: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'rounds') !== null}
-          aria-describedby={errorFor(errors, 'rounds') ? 'lone-leaf-rounds-error' : undefined}
+          aria-invalid={roundsError !== null}
+          aria-describedby={roundsError ? 'lone-leaf-rounds-error' : undefined}
         />
-        {errorFor(errors, 'rounds') ? (
-          <p id="lone-leaf-rounds-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'rounds')}
-          </p>
-        ) : null}
+        {roundsErrorLine}
         <p className="text-caption text-text-subtle">
           One seed per round. The Seeker rotates each round, so everyone takes a turn guessing.
         </p>

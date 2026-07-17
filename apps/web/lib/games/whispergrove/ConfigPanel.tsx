@@ -24,6 +24,15 @@ export function WhispergroveConfigPanel({ value, onChange, disabled }: GameConfi
     onChange({ categories: next });
   };
 
+  let emptyWarning = null;
+  if (selected.length === 0) {
+    emptyWarning = (
+      <Badge variant="danger" className="w-fit">
+        Pick at least one category.
+      </Badge>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
@@ -49,11 +58,7 @@ export function WhispergroveConfigPanel({ value, onChange, disabled }: GameConfi
             );
           })}
         </div>
-        {selected.length === 0 ? (
-          <Badge variant="danger" className="w-fit">
-            Pick at least one category.
-          </Badge>
-        ) : null}
+        {emptyWarning}
       </div>
     </div>
   );

@@ -16,13 +16,16 @@ function Pips({ filled, total, label }: { filled: number; total: number; label: 
   const pips = Array.from({ length: Math.max(total, filled) }, (_, i) => i < filled);
   return (
     <span className="inline-flex items-center gap-1" aria-label={`${filled} of ${total} ${label}`}>
-      {pips.map((on, i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          className={`inline-block h-3 w-3 rounded-full ${on ? 'bg-secondary' : 'bg-surface-raised'}`}
-        />
-      ))}
+      {pips.map((on, i) => {
+        const pipTone = on ? 'bg-secondary' : 'bg-surface-raised';
+        return (
+          <span
+            key={i}
+            aria-hidden="true"
+            className={`inline-block h-3 w-3 rounded-full ${pipTone}`}
+          />
+        );
+      })}
     </span>
   );
 }
@@ -55,17 +58,16 @@ export function NightleafViewer({ state, me }: GameViewProps) {
   }
 
   if (sim.over) {
+    const outcomeTone = sim.won ? 'text-success' : 'text-danger';
+    const outcomeTitle = sim.won ? 'The grove wins!' : 'The grove falls';
+    const outcomeBody = sim.won
+      ? `You cleared all ${sim.finalTier} tiers in silence.`
+      : 'The buds ran out. Regroup and climb again.';
     return (
       <section aria-label="Game viewer" className="flex flex-col gap-5">
         <div className="rounded-lg bg-surface-raised p-4" role="status">
-          <h2 className={`text-h2 ${sim.won ? 'text-success' : 'text-danger'}`}>
-            {sim.won ? 'The grove wins!' : 'The grove falls'}
-          </h2>
-          <p className="text-body text-text-muted">
-            {sim.won
-              ? `You cleared all ${sim.finalTier} tiers in silence.`
-              : 'The buds ran out. Regroup and climb again.'}
-          </p>
+          <h2 className={`text-h2 ${outcomeTone}`}>{outcomeTitle}</h2>
+          <p className="text-body text-text-muted">{outcomeBody}</p>
         </div>
         <FinalResults standings={state.standings} me={me} />
         <p role="status" className="sr-only">
@@ -75,16 +77,44 @@ export function NightleafViewer({ state, me }: GameViewProps) {
     );
   }
 
-  const banner =
-    sim.phase === 'misplay' && sim.lastMisplay ? (
+  let banner = null;
+  if (sim.phase === 'misplay' && sim.lastMisplay) {
+    banner = (
       <Badge variant="danger" role="status">
         Out of order - {sim.lastMisplay.played} beat {sim.lastMisplay.lowestHeld}. Lost a bud.
       </Badge>
-    ) : sim.phase === 'tier-cleared' ? (
+    );
+  } else if (sim.phase === 'tier-cleared') {
+    banner = (
       <Badge variant="success" role="status">
         Tier {sim.tier} cleared!
       </Badge>
-    ) : null;
+    );
+  }
+
+  let trunkBody;
+  if (sim.trunk.length === 0) {
+    trunkBody = (
+      <p className="text-body text-text-muted">No leaves played yet. Lowest goes first.</p>
+    );
+  } else {
+    trunkBody = (
+      <ol aria-label="Leaves played on the trunk, ascending" className="flex flex-wrap gap-2">
+        {sim.trunk.map((leaf, i) => {
+          const leafTone =
+            i === sim.trunk.length - 1 ? 'bg-secondary text-white' : 'bg-surface-raised text-text';
+          return (
+            <li
+              key={`${leaf}-${i}`}
+              className={`tabular-nums rounded-md px-3 py-1.5 text-body ${leafTone}`}
+            >
+              {leaf}
+            </li>
+          );
+        })}
+      </ol>
+    );
+  }
 
   return (
     <section aria-label="Game viewer" className="flex flex-col gap-4">
@@ -107,41 +137,29 @@ export function NightleafViewer({ state, me }: GameViewProps) {
 
       <div className="flex flex-col gap-2">
         <h2 className="text-h3 text-text">The trunk</h2>
-        {sim.trunk.length === 0 ? (
-          <p className="text-body text-text-muted">No leaves played yet. Lowest goes first.</p>
-        ) : (
-          <ol aria-label="Leaves played on the trunk, ascending" className="flex flex-wrap gap-2">
-            {sim.trunk.map((leaf, i) => (
-              <li
-                key={`${leaf}-${i}`}
-                className={`tabular-nums rounded-md px-3 py-1.5 text-body ${
-                  i === sim.trunk.length - 1
-                    ? 'bg-secondary text-white'
-                    : 'bg-surface-raised text-text'
-                }`}
-              >
-                {leaf}
-              </li>
-            ))}
-          </ol>
-        )}
+        {trunkBody}
       </div>
 
       <div className="flex flex-col gap-2">
         <h2 className="text-h3 text-text">The grove</h2>
         <ul aria-label="Players and their remaining leaf counts" className="flex flex-col gap-1">
-          {sim.hands.map((hand) => (
-            <li key={hand.player} className="flex items-center justify-between text-body">
-              <span className="text-text">
-                {hand.nickname}
-                {hand.player === me ? ' (you)' : ''}
-                {sim.hushProposers.includes(hand.player) ? ' - proposed a hush' : ''}
-              </span>
-              <span className="tabular-nums text-text-muted">
-                {hand.count} {hand.count === 1 ? 'leaf' : 'leaves'}
-              </span>
-            </li>
-          ))}
+          {sim.hands.map((hand) => {
+            const youSuffix = hand.player === me ? ' (you)' : '';
+            const hushSuffix = sim.hushProposers.includes(hand.player) ? ' - proposed a hush' : '';
+            const leafWord = hand.count === 1 ? 'leaf' : 'leaves';
+            return (
+              <li key={hand.player} className="flex items-center justify-between text-body">
+                <span className="text-text">
+                  {hand.nickname}
+                  {youSuffix}
+                  {hushSuffix}
+                </span>
+                <span className="tabular-nums text-text-muted">
+                  {hand.count} {leafWord}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </div>
 

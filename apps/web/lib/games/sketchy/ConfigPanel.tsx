@@ -24,6 +24,17 @@ export function SketchyConfigPanel({ value, onChange, disabled }: GameConfigPane
   const errors = validateSketchyConfig(config);
   const set = (next: Partial<SketchyHostConfig>) => onChange({ ...config, ...next });
 
+  const roundsError = errorFor(errors, 'rounds');
+  const roundsValue = Number.isNaN(config.rounds) ? '' : config.rounds;
+  let roundsErrorMessage = null;
+  if (roundsError) {
+    roundsErrorMessage = (
+      <p id="sketchy-rounds-error" role="alert" className="text-body-sm text-danger">
+        {roundsError}
+      </p>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -35,19 +46,15 @@ export function SketchyConfigPanel({ value, onChange, disabled }: GameConfigPane
           min={MIN_ROUNDS}
           max={MAX_ROUNDS}
           disabled={disabled}
-          value={Number.isNaN(config.rounds) ? '' : config.rounds}
+          value={roundsValue}
           onChange={(event) => set({ rounds: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'rounds') !== null}
-          aria-describedby={errorFor(errors, 'rounds') ? 'sketchy-rounds-error' : undefined}
+          aria-invalid={roundsError !== null}
+          aria-describedby={roundsError ? 'sketchy-rounds-error' : undefined}
         />
         <p className="text-caption text-text-subtle">
           Each round, everyone draws a secret seed, then guesses the real one behind every sketch.
         </p>
-        {errorFor(errors, 'rounds') ? (
-          <p id="sketchy-rounds-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'rounds')}
-          </p>
-        ) : null}
+        {roundsErrorMessage}
       </div>
     </div>
   );
