@@ -326,10 +326,8 @@ export function createChessGame(): GameModule {
       }
 
       const pos = positionOf(scratch);
-      const wire = parsed.move;
-      const ruleMove: Move = wire.promotion
-        ? { from: wire.from, to: wire.to, promotion: wire.promotion }
-        : { from: wire.from, to: wire.to };
+      // The parsed wire move already has the {from, to, promotion?} shape a rule Move needs.
+      const ruleMove: Move = parsed.move;
 
       // Full legality: geometry, path, turn, castling/en-passant conditions, AND that the move does not
       // leave the mover's own king in check. isLegalMove is the single authority.

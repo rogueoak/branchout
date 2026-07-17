@@ -199,39 +199,23 @@ export function createReversiGame(): GameModule {
 
     collectMove(ctx: RoundContext, player: string, move: string): ScratchResult {
       const scratch = asScratch(ctx.scratch);
+      const reject = (reason: string): ScratchResult => ({
+        scratch: ctx.scratch as Record<string, unknown>,
+        rejected: { reason },
+      });
 
-      if (scratch.over) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'game over' },
-        };
-      }
+      if (scratch.over) return reject('game over');
 
       const { board, turns } = boardAndTurns(scratch);
 
       // Only the seat to move may place (turn enforcement; the engine replies to that one device).
-      if (player !== turns.activePlayer()) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'not your turn' },
-        };
-      }
+      if (player !== turns.activePlayer()) return reject('not your turn');
 
       const parsed = parseMove(move);
-      if (!parsed) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'malformed move' },
-        };
-      }
+      if (!parsed) return reject('malformed move');
 
       // Legality: the square must be on the board, empty, and bracket at least one opponent line.
-      if (!isLegalMove(board, turns.turn, parsed.row, parsed.col)) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'illegal move' },
-        };
-      }
+      if (!isLegalMove(board, turns.turn, parsed.row, parsed.col)) return reject('illegal move');
 
       // Apply the placement + flips, then resolve whose turn is next (handling a forced pass / end).
       const next = applyMove(board, turns.turn, parsed.row, parsed.col);
