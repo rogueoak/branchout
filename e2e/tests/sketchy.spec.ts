@@ -165,9 +165,12 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
         }
       }
 
-      // We are done when the final results render on the host.
-      await expect(host.getByTestId('final-results')).toBeVisible({ timeout: 3_000 });
-    }).toPass({ timeout: 180_000 });
+      // We are done when the final results render on the host. Keep this poll short so a still-open
+      // decoy/guess stage is re-driven quickly on the next iteration instead of burning seconds
+      // waiting for results that cannot appear yet - this is what keeps the whole sweep well inside
+      // budget on a slow CI runner.
+      await expect(host.getByTestId('final-results')).toBeVisible({ timeout: 750 });
+    }).toPass({ timeout: 180_000, intervals: [250] });
 
     // Both REMOTE guests also reach the final results - the "remote guest completes" proof.
     await expect(player2.getByTestId('final-results')).toBeVisible();
