@@ -7,10 +7,6 @@
 
 import { randomBytes } from 'node:crypto';
 
-/** A member's role in a room. Players play; observers only watch. The host is a player too - the
- * host privilege is the orthogonal `isHost` flag on {@link RoomMember}, not a role. */
-export type Role = 'player' | 'observer';
-
 /**
  * Mint a member's public `playerId`: an unguessable, url-safe token (128 bits), distinct from the
  * session id. It is safe to hand to the browser (it grants nothing on its own), so it can be the
@@ -20,9 +16,16 @@ export function newPlayerId(): string {
   return randomBytes(16).toString('base64url');
 }
 
-/** A player's chosen mode. `interactive` is a viewer + remote on one screen; `remote` is a
- * controller only. Observers have no mode (they only watch). */
-export type Mode = 'interactive' | 'remote';
+/**
+ * A member's mode (spec 0050). Every member has exactly one:
+ * - `viewer`: watches only (a shared screen); never plays, and never counts toward a game's player
+ *   limits or paid rounds. Replaces the old `observer` role.
+ * - `interactive`: plays AND shows the game on this device (screen + controller together).
+ * - `remote`: plays with a controller only; needs another device to show the game.
+ * `interactive` and `remote` are the PLAYING modes (they fill the roster and count toward limits);
+ * `viewer` and `interactive` are the DISPLAY modes (a device that can show the game on a screen).
+ */
+export type Mode = 'viewer' | 'interactive' | 'remote';
 
 /**
  * One member of a room. Keyed by the joining session id (account or anonymous), so a kick can
@@ -42,15 +45,14 @@ export interface RoomMember {
   playerId: string;
   /** The durable account id when the member signed in; absent for an anonymous member. */
   accountId?: string;
-  role: Role;
   /**
-   * True for the room's host - the person who created it. The host is a full player (it has a role,
-   * a mode, and plays), and this flag additionally carries the admin powers: game controls, kick,
-   * and seeing other members' `sessionId`. The host is never kickable.
+   * True for the room's host - the person who created it. The host has a mode like everyone else,
+   * and this flag additionally carries the admin powers: game controls, kick, and seeing other
+   * members' `sessionId`. The host is never kickable.
    */
   isHost: boolean;
-  /** Set for a player (the host is a player, so it has a mode too); absent for observers. */
-  mode?: Mode;
+  /** This member's mode (spec 0050): `viewer`, `interactive`, or `remote`. Always set. */
+  mode: Mode;
   /** Per-game display name chosen at join. */
   nickname: string;
   /** Presence: whether the member's device is currently connected. */
@@ -58,16 +60,30 @@ export interface RoomMember {
 }
 
 /**
- * A viewer is what a game needs to start: an observer, or an interactive player (someone with a
- * screen to watch on). A room of only remote players has no viewer and cannot start.
+ * A DISPLAY member can show the game on a screen: a `viewer` (a shared screen) or an `interactive`
+ * player. A game needs at least one to start - a room of only `remote` players has no screen.
  */
-export function isViewer(member: RoomMember): boolean {
-  return member.role === 'observer' || (member.role === 'player' && member.mode === 'interactive');
+export function isDisplay(member: RoomMember): boolean {
+  return member.mode === 'viewer' || member.mode === 'interactive';
 }
 
-/** True if at least one member is a viewer - the "at least one viewer" start rule. */
-export function hasViewer(members: readonly RoomMember[]): boolean {
-  return members.some(isViewer);
+/** True if at least one member can display the game - the "at least one screen" start rule. */
+export function hasDisplay(members: readonly RoomMember[]): boolean {
+  return members.some(isDisplay);
+}
+
+/**
+ * A PLAYING member takes part in the game (`interactive` or `remote`); a `viewer` does not. Only
+ * playing members count toward a game's player limits, fill the engine roster, and count toward
+ * paid rounds (spec 0050).
+ */
+export function isPlaying(member: RoomMember): boolean {
+  return member.mode === 'interactive' || member.mode === 'remote';
+}
+
+/** How many members are playing (interactive + remote) - the count a game's limits bound. */
+export function playingCount(members: readonly RoomMember[]): number {
+  return members.reduce((n, m) => (isPlaying(m) ? n + 1 : n), 0);
 }
 
 /**

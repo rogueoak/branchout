@@ -58,7 +58,6 @@ describe('room creation and hosting', () => {
     // mode (interactive; the client refines it from the device via setMode), and is connected -
     // presence tracks it like any player.
     expect(members[0]).toMatchObject({
-      role: 'player',
       isHost: true,
       mode: 'interactive',
       sessionId: host.id,
@@ -80,24 +79,24 @@ describe('joining', () => {
   it('anonymous users join as players or observers, each with a per-game nickname', async () => {
     const { service, membership } = harness();
     const { room } = await service.createRoom(account());
-    await service.join(room.code, anon(), { role: 'player', nickname: 'Speedy', mode: 'remote' });
-    await service.join(room.code, anon(), { role: 'observer', nickname: 'Watcher' });
+    await service.join(room.code, anon(), { nickname: 'Speedy', mode: 'remote' });
+    await service.join(room.code, anon(), { nickname: 'Watcher', mode: 'viewer' });
     const members = await membership.list(room.id);
     const player = members.find((m) => m.nickname === 'Speedy');
     const observer = members.find((m) => m.nickname === 'Watcher');
-    expect(player).toMatchObject({ role: 'player', mode: 'remote' });
-    expect(observer).toMatchObject({ role: 'observer' });
-    expect(observer?.mode).toBeUndefined();
+    expect(player).toMatchObject({ mode: 'remote' });
+    expect(observer).toMatchObject({ mode: 'viewer' });
+    expect(observer?.mode).toBe('viewer');
   });
 
   it('rejects an empty nickname and an unknown code', async () => {
     const { service } = harness();
     const { room } = await service.createRoom(account());
     await expect(
-      service.join(room.code, anon(), { role: 'player', nickname: '' }),
+      service.join(room.code, anon(), { nickname: '', mode: 'interactive' }),
     ).rejects.toMatchObject({ code: 'invalid' });
     await expect(
-      service.join('ZZZZZ', anon(), { role: 'player', nickname: 'X' }),
+      service.join('ZZZZZ', anon(), { nickname: 'X', mode: 'interactive' }),
     ).rejects.toMatchObject({ code: 'not_found' });
   });
 
@@ -106,7 +105,6 @@ describe('joining', () => {
     const { room } = await service.createRoom(account());
     const player = anon('Speedy');
     const { playerId } = await service.join(room.code, player, {
-      role: 'player',
       nickname: 'Speedy',
     });
     // The join echoes a non-empty playerId that is NOT the session id (the httpOnly cookie value).
@@ -122,8 +120,8 @@ describe('joining', () => {
     const { service } = harness();
     const { room } = await service.createRoom(account());
     const player = anon('Sam');
-    const first = await service.join(room.code, player, { role: 'player', nickname: 'Sam' });
-    const second = await service.join(room.code, player, { role: 'player', nickname: 'Sam' });
+    const first = await service.join(room.code, player, { nickname: 'Sam', mode: 'interactive' });
+    const second = await service.join(room.code, player, { nickname: 'Sam', mode: 'interactive' });
     expect(second.playerId).toBe(first.playerId);
   });
 });
@@ -134,20 +132,20 @@ describe('kick', () => {
     const host = account();
     const { room } = await service.createRoom(host);
     const victim = anon('Victim');
-    await service.join(room.code, victim, { role: 'player', nickname: 'Victim' });
+    await service.join(room.code, victim, { nickname: 'Victim', mode: 'interactive' });
 
     await service.kick(room.code, host, victim.id);
     expect(await membership.get(room.id, victim.id)).toBeNull();
 
     // The kicked session cannot rejoin.
     await expect(
-      service.join(room.code, victim, { role: 'player', nickname: 'Victim' }),
+      service.join(room.code, victim, { nickname: 'Victim', mode: 'interactive' }),
     ).rejects.toMatchObject({ code: 'kicked' });
 
     // A different session can still join with the same code.
     const other = anon('Other');
     await expect(
-      service.join(room.code, other, { role: 'observer', nickname: 'Other' }),
+      service.join(room.code, other, { nickname: 'Other', mode: 'viewer' }),
     ).resolves.toBeTruthy();
   });
 
@@ -156,7 +154,7 @@ describe('kick', () => {
     const host = account();
     const { room } = await service.createRoom(host);
     const player = anon('P');
-    await service.join(room.code, player, { role: 'player', nickname: 'P' });
+    await service.join(room.code, player, { nickname: 'P', mode: 'interactive' });
     // A non-host cannot kick.
     await expect(service.kick(room.code, player, host.id)).rejects.toMatchObject({
       code: 'forbidden',
@@ -213,7 +211,7 @@ describe('host plays as a player', () => {
     const { room } = await service.createRoom(host);
     await service.selectGame(room.code, host, 'trivia', {});
     // An observer that must NOT reach the engine roster.
-    await service.join(room.code, anon(), { role: 'observer', nickname: 'Watcher' });
+    await service.join(room.code, anon(), { nickname: 'Watcher', mode: 'viewer' });
     // The interactive host is a viewer, so a solo host can start.
     await service.start(room.code, host, 1);
 
@@ -237,7 +235,6 @@ describe('host plays as a player', () => {
     await service.selectGame(room.code, host, 'trivia', {});
     const other = anon('Bo');
     const { playerId: bo } = await service.join(room.code, other, {
-      role: 'player',
       nickname: 'Bo',
       mode: 'remote',
     });
@@ -276,7 +273,6 @@ describe('host plays as a player', () => {
     await service.selectGame(room.code, host, 'trivia', {});
     // Bo is anonymous - no account, so no play should be recorded for them.
     const { playerId: bo } = await service.join(room.code, anon('Bo'), {
-      role: 'player',
       nickname: 'Bo',
       mode: 'remote',
     });
@@ -323,7 +319,7 @@ describe('host plays as a player', () => {
     await expect(service.start(room.code, host, 1)).rejects.toMatchObject({ code: 'no_viewer' });
     expect(engine.starts).toHaveLength(0);
     // Add a remote player: still no viewer.
-    await service.join(room.code, anon(), { role: 'player', nickname: 'R', mode: 'remote' });
+    await service.join(room.code, anon(), { nickname: 'R', mode: 'remote' });
     await expect(service.start(room.code, host, 1)).rejects.toMatchObject({ code: 'no_viewer' });
   });
 
@@ -344,10 +340,10 @@ describe('host plays as a player', () => {
     // is the authority for host status, so the request cannot demote the host: it stays a player
     // with isHost, keeps its playerId, and holds its chosen mode.
     await service.setMode(room.code, host, 'remote');
-    const rejoin = await service.join(room.code, host, { role: 'observer', nickname: 'Ada' });
+    const rejoin = await service.join(room.code, host, { nickname: 'Ada', mode: 'viewer' });
     expect(rejoin.playerId).toBe(playerId);
     const stored = await membership.get(room.id, host.id);
-    expect(stored).toMatchObject({ role: 'player', isHost: true, mode: 'remote', playerId });
+    expect(stored).toMatchObject({ isHost: true, mode: 'remote', playerId });
     // And the host is still a viewer-capable participant in the roster machinery: it can flip back
     // to interactive and start solo, which a demoted observer/host could not.
     await service.setMode(room.code, host, 'interactive');
@@ -360,7 +356,7 @@ describe('host plays as a player', () => {
     const host = account('Host', 'host_acct');
     const { room } = await service.createRoom(host);
     const player = anon('Sam');
-    await service.join(room.code, player, { role: 'player', nickname: 'Sam', mode: 'remote' });
+    await service.join(room.code, player, { nickname: 'Sam', mode: 'remote' });
 
     const hostView = await service.members(room.code, host);
     expect(hostView.every((m) => typeof m.sessionId === 'string')).toBe(true);
@@ -376,7 +372,7 @@ describe('host plays as a player', () => {
     const host = account('Host', 'host_acct');
     const { room } = await service.createRoom(host);
     const player = anon('P');
-    await service.join(room.code, player, { role: 'player', nickname: 'P' });
+    await service.join(room.code, player, { nickname: 'P', mode: 'interactive' });
     // The host cannot kick itself (self-kick guard), so the host is not removable.
     await expect(service.kick(room.code, host, host.id)).rejects.toMatchObject({ code: 'invalid' });
     expect(await membership.get(room.id, host.id)).not.toBeNull();
@@ -397,7 +393,6 @@ describe('host plays as a player', () => {
       sessionId: secondSession,
       playerId: newPlayerId(),
       accountId: 'host_acct',
-      role: 'player',
       isHost: true,
       mode: 'interactive',
       nickname: 'Host',
@@ -426,7 +421,6 @@ describe('start rule and gates', () => {
     // with only remote players and no viewer at all, a start must be blocked.
     await service.setMode(room.code, host, 'remote');
     await service.join(room.code, anon(), {
-      role: 'player',
       nickname: 'RemoteOnly',
       mode: 'remote',
     });
@@ -434,7 +428,7 @@ describe('start rule and gates', () => {
     expect(engine.starts).toHaveLength(0);
 
     // Add an observer: now there is a viewer.
-    await service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
+    await service.join(room.code, anon(), { nickname: 'Eyes', mode: 'viewer' });
     await service.start(room.code, host, 1);
     expect(engine.starts).toHaveLength(1);
   });
@@ -442,7 +436,6 @@ describe('start rule and gates', () => {
   it('an interactive player counts as a viewer', async () => {
     const { service, room, host, engine } = await readyRoom();
     await service.join(room.code, anon(), {
-      role: 'player',
       nickname: 'Interactive',
       mode: 'interactive',
     });
@@ -454,14 +447,14 @@ describe('start rule and gates', () => {
     const { service } = harness();
     const host = account();
     const { room } = await service.createRoom(host);
-    await service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
+    await service.join(room.code, anon(), { nickname: 'Eyes', mode: 'viewer' });
     await expect(service.start(room.code, host, 1)).rejects.toMatchObject({ code: 'no_game' });
   });
 
   it('refuses to start more rounds than the balance covers, with no engine handoff', async () => {
     // Free tier grants 10/day; ask for 11 rounds.
     const { service, room, host, engine } = await readyRoom({ host_acct: 'free' });
-    await service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
+    await service.join(room.code, anon(), { nickname: 'Eyes', mode: 'viewer' });
     await expect(service.start(room.code, host, 11)).rejects.toMatchObject({
       code: 'insufficient_credits',
     });
@@ -470,14 +463,14 @@ describe('start rule and gates', () => {
 
   it('a Party (unlimited) host can start any number of rounds', async () => {
     const { service, room, host, engine } = await readyRoom({ host_acct: 'party' });
-    await service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
+    await service.join(room.code, anon(), { nickname: 'Eyes', mode: 'viewer' });
     await service.start(room.code, host, 1000);
     expect(engine.starts).toHaveLength(1);
   });
 
   it('passes the opaque config to the engine unchanged and marks the room running', async () => {
     const { service, room, host, engine } = await readyRoom({ host_acct: 'party' });
-    await service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
+    await service.join(room.code, anon(), { nickname: 'Eyes', mode: 'viewer' });
     const started = await service.start(room.code, host, 1);
     expect(started.status).toBe('running');
     expect(engine.starts[0]!.config).toEqual({ questions: 5 });
@@ -489,7 +482,6 @@ describe('start rule and gates', () => {
     const { service, membership, room, host, engine } = await readyRoom({ host_acct: 'party' });
     const player = anon('Racer');
     const { playerId } = await service.join(room.code, player, {
-      role: 'player',
       nickname: 'Racer',
       mode: 'interactive',
     });
@@ -524,7 +516,7 @@ describe('members roster', () => {
     const host = account('Host', 'host_acct');
     const { room } = await h.service.createRoom(host);
     const player = anon();
-    await h.service.join(room.code, player, { role: 'player', nickname: 'Sam', mode: 'remote' });
+    await h.service.join(room.code, player, { nickname: 'Sam', mode: 'remote' });
 
     const hostView = await h.service.members(room.code, host);
     expect(hostView.every((m) => typeof m.sessionId === 'string')).toBe(true);
@@ -543,7 +535,7 @@ describe('room view (poll for status)', () => {
     const host = account('Host', 'host_acct');
     const { room } = await h.service.createRoom(host);
     const player = anon();
-    await h.service.join(room.code, player, { role: 'observer', nickname: 'Eyes' });
+    await h.service.join(room.code, player, { nickname: 'Eyes', mode: 'viewer' });
     await h.service.selectGame(room.code, host, 'trivia', {});
 
     // Before start, both see the lobby.
@@ -571,7 +563,7 @@ describe('room view (poll for status)', () => {
     // The host polling past the TTL is silently restored rather than 403'd off its own room.
     expect((await h.service.view(room.code, host)).code).toBe(room.code);
     const seat = await h.membership.get(room.id, host.id);
-    expect(seat).toMatchObject({ role: 'player', isHost: true, nickname: 'Ada', connected: true });
+    expect(seat).toMatchObject({ isHost: true, nickname: 'Ada', connected: true });
     // members() sees the re-seated host row (with its sessionId, since the caller is the host).
     const roster = await h.service.members(room.code, host);
     expect(roster.some((m) => m.isHost && m.sessionId === host.id)).toBe(true);
@@ -587,7 +579,7 @@ describe('resume (rebuild the caller seat after a forgotten tab)', () => {
 
     const resumed = await h.service.resume(room.code, host);
     expect(resumed.room.code).toBe(room.code);
-    expect(resumed.membership).toMatchObject({ role: 'player', isHost: true, nickname: 'Ada' });
+    expect(resumed.membership).toMatchObject({ isHost: true, nickname: 'Ada' });
     // A fresh playerId is minted on re-seat (matches join-after-expiry); it is a real id, not empty.
     expect(resumed.membership.player).toBeTruthy();
     expect(resumed.membership.player).not.toBe(playerId);
@@ -602,14 +594,12 @@ describe('resume (rebuild the caller seat after a forgotten tab)', () => {
     const { room } = await h.service.createRoom(host);
     const player = anon('Sam');
     const { playerId } = await h.service.join(room.code, player, {
-      role: 'player',
       nickname: 'Sam',
       mode: 'remote',
     });
 
     const resumed = await h.service.resume(room.code, player);
     expect(resumed.membership).toMatchObject({
-      role: 'player',
       isHost: false,
       mode: 'remote',
       nickname: 'Sam',
@@ -629,7 +619,7 @@ describe('resume (rebuild the caller seat after a forgotten tab)', () => {
     const host = account('Host', 'host_acct');
     const { room } = await h.service.createRoom(host);
     const player = anon('Sam');
-    await h.service.join(room.code, player, { role: 'player', nickname: 'Sam' });
+    await h.service.join(room.code, player, { nickname: 'Sam', mode: 'interactive' });
     await h.membership.remove(room.id, player.id);
     await expect(h.service.resume(room.code, player)).rejects.toMatchObject({ code: 'not_member' });
   });
@@ -671,7 +661,7 @@ describe('host controls', () => {
     const host = account('Host', 'host_acct');
     const { room } = await h.service.createRoom(host);
     await h.service.selectGame(room.code, host, 'trivia', {});
-    await h.service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
+    await h.service.join(room.code, anon(), { nickname: 'Eyes', mode: 'viewer' });
     await h.service.start(room.code, host, 1);
     return { ...h, host, room };
   }
@@ -700,7 +690,7 @@ describe('round and game-complete intake', () => {
     const host = account('Host', 'host_acct');
     const { room } = await h.service.createRoom(host);
     await h.service.selectGame(room.code, host, 'trivia', {});
-    await h.service.join(room.code, anon(), { role: 'observer', nickname: 'Eyes' });
+    await h.service.join(room.code, anon(), { nickname: 'Eyes', mode: 'viewer' });
     await h.service.start(room.code, host, 5);
     return { ...h, host, room };
   }
@@ -753,5 +743,69 @@ describe('round and game-complete intake', () => {
     expect((await repo.findById(room.id))?.status).toBe('lobby');
     // Idempotent on the game id.
     expect(await service.recordGameComplete(report)).toBe('duplicate');
+  });
+});
+
+describe('player limits (spec 0050)', () => {
+  it('blocks Start below a game player minimum (Liar Liar needs 2), then allows it', async () => {
+    const { service, engine } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'liar-liar', {});
+    // Solo interactive host: a screen is present, but only 1 player < min 2.
+    await expect(service.start(room.code, host, 1)).rejects.toMatchObject({
+      code: 'too_few_players',
+    });
+    expect(engine.starts).toHaveLength(0);
+    // A second playing member meets the minimum.
+    await service.join(room.code, anon(), { nickname: 'Bo', mode: 'remote' });
+    await service.start(room.code, host, 1);
+    expect(engine.starts).toHaveLength(1);
+  });
+
+  it('clamps a playing join to viewer once the game is at its player maximum (Teeter caps at 4)', async () => {
+    const { service, membership, insiderAccounts } = harness({ host_acct: 'party' });
+    insiderAccounts.add('host_acct');
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host); // host is interactive (1 playing)
+    await service.selectGame(room.code, host, 'teeter-tower', {});
+    // Fill the remaining 3 playing seats.
+    for (const n of ['a', 'b', 'c']) {
+      await service.join(room.code, anon(), { nickname: n, mode: 'remote' });
+    }
+    // A 5th joiner asking to play is clamped to viewer - the game is full at 4 players.
+    const fifth = anon();
+    await service.join(room.code, fifth, { nickname: 'late', mode: 'interactive' });
+    const stored = await membership.get(room.id, fifth.id);
+    expect(stored?.mode).toBe('viewer');
+    // Only the 4 playing members go to the engine roster; the viewer does not.
+    await service.start(room.code, host, 1);
+    // (handoff filtering is covered elsewhere; here we assert the roster size via the clamp result)
+    const all = await membership.list(room.id);
+    expect(all.filter((m) => m.mode === 'viewer')).toHaveLength(1);
+  });
+
+  it('refuses switching to a playing mode when full, but allows viewer and a swap within the cap', async () => {
+    const { service, membership, insiderAccounts } = harness({ host_acct: 'party' });
+    insiderAccounts.add('host_acct');
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await service.selectGame(room.code, host, 'teeter-tower', {});
+    const remotes = [anon(), anon(), anon()];
+    for (const r of remotes) {
+      await service.join(room.code, r, { nickname: 'r', mode: 'remote' });
+    }
+    // Full at 4 (host + 3). A viewer trying to become a player is refused.
+    const watcher = anon();
+    await service.join(room.code, watcher, { nickname: 'w', mode: 'interactive' }); // clamped to viewer
+    await expect(service.setMode(room.code, watcher, 'remote')).rejects.toMatchObject({
+      code: 'room_full',
+    });
+    // Staying a viewer is always fine.
+    await service.setMode(room.code, watcher, 'viewer');
+    expect((await membership.get(room.id, watcher.id))?.mode).toBe('viewer');
+    // A current player swapping remote<->interactive at the cap is allowed (own seat excluded).
+    await service.setMode(room.code, remotes[0]!, 'interactive');
+    expect((await membership.get(room.id, remotes[0]!.id))?.mode).toBe('interactive');
   });
 });

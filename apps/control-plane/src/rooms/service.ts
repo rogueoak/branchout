@@ -4,7 +4,7 @@ import type {
   RoundReport,
   StartHandoffRequest,
 } from '@branchout/protocol';
-import { PROTOCOL_VERSION } from '@branchout/protocol';
+import { PROTOCOL_VERSION, playerLimits } from '@branchout/protocol';
 import { CreditLedger } from '../credits/ledger';
 import { standingsToStars } from '../credits/stars';
 import type { Session } from '../sessions/session';
@@ -14,8 +14,10 @@ import { generateCode, shareLink } from './code';
 import type { ControlAction, EngineClient } from './engine-client';
 import type { PlaysRecorder, RoomGamePlay } from './plays-recorder';
 import {
-  hasViewer,
+  hasDisplay,
+  isPlaying,
   newPlayerId,
+  playingCount,
   type Mode,
   type MembershipStore,
   type RoomMember,
@@ -45,6 +47,8 @@ export class RoomError extends Error {
       | 'kicked'
       | 'no_game'
       | 'no_viewer'
+      | 'too_few_players'
+      | 'room_full'
       | 'insufficient_credits'
       | 'invalid'
       | 'engine',
@@ -55,9 +59,10 @@ export class RoomError extends Error {
   }
 }
 
-/** What a joiner supplies: the role they want, their per-game nickname, and (for a player) mode. */
+/** What a joiner supplies: their per-game nickname and the mode they want (spec 0050). Mode is
+ *  optional - the server defaults it (interactive) and may clamp a playing mode to `viewer` when the
+ *  game is already at its player maximum. */
 export interface JoinInput {
-  role: 'player' | 'observer';
   nickname: string;
   mode?: Mode;
 }
@@ -116,9 +121,8 @@ export interface CreateResult {
 export interface ResumeResult {
   room: RoomView;
   membership: {
-    role: RoomMember['role'];
     isHost: boolean;
-    mode?: Mode;
+    mode: Mode;
     nickname: string;
     player: string;
   };
@@ -136,18 +140,17 @@ function toView(room: Room): RoomView {
 }
 
 /**
- * Build the host's roster row from its account session. The host is a full player (`role: 'player'`)
- * that also carries `isHost`, joins with its account nickname, and defaults to `interactive` mode -
- * the client refines the mode from the device via `setMode`. Used both when a room is first created
- * and when a durable host is re-seated after its ephemeral row expired (feedback 0021); a fresh
- * `playerId` is minted each time (the caller must have an `accountId` - `canHost` guarantees it).
+ * Build the host's roster row from its account session. The host carries `isHost`, joins with its
+ * account nickname, and defaults to `interactive` mode - the client refines the mode from the device
+ * via `setMode`. Used both when a room is first created and when a durable host is re-seated after
+ * its ephemeral row expired (feedback 0021); a fresh `playerId` is minted each time (the caller must
+ * have an `accountId` - `canHost` guarantees it).
  */
 function hostMember(session: Session): RoomMember {
   return {
     sessionId: session.id,
     playerId: newPlayerId(),
     accountId: session.accountId!,
-    role: 'player',
     isHost: true,
     mode: normalizeMode(undefined),
     nickname: session.displayName,
@@ -224,9 +227,10 @@ export class RoomService {
   }
 
   /**
-   * Join a room by code as a player or observer with a chosen per-game nickname. A kicked session
-   * may not rejoin (the code still works for everyone else). A player's mode defaults to
-   * `interactive`; an observer has no mode.
+   * Join a room by code with a chosen per-game nickname and mode (spec 0050). A kicked session may
+   * not rejoin (the code still works for everyone else). Mode defaults to `interactive`; a requested
+   * playing mode (`interactive`/`remote`) is clamped to `viewer` when the selected game is already at
+   * its player maximum, since only viewers may join a full game.
    */
   async join(code: string, session: Session, input: JoinInput): Promise<JoinResult> {
     const room = await this.requireRoom(code);
@@ -237,34 +241,25 @@ export class RoomService {
     if (!name.ok) {
       throw new RoomError('invalid', name.error!);
     }
-    if (input.role !== 'player' && input.role !== 'observer') {
-      throw new RoomError('invalid', 'Choose to join as a player or an observer.');
-    }
     // Reuse the playerId if this session is already a member (a rejoin), so a reconnecting device
     // keeps the identity the engine roster already knows; mint a fresh one for a first join.
     const existing = await this.membership.get(room.id, session.id);
     // Derive host status from the room, never the request: the host is whoever owns the room in
-    // Postgres (`hostAccountId`). A host re-entering via the rejoin link - even as an observer -
-    // must not be able to demote itself, or the invariant `isHost => role === 'player'` breaks
-    // (host dropped from the roster, loses sessionId visibility, and the kick-guard is defeated)
-    // while `requireHost` still authorizes them. So we re-derive and force the host back to a
-    // full player here rather than trusting `input.role`/`isHost: false`.
+    // Postgres (`hostAccountId`), so a host re-entering via a share link cannot lose its powers.
     const isHost = !!session.accountId && session.accountId === room.hostAccountId;
+    // The host keeps its existing mode across a rejoin (so it is not knocked off its chosen setup);
+    // otherwise take the requested/normalized default, then clamp a playing mode to viewer if full.
+    const members = await this.membership.list(room.id);
+    const desired = isHost
+      ? (existing?.mode ?? normalizeMode(input.mode))
+      : normalizeMode(input.mode);
+    const mode = clampToMax(desired, room, members, session.id);
     const member: RoomMember = {
       sessionId: session.id,
       playerId: existing?.playerId ?? newPlayerId(),
       ...(session.accountId ? { accountId: session.accountId } : {}),
-      // The host is always a player; a non-host joins with the role they asked for.
-      role: isHost ? 'player' : input.role,
       isHost,
-      // A player has a mode; observers have none. The host keeps its existing mode across a rejoin
-      // (so it is not knocked off its chosen setup) and otherwise takes the requested/normalized
-      // default; a non-host player takes the mode it asked for.
-      ...(isHost
-        ? { mode: existing?.mode ?? normalizeMode(input.mode) }
-        : input.role === 'player'
-          ? { mode: normalizeMode(input.mode) }
-          : {}),
+      mode,
       nickname: name.value!,
       connected: true,
     };
@@ -272,15 +267,31 @@ export class RoomService {
     return { room: toView(room), playerId: member.playerId };
   }
 
-  /** A player switches interactive/remote mode. The host is a player, so it sets its mode here too;
-   * only observers have no mode. */
+  /**
+   * Switch a member's mode (spec 0050). Any member may become a `viewer`, but switching TO a playing
+   * mode (`interactive`/`remote`) is refused when the selected game is already at its player maximum
+   * (the caller's own current playing seat is excluded from that count, so a remote->interactive swap
+   * at the cap is always allowed).
+   */
   async setMode(code: string, session: Session, mode: Mode): Promise<void> {
     const room = await this.requireRoom(code);
     const member = await this.membership.get(room.id, session.id);
-    if (!member || member.role !== 'player') {
-      throw new RoomError('invalid', 'Only a player can choose a mode.');
+    if (!member) {
+      throw new RoomError('not_member', 'Join the room to choose a mode.');
     }
-    member.mode = normalizeMode(mode);
+    const next = normalizeMode(mode);
+    if (isPlayingMode(next)) {
+      const members = await this.membership.list(room.id);
+      const { max } = playerLimits(room.selectedGame ?? '');
+      const othersPlaying = playingCount(members.filter((m) => m.sessionId !== session.id));
+      if (othersPlaying >= max) {
+        throw new RoomError(
+          'room_full',
+          `This game is full at ${max} players. Join as a viewer to watch.`,
+        );
+      }
+    }
+    member.mode = next;
     await this.membership.put(room.id, member);
   }
 
@@ -321,10 +332,20 @@ export class RoomService {
     const requested = Number.isInteger(rounds) && rounds > 0 ? rounds : 1;
 
     const members = await this.membership.list(room.id);
-    if (!hasViewer(members)) {
+    if (!hasDisplay(members)) {
       throw new RoomError(
         'no_viewer',
-        'A game needs at least one viewer: an observer or an interactive player.',
+        'A game needs a screen: someone in viewer or interactive mode.',
+      );
+    }
+    // Minimum-players gate (spec 0050): the game needs at least `min` playing (interactive + remote)
+    // members; viewers do not count. Enforced here as the authority, mirrored by the lobby's Start.
+    const { min } = playerLimits(room.selectedGame);
+    const playing = playingCount(members);
+    if (playing < min) {
+      throw new RoomError(
+        'too_few_players',
+        `This game needs at least ${min} player${min === 1 ? '' : 's'}. ${playing} so far.`,
       );
     }
 
@@ -459,9 +480,8 @@ export class RoomService {
     return {
       room: toView(room),
       membership: {
-        role: caller.role,
         isHost: caller.isHost,
-        ...(caller.mode ? { mode: caller.mode } : {}),
+        mode: caller.mode,
         nickname: caller.nickname,
         player: caller.playerId,
       },
@@ -590,25 +610,46 @@ function normalizeCode(code: string): string {
   return typeof code === 'string' ? code.trim().toUpperCase() : '';
 }
 
-/** A player's mode defaults to interactive; anything but `remote` is treated as interactive. */
+/** Normalize a requested mode to a known value, defaulting to `interactive` (spec 0050). */
 function normalizeMode(mode: Mode | undefined): Mode {
-  return mode === 'remote' ? 'remote' : 'interactive';
+  return mode === 'remote' ? 'remote' : mode === 'viewer' ? 'viewer' : 'interactive';
+}
+
+/** True for the PLAYING modes that fill the roster and count toward a game's player limits. */
+function isPlayingMode(mode: Mode): boolean {
+  return mode === 'interactive' || mode === 'remote';
 }
 
 /**
- * Map room members to the engine's handoff players. Observers do not play; only players go. The
- * host is a `player` (with `isHost: true`), so it is intentionally included here and plays like any
- * other - this is what puts the host in the engine roster, the leaderboard, and the final
- * standings. The roster is keyed by the public `playerId` (not the httpOnly `sessionId`), so a
- * non-host browser that only ever learns its `playerId` can `join` the engine and match its slot.
+ * Clamp a desired mode to a game's player maximum (spec 0050): a playing mode is downgraded to
+ * `viewer` when the room already holds `max` playing members (excluding this session, so a rejoin
+ * that keeps an already-counted seat is not double-counted). `viewer` is never clamped.
+ */
+function clampToMax(
+  desired: Mode,
+  room: Room,
+  members: readonly RoomMember[],
+  sessionId: string,
+): Mode {
+  if (!isPlayingMode(desired)) return desired;
+  const { max } = playerLimits(room.selectedGame ?? '');
+  const othersPlaying = playingCount(members.filter((m) => m.sessionId !== sessionId));
+  return othersPlaying >= max ? 'viewer' : desired;
+}
+
+/**
+ * Map room members to the engine's handoff players. Only PLAYING members (interactive + remote) go;
+ * viewers watch and never fill the roster (spec 0050). The host is a playing member with
+ * `isHost: true`, so it is intentionally included and plays like any other - this is what puts the
+ * host in the engine roster, the leaderboard, and the final standings. The roster is keyed by the
+ * public `playerId` (not the httpOnly `sessionId`), so a non-host browser that only ever learns its
+ * `playerId` can `join` the engine and match its slot.
  */
 function toHandoffPlayers(members: readonly RoomMember[]): HandoffPlayer[] {
-  return members
-    .filter((member) => member.role === 'player')
-    .map((member) => ({
-      player: member.playerId,
-      nickname: member.nickname,
-      // Carry host identity so the engine can auto-pause while the host is disconnected (0014).
-      isHost: member.isHost,
-    }));
+  return members.filter(isPlaying).map((member) => ({
+    player: member.playerId,
+    nickname: member.nickname,
+    // Carry host identity so the engine can auto-pause while the host is disconnected (0014).
+    isHost: member.isHost,
+  }));
 }

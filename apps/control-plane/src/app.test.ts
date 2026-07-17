@@ -737,7 +737,7 @@ describe('GET /rooms/:code/me - returning host resume (feedback 0021)', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.room.code).toBe(room.code);
-    expect(body.membership).toMatchObject({ role: 'player', isHost: true });
+    expect(body.membership).toMatchObject({ mode: 'interactive', isHost: true });
     expect(typeof body.membership.player).toBe('string');
     await app.close();
   });
@@ -839,7 +839,7 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
       method: 'POST',
       url: `/v1/rooms/${code}/join`,
       headers: { cookie: guestCookie },
-      payload: { role: 'player', nickname: 'ArcadeAce', mode: 'interactive' },
+      payload: { nickname: 'ArcadeAce', mode: 'interactive' },
     });
     expect(joined.statusCode).toBe(200);
 
@@ -878,7 +878,7 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
       method: 'POST',
       url: `/v1/rooms/${code}/join`,
       headers: { cookie: guestCookie },
-      payload: { role: 'observer', nickname: 'Watcher' },
+      payload: { nickname: 'Watcher', mode: 'viewer' },
     });
 
     // The non-host's own members view redacts every sessionId but keeps the public playerId.
@@ -913,7 +913,7 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
       method: 'POST',
       url: `/v1/rooms/${code}/join`,
       headers: { cookie: guestCookie },
-      payload: { role: 'player', nickname: 'Victim' },
+      payload: { nickname: 'Victim', mode: 'interactive' },
     });
     const guestSessionId = guestCookie.split('=')[1]!;
 
@@ -929,7 +929,7 @@ describe('POST /rooms/:code/join and kick over HTTP', () => {
       method: 'POST',
       url: `/v1/rooms/${code}/join`,
       headers: { cookie: guestCookie },
-      payload: { role: 'player', nickname: 'Victim' },
+      payload: { nickname: 'Victim', mode: 'interactive' },
     });
     expect(rejoin.statusCode).toBe(403);
     expect(rejoin.json().code).toBe('kicked');

@@ -36,11 +36,9 @@ test('an insider starts a solo Teeter Tower room and drops a piece on the live b
   const code = page.url().match(/\/rooms\/([A-Z2-9]{5})/)?.[1];
   if (!code) throw new Error(`could not read room code from ${page.url()}`);
   await page.getByRole('button', { name: /pick teeter tower/i }).click();
-  await page.waitForURL(new RegExp(`/rooms/${code}\\?step=invite`));
-  await page.getByRole('button', { name: /continue to room/i }).click();
   await page.waitForURL(new RegExp(`/rooms/${code}(?![?/])`));
 
-  // Start the game solo (the host is a viewer + a player, so the start gate is satisfied).
+  // Start the game solo (the host is interactive - a screen + a player - so the gate is satisfied).
   await page.getByRole('button', { name: /start game/i }).click();
 
   // The single interactive board appears. The round/score + turn state are painted ON the canvas

@@ -139,10 +139,10 @@ test('host create -> pick -> invite flow renders and fits on a phone (spec 0029)
   await expect(page.getByRole('button', { name: /pick trivia/i })).toBeVisible();
   await expectFits(page);
 
-  // Invite step: the room code link + copy icon + share button fit on a phone.
+  // Lobby invite affordance: the room code link + copy icon + share button fit on a phone.
   await page.getByRole('button', { name: /pick trivia/i }).click();
-  await page.waitForURL(/\?step=invite/);
-  await expect(page.getByRole('heading', { name: /invite your friends/i })).toBeVisible();
+  await page.waitForURL(/\/rooms\/[A-Z2-9]{5}$/);
+  await expect(page.getByRole('heading', { name: /invite friends/i })).toBeVisible();
   const code = page.url().match(/\/rooms\/([A-Z2-9]{5})/)?.[1] ?? '';
   await expect(page.getByRole('link', { name: code })).toBeVisible();
   await expect(page.getByRole('button', { name: /^share$/i })).toBeVisible();

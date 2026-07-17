@@ -14,14 +14,25 @@ const room: RoomView = {
   hostAccountId: 'acct1',
 };
 
-function hostMember(mode: 'interactive' | 'remote'): RoomMember {
+function hostMember(mode: 'viewer' | 'interactive' | 'remote'): RoomMember {
   return {
     sessionId: 'sess_host',
     playerId: 'pid_host',
-    role: 'player',
     isHost: true,
     mode,
     nickname: 'Ada',
+    connected: true,
+  };
+}
+
+/** A non-host member in a given mode, for player-count / roster tests. */
+function member(id: string, mode: 'viewer' | 'interactive' | 'remote'): RoomMember {
+  return {
+    sessionId: `sess_${id}`,
+    playerId: `pid_${id}`,
+    isHost: false,
+    mode,
+    nickname: id,
     connected: true,
   };
 }
@@ -31,7 +42,6 @@ function renderLobby(props: Partial<Parameters<typeof Lobby>[0]>) {
     <Lobby
       room={room}
       members={[hostMember('interactive')]}
-      role="player"
       mode="interactive"
       isHost
       me="pid_host"
@@ -70,20 +80,19 @@ describe('Lobby', () => {
     expect(screen.getByText('Host - Remote')).toBeDefined();
   });
 
-  it('tells a solo remote host to switch itself to interactive to start', () => {
-    // A remote host with no other viewer is the only viewer-capable device: the blocked-start copy
-    // must point at the host's own toggle, not "wait for a viewer".
+  it('tells a solo remote host to switch itself so there is a screen to start', () => {
+    // A remote host with no display device is the only device that could show the game: the
+    // blocked-start copy must point at the host's own mode, not "wait for someone".
     renderLobby({ members: [hostMember('remote')], mode: 'remote' });
-    expect(screen.getByText(/Switch yourself to Interactive/)).toBeDefined();
-    expect(screen.queryByText(/Waiting for a viewer/)).toBeNull();
+    expect(screen.getByText(/switch yourself to Viewer or Interactive/i)).toBeDefined();
+    expect(screen.queryByText(/Waiting for a screen/)).toBeNull();
   });
 
-  it('does not block an interactive host on a viewer (the host is one)', () => {
-    // An interactive host is itself a viewer, so start is not blocked and neither blocked-copy
-    // variant appears.
+  it('does not block an interactive host on a screen (the host is one)', () => {
+    // An interactive host is itself a display, so start is not blocked and no blocked-copy appears.
     renderLobby({ members: [hostMember('interactive')], mode: 'interactive' });
-    expect(screen.queryByText(/Switch yourself to Interactive/)).toBeNull();
-    expect(screen.queryByText(/Waiting for a viewer/)).toBeNull();
+    expect(screen.queryByText(/switch yourself/i)).toBeNull();
+    expect(screen.queryByText(/Waiting for a screen/)).toBeNull();
   });
 
   it('shows the selected game detail card and a Change game button (selection moved to the picker)', () => {
@@ -113,13 +122,56 @@ describe('Lobby', () => {
     expect(onStart).not.toHaveBeenCalled();
   });
 
-  it('enables Start and fires onStart when the config is valid', () => {
+  it('enables Start and fires onStart when the config is valid and the player minimum is met', () => {
     const onStart = vi.fn();
-    renderLobby({ game: 'liar-liar', config: defaultLiarLiarConfig(), onStart });
+    // Liar Liar needs 2 players (spec 0050), so a lone host does not meet the minimum - add one.
+    renderLobby({
+      game: 'liar-liar',
+      members: [hostMember('interactive'), member('bo', 'remote')],
+      config: defaultLiarLiarConfig(),
+      onStart,
+    });
     const start = screen.getByRole('button', { name: /start game/i });
     expect((start as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(start);
     expect(onStart).toHaveBeenCalled();
+  });
+
+  it('blocks Start below a game player minimum, naming the minimum (Liar Liar needs 2)', () => {
+    const onStart = vi.fn();
+    // A lone interactive host: a screen is present, config is valid, but only 1 player < min 2.
+    renderLobby({ game: 'liar-liar', config: defaultLiarLiarConfig(), onStart });
+    const start = screen.getByRole('button', { name: /start game/i });
+    expect((start as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/needs at least 2 players/i)).toBeDefined();
+    fireEvent.click(start);
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
+  it('offers the three modes and disables the playing modes when the game is full', () => {
+    // Teeter Tower caps at 4 players. Fill it with 4 remotes; a viewer host cannot take a 5th seat.
+    const onModeChange = vi.fn();
+    renderLobby({
+      game: 'teeter-tower',
+      mode: 'viewer',
+      members: [
+        hostMember('viewer'),
+        member('a', 'remote'),
+        member('b', 'remote'),
+        member('c', 'remote'),
+        member('d', 'remote'),
+      ],
+      onModeChange,
+    });
+    // The picker offers Viewer / Interactive / Remote.
+    expect(screen.getByRole('radio', { name: /viewer/i })).toBeDefined();
+    const interactive = screen.getByRole('radio', { name: /interactive/i }) as HTMLButtonElement;
+    const remote = screen.getByRole('radio', { name: /remote/i }) as HTMLButtonElement;
+    expect(interactive.disabled).toBe(true);
+    expect(remote.disabled).toBe(true);
+    // Viewer stays available.
+    fireEvent.click(screen.getByRole('radio', { name: /viewer/i }));
+    expect(onModeChange).toHaveBeenCalledWith('viewer');
   });
 
   it('gates Start on an invalid Trivia config too', () => {

@@ -4,14 +4,14 @@
 // per-tab session storage, not a source of truth: the server re-authorizes every action from the
 // session cookie regardless.
 
-import type { Mode, Role, RoomView } from './room-api';
+import type { Mode, RoomView } from './room-api';
 
-/** What the browser remembers about the current player between the join step and the room page. */
+/** What the browser remembers about the current member between the join step and the room page. */
 export interface Membership {
-  role: Role;
   /** True when this browser created the room and holds the host powers (controls, kick). */
   isHost?: boolean;
-  mode?: Mode;
+  /** This device's mode (spec 0050): viewer, interactive, or remote. */
+  mode: Mode;
   nickname: string;
   /**
    * This device's public engine `playerId` (the identity the engine roster and `join` key on, NOT
@@ -45,4 +45,22 @@ export function recallMembership(code: string): Membership | null {
 export function forgetMembership(code: string): void {
   if (typeof window === 'undefined') return;
   window.sessionStorage.removeItem(key(code));
+}
+
+// This device's last chosen mode (spec 0050), remembered across rooms in localStorage so the mode
+// picker can default to what the device used before (the first rule of `defaultMode`). Device-level,
+// not per-room: it is a preference of this screen/controller, not of any one game.
+const DEVICE_MODE_KEY = 'branchout:deviceMode';
+
+/** Remember the mode this device just chose, so the next room defaults to it. */
+export function rememberDeviceMode(mode: Mode): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(DEVICE_MODE_KEY, mode);
+}
+
+/** The mode this device last chose, or null if it has never chosen one (or storage is unavailable). */
+export function recallDeviceMode(): Mode | null {
+  if (typeof window === 'undefined') return null;
+  const raw = window.localStorage.getItem(DEVICE_MODE_KEY);
+  return raw === 'viewer' || raw === 'interactive' || raw === 'remote' ? raw : null;
 }

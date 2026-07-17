@@ -56,7 +56,6 @@ describe('room-api', () => {
   it('joins a room by code and returns the caller playerId', async () => {
     const fetchMock = mockFetch({ ok: true, body: { room, playerId: 'pid_123' } });
     const result = await joinRoom('ABC12', {
-      role: 'player',
       nickname: 'Ada',
       mode: 'interactive',
     });
@@ -65,7 +64,6 @@ describe('room-api', () => {
     // A bodied POST does declare the JSON content-type.
     expect((init.headers as Record<string, string>)['content-type']).toBe('application/json');
     expect(JSON.parse(init.body as string)).toEqual({
-      role: 'player',
       nickname: 'Ada',
       mode: 'interactive',
     });
@@ -97,14 +95,12 @@ describe('room-api', () => {
     mockFetch({
       ok: true,
       body: {
-        members: [
-          { role: 'player', isHost: true, mode: 'interactive', nickname: 'Ada', connected: true },
-        ],
+        members: [{ isHost: true, mode: 'interactive', nickname: 'Ada', connected: true }],
       },
     });
     const members = await listMembers('ABC12');
     expect(members).toHaveLength(1);
-    expect(members[0]!.role).toBe('player');
+    expect(members[0]!.mode).toBe('interactive');
     expect(members[0]!.isHost).toBe(true);
   });
 

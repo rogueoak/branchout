@@ -12,12 +12,16 @@ import { trackGameCompleted, trackGamePicked, trackGameStarted } from '../../../
 import { GameStage, type HostControl } from '../../../components/game/GameStage';
 import { GamePicker } from '../../../components/game/GamePicker';
 import { Lobby } from '../../../components/game/Lobby';
-import { ShareLink } from '../../../components/game/ShareLink';
 import { TopNav } from '../../../components/TopNav';
 import type { Viewer } from '../../../lib/session';
 import { APEX_SURFACE, type Surface } from '../../../lib/surface';
 import { ENGINE_WS_URL } from '../../../lib/engine';
-import { recallMembership, rememberMembership, type Membership } from '../../../lib/membership';
+import {
+  recallMembership,
+  rememberDeviceMode,
+  rememberMembership,
+  type Membership,
+} from '../../../lib/membership';
 import {
   RoomApiError,
   controlGame,
@@ -38,14 +42,15 @@ import { useGameClient } from '../../../lib/use-game-client';
 const DEFAULT_GAME_ID = 'trivia';
 const MEMBER_POLL_MS = 3000;
 
-// The host's create-flow setup steps (spec 0029), addressable via `?step=`: `pick` is the first
-// game choice (advances to `invite`), `invite` is the share screen; `null` is the lobby. The in-room
-// "Change game" swap is deliberately NOT a step here - it is transient local state (see `changing`),
-// so reloading or sharing a room URL never re-enters the picker. Non-hosts never enter a step.
-type SetupStep = 'pick' | 'invite' | null;
+// The host's create-flow setup step (spec 0029, spec 0050): `pick` is the first game choice; `null`
+// is the lobby. A first pick now drops straight into the lobby - the old standalone `invite` step was
+// removed (the share link already lives in the lobby, so it was just friction). The in-room "Change
+// game" swap is deliberately NOT a step here - it is transient local state (see `changing`), so
+// reloading or sharing a room URL never re-enters the picker. Non-hosts never enter a step.
+type SetupStep = 'pick' | null;
 
 function normalizeStep(raw: string | undefined): SetupStep {
-  return raw === 'pick' || raw === 'invite' ? raw : null;
+  return raw === 'pick' ? raw : null;
 }
 
 interface RoomClientProps {
@@ -119,9 +124,8 @@ export function RoomClient({
         const { room: resumedRoom, membership: seat } = await resumeRoom(code);
         if (!active) return;
         const restored: Membership = {
-          role: seat.role,
           isHost: seat.isHost,
-          ...(seat.mode ? { mode: seat.mode } : {}),
+          mode: seat.mode,
           nickname: seat.nickname,
           player: seat.player,
           room: resumedRoom,
@@ -251,6 +255,8 @@ export function RoomClient({
     async (mode: Mode) => {
       try {
         await setMode(code, mode);
+        // Remember this device's choice so the next room defaults to it (spec 0050).
+        rememberDeviceMode(mode);
         setMembership((prev) => {
           if (!prev) return prev;
           const next = { ...prev, mode };
@@ -265,8 +271,8 @@ export function RoomClient({
   );
 
   // Pick a game in the setup wizard: set it locally, select it on the room (so the share-card
-  // preview and roster resolve it), then advance - a first pick moves to invite, a change returns
-  // to the lobby. Stays on the picker if the selection call fails.
+  // preview and roster resolve it), then drop into the lobby (the share link lives there now).
+  // Stays on the picker if the selection call fails.
   const onPickGame = useCallback(
     async (next: string) => {
       const module = getGameUi(next);
@@ -285,9 +291,9 @@ export function RoomClient({
       } finally {
         setPicking(false);
       }
-      // A change-game swap returns to the lobby; a first pick advances to the invite step.
+      // Both a first pick and a change-game swap land in the lobby (the invite step was removed).
       if (changing) setChanging(false);
-      else goToStep('invite');
+      else goToStep(null);
     },
     [code, changing, persist, goToStep],
   );
@@ -435,7 +441,6 @@ export function RoomClient({
                 me={me}
                 game={room?.selectedGame ?? game}
                 code={code}
-                role={membership.role}
                 mode={membership.mode}
                 isHost={isHost}
                 onMove={submitMove}
@@ -484,32 +489,10 @@ export function RoomClient({
               </Button>
             ) : null}
           </div>
-        ) : activeStep === 'invite' ? (
-          <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
-            <header className="flex flex-col gap-2">
-              <h1 className="text-h2 text-text">Invite your friends</h1>
-              <p className="text-body text-text-muted">
-                {surface.insider
-                  ? // On the insider surface the share link resolves to the gated insider host, so
-                    // only fellow insiders can open it - promising "anyone can join" would be a
-                    // dead-end for a non-insider friend (feedback 0029).
-                    'Share the room code or link with other insiders to test together.'
-                  : 'Share the room code or link. Anyone can join - no account needed.'}
-              </p>
-            </header>
-            <div className="flex flex-col gap-2 rounded-xl bg-surface-raised p-4">
-              <p className="text-body-sm text-text-muted">Room code</p>
-              <ShareLink code={room.code} href={room.shareLink} />
-            </div>
-            <Button type="button" variant="primary" onClick={() => goToStep(null)}>
-              Continue to room
-            </Button>
-          </div>
         ) : (
           <Lobby
             room={room}
             members={members}
-            role={membership.role}
             mode={membership.mode}
             isHost={isHost}
             me={me}

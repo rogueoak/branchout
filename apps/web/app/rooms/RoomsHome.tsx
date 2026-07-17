@@ -12,7 +12,7 @@ import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import { defaultMode } from '../../lib/default-mode';
 import { getGameUi, isPublicGame } from '../../lib/games/registry';
-import { rememberMembership } from '../../lib/membership';
+import { recallDeviceMode, rememberMembership } from '../../lib/membership';
 import { RoomApiError, createRoom, fetchIdentity, selectGame, setMode } from '../../lib/room-api';
 import type { Viewer } from '../../lib/session';
 import { APEX_SURFACE, type Surface } from '../../lib/surface';
@@ -56,15 +56,18 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
     try {
       const { room, playerId } = await createRoom();
       trackRoomCreated();
-      // The host is a full player: remember it as such with the host flag, and set its mode from
-      // the device (createRoom seeds `interactive` server-side; this refines it, and the host can
-      // still change it in the lobby). Store the host's public playerId (echoed by createRoom) so
-      // the host has its engine identity immediately - a host reloading mid-game is not bounced to
-      // rejoin while the roster poll is skipped.
-      const mode = defaultMode(typeof navigator === 'undefined' ? '' : navigator.userAgent);
+      // The host's mode (spec 0050): a fresh room has no interactive member yet, so the default is
+      // this device's remembered mode, else `interactive` (be the shared screen). createRoom seeds
+      // `interactive` server-side; this refines it, and the host can still change it in the lobby.
+      const mode = defaultMode({
+        previous: recallDeviceMode(),
+        hasInteractive: false,
+        rejoining: false,
+        userAgent: typeof navigator === 'undefined' ? '' : navigator.userAgent,
+      });
 
       // Deep link (spec 0029): if the "Start a game" CTA named a known game, select it now and skip
-      // the pick step, landing the host straight on invite. Otherwise the host picks a game first.
+      // the pick step, landing the host straight in the lobby. Otherwise the host picks a game first.
       // Insider gate (spec 0043 / feedback 0029): an insider-only game is only pre-selected on the
       // insider surface. On the apex the pre-select is dropped (they fall back to the picker), so an
       // insider game never starts on the main site - even for an insider.
@@ -79,10 +82,10 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
           // If pre-selection fails, fall back to the pick step rather than blocking room creation.
         }
       }
-      const step = roomToStore.selectedGame ? 'invite' : 'pick';
+      // A pre-selected game drops straight into the lobby; otherwise the host picks a game first.
+      const step = roomToStore.selectedGame ? null : 'pick';
 
       rememberMembership(room.code, {
-        role: 'player',
         isHost: true,
         mode,
         nickname: hostName,
@@ -97,7 +100,7 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
           // the lobby, so a failed refinement should not block entering the room.
         }
       }
-      router.push(`/rooms/${room.code}?step=${step}`);
+      router.push(step ? `/rooms/${room.code}?step=${step}` : `/rooms/${room.code}`);
     } catch (err) {
       setError(err instanceof RoomApiError ? err.message : 'Could not create a room. Try again.');
       setCreating(false);

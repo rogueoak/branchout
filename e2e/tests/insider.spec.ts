@@ -48,15 +48,16 @@ test.describe('insider surface (spec 0035)', () => {
     await page.getByRole('link', { name: /play teeter tower now/i }).click();
     await page.waitForURL(/insider\.localhost.*\/rooms\?game=teeter-tower/);
     // Create the room: the deep link pre-selects the insider game (allowed on this surface) and
-    // skips straight to the invite step, still on the insider host.
+    // drops straight into the lobby, still on the insider host.
     await page.getByRole('button', { name: /create a room/i }).click();
-    await page.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=invite/);
+    await page.waitForURL(/\/rooms\/[A-Z2-9]{5}$/);
     // The URL never left the insider subdomain - hosting an insider game stays on the insider
     // surface, proving both the relative deep link and the room flow mirrored under /insider.
     expect(new URL(page.url()).host).toBe(`insider.localhost:${WEB_PORT}`);
-    // The deep link pre-selected the insider game and skipped to invite, proving the picker allowed
-    // it on this surface (the authenticated create ran same-origin against /api).
-    await expect(page.getByRole('heading', { name: /invite your friends/i })).toBeVisible();
+    // The deep link pre-selected the insider game and dropped into the lobby, proving the picker
+    // allowed it on this surface (the authenticated create ran same-origin against /api). The lobby's
+    // invite affordance carries the "Invite friends" heading.
+    await expect(page.getByRole('heading', { name: /invite friends/i })).toBeVisible();
   });
 
   test('the mirrored insider room routes are gated to insiders (feedback 0029)', async ({

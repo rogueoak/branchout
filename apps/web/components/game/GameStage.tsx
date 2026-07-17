@@ -1,14 +1,14 @@
 'use client';
 
-// The in-game layout, keyed by mode and role - one component, no forked screens (spec 0010's
-// "layout from mode"). Interactive shows the viewer left and the remote right (stacked on narrow
-// screens); a remote player sees the remote only; an observer sees the viewer only. The host is a
-// full player, so it renders by its chosen mode like any player AND additionally gets the control
-// bar (advance / pause / restart / exit).
+// The in-game layout, keyed by mode - one component, no forked screens (spec 0010's "layout from
+// mode", spec 0050). Interactive shows the viewer left and the remote right (stacked on narrow
+// screens); a remote player sees the remote only; a viewer sees the game only. The host renders by
+// its chosen mode like anyone AND additionally gets the control bar (advance / pause / restart /
+// exit).
 
 import { Badge, Button } from '@rogueoak/canopy';
 import { useEffect } from 'react';
-import type { Role, Mode } from '../../lib/room-api';
+import type { Mode } from '../../lib/room-api';
 import type { ConnectionStatus, GameState } from '../../lib/game-state';
 import { isComplete } from '../../lib/game-state';
 import { getGameUi } from '../../lib/games/registry';
@@ -24,9 +24,8 @@ interface GameStageProps {
   game: string;
   /** The room join code, attached as feedback context (spec 0048). */
   code: string;
-  role: Role;
-  /** The player's chosen mode (the host is a player, so it has one too); absent for observers. */
-  mode?: Mode;
+  /** The caller's mode (spec 0050): viewer, interactive, or remote. Drives the layout. */
+  mode: Mode;
   isHost: boolean;
   onMove: (round: number, answer: string) => void;
   /** The generic vote action (Trivia dispute/ballot, Liar Liar guess); the game module maps it. */
@@ -100,7 +99,6 @@ export function GameStage({
   me,
   game,
   code,
-  role,
   mode,
   isHost,
   onMove,
@@ -109,13 +107,13 @@ export function GameStage({
 }: GameStageProps) {
   const ui = getGameUi(game);
   // A single-surface game (Teeter Tower) is one interactive canvas: the viewer IS the surface every
-  // role sees, and the player acts on it directly. It has no separate remote pane and no two-column
+  // mode sees, and the player acts on it directly. It has no separate remote pane and no two-column
   // split. Branch on the flag, never on the game id, so adding another single-surface game is free.
   const singleSurface = ui?.singleSurface === true;
-  const isInteractivePlayer = role === 'player' && mode === 'interactive';
-  const remoteVisible =
-    !singleSurface && role === 'player' && (mode === 'remote' || mode === 'interactive');
-  const viewerVisible = singleSurface || role !== 'player' || isInteractivePlayer;
+  // Layout from mode (spec 0050): interactive shows both panes; remote shows the controller only; a
+  // viewer sees the game only. `remote` is the only mode with no game screen of its own.
+  const remoteVisible = !singleSurface && (mode === 'remote' || mode === 'interactive');
+  const viewerVisible = singleSurface || mode !== 'remote';
   const connectionNote = CONNECTION_LABEL[state.connection];
 
   // When a new answer round opens, bring the fresh question into view - otherwise the viewport can
