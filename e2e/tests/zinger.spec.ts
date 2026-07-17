@@ -67,13 +67,32 @@ test('an insider host and two players play a full one-round Zinger game at 360px
     }
     await expect(host.getByText(/zinger submitted/i)).toBeVisible();
 
+    // The face-off is live once the viewer switches to it (mirror liar-liar, which gates its guess on
+    // the guessing-phase heading before clicking). Waiting here is what keeps the vote loop below from
+    // racing the collecting phase: without this gate a retry could fire while a controller still shows
+    // its "Resend" submit button, "vote" by clicking that, and leave the real ballot uncast - the
+    // round would then only close on the 30s timeout with ZERO votes (a scoreless tie), and the
+    // leaderboard's "(winner)" assertion would never come true.
+    await expect(host.getByText(/which zinger landed hardest/i).first()).toBeVisible({
+      timeout: 30_000,
+    });
+
     // Guessing (the face-off): each eligible voter picks a zinger from their own controller. An author
-    // of the face-off is told to sit out; a non-author sees vote buttons. Click the first available
-    // vote button in each controller when present.
+    // of the face-off is told to sit out (no vote button); a non-author sees the two zingers as vote
+    // buttons. Scope the click to the "Which zinger landed hardest?" prompt's own button list so a
+    // controller that has slipped to a later phase (or still shows a submit button) is never mistaken
+    // for a ballot.
     await expect(async () => {
       let voted = false;
       for (const p of [host, player2, player3]) {
         const controller = p.getByRole('region', { name: /your controller/i });
+        // A voter's controller shows this prompt above the two vote buttons; an author's shows only a
+        // sit-out message. Require the prompt to be present before treating a button as a vote.
+        const isVoter = await controller
+          .getByText(/which zinger landed hardest/i)
+          .isVisible()
+          .catch(() => false);
+        if (!isVoter) continue;
         const button = controller.getByRole('button').first();
         if (await button.isVisible().catch(() => false)) {
           await button.click().catch(() => {});
