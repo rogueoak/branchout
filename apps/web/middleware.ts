@@ -4,6 +4,7 @@ import {
   apexLoginUrl,
   insiderRewritePath,
   isInsiderHost,
+  isPublicAuthPath,
   schemeFrom,
 } from './lib/subdomain';
 
@@ -19,6 +20,15 @@ export function middleware(req: NextRequest): NextResponse {
 
   if (isInsiderHost(host)) {
     const h = host as string;
+    // The public auth pages stay reachable on the insider host without a session - they are the
+    // escape hatch a signed-out visitor uses to sign in. Serving them un-rewritten (there is no
+    // `/insider/login` page) also breaks the redirect loop: a cross-subdomain apex-login redirect is
+    // collapsed to a host-relative `/login` by Next's edge runtime, so without this the visitor would
+    // bounce off the gate forever (see isPublicAuthPath). These are public pages; serving them on the
+    // insider host leaks nothing, and the `/insider/*` app tree stays gated by the layout.
+    if (isPublicAuthPath(url.pathname)) {
+      return NextResponse.next();
+    }
     // No session at all -> the APEX login (crossing off the gated host, which would otherwise
     // rewrite the login page back into the insider tree), carrying an origin-validated return
     // target. The insider layout does the authoritative role check; this only short-circuits the

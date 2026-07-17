@@ -27,6 +27,7 @@
     "@branchout/game-sketchy": "workspace:*",
     "@branchout/game-teeter-tower": "workspace:*",
     "@branchout/game-trivia": "workspace:*",
+    "@branchout/game-zinger": "workspace:*",
     "@branchout/game-whispergrove": "workspace:*",
     "@branchout/protocol": "workspace:*",
     "@branchout/service-runtime": "workspace:*",

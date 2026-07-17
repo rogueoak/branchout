@@ -15,6 +15,7 @@ import { triviaPlugin } from '@branchout/game-trivia';
 import { liarLiarPlugin } from '@branchout/game-liar-liar';
 import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
+import { zingerPlugin } from '@branchout/game-zinger';
 import { bramblesPlugin } from '@branchout/game-brambles';
 import { nightleafPlugin } from '@branchout/game-nightleaf';
 import { sketchyPlugin } from '@branchout/game-sketchy';
@@ -57,6 +58,7 @@ async function main(): Promise<void> {
     liarLiarPlugin,
     loneLeafPlugin,
     teeterTowerPlugin,
+    zingerPlugin,
     bramblesPlugin,
     nightleafPlugin,
     sketchyPlugin,

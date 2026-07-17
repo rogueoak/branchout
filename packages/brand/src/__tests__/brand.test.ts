@@ -4,6 +4,7 @@ import { faviconSvg } from '../favicon.js';
 import { logoSvg } from '../logo.js';
 import { triviaSvg } from '../trivia.js';
 import { liarLiarSvg } from '../liarliar.js';
+import { zingerSvg } from '../zinger.js';
 import { bramblesSvg } from '../brambles.js';
 import { nightleafSvg } from '../nightleaf.js';
 import { sketchySvg } from '../sketchy.js';
@@ -37,6 +38,7 @@ describe('SVG exports', () => {
   it.each([
     ['triviaSvg', triviaSvg],
     ['liarLiarSvg', liarLiarSvg],
+    ['zingerSvg', zingerSvg],
     ['bramblesSvg', bramblesSvg],
     ['nightleafSvg', nightleafSvg],
     ['sketchySvg', sketchySvg],

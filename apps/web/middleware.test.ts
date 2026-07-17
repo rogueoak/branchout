@@ -9,6 +9,7 @@ import {
   insiderRewritePath,
   isInsiderHost,
   isInsiderPath,
+  isPublicAuthPath,
   isTrustedHost,
   schemeFrom,
 } from './lib/subdomain';
@@ -57,6 +58,16 @@ describe('subdomain routing helpers (spec 0035)', () => {
     // An already-prefixed path is left alone - no double /insider.
     expect(insiderRewritePath('/insider')).toBe('/insider');
     expect(insiderRewritePath('/insider/games')).toBe('/insider/games');
+  });
+
+  it('recognizes the public auth routes (the insider-host escape hatch)', () => {
+    expect(isPublicAuthPath('/login')).toBe(true);
+    expect(isPublicAuthPath('/signup')).toBe(true);
+    // Not the join/room flow (those stay gated), and no accidental prefix match.
+    expect(isPublicAuthPath('/join')).toBe(false);
+    expect(isPublicAuthPath('/rooms/ABCDE')).toBe(false);
+    expect(isPublicAuthPath('/login/extra')).toBe(false);
+    expect(isPublicAuthPath('/')).toBe(false);
   });
 
   it('recognizes insider-tree paths (for the apex 404 guard)', () => {
@@ -116,6 +127,23 @@ describe('middleware (spec 0035)', () => {
     expect(parsed.host).toBe('localhost:3100'); // crossed to the apex, not the gated host
     expect(parsed.pathname).toBe('/login');
     expect(parsed.searchParams.get('next')).toBe('http://insider.localhost:3100/');
+  });
+
+  it('serves the public auth pages on the insider host WITHOUT redirecting (loop-break)', () => {
+    // A signed-out visitor to the insider /login must get the login page, not another redirect.
+    // Without this the gate loops: a cross-subdomain apex-login redirect is collapsed to a
+    // host-relative /login by Next's runtime, which re-enters the gate forever.
+    for (const path of ['/login', '/signup']) {
+      const res = middleware(reqFor(`http://insider.localhost:3100${path}?next=x`));
+      expect(res.headers.get('location')).toBeNull();
+      expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+    }
+  });
+
+  it('still gates a signed-out insider /join (only the auth pages are exempt)', () => {
+    const res = middleware(reqFor('http://insider.localhost:3100/join?code=ABCDE'));
+    const location = res.headers.get('location') ?? '';
+    expect(new URL(location, 'http://insider.localhost:3100').pathname).toBe('/login');
   });
 
   it('rewrites a signed-in insider request into the /insider tree', () => {

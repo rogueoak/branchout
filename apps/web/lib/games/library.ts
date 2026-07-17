@@ -222,6 +222,45 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  zinger: {
+    categories: ['party', 'word'],
+    tags: ['wit', 'wordplay', 'big-group', 'real-time'],
+    rules: {
+      objective:
+        'Score the most by writing zingers that win their face-off votes across the rounds.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'The host sets the number of rounds and shares the join code. Everyone plays on their ' +
+              'own phone; it is best with three or more players.',
+          ],
+        },
+        {
+          heading: 'Answer the setup',
+          body: [
+            'Each round shows a short, silly setup. Type your funniest zinger before the 90-second ' +
+              'timer runs out. An empty answer is quietly rejected, so try again.',
+          ],
+        },
+        {
+          heading: 'The face-off',
+          body: [
+            'Two zingers are pitted head to head, with their authors hidden. Everyone who did not ' +
+              'write either votes for the funnier one before the 30-second timer ends.',
+          ],
+        },
+        {
+          heading: 'Scoring',
+          body: [
+            'The winning zinger scores its author one point per vote. A unanimous vote is a clean ' +
+              'sweep and adds a +3 bonus; a tie splits no points. The highest total after the last ' +
+              'round wins.',
+          ],
+        },
+      ],
+    },
+  },
   brambles: {
     categories: ['word', 'party'],
     tags: ['teams', 'wordplay', 'big-group', 'real-time'],

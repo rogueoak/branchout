@@ -50,6 +50,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./zinger": {
+      "types": "./dist/zinger.d.ts",
+      "import": "./dist/zinger.js"
+    },
     "./brambles": {
       "types": "./dist/brambles.d.ts",
       "import": "./dist/brambles.js"
