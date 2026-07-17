@@ -66,6 +66,13 @@ test('three insiders play a full Odd Bird game and flush the odd bird', async ({
     }
 
     // Prove exactly one odd bird across the three devices (the secret is partitioned per player).
+    // Each device carries a known nickname, so identifying the odd bird's device gives the flock the
+    // name to accuse - letting the flock deterministically flush the odd bird (a real flock win).
+    const nicknameByPage = new Map<Page, string>([
+      [host, account.gamerTag],
+      [p2, 'Player Two'],
+      [p3, 'Player Three'],
+    ]);
     let oddBirdCount = 0;
     const oddBirdPages: Page[] = [];
     const flockPages: Page[] = [];
@@ -83,24 +90,20 @@ test('three insiders play a full Odd Bird game and flush the odd bird', async ({
     }
     expect(oddBirdCount).toBe(1);
     const oddBird = oddBirdPages[0]!;
+    const oddBirdNickname = nicknameByPage.get(oddBird)!;
 
     // Anyone can call the flush to open the vote.
     await host.getByRole('button', { name: /call the flush/i }).click();
 
     // The flush opens: the flock accuses, the odd bird guesses the roost. Every flock member accuses
-    // the odd bird (the deterministic path to a flock win); the odd bird makes a guess.
+    // the odd bird BY NAME - the deterministic path to a flock win - and the odd bird makes a guess.
     for (const p of flockPages) {
       await expect(p.getByText(/who is the odd bird/i).first()).toBeVisible({ timeout: 30_000 });
     }
-    // Read the odd bird's nickname from their own card region is not exposed; instead the flock
-    // accuses by trying each offered name until the game resolves. The simplest deterministic vote:
-    // every flock member accuses the SAME first offered player, and we then just drive to results -
-    // a real accusation either flushes the odd bird or not; either way the game reaches standings.
     for (const p of flockPages) {
       await p
         .getByRole('region', { name: /your controller/i })
-        .getByRole('button')
-        .first()
+        .getByRole('button', { name: oddBirdNickname })
         .click();
     }
     // The odd bird picks a roost from the slate.
@@ -119,8 +122,8 @@ test('three insiders play a full Odd Bird game and flush the odd bird', async ({
       await expect(host.getByTestId('final-results')).toBeVisible({ timeout: 2_000 });
     }).toPass({ timeout: 90_000 });
 
-    // The result names the roost and reveals who the odd bird was (viewer, post-game).
-    await expect(host.getByText(/the flock wins|the odd bird wins/i).first()).toBeVisible();
+    // The flock accused the odd bird unanimously, so the flock wins - assert that outcome by name.
+    await expect(host.getByText(/the flock wins/i).first()).toBeVisible();
     await expect(p2.getByTestId('final-results')).toBeVisible();
     await expect(p3.getByTestId('final-results')).toBeVisible();
   } finally {

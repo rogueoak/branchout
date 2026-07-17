@@ -7,6 +7,16 @@ import {
   pickFlush,
   pickResult,
 } from './protocol';
+import { ROOST_GUESS_TARGET_PREFIX } from './index';
+
+describe('Odd Bird roost-guess prefix', () => {
+  it("pins the web roost-guess prefix to 'roost:' (must match the engine's ROOST_GUESS_PREFIX)", () => {
+    // The web bundle cannot import the headless @branchout/game-odd-bird package, so it mirrors the
+    // prefix here. Pin it to the same literal the engine pins, so a drift on either side fails a test
+    // instead of silently parsing every roost guess as an accusation.
+    expect(ROOST_GUESS_TARGET_PREFIX).toBe('roost:');
+  });
+});
 
 describe('Odd Bird protocol decoders', () => {
   it('decodes the public prompt (no secret)', () => {

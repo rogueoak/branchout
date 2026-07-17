@@ -283,9 +283,11 @@ export function createOddBirdGame(
         return { scratch: toRecord(scratch) };
       }
 
-      // Otherwise it is an accusation: the target must be a real player, and only a flock member
-      // accuses (the odd bird's ballot is their roost guess, never an accusation).
+      // Otherwise it is an accusation: the target must be a real OTHER player, and only a flock
+      // member accuses (the odd bird's ballot is their roost guess, never an accusation). A
+      // self-accusation is rejected at the source so the rule holds even for a stray/replayed frame.
       if (vote.player === current.oddBird) return { scratch: unchanged };
+      if (vote.target === vote.player) return { scratch: unchanged };
       if (!ctx.players.some((p) => p.player === vote.target)) return { scratch: unchanged };
       const scratch = clone(current);
       scratch.accusations[vote.player] = vote.target;

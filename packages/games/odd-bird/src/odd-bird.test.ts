@@ -307,6 +307,26 @@ describe('Odd Bird flush resolution', () => {
     }).scratch;
     expect((afterFlockGuess as { guess: string | null }).guess).toBeNull();
   });
+
+  it('ignores a self-accusation (a player cannot accuse themselves)', () => {
+    const { game, scratch, oddBird } = deal(2);
+    const flock = ['p1', 'p2', 'p3', 'p4'].filter((id) => id !== oddBird);
+    const afterSelf = game.collectVote(ctxFor(1, 'guessing', scratch), {
+      player: flock[0]!,
+      target: flock[0]!,
+      agree: true,
+    }).scratch;
+    expect((afterSelf as { accusations: Record<string, string> }).accusations).toEqual({});
+  });
+});
+
+describe('Odd Bird roost-guess prefix', () => {
+  it("pins the roost-guess prefix to 'roost:' (the web mirror must match this literal)", () => {
+    // The web bundle cannot import this headless package, so it holds its own copy of the prefix
+    // (ROOST_GUESS_TARGET_PREFIX in apps/web/lib/games/odd-bird/index.ts). Pin BOTH sides to the same
+    // literal so a drift on either fails a test rather than silently misreading every roost guess.
+    expect(ROOST_GUESS_PREFIX).toBe('roost:');
+  });
 });
 
 describe('Odd Bird move window', () => {
