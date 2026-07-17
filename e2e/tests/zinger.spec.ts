@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { signUp, spanSessionToInsider } from '../lib/helpers';
 import { INSIDER_URL, WEB_PORT, grantInsider } from '../lib/stack';
 
@@ -8,14 +8,39 @@ import { INSIDER_URL, WEB_PORT, grantInsider } from '../lib/stack';
 // full one-round game runs - each writes a zinger, two are pitted head to head in the face-off, the
 // non-authors vote, and the standings resolve. It also proves the gate (feedback 0029): the game lives
 // ONLY on the insider surface. Runs at 360px (CLAUDE.md rule 1: mobile-first).
+//
+// Pairing (live-verified): the host plays INTERACTIVE (a screen + a controller on one device) and the
+// two guests play REMOTE (controller-only). The guests join on a mobile user agent, whose device
+// default is `remote` (spec 0050), so no manual mode switch is needed.
+//
+// Guests are SIGNED-IN insiders, not anonymous. The insider surface is gated (feedback 0029): a
+// signed-out visitor to `insider.localhost/join` is bounced to login and can never reach the room.
+// So each guest signs up, is granted insider out-of-band, and spans its session to the insider host -
+// exactly the host's own path - before joining. (An earlier version joined anonymously and hung: the
+// guest never reached the room, so it never reached final-results.)
 
-/** Join an insider-hosted room by code on the insider host (the /join flow is public; a room the host
- * created on the insider surface is reached via the insider host's join route). */
-async function joinInsiderRoom(page: Page, code: string, nickname: string): Promise<void> {
+const PIXEL_UA =
+  'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
+/** Sign up a fresh insider account in `ctx`, span its session to the insider host, then join the
+ * insider-hosted room by code. The context uses a mobile UA, so the guest defaults to REMOTE. */
+async function joinInsiderAsGuest(
+  ctx: BrowserContext,
+  code: string,
+  nickname: string,
+): Promise<Page> {
+  const setup = await ctx.newPage();
+  const account = await signUp(setup);
+  await setup.close();
+  grantInsider(account.gamerTag);
+  await spanSessionToInsider(ctx);
+
+  const page = await ctx.newPage();
   await page.goto(`${INSIDER_URL}/join?code=${code}`);
   await page.getByLabel('Your name').fill(nickname);
   await page.getByRole('button', { name: /join room/i }).click();
   await page.waitForURL(new RegExp(`/rooms/${code}$`));
+  return page;
 }
 
 test('an insider host and two players play a full one-round Zinger game at 360px', async ({
@@ -23,12 +48,11 @@ test('an insider host and two players play a full one-round Zinger game at 360px
 }) => {
   test.setTimeout(150_000);
   const phone = { width: 360, height: 780 };
+  // Host defaults to interactive; the two guests use a mobile UA so they default to remote.
   const hostCtx = await browser.newContext({ viewport: phone });
-  const p2Ctx = await browser.newContext({ viewport: phone });
-  const p3Ctx = await browser.newContext({ viewport: phone });
+  const p2Ctx = await browser.newContext({ viewport: phone, userAgent: PIXEL_UA });
+  const p3Ctx = await browser.newContext({ viewport: phone, userAgent: PIXEL_UA });
   const host = await hostCtx.newPage();
-  const player2 = await p2Ctx.newPage();
-  const player3 = await p3Ctx.newPage();
 
   try {
     // A fresh account granted the insider role out-of-band; the session is spanned to the insider
@@ -47,21 +71,28 @@ test('an insider host and two players play a full one-round Zinger game at 360px
     await host.getByRole('button', { name: /pick zinger/i }).click();
     await host.waitForURL(new RegExp(`/rooms/${code}(?![?/])`));
 
-    // Two more players join (anonymous sessions) - three total, enough for a face-off + a voter.
-    await joinInsiderRoom(player2, code, 'Player Two');
-    await joinInsiderRoom(player3, code, 'Player Three');
+    // Two more insiders join as REMOTE guests - three total, enough for a face-off + a voter.
+    const player2 = await joinInsiderAsGuest(p2Ctx, code, 'Player Two');
+    const player3 = await joinInsiderAsGuest(p3Ctx, code, 'Player Three');
 
     // One round, then start (the host is interactive - a screen + a player).
     await host.locator('#zinger-rounds').fill('1');
     await host.getByRole('button', { name: /start game/i }).click();
 
-    // Collecting: each writes a zinger.
-    for (const [p, text] of [
+    // Collecting: gate on ALL THREE controllers showing the input BEFORE anyone submits. The engine
+    // early-closes the answer window once every CONNECTED player has submitted (allSubmitted); a
+    // guest whose game socket is still connecting when the others submit would be locked out of the
+    // round (the window closes with a 2-zinger face-off and that guest never gets to write one).
+    // Waiting for every input first guarantees all three are connected before the first submit.
+    const entries = [
       [host, 'The Titanic 2'],
       [player2, 'Wet Bandit'],
       [player3, 'Boaty McFloatface'],
-    ] as const) {
+    ] as const;
+    for (const [p] of entries) {
       await expect(p.locator('#zinger-input')).toBeVisible({ timeout: 30_000 });
+    }
+    for (const [p, text] of entries) {
       await p.locator('#zinger-input').fill(text);
       await p.getByRole('button', { name: /^submit$/i }).click();
     }

@@ -125,3 +125,20 @@ export function insiderRewritePath(pathname: string): string {
 export function isInsiderPath(pathname: string): boolean {
   return pathname === INSIDER_SEGMENT || pathname.startsWith(`${INSIDER_SEGMENT}/`);
 }
+
+/**
+ * The public auth routes that must stay reachable on the insider host WITHOUT a session - the
+ * escape hatch a signed-out visitor needs to actually sign in.
+ *
+ * Without this exemption the insider gate loops: a signed-out insider `/join` is redirected to the
+ * apex `/login`, but Next's dev/edge runtime collapses a cross-subdomain redirect between two
+ * `*.localhost` (or two `*.branchout.games`) hosts to a HOST-RELATIVE `Location` (`/login?...`).
+ * The browser resolves that against the insider host it is already on, so `/login` re-enters the
+ * gate, is signed-out again, and redirects to itself forever (ERR_TOO_MANY_REDIRECTS). Serving these
+ * routes directly on the insider host (no gate, no rewrite - there is no `/insider/login` page) gives
+ * the visitor a real login page and breaks the loop. They are public pages, so serving them on the
+ * insider host leaks nothing; the `/insider/*` tree stays gated by the layout.
+ */
+export function isPublicAuthPath(pathname: string): boolean {
+  return pathname === '/login' || pathname === '/signup';
+}
