@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Branch out Brambles">
+  <defs>
+    <radialGradient id="hbr-bg" cx="0.55" cy="0.45" r="0.85">
+      <stop offset="0" stop-color="#152615"/>
+      <stop offset="1" stop-color="#0a0f0a"/>
+    </radialGradient>
+    <radialGradient id="hbr-glow" cx="0.62" cy="0.42" r="0.5">
+      <stop offset="0" stop-color="#4ADE80" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#4ADE80" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hbr-vine" gradientUnits="userSpaceOnUse" x1="540" y1="404" x2="640" y2="120">
+      <stop offset="0"   stop-color="#4ADE80"/>
+      <stop offset="0.6" stop-color="#22A65A"/>
+      <stop offset="1"   stop-color="#166534"/>
+    </linearGradient>
+    <linearGradient id="hbr-leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#86EFAC"/>
+      <stop offset="1" stop-color="#22A65A"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#hbr-bg)"/>
+  <circle cx="590" cy="210" r="280" fill="url(#hbr-glow)"/>
+
+  <!-- The oak skeleton bent into a climbing, thorny bramble vine, rising from the gold root. -->
+  <g fill="none" stroke="url(#hbr-vine)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M556 404 C556 356 514 340 516 296 C518 252 592 250 596 208 C600 166 536 152 532 118"
+          stroke-width="26" opacity="0.16"/>
+    <path d="M556 404 C556 356 514 340 516 296 C518 252 592 250 596 208 C600 166 536 152 532 118"
+          stroke-width="12"/>
+    <path d="M516 296 C482 288 460 268 450 244" stroke-width="9"/>
+    <path d="M596 208 C632 202 656 182 666 156" stroke-width="9"/>
+  </g>
+  <!-- Thorns: short spikes jutting from the vine (the game's forbidden words). -->
+  <g fill="url(#hbr-vine)">
+    <path d="M528 344 l-22 -8 l16 16 Z"/>
+    <path d="M534 300 l22 -6 l-14 18 Z"/>
+    <path d="M582 232 l-22 -6 l16 18 Z"/>
+    <path d="M590 178 l22 -4 l-16 18 Z"/>
+    <path d="M544 146 l-22 -6 l16 18 Z"/>
+    <path d="M470 258 l-18 6 l18 8 Z"/>
+    <path d="M648 168 l18 6 l-18 8 Z"/>
+  </g>
+  <!-- The bloom: a bright leaf-flower at the tip (the target word), with a highlight. -->
+  <path fill="url(#hbr-leaf)" stroke="#166534" stroke-width="4" stroke-linejoin="round"
+        d="M532 118 C504 96 500 60 524 40 C548 60 552 96 532 118 C560 100 596 108 608 136 C580 152 546 142 532 118 Z"/>
+  <circle cx="532" cy="90" r="9" fill="#F0FDF4" opacity="0.85"/>
+  <!-- a small berry cluster on the amber-team side -->
+  <g fill="#EF4444" opacity="0.9">
+    <circle cx="660" cy="150" r="9"/>
+    <circle cx="676" cy="160" r="8"/>
+    <circle cx="658" cy="168" r="7"/>
+  </g>
+  <!-- gold root node: the base of the bramble -->
+  <circle cx="556" cy="404" r="11" fill="#d2a463"/>
+
+  <!-- Wordmark, in the system-font stack (the raster pipeline embeds no fonts). -->
+  <text x="60" y="235" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="66" font-weight="700" fill="#eafff0">Brambles</text>
+  <text x="62" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="26" font-weight="500" fill="#a9c8ac">Clue the bloom. Dodge the thorns.</text>
+</svg>

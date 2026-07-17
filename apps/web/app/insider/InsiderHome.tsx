@@ -12,11 +12,13 @@ import { TopNav } from '../../components/TopNav';
 import { GameListCard } from '../../components/game/GameListCard';
 import { HowToPlayButton } from '../../components/game/HowToPlayButton';
 import { GAME_CATALOG, playHref } from '../../lib/games/catalog';
+import { GAME_HERO } from '../../lib/games/heroes';
 
 // The games available to try on the insider surface (spec 0043): every catalog entry marked
 // insider-only. These are the full marketing entries (badge, summary, mark) so the insider cards
 // render the same shared GameListCard - badge + hero art - as the main-site teaser and cannot drift.
-// Insider games ship no wide hero of their own, so the card falls back to the game mark (below); a
+// Each insider game now ships its own wide hero (keyed by slug in the shared GAME_HERO map below), so
+// the cards lead with hero art like the public site; the game mark stays only as a safety fallback. A
 // friendly empty state stands in when no test games are live.
 const INSIDER_GAMES = GAME_CATALOG.filter((game) => game.visibility === 'insider');
 
@@ -65,12 +67,12 @@ export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surf
               // The shared game card (same as the main-site teaser: badge + hero art) with its
               // controls INSIDE the card body. The card itself is NOT a link - the "Play now" button
               // is the link and "How to play" is its own button, so there is no interactive-in-
-              // interactive a11y violation (no <a>/<button> nested in a card link). Insider games ship
-              // no wide hero, so the card leads with the game mark instead.
+              // interactive a11y violation (no <a>/<button> nested in a card link). The card leads with
+              // the game's wide hero (keyed by slug == registry id); the game mark stays as a fallback.
               <GameListCard
                 key={game.slug}
                 game={game}
-                hero={game.icon}
+                hero={GAME_HERO[game.slug] ?? game.icon}
                 footer={
                   // The two controls. DOM order: "Play now" first, so on mobile it STACKS ON TOP
                   // (flex-col default) with "How to play" below it. From sm up, sm:flex-row-reverse

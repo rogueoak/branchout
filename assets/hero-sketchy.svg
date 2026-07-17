@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Branch out Sketchy">
+  <defs>
+    <linearGradient id="hsk-spark" gradientUnits="userSpaceOnUse" x1="470" y1="360" x2="680" y2="120">
+      <stop offset="0"    stop-color="#FBBF24"/>
+      <stop offset="0.5"  stop-color="#EC4899"/>
+      <stop offset="1"    stop-color="#7C3AED"/>
+    </linearGradient>
+    <radialGradient id="hsk-bg" cx="0.55" cy="0.42" r="0.85">
+      <stop offset="0" stop-color="#221836"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="hsk-glow" cx="0.62" cy="0.4" r="0.5">
+      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hsk-wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9884a"/>
+      <stop offset="1" stop-color="#9c6636"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#hsk-bg)"/>
+  <circle cx="576" cy="210" r="280" fill="url(#hsk-glow)"/>
+
+  <!-- The freehand sketch scribble on the bark: a doodled leaf drawn in one spark stroke. -->
+  <g fill="none" stroke="url(#hsk-spark)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M470 250 C470 190 530 150 576 150 C622 150 682 190 682 250 C682 300 630 330 576 330 C530 330 470 300 470 250 Z"
+          stroke-width="14" opacity="0.16"/>
+    <path d="M470 250 C470 190 530 150 576 150 C622 150 682 190 682 250 C682 300 630 330 576 330 C530 330 470 300 470 250 Z"
+          stroke-width="7"/>
+    <path d="M576 150 L576 330" stroke-width="6"/>
+    <path d="M576 210 L530 190 M576 210 L622 190 M576 260 L526 240 M576 260 L626 240" stroke-width="4" opacity="0.85"/>
+  </g>
+  <!-- The twig: a pencil-like drawing tool angled over the bark, tip meeting the scribble. -->
+  <g transform="rotate(38 660 300)">
+    <rect x="642" y="150" width="34" height="150" rx="9" fill="url(#hsk-wood)" stroke="url(#hsk-spark)" stroke-width="5"/>
+    <rect x="642" y="290" width="34" height="13" fill="#A78BFA" opacity="0.7"/>
+    <path d="M642 303 L676 303 L659 342 Z" fill="#37244f" stroke="url(#hsk-spark)" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M653 328 L665 328 L659 342 Z" fill="#0d0a15"/>
+  </g>
+  <!-- decorative sparks along the sketch, one dimmed (the decoy) -->
+  <circle cx="470" cy="250" r="9" fill="#FDE047"/>
+  <circle cx="682" cy="250" r="9" fill="#22D3EE" opacity="0.5"/>
+  <!-- the stem down to the gold root -->
+  <g stroke-linecap="round" fill="none" stroke="url(#hsk-spark)">
+    <path d="M576 330 L576 404" stroke-width="14" opacity="0.16"/>
+    <path d="M576 330 L576 404" stroke-width="7"/>
+  </g>
+  <!-- gold root node: the base of the sketch's stem -->
+  <circle cx="576" cy="404" r="11" fill="#d2a463"/>
+
+  <!-- Wordmark, in the system-font stack (the raster pipeline embeds no fonts). -->
+  <text x="60" y="235" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="70" font-weight="700" fill="#f4f1fb">Sketchy</text>
+  <text x="62" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="26" font-weight="500" fill="#b9b2cf">Draw it. Fool them. Find the seed.</text>
+</svg>
