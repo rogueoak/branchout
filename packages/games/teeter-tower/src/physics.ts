@@ -118,8 +118,8 @@ const TYPE_BAG: readonly PieceType[] = [
   'tri',
 ];
 
-/** The heavy trapezoid's density multiplier vs a normal piece (4x heavier - reinforcement). */
-export const TRAP_DENSITY_MULT = 4;
+/** The heavy trapezoid's density multiplier vs a normal piece (5x heavier - reinforcement). */
+export const TRAP_DENSITY_MULT = 5;
 
 /**
  * A placed body counts toward the tower height only once it is (near) at rest: linear speed below
@@ -262,12 +262,17 @@ export function makePiece(rng: SeededRng): GeneratedPiece {
     ];
     body = Bodies.fromVertices(0, 0, [verts], opts);
   } else {
-    // "ell" - a compound L shape.
+    // "ell" - a compound L shape. The parts carry the SAME physics as a single-body piece
+    // (`restitution: 0` so it never bounces, and `density: PIECE_DENSITY` so the compound's mass is
+    // computed from the parts at the right density - not matter's default, which left the L too
+    // light and prone to sliding/flipping on landing). Grip (friction/frictionStatic) matches too.
     const t = rng.range(28, 36) * s;
     const len = rng.range(78, 104) * s;
     const partOpts: Matter.IChamferableBodyDefinition = {
       friction: PIECE_FRICTION,
       frictionStatic: PIECE_FRICTION_STATIC,
+      restitution: 0,
+      density: PIECE_DENSITY,
     };
     const a = Bodies.rectangle(0, 0, len, t, partOpts);
     const b = Bodies.rectangle(-len / 2 + t / 2, -len / 2 + t / 2, t, len, partOpts);
