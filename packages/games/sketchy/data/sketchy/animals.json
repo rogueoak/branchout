@@ -1,0 +1,107 @@
+[
+  {
+    "id": "animals-001",
+    "category": "animals",
+    "text": "a cat"
+  },
+  {
+    "id": "animals-002",
+    "category": "animals",
+    "text": "a dog"
+  },
+  {
+    "id": "animals-003",
+    "category": "animals",
+    "text": "an elephant"
+  },
+  {
+    "id": "animals-004",
+    "category": "animals",
+    "text": "a giraffe"
+  },
+  {
+    "id": "animals-005",
+    "category": "animals",
+    "text": "a penguin"
+  },
+  {
+    "id": "animals-006",
+    "category": "animals",
+    "text": "an octopus"
+  },
+  {
+    "id": "animals-007",
+    "category": "animals",
+    "text": "a snail"
+  },
+  {
+    "id": "animals-008",
+    "category": "animals",
+    "text": "a kangaroo"
+  },
+  {
+    "id": "animals-009",
+    "category": "animals",
+    "text": "a hedgehog"
+  },
+  {
+    "id": "animals-010",
+    "category": "animals",
+    "text": "a flamingo"
+  },
+  {
+    "id": "animals-011",
+    "category": "animals",
+    "text": "a narwhal"
+  },
+  {
+    "id": "animals-012",
+    "category": "animals",
+    "text": "a sloth"
+  },
+  {
+    "id": "animals-013",
+    "category": "animals",
+    "text": "a peacock"
+  },
+  {
+    "id": "animals-014",
+    "category": "animals",
+    "text": "a jellyfish"
+  },
+  {
+    "id": "animals-015",
+    "category": "animals",
+    "text": "a crocodile"
+  },
+  {
+    "id": "animals-016",
+    "category": "animals",
+    "text": "a bumblebee"
+  },
+  {
+    "id": "animals-017",
+    "category": "animals",
+    "text": "a hermit crab"
+  },
+  {
+    "id": "animals-018",
+    "category": "animals",
+    "text": "a platypus"
+  },
+  {
+    "id": "animals-019",
+    "category": "animals",
+    "text": "a chameleon"
+  },
+  {
+    "id": "animals-020",
+    "category": "animals",
+    "text": "a walrus"
+  },
+  {
+    "id": "animals-021",
+    "category": "animals",
+    "text": "a llama"
+  }
+]

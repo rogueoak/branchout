@@ -1,0 +1,102 @@
+[
+  {
+    "id": "food-001",
+    "category": "food",
+    "text": "a slice of pizza"
+  },
+  {
+    "id": "food-002",
+    "category": "food",
+    "text": "a stack of pancakes"
+  },
+  {
+    "id": "food-003",
+    "category": "food",
+    "text": "an ice cream cone"
+  },
+  {
+    "id": "food-004",
+    "category": "food",
+    "text": "a bunch of grapes"
+  },
+  {
+    "id": "food-005",
+    "category": "food",
+    "text": "a taco"
+  },
+  {
+    "id": "food-006",
+    "category": "food",
+    "text": "a cupcake"
+  },
+  {
+    "id": "food-007",
+    "category": "food",
+    "text": "a hot dog"
+  },
+  {
+    "id": "food-008",
+    "category": "food",
+    "text": "a pineapple"
+  },
+  {
+    "id": "food-009",
+    "category": "food",
+    "text": "a bowl of noodles"
+  },
+  {
+    "id": "food-010",
+    "category": "food",
+    "text": "a doughnut"
+  },
+  {
+    "id": "food-011",
+    "category": "food",
+    "text": "a watermelon slice"
+  },
+  {
+    "id": "food-012",
+    "category": "food",
+    "text": "a pretzel"
+  },
+  {
+    "id": "food-013",
+    "category": "food",
+    "text": "a fried egg"
+  },
+  {
+    "id": "food-014",
+    "category": "food",
+    "text": "a jar of honey"
+  },
+  {
+    "id": "food-015",
+    "category": "food",
+    "text": "a cob of corn"
+  },
+  {
+    "id": "food-016",
+    "category": "food",
+    "text": "a birthday pie"
+  },
+  {
+    "id": "food-017",
+    "category": "food",
+    "text": "a banana split"
+  },
+  {
+    "id": "food-018",
+    "category": "food",
+    "text": "a mushroom"
+  },
+  {
+    "id": "food-019",
+    "category": "food",
+    "text": "a lollipop"
+  },
+  {
+    "id": "food-020",
+    "category": "food",
+    "text": "a wedge of cheese"
+  }
+]

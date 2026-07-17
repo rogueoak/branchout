@@ -144,6 +144,37 @@ const MARKETING: Record<string, GameMarketing> = {
       'Teeter Tower is a phone-first physics stacking game in insider testing. Spin a googly-eyed ' +
       'piece, lock its angle, and drop it to build toward the target line across three levels.',
   },
+  // Sketchy is insider-only (spec 0063), so this entry exists only to satisfy the completeness check;
+  // PUBLIC_GAME_CATALOG excludes it from the public /games index, feature pages, and sitemap. Its
+  // share card is a placeholder (no public raster for an insider game).
+  sketchy: {
+    description:
+      'Sketchy is a draw-and-guess party game for phones. Everyone gets a secret seed and draws it, ' +
+      'then writes fake prompts (decoys) for each sketch. Pick out the real seed hidden among the ' +
+      'decoys - and score every time your decoy fools someone. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Draw your seed',
+        body: 'You get a secret prompt only you can see. Draw it on your phone before the timer ends.',
+      },
+      {
+        title: 'Write a decoy',
+        body: 'For every other sketch, write a fake prompt convincing enough to fool the room.',
+      },
+      {
+        title: 'Find the true seed',
+        body: 'Pick the real prompt from the decoys; guessing right and fooling players both score.',
+      },
+    ],
+    categories: ['Drawing', 'Bluffing', 'Party'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Sketchy',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Sketchy - a draw-and-guess party game | Branch Out Games',
+    seoDescription:
+      'Sketchy is a phone-first draw-and-guess party game in insider testing. Draw your secret seed, ' +
+      'write decoys for other sketches, and pick the real prompt hidden among the fakes.',
+  },
 };
 
 /** A game's full marketing + display data - the registry basics plus the catalog copy. */
