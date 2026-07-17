@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Branch out Nightleaf">
+  <defs>
+    <radialGradient id="hnl-bg" cx="0.55" cy="0.34" r="0.9">
+      <stop offset="0" stop-color="#1a1430"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="hnl-moon" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f4ecff"/>
+      <stop offset="1" stop-color="#b9a7e8"/>
+    </radialGradient>
+    <radialGradient id="hnl-firefly" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FDE047" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#FDE047" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#hnl-bg)"/>
+
+  <!-- a quiet night sky: a moon and a scatter of stars -->
+  <circle cx="700" cy="92" r="34" fill="url(#hnl-moon)"/>
+  <circle cx="694" cy="84" r="29" fill="#1a1430"/>
+  <g fill="#e9deff">
+    <circle cx="360" cy="70" r="3"/>
+    <circle cx="470" cy="120" r="2"/>
+    <circle cx="620" cy="60" r="2.5"/>
+    <circle cx="748" cy="160" r="2"/>
+    <circle cx="330" cy="176" r="2"/>
+  </g>
+
+  <!-- the oak trunk: a bent skeleton the leaves climb -->
+  <path d="M560 424 C 554 356 566 312 544 250 C 526 200 566 162 552 110"
+        fill="none" stroke="#6f5a86" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- ascending numbered leaves (low to high): 3, 27, 61, 94 -->
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="700" text-anchor="middle">
+    <g transform="translate(504 372) rotate(-18)">
+      <ellipse cx="0" cy="0" rx="36" ry="23" fill="#2f8f5b" stroke="#1c6b41" stroke-width="5"/>
+      <text x="0" y="8" font-size="24" fill="#eafff2">3</text>
+    </g>
+    <g transform="translate(600 300) rotate(16)">
+      <ellipse cx="0" cy="0" rx="38" ry="24" fill="#3aa06a" stroke="#1c6b41" stroke-width="5"/>
+      <text x="0" y="9" font-size="24" fill="#eafff2">27</text>
+    </g>
+    <g transform="translate(500 228) rotate(-16)">
+      <ellipse cx="0" cy="0" rx="40" ry="25" fill="#57b985" stroke="#1c6b41" stroke-width="5"/>
+      <text x="0" y="9" font-size="24" fill="#0d3320">61</text>
+    </g>
+    <g transform="translate(596 152) rotate(14)">
+      <ellipse cx="0" cy="0" rx="42" ry="26" fill="#7fd3a6" stroke="#1c6b41" stroke-width="5"/>
+      <text x="0" y="9" font-size="24" fill="#0d3320">94</text>
+    </g>
+  </g>
+
+  <!-- a firefly glowing beside the climb (the hush spark) -->
+  <circle cx="662" cy="288" r="28" fill="url(#hnl-firefly)"/>
+  <circle cx="662" cy="288" r="6" fill="#FDE047"/>
+
+  <!-- the single gold root the whole family carries (#d2a463) -->
+  <g stroke="#d2a463" stroke-width="9" stroke-linecap="round" fill="none">
+    <path d="M560 424 C 534 438 516 440 496 452"/>
+    <path d="M560 424 C 586 438 604 440 624 452"/>
+    <path d="M560 424 L 560 456"/>
+  </g>
+  <circle cx="560" cy="424" r="12" fill="#d2a463"/>
+
+  <!-- Wordmark, in the system-font stack (the raster pipeline embeds no fonts). -->
+  <text x="60" y="235" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="64" font-weight="700" fill="#f2eeff">Nightleaf</text>
+  <text x="62" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="26" font-weight="500" fill="#bcb0d6">Climb in order. Keep the hush.</text>
+</svg>

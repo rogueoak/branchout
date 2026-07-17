@@ -5,9 +5,8 @@
 'use client';
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
-import { heroLiarLiarSvg } from '@branchout/brand/hero-liarliar';
-import { heroTriviaSvg } from '@branchout/brand/hero-trivia';
 import { PUBLIC_GAME_CATALOG, featurePath, playHref } from '../lib/games/catalog';
+import { GAME_HERO } from '../lib/games/heroes';
 import type { Viewer } from '../lib/session';
 import { Footer } from './Footer';
 import { GameListCard } from './game/GameListCard';
@@ -38,15 +37,6 @@ function ArrowRightIcon() {
     </svg>
   );
 }
-
-// The wide hero illustration for each game teaser card, keyed by the catalog slug (spec 0046). Build-
-// time SVG strings from the brand package (not user input), inlined the same way the game marks are.
-// A slug with no hero (e.g. a future game) falls back to the game mark below, so the card still leads
-// with art (the shared GameListCard always renders a hero box).
-const GAME_HERO: Record<string, string> = {
-  trivia: heroTriviaSvg,
-  'liar-liar': heroLiarLiarSvg,
-};
 
 // How it works: three steps from join code to playing.
 const HOW_IT_WORKS = [

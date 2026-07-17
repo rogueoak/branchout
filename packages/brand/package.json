@@ -46,6 +46,54 @@
       "types": "./dist/hero-liarliar.d.ts",
       "import": "./dist/hero-liarliar.js"
     },
+    "./hero-teeter-tower": {
+      "types": "./dist/hero-teeter-tower.d.ts",
+      "import": "./dist/hero-teeter-tower.js"
+    },
+    "./hero-brambles": {
+      "types": "./dist/hero-brambles.d.ts",
+      "import": "./dist/hero-brambles.js"
+    },
+    "./hero-nightleaf": {
+      "types": "./dist/hero-nightleaf.d.ts",
+      "import": "./dist/hero-nightleaf.js"
+    },
+    "./hero-sketchy": {
+      "types": "./dist/hero-sketchy.d.ts",
+      "import": "./dist/hero-sketchy.js"
+    },
+    "./hero-whispergrove": {
+      "types": "./dist/hero-whispergrove.d.ts",
+      "import": "./dist/hero-whispergrove.js"
+    },
+    "./hero-reversi": {
+      "types": "./dist/hero-reversi.d.ts",
+      "import": "./dist/hero-reversi.js"
+    },
+    "./hero-chess": {
+      "types": "./dist/hero-chess.d.ts",
+      "import": "./dist/hero-chess.js"
+    },
+    "./hero-checkers": {
+      "types": "./dist/hero-checkers.d.ts",
+      "import": "./dist/hero-checkers.js"
+    },
+    "./hero-samebranch": {
+      "types": "./dist/hero-samebranch.d.ts",
+      "import": "./dist/hero-samebranch.js"
+    },
+    "./hero-oddbird": {
+      "types": "./dist/hero-oddbird.d.ts",
+      "import": "./dist/hero-oddbird.js"
+    },
+    "./hero-loneleaf": {
+      "types": "./dist/hero-loneleaf.d.ts",
+      "import": "./dist/hero-loneleaf.js"
+    },
+    "./hero-zinger": {
+      "types": "./dist/hero-zinger.d.ts",
+      "import": "./dist/hero-zinger.js"
+    },
     "./teeter-tower": {
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"

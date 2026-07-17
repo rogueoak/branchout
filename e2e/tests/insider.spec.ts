@@ -27,12 +27,18 @@ test.describe('insider surface (spec 0035)', () => {
     await page.goto(INSIDER_URL);
     await expect(page.getByRole('heading', { name: 'Insider' })).toBeVisible();
     // Teeter Tower (spec 0043) is now a live insider game, so the surface lists it (the empty state
-    // no longer shows). The card carries the game's mark and deep-links RELATIVELY (feedback 0029),
-    // so starting stays on the insider surface instead of bouncing to the apex.
-    const card = page.getByRole('link', { name: /play teeter tower now/i });
-    await expect(card).toBeVisible();
-    expect(await card.getAttribute('href')).toBe('/rooms?game=teeter-tower');
-    expect(await card.locator('svg').count()).toBeGreaterThan(0);
+    // no longer shows). Its "Play now" control is the RELATIVE room-create deep link (feedback 0029),
+    // so starting stays on the insider surface instead of bouncing to the apex. The card is no longer
+    // the link (spec 0046 shared card): the play link is a text-only control, and the hero/mark art
+    // lives in the card body - so assert the art on the card, not on the play link.
+    const playLink = page.getByRole('link', { name: /play teeter tower now/i });
+    await expect(playLink).toBeVisible();
+    expect(await playLink.getAttribute('href')).toBe('/rooms?game=teeter-tower');
+    // The card leads with hero art: the games region carries at least one inline SVG (the wide hero
+    // plus each game mark), matching the main-site card look.
+    const gamesRegion = page.getByRole('region', { name: /branch out games for insiders/i });
+    await expect(gamesRegion.getByRole('heading', { name: 'Teeter Tower' })).toBeVisible();
+    expect(await gamesRegion.locator('svg').count()).toBeGreaterThan(0);
   });
 
   test('starting an insider game from its card stays on the insider host (feedback 0029)', async ({

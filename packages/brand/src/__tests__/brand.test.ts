@@ -17,6 +17,18 @@ import { checkersSvg } from '../checkers.js';
 import { sameBranchSvg } from '../samebranch.js';
 import { heroTriviaSvg } from '../hero-trivia.js';
 import { heroLiarLiarSvg } from '../hero-liarliar.js';
+import { heroTeeterTowerSvg } from '../hero-teeter-tower.js';
+import { heroBramblesSvg } from '../hero-brambles.js';
+import { heroNightleafSvg } from '../hero-nightleaf.js';
+import { heroSketchySvg } from '../hero-sketchy.js';
+import { heroWhispergroveSvg } from '../hero-whispergrove.js';
+import { heroReversiSvg } from '../hero-reversi.js';
+import { heroChessSvg } from '../hero-chess.js';
+import { heroCheckersSvg } from '../hero-checkers.js';
+import { heroSameBranchSvg } from '../hero-samebranch.js';
+import { heroOddBirdSvg } from '../hero-oddbird.js';
+import { heroLoneLeafSvg } from '../hero-loneleaf.js';
+import { heroZingerSvg } from '../hero-zinger.js';
 import { palette, goldRootRule, safeArea, sparkGradient } from '../brand-notes.js';
 
 describe('SVG exports', () => {
@@ -62,6 +74,18 @@ describe('SVG exports', () => {
   it.each([
     ['heroTriviaSvg', heroTriviaSvg],
     ['heroLiarLiarSvg', heroLiarLiarSvg],
+    ['heroTeeterTowerSvg', heroTeeterTowerSvg],
+    ['heroBramblesSvg', heroBramblesSvg],
+    ['heroNightleafSvg', heroNightleafSvg],
+    ['heroSketchySvg', heroSketchySvg],
+    ['heroWhispergroveSvg', heroWhispergroveSvg],
+    ['heroReversiSvg', heroReversiSvg],
+    ['heroChessSvg', heroChessSvg],
+    ['heroCheckersSvg', heroCheckersSvg],
+    ['heroSameBranchSvg', heroSameBranchSvg],
+    ['heroOddBirdSvg', heroOddBirdSvg],
+    ['heroLoneLeafSvg', heroLoneLeafSvg],
+    ['heroZingerSvg', heroZingerSvg],
   ])(
     '%s is a wide 800x450 hero illustration that keeps the gold root (spec 0046)',
     (_name, svg) => {

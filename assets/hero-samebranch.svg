@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Branch out Same Branch">
+  <defs>
+    <linearGradient id="hsb-spark" gradientUnits="userSpaceOnUse" x1="452" y1="330" x2="712" y2="330">
+      <stop offset="0"   stop-color="#7C3AED"/>
+      <stop offset="0.5" stop-color="#EC4899"/>
+      <stop offset="1"   stop-color="#FBBF24"/>
+    </linearGradient>
+    <radialGradient id="hsb-bg" cx="0.55" cy="0.42" r="0.85">
+      <stop offset="0" stop-color="#221836"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="hsb-glow" cx="0.66" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#EC4899" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#EC4899" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#hsb-bg)"/>
+  <circle cx="582" cy="270" r="230" fill="url(#hsb-glow)"/>
+
+  <!-- The branch: a dial arc spanning two opposite ends (root at left, tip at right). -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M452 320 A160 160 0 0 1 712 320" stroke="url(#hsb-spark)" stroke-width="18" opacity="0.18"/>
+    <path d="M452 320 A160 160 0 0 1 712 320" stroke="url(#hsb-spark)" stroke-width="9"/>
+  </g>
+
+  <!-- The bud: the hidden sweet spot, a bright band on the branch. -->
+  <g fill="none" stroke="#4ADE80" stroke-linecap="round">
+    <path d="M642 190 A160 160 0 0 1 676 220" stroke-width="18" opacity="0.35"/>
+    <path d="M642 190 A160 160 0 0 1 676 220" stroke-width="10"/>
+  </g>
+  <circle cx="660" cy="204" r="6" fill="#bbf7d0"/>
+
+  <!-- The two branch ends: leaf nodes marking the opposite extremes. -->
+  <circle cx="452" cy="320" r="14" fill="#7C3AED"/>
+  <circle cx="452" cy="320" r="7"  fill="#A78BFA"/>
+  <circle cx="712" cy="320" r="14" fill="#FBBF24"/>
+  <circle cx="712" cy="320" r="7"  fill="#FDE047"/>
+
+  <!-- The sap line: the pointer the grove swings to guess, pivoting from the gold root. -->
+  <g stroke-linecap="round">
+    <line x1="582" y1="320" x2="540" y2="190" stroke="#c9d2da" stroke-width="10" opacity="0.25"/>
+    <line x1="582" y1="320" x2="540" y2="190" stroke="#f4f6f8" stroke-width="5"/>
+  </g>
+  <circle cx="540" cy="190" r="7" fill="#f4f6f8"/>
+
+  <!-- Gold root node: the pivot of the dial and the base of the branch. -->
+  <circle cx="582" cy="320" r="20" fill="#0d0a15"/>
+  <circle cx="582" cy="320" r="14" fill="#d2a463"/>
+  <circle cx="582" cy="320" r="6"  fill="#f0d9b5"/>
+
+  <!-- Wordmark, in the system-font stack (the raster pipeline embeds no fonts). -->
+  <text x="60" y="215" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="62" font-weight="700" fill="#f4f1fb">Same</text>
+  <text x="60" y="282" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="62" font-weight="700" fill="#f4f1fb">Branch</text>
+  <text x="62" y="326" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="24" font-weight="500" fill="#b9b2cf">Read the hunch. Guess the bud.</text>
+</svg>

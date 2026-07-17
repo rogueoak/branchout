@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Branch out Lone Leaf">
+  <defs>
+    <radialGradient id="hll-bg" cx="0.55" cy="0.4" r="0.85">
+      <stop offset="0" stop-color="#1c2b1e"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="hll-glow" cx="0.66" cy="0.42" r="0.5">
+      <stop offset="0" stop-color="#7CC77C" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#7CC77C" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hll-leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9be08a"/>
+      <stop offset="1" stop-color="#3f9d4f"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#hll-bg)"/>
+  <circle cx="580" cy="215" r="290" fill="url(#hll-glow)"/>
+
+  <!-- the lone leaf: a single oak-shaped leaf, its stem trailing down to the gold root -->
+  <g transform="translate(324 24)">
+    <path d="M256 96
+             C 178 128, 152 232, 200 316
+             C 232 300, 300 300, 312 232
+             C 320 176, 300 124, 256 96 Z"
+          fill="url(#hll-leaf)" stroke="#2f7a3c" stroke-width="6"/>
+    <g stroke="#2f7a3c" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.85">
+      <path d="M256 120 L 232 300"/>
+      <path d="M250 168 L 210 190"/>
+      <path d="M247 214 L 208 238"/>
+      <path d="M258 168 L 300 186"/>
+      <path d="M256 214 L 300 232"/>
+    </g>
+    <!-- the stem falling to the single gold root node -->
+    <path d="M232 300 C 244 348, 258 372, 256 400" fill="none" stroke="#6b4f2a" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="256" cy="404" r="18" fill="#d2a463" stroke="#a97e3f" stroke-width="5"/>
+  </g>
+
+  <!-- Wordmark, in the system-font stack (the raster pipeline embeds no fonts). -->
+  <text x="60" y="225" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="70" font-weight="700" fill="#f2f8ef">Lone</text>
+  <text x="60" y="292" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="70" font-weight="700" fill="#f2f8ef">Leaf</text>
+  <text x="62" y="336" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="24" font-weight="500" fill="#b6c9b0">One clue. Matching leaves wilt.</text>
+</svg>
