@@ -261,7 +261,9 @@ export function createLoneLeafGame(
 
     allSubmitted(ctx: RoundContext): boolean {
       const scratch = asScratch(ctx.scratch);
-      // Every connected NON-Seeker must have written a leaf (the Seeker writes none).
+      // Every connected NON-Seeker must have written a leaf (the Seeker writes none). If nobody but the
+      // Seeker is connected this stays false and the round does not auto-complete - that is intentional;
+      // the 90s move window is the backstop that advances the round, so it is not a hang.
       const writers = ctx.players.filter((p) => p.connected && p.player !== scratch.seeker);
       return writers.length > 0 && writers.every((p) => scratch.leaves[p.player] !== undefined);
     },
@@ -281,14 +283,17 @@ export function createLoneLeafGame(
       scratch.correct = false;
       return {
         scratch: toRecord(scratch),
-        // The reveal shows the surviving leaves (and which wilted) to everyone - but NEVER the seed
-        // word. Only after the guess resolves is the seed named, so the Seeker cannot read it here.
+        // The reveal shows the SURVIVING leaves to everyone (the Seeker guesses from them) - but NEVER
+        // the seed word. A wilted leaf can EQUAL the seed (a player wrote it, so it wilted), so its raw
+        // word must not ride this broadcast frame to the Seeker's device. Only survivors are emitted
+        // here (they can never equal the seed); the full wilted-vs-survived breakdown is deferred to the
+        // final leaderboard reveal, where the seed is already public.
         reveal: {
           round: ctx.round,
           category: seed.category,
           seeker: scratch.seeker,
           survivors,
-          leaves: results,
+          leaves: results.filter((r) => r.survived),
         },
         scores: [],
         decision: { windowMs: GUESS_WINDOW_MS },

@@ -118,6 +118,23 @@ describe('Lone Leaf module', () => {
     expect(revealed.private).toBeUndefined();
   });
 
+  it('a wilted leaf equal to the seed never rides the broadcast reveal to the Seeker', () => {
+    const g = game();
+    let scratch = g.configure({ categories: ['nature'], rounds: 1 }, roster).scratch;
+    scratch = g.startRound(ctx(1, 'collecting', scratch)).scratch;
+    // A non-Seeker writes the SEED word itself (it will wilt as a seed match). Its raw word must not
+    // then leak in the broadcast reveal frame the Seeker (p1) receives.
+    scratch = g.collectMove(ctx(1, 'collecting', scratch), 'p2', 'river').scratch;
+    scratch = g.collectMove(ctx(1, 'collecting', scratch), 'p3', 'flow').scratch;
+    const revealed = g.reveal(ctx(1, 'collecting', scratch));
+    // The leaf equal to the seed wilted, so its word is absent from the streamed reveal entirely.
+    expect(JSON.stringify(revealed.reveal)).not.toContain('river');
+    const leaves = (revealed.reveal as { leaves: LeafResult[] }).leaves;
+    expect(leaves.every((l) => l.survived)).toBe(true);
+    // The unique survivor is still there for the Seeker to guess from.
+    expect((revealed.reveal as { survivors: string[] }).survivors).toEqual(['flow']);
+  });
+
   it('runs a full co-op round: a correct guess banks +1 for everyone', () => {
     const g = game();
     let scratch = g.configure({ categories: ['nature'], rounds: 1 }, roster).scratch;
