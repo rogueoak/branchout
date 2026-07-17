@@ -62,13 +62,6 @@ export class NoSessionError extends Error {
   }
 }
 
-export class UnknownPlayerError extends Error {
-  constructor(player: string) {
-    super(`player "${player}" is not in this session's roster`);
-    this.name = 'UnknownPlayerError';
-  }
-}
-
 export interface EngineDeps {
   /** Supplies each session's game runtime (a worker in production, in-process in tests), spec 0045. */
   runtimeProvider: GameRuntimeProvider;
@@ -240,7 +233,16 @@ export class GameEngine {
       const state = await this.requireState(room, game);
       const existing = state.players.find((p) => p.player === player);
       if (!existing) {
-        throw new UnknownPlayerError(player);
+        // A device authenticated for a playerId that is NOT in the playing roster is a VIEWER
+        // (spec 0050): viewers watch a shared screen but never fill the roster or count toward
+        // limits. It still needs the BROADCAST stream to render the game, so admit it as a
+        // stream-only spectator: hand back the same broadcast catch-up frames a player gets, but
+        // make NO roster change (no `connected` flip, no state re-publish) and deal it NO secret.
+        // Its per-player private channel is keyed by its own viewer playerId, for which nothing is
+        // ever published, so per-player secrecy (spec 0064) holds - a viewer sees only the shared,
+        // non-secret broadcast. The join token still proved the control-plane vouched for THIS id,
+        // so a device cannot claim a victim's id to read their private stream.
+        return this.spectatorCatchUpFrames(state);
       }
       existing.connected = true;
       if (nickname) existing.nickname = nickname;
@@ -291,6 +293,26 @@ export class GameEngine {
     // is keyed by playerId, so only this device's secret is ever looked up - never another player's.
     const secret = state.privatePayloads?.[player];
     if (secret !== undefined) frames.push(this.privateMessage(state, player, secret));
+    return frames;
+  }
+
+  /**
+   * The catch-up frames for a VIEWER (spec 0050): the same broadcast frames a player gets to render
+   * the current phase - prompt, reveal, leaderboard, the newest live `sim`, then the authoritative
+   * `state` - but NEVER a private payload. A viewer is not a roster player, so it holds no secret; a
+   * shared-screen watcher must only ever see the broadcast, keeping the spec-0064 per-player secrecy
+   * guarantee intact.
+   */
+  private spectatorCatchUpFrames(state: SessionState): ServerMessage[] {
+    const frames: ServerMessage[] = [];
+    if (state.prompt !== undefined) frames.push(this.promptMessage(state, state.prompt));
+    if (state.reveal !== undefined) frames.push(this.revealMessage(state, state.reveal));
+    if (state.standings !== undefined) {
+      frames.push(this.leaderboardMessage(state, state.standings));
+    }
+    const sim = this.lastSim.get(sessionKey(state.room, state.game));
+    if (sim != null) frames.push(this.simMessage(state, sim));
+    frames.push(this.stateMessage(state));
     return frames;
   }
 

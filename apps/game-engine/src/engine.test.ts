@@ -8,13 +8,7 @@ import type {
 } from '@branchout/protocol';
 import { PROTOCOL_VERSION } from '@branchout/protocol';
 import type { GameModule } from '@branchout/game-sdk';
-import {
-  GameEngine,
-  NoSessionError,
-  UnknownPlayerError,
-  AUTO_ADVANCE_MS,
-  MAX_SIM_TICK_FAILURES,
-} from './engine';
+import { GameEngine, NoSessionError, AUTO_ADVANCE_MS, MAX_SIM_TICK_FAILURES } from './engine';
 
 /** `join` returns the ordered catch-up frames; the authoritative `state` frame is the last one. */
 function stateFrame(frames: ServerMessage[]): StateMessage {
@@ -609,11 +603,20 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
   });
 
-  it('rejects a join for a player not in the handed-off roster', async () => {
-    await h.engine.start(handoff());
-    await expect(h.engine.join('r1', STUB_GAME_ID, 'intruder', 'Mallory')).rejects.toThrow(
-      UnknownPlayerError,
-    );
+  it('admits a non-roster player as a broadcast-only VIEWER (spec 0050)', async () => {
+    // A viewer (spec 0050) is not in the playing roster but still needs the broadcast stream to
+    // watch. join must hand it the catch-up broadcast frames (prompt + authoritative state) rather
+    // than reject it - otherwise a shared-screen watcher never sees the game. It stays OUT of the
+    // roster (never a player) and its connection is not a roster (re)connection.
+    await h.engine.start(handoff({ config: { rounds: 2, secrets: ['blue', 'green'] } }));
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'viewer-1', 'Olive');
+    // The viewer sees the current round's prompt and the authoritative state, just like a player.
+    expect(frames.find((f) => f.type === 'prompt')).toMatchObject({ round: 1 });
+    expect(frames.at(-1)?.type).toBe('state');
+    // But it never joined the roster: the game still has exactly the two handed-off players.
+    const state = await h.engine.getState('r1', STUB_GAME_ID);
+    expect(state?.players.map((p) => p.player).sort()).toEqual(['p1', 'p2']);
+    expect(state?.players.some((p) => p.player === 'viewer-1')).toBe(false);
   });
 
   it('exit ends the game, reports completion, and drops the session', async () => {
@@ -742,6 +745,20 @@ describe('per-player private payloads (spec 0052)', () => {
     expect(tap.broadcast.some((f) => f.type === 'private')).toBe(false);
     expect(JSON.stringify(tap.broadcast)).not.toContain('secretA');
     expect(JSON.stringify(tap.broadcast)).not.toContain('secretB');
+  });
+
+  it('never hands a VIEWER any private payload in its catch-up (spec 0050 + 0064)', async () => {
+    // A viewer joins a session that has a live per-player secret. Its catch-up must carry the
+    // broadcast (prompt + state) but NOT a single `private` frame - a shared-screen watcher only
+    // ever sees the broadcast, so a hidden-info game's secret never reaches the viewer.
+    await h.engine.start(secretHandoff());
+    const frames = await h.engine.join('r1', STUB_GAME_ID, 'viewer-1', 'Olive');
+    expect(frames.some((f) => f.type === 'private')).toBe(false);
+    expect(JSON.stringify(frames)).not.toContain('secretA');
+    expect(JSON.stringify(frames)).not.toContain('secretB');
+    // It still got the broadcast catch-up so it can render the game.
+    expect(frames.find((f) => f.type === 'prompt')).toBeDefined();
+    expect(frames.at(-1)?.type).toBe('state');
   });
 
   it('restores a re-joining player its current secret via catch-up, never another player s', async () => {

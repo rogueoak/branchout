@@ -377,11 +377,14 @@ describe('game-engine websocket', () => {
       socket.close();
     });
 
-    it('rejects a join for a player not in the roster', async () => {
+    it('admits a non-roster player as a broadcast-only viewer (spec 0050)', async () => {
+      // A viewer (spec 0050) is not in the playing roster but still needs the broadcast stream to
+      // watch. join now hands it the catch-up broadcast frames (ending in the authoritative state)
+      // rather than an error, so a shared-screen watcher can see the game.
       const socket = await open();
-      const err = waitFor(socket, 'error');
-      join(socket, { player: 'intruder' });
-      expect((await err).message).toMatch(/roster/);
+      const state = waitFor(socket, 'state');
+      join(socket, { player: 'viewer-1' });
+      expect((await state).type).toBe('state');
       socket.close();
     });
   });
