@@ -17,6 +17,7 @@ import { loneLeafPlugin } from '@branchout/game-lone-leaf';
 import { teeterTowerPlugin } from '@branchout/game-teeter-tower';
 import { whispergrovePlugin } from '@branchout/game-whispergrove';
 import { reversiPlugin } from '@branchout/game-reversi';
+import { chessPlugin } from '@branchout/game-chess';
 import { oddBirdPlugin } from '@branchout/game-odd-bird';
 import { checkersPlugin } from '@branchout/game-checkers';
 
@@ -54,6 +55,7 @@ async function main(): Promise<void> {
     teeterTowerPlugin,
     whispergrovePlugin,
     reversiPlugin,
+    chessPlugin,
     oddBirdPlugin,
     checkersPlugin,
   ]);

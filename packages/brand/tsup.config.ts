@@ -14,6 +14,7 @@ export default defineConfig({
     'src/teeter-tower.ts',
     'src/whispergrove.ts',
     'src/reversi.ts',
+    'src/chess.ts',
     'src/checkers.ts',
     'src/brand.ts',
     'src/avatar-ids.ts',

@@ -58,6 +58,10 @@
       "types": "./dist/reversi.d.ts",
       "import": "./dist/reversi.js"
     },
+    "./chess": {
+      "types": "./dist/chess.d.ts",
+      "import": "./dist/chess.js"
+    },
     "./checkers": {
       "types": "./dist/checkers.d.ts",
       "import": "./dist/checkers.js"

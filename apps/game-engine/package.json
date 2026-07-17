@@ -14,6 +14,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@branchout/game-chess": "workspace:*",
     "@branchout/game-checkers": "workspace:*",
     "@branchout/game-liar-liar": "workspace:*",
     "@branchout/game-odd-bird": "workspace:*",

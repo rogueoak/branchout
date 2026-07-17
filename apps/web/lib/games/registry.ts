@@ -99,6 +99,7 @@ import { loneLeafGameUi } from './lone-leaf';
 import { teeterTowerGameUi } from './teeter-tower';
 import { whispergroveGameUi } from './whispergrove';
 import { reversiGameUi } from './reversi';
+import { chessGameUi } from './chess';
 import { oddBirdGameUi } from './odd-bird';
 import { checkersGameUi } from './checkers';
 
@@ -110,6 +111,7 @@ export const GAME_UI_MODULES: Record<string, GameUiModule> = {
   [teeterTowerGameUi.id]: teeterTowerGameUi,
   [whispergroveGameUi.id]: whispergroveGameUi,
   [reversiGameUi.id]: reversiGameUi,
+  [chessGameUi.id]: chessGameUi,
   [oddBirdGameUi.id]: oddBirdGameUi,
   [checkersGameUi.id]: checkersGameUi,
 };
@@ -122,6 +124,7 @@ export const GAME_UI_LIST: readonly GameUiModule[] = [
   teeterTowerGameUi,
   whispergroveGameUi,
   reversiGameUi,
+  chessGameUi,
   oddBirdGameUi,
   checkersGameUi,
 ];

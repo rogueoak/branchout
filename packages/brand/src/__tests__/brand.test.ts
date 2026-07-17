@@ -7,6 +7,7 @@ import { liarLiarSvg } from '../liarliar.js';
 import { whispergroveSvg } from '../whispergrove.js';
 import { loneLeafSvg } from '../loneleaf.js';
 import { reversiSvg } from '../reversi.js';
+import { chessSvg } from '../chess.js';
 import { oddBirdSvg } from '../oddbird.js';
 import { checkersSvg } from '../checkers.js';
 import { heroTriviaSvg } from '../hero-trivia.js';
@@ -35,6 +36,7 @@ describe('SVG exports', () => {
     ['whispergroveSvg', whispergroveSvg],
     ['loneLeafSvg', loneLeafSvg],
     ['reversiSvg', reversiSvg],
+    ['chessSvg', chessSvg],
     ['oddBirdSvg', oddBirdSvg],
     ['checkersSvg', checkersSvg],
   ])(

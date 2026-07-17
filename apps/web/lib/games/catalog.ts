@@ -243,6 +243,38 @@ const MARKETING: Record<string, GameMarketing> = {
       'Reversi is a phone-first two-player disc-flip strategy game in insider testing. Bracket a ' +
       "line of your opponent's discs to flip them; the most discs of your color wins.",
   },
+  // Chess is insider-only (spec 0056): the entry exists so the build-time "every registered game needs
+  // marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so it never appears on the
+  // public /games index, the feature pages, or the sitemap. Its share card is a placeholder (no public
+  // raster is generated for an insider game); it satisfies the shape check.
+  chess: {
+    description:
+      'Chess is the classic game of strategy for two, built for phones. Full standard rules - ' +
+      'castling, en passant, and pawn promotion - with every legal move enforced by the server, ' +
+      'including check, checkmate, and stalemate. Violet and Amber armies on a warm wood board.',
+    howToPlay: [
+      {
+        title: 'Move a piece',
+        body: 'Tap one of your pieces to select it; its legal squares light up. Tap a highlighted square to move there.',
+      },
+      {
+        title: 'Use the special moves',
+        body: 'Castle your king to safety, capture en passant, and promote a pawn that reaches the far rank - the board offers them when they are legal.',
+      },
+      {
+        title: 'Deliver checkmate',
+        body: 'Attack the enemy king so it cannot escape, block, or be defended. Stalemate or bare kings draw the game.',
+      },
+    ],
+    categories: ['Classic', 'Strategy', 'Two-player'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Chess',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Chess - the classic strategy board game | Branch Out Games',
+    seoDescription:
+      'Chess is a phone-first two-player strategy game in insider testing. Full standard rules with ' +
+      'castling, en passant, promotion, and checkmate, every move enforced by the server.',
+  },
   'odd-bird': {
     description:
       'Odd Bird is a hidden-role deduction party game for phones. Everyone shares a secret roost ' +

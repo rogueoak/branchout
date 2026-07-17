@@ -164,6 +164,20 @@ What the product does for users, grouped by area. Each capability maps to one or
       a single-surface board renderer with the layout + tap hit-test in a game-agnostic `board-render.ts`.
       Themed Violet vs Amber discs (canopy grape/sunbeam tokens, no hardcoded hex) on a wood-grain
       board (`@branchout/game-reversi`). Insider-gated by SURFACE like Teeter (feedback `0029`).
+- [~] Chess (insider-only) - classic two-player chess, the correctness-heaviest board game, reusing the
+      `@branchout/game-board` harness (spec `0056`). Full standard rules: all six pieces, castling
+      (both sides with the through/into/out-of-check conditions), en passant (the one-move window),
+      promotion, and check / checkmate / stalemate / insufficient-material draw; a move is illegal if it
+      leaves the mover's own king in check. LIVE model with the whole FEN-like position (board, side to
+      move, castling rights, en-passant target, move counters) in **scratch** (no in-process world). A
+      move is `{ from, to, promotion? }` on the generic `move` channel; the engine validates FULL
+      legality (rejecting illegal/out-of-turn to that device only) plus a `resign` move, streams the
+      whole position on the `sim` frame, and ends on mate/stalemate/draw/resign (custom 2-player
+      standings: win 2, draw 1, loss 0). PERFECT information, so no per-player private channel. The
+      single-surface Viewer draws Unicode piece glyphs (Violet White vs Amber Black on a wood board) and
+      uses a two-tap move (tap a piece, then a highlighted square) with a promotion picker + resign. The
+      fifty-move and threefold-repetition counters are tracked but NOT auto-claimed (documented). Rules
+      are exhaustively unit-tested (`@branchout/game-chess`). Insider-gated by SURFACE.
 - [~] Checkers (insider-only) - classic English draughts, the SECOND board game and the first to reuse
       the shared board harness Reversi factored out (spec `0055`). It reuses the `@branchout/game-board`
       package (`Grid`, the `DIAGONAL` rays, `Turns`/`assignSeats`) and the shared web `../board/geometry`
