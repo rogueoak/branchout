@@ -90,6 +90,10 @@
       "types": "./dist/hero-loneleaf.d.ts",
       "import": "./dist/hero-loneleaf.js"
     },
+    "./hero-zinger": {
+      "types": "./dist/hero-zinger.d.ts",
+      "import": "./dist/hero-zinger.js"
+    },
     "./teeter-tower": {
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"

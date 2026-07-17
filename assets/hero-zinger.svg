@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Branch out Zinger">
+  <defs>
+    <radialGradient id="hzg-bg" cx="0.6" cy="0.42" r="0.85">
+      <stop offset="0" stop-color="#241a3a"/>
+      <stop offset="1" stop-color="#0d0a15"/>
+    </radialGradient>
+    <radialGradient id="hzg-glow" cx="0.62" cy="0.40" r="0.5">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#hzg-bg)"/>
+  <circle cx="580" cy="205" r="280" fill="url(#hzg-glow)"/>
+
+  <!-- The zinger mark, composed into the right two-thirds of the scene. -->
+  <!-- speech bubble: the setup that lands a zinger -->
+  <path d="M470 96
+           h176 a30 30 0 0 1 30 30
+           v104 a30 30 0 0 1 -30 30
+           h-104 l-50 44 v-44
+           h-22 a30 30 0 0 1 -30 -30
+           v-104 a30 30 0 0 1 30 -30 z"
+        fill="#7c3aed" stroke="#5b21b6" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- the zinger: a bright zap bolt punching out of the bubble -->
+  <path d="M598 118 l-84 74 h44 l-34 68 l98 -90 h-46 z"
+        fill="#fde047" stroke="#c9a12b" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- the oak stem the bubble sits on -->
+  <rect x="551" y="300" width="14" height="80" rx="7" fill="#3a2f2a"/>
+  <!-- two party leaves branching off the stem -->
+  <path d="M558 338 q-38 -7 -56 -36 q36 -5 56 24 z" fill="#06d6a0" stroke="#049e77" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M558 356 q38 -7 56 -36 q-36 -5 -56 24 z" fill="#118ab2" stroke="#0b6484" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- the single gold root anchoring the mark -->
+  <path d="M558 380 q-6 24 -26 38 M558 380 q6 24 26 38 M558 380 v36"
+        fill="none" stroke="#d2a463" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Wordmark, in the system-font stack (the raster pipeline embeds no fonts). -->
+  <text x="60" y="220" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="66" font-weight="700" fill="#efeaff">Zinger</text>
+  <text x="62" y="270" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="26" font-weight="500" fill="#b6a9d4">Set it up. Land the punchline.</text>
+</svg>

@@ -16,6 +16,7 @@ import { heroCheckersSvg } from '@branchout/brand/hero-checkers';
 import { heroSameBranchSvg } from '@branchout/brand/hero-samebranch';
 import { heroOddBirdSvg } from '@branchout/brand/hero-oddbird';
 import { heroLoneLeafSvg } from '@branchout/brand/hero-loneleaf';
+import { heroZingerSvg } from '@branchout/brand/hero-zinger';
 
 /** Every game's wide hero SVG, keyed by slug (== registry id). Public + insider games alike. */
 export const GAME_HERO: Record<string, string> = {
@@ -32,4 +33,5 @@ export const GAME_HERO: Record<string, string> = {
   'same-branch': heroSameBranchSvg,
   'odd-bird': heroOddBirdSvg,
   'lone-leaf': heroLoneLeafSvg,
+  zinger: heroZingerSvg,
 };

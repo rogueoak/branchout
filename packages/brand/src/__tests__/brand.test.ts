@@ -28,6 +28,7 @@ import { heroCheckersSvg } from '../hero-checkers.js';
 import { heroSameBranchSvg } from '../hero-samebranch.js';
 import { heroOddBirdSvg } from '../hero-oddbird.js';
 import { heroLoneLeafSvg } from '../hero-loneleaf.js';
+import { heroZingerSvg } from '../hero-zinger.js';
 import { palette, goldRootRule, safeArea, sparkGradient } from '../brand-notes.js';
 
 describe('SVG exports', () => {
@@ -84,6 +85,7 @@ describe('SVG exports', () => {
     ['heroSameBranchSvg', heroSameBranchSvg],
     ['heroOddBirdSvg', heroOddBirdSvg],
     ['heroLoneLeafSvg', heroLoneLeafSvg],
+    ['heroZingerSvg', heroZingerSvg],
   ])(
     '%s is a wide 800x450 hero illustration that keeps the gold root (spec 0046)',
     (_name, svg) => {

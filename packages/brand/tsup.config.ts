@@ -22,6 +22,7 @@ export default defineConfig({
     'src/hero-samebranch.ts',
     'src/hero-oddbird.ts',
     'src/hero-loneleaf.ts',
+    'src/hero-zinger.ts',
     'src/teeter-tower.ts',
     'src/zinger.ts',
     'src/brambles.ts',
