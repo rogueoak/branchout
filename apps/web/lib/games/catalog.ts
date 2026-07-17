@@ -177,6 +177,35 @@ const MARKETING: Record<string, GameMarketing> = {
       'Teeter Tower is a phone-first physics stacking game in insider testing. Spin a googly-eyed ' +
       'piece, lock its angle, and drop it to build toward the target line across three levels.',
   },
+  nightleaf: {
+    description:
+      'Nightleaf is a cooperative, silent card climb for phones. Everyone holds a hidden hand of ' +
+      'numbered leaves and must play them onto one shared pile in strictly ascending order - with no ' +
+      'talking about the numbers. Play out of turn and the grove loses a bud. Clear every tier to ' +
+      'win. Still in testing.',
+    howToPlay: [
+      {
+        title: 'Hold your leaves',
+        body: 'You get a secret hand of numbered leaves. No one may say or hint at their numbers.',
+      },
+      {
+        title: 'Play in order',
+        body: 'Together, play every leaf onto the shared trunk lowest-first. A leaf out of order costs a bud.',
+      },
+      {
+        title: 'Climb the tiers',
+        body: 'Clear a tier to deal a bigger hand. Clear the final tier before the buds run out to win.',
+      },
+    ],
+    categories: ['Co-op', 'Party', 'Memory'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Nightleaf',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Nightleaf - a cooperative silent card game | Branch Out Games',
+    seoDescription:
+      'Nightleaf is a phone-first cooperative card game in insider testing. Play a hidden hand of ' +
+      'numbered leaves onto a shared pile in ascending order, in total silence, without losing a bud.',
+  },
   // Sketchy is insider-only (spec 0063), so this entry exists only to satisfy the completeness check;
   // PUBLIC_GAME_CATALOG excludes it from the public /games index, feature pages, and sitemap. Its
   // share card is a placeholder (no public raster for an insider game).

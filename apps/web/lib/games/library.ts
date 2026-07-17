@@ -222,6 +222,57 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  nightleaf: {
+    categories: ['cooperative', 'party'],
+    tags: ['memory', 'real-time', 'small-group', 'quick'],
+    rules: {
+      objective:
+        'Silently play every leaf in every hand onto one shared pile in ascending order, and clear ' +
+        'the final tier before the buds run out.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Nightleaf is a cooperative game for 2 to 6 players, each on their own phone. Every player ' +
+              'gets a secret hand of numbered leaves - tier 1 deals one leaf each, tier 2 deals two, ' +
+              'and so on. The group shares a pool of buds (lives) and fireflies (hushes).',
+          ],
+        },
+        {
+          heading: 'The one rule: silence',
+          body: [
+            'You may not say, show, or hint at the numbers on your leaves - no counting, no signals, ' +
+              'no timing tricks. Reading the room is the whole game.',
+          ],
+        },
+        {
+          heading: 'Play in order',
+          body: [
+            'Everyone plays at once, in real time. When you think your lowest leaf is the next number ' +
+              'up, play it onto the shared trunk. Every leaf across every hand must land in strictly ' +
+              'ascending order.',
+            'If a leaf is played while anyone still holds a lower one, the grove loses a bud - but the ' +
+              'leaf still lands. Lose all your buds and the grove falls.',
+          ],
+        },
+        {
+          heading: 'Hush',
+          body: [
+            'Stuck? If everyone still holding leaves proposes a hush, the group spends one firefly and ' +
+              'everyone discards their lowest leaf at once - no bud cost. A wordless reset.',
+          ],
+        },
+        {
+          heading: 'Winning',
+          body: [
+            'Clear a tier (empty every hand) to climb to the next, bigger tier. Clear the final tier ' +
+              'with buds to spare and the whole grove wins together - Nightleaf is purely cooperative, ' +
+              'so you win or lose as one.',
+          ],
+        },
+      ],
+    },
+  },
   sketchy: {
     categories: ['drawing', 'party'],
     tags: ['sketching', 'bluffing', 'wit', 'small-group', 'real-time'],

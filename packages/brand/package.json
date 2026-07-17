@@ -50,6 +50,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./nightleaf": {
+      "types": "./dist/nightleaf.d.ts",
+      "import": "./dist/nightleaf.js"
+    },
     "./sketchy": {
       "types": "./dist/sketchy.d.ts",
       "import": "./dist/sketchy.js"
