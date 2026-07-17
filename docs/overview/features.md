@@ -279,6 +279,19 @@ What the product does for users, grouped by area. Each capability maps to one or
       the refresh token out-of-band so it never expires from disuse, persists a rotated token atomically,
       and emails a Resend alert on failure; the deploy preserves the box's (rotated) token across runs
       (spec `0049`).
+- [x] Game library, rules overview, and in-game help sheet (spec `0051`) - one taxonomy + rules layer
+      over the registry. `lib/games/library.ts` holds a controlled category + tag vocabulary, a
+      structured `GameRules` shape (an objective plus headed sections), a per-game `GAME_LIBRARY`
+      entry, and search/lookup helpers, with a fail-loud completeness check (every registered game
+      needs an entry; every declared category/tag must be in the vocabulary). The `/games` index gains
+      a client search box + native category filter and category/tag chips per card (a no-match state
+      reads as intentional); the `/games/[slug]` feature page adds a full Rules section and the chips.
+      A shared, presentational `RulesContent` renders the same rules in three homes. A responsive
+      `Sheet` (Radix Dialog: bottom on mobile, right on desktop, backdrop/close/Escape dismiss) hosts a
+      `HelpSheet` behind an always-present "?" help control in `GameStage` - reachable for every mode
+      and phase, opening the rules over the live game without pausing or ending it. The insider index
+      exposes each game's rules via a separate "How to play" trigger, since insider games have no
+      public feature page. Backfilled for Trivia, Liar Liar, and Teeter Tower.
 - [ ] Profile pages and friend search/invite.
 
 ## Future

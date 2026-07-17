@@ -18,6 +18,31 @@
    in layout.tsx); the token layers are class-toggled, so there is no prefers-color-scheme flip. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Sheet's desktop drawer slides in from the RIGHT edge (the Sheet is pinned right on >= sm). Roots
+   ships `animate-drawer-*` but its keyframe is left-anchored (translateX(-100%)), the wrong side, so
+   this repo adds a right-anchored pair. Registered as `--animate-*` theme vars so Tailwind emits the
+   `animate-sheet-right-in` / `-out` utilities the Sheet references (spec 0051 motion intent). */
+@keyframes sheet-right-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes sheet-right-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@theme {
+  --animate-sheet-right-in: sheet-right-in var(--duration-slow) var(--ease-decelerate);
+  --animate-sheet-right-out: sheet-right-out var(--duration-base) var(--ease-standard);
+}
+
 /* App-wide base surface so every route is dark by default, even ones that do not set `bg-bg`
    themselves. `color-scheme: dark` keeps native controls (scrollbars, form widgets) in step. */
 html {
