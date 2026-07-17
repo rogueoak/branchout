@@ -222,6 +222,48 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
       ],
     },
   },
+  checkers: {
+    categories: ['classic', 'strategy'],
+    tags: ['two-player', 'spatial', 'turn-based'],
+    rules: {
+      objective:
+        'Capture all of your opponent pieces, or leave them with no legal move, to win the game.',
+      sections: [
+        {
+          heading: 'Setup',
+          body: [
+            'Checkers (English draughts) is a two-player game on one shared 8x8 board, played on the ' +
+              'dark squares only. Each side starts with 12 men on the dark squares of its three home ' +
+              'rows - Amber along the top, Violet along the bottom. Violet moves first.',
+          ],
+        },
+        {
+          heading: 'Moving',
+          body: [
+            'A man moves one square diagonally forward to an empty dark square (Violet moves up the ' +
+              'board, Amber down). The board highlights your legal squares - tap a piece, then tap ' +
+              'where it goes.',
+          ],
+        },
+        {
+          heading: 'Capturing',
+          body: [
+            'Jump over a touching opponent piece into the empty square just beyond to capture it. If ' +
+              'the piece can jump again after landing, it must keep jumping in the same turn (a ' +
+              'multi-jump). If any jump is available to you, you must take a jump that turn.',
+          ],
+        },
+        {
+          heading: 'Kings and winning',
+          body: [
+            'A man that stops on the far row is crowned a King, which moves and jumps diagonally in ' +
+              'all four directions. You win by capturing every opponent piece, or by leaving your ' +
+              'opponent with no legal move on their turn.',
+          ],
+        },
+      ],
+    },
+  },
 };
 
 /**

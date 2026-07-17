@@ -164,6 +164,21 @@ What the product does for users, grouped by area. Each capability maps to one or
       a single-surface board renderer with the layout + tap hit-test in a game-agnostic `board-render.ts`.
       Themed Violet vs Amber discs (canopy grape/sunbeam tokens, no hardcoded hex) on a wood-grain
       board (`@branchout/game-reversi`). Insider-gated by SURFACE like Teeter (feedback `0029`).
+- [~] Checkers (insider-only) - classic English draughts, the SECOND board game and the first to reuse
+      the shared board harness Reversi factored out (spec `0055`). It reuses the `@branchout/game-board`
+      package (`Grid`, the `DIAGONAL` rays, `Turns`/`assignSeats`) and the shared web `../board/geometry`
+      wholesale - only the rules and the piece chrome (Violet vs Amber acorn men, a gold-root crown ring
+      on a King) are Checkers-specific. Like Reversi it is LIVE + fully serializable (board in scratch,
+      no in-process world, no `disposeLive`) and PERFECT information (no spec `0052`). The rules ship
+      **standard English draughts**: men move/capture diagonally forward, jumps chain (multi-jump forced
+      to completion), MANDATORY CAPTURE is on (any available jump is legal - not the "longest jump"
+      variant), a man that stops on the far row is crowned a King (crowning mid-chain ends the turn), and
+      the side to move with no legal move loses (no draw). A move is `{ from, path }` on the generic
+      `move` channel; the engine validates turn + full legality (incl. mandatory capture and the whole
+      multi-jump path, rejecting to that device only) and streams the whole board on `sim`. The web
+      Viewer is a select-then-move two-tap surface (tap a piece, then a highlighted destination; a
+      multi-jump submits whole). Standings rank the winner first even when the loser has more pieces
+      (`@branchout/game-checkers`). Insider-gated by SURFACE like Teeter (feedback `0029`).
 - [x] Per-player private payloads - the hidden-information seam the next wave of games (spymaster
       key, hidden role, private hand) build on (spec `0052`). A lifecycle result may carry an optional
       `private` map (playerId -> opaque secret); the engine delivers each entry ONLY to that player's
