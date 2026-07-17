@@ -42,6 +42,10 @@
       "types": "./dist/teeter-tower.d.ts",
       "import": "./dist/teeter-tower.js"
     },
+    "./nightleaf": {
+      "types": "./dist/nightleaf.d.ts",
+      "import": "./dist/nightleaf.js"
+    },
     "./brand": {
       "types": "./dist/brand.d.ts",
       "import": "./dist/brand.js"

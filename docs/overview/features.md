@@ -159,6 +159,20 @@ What the product does for users, grouped by area. Each capability maps to one or
       `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
       catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
       client exposes the local player's secret as `state.private` for a game's UI module.
+- [~] Fourth game (insider-only) - Nightleaf: a cooperative, real-time, SILENT ascending-number game
+      for 2-6 players, and the first game built on the private-hand seam (spec `0052`, spec `0060`).
+      Each player holds a secret hand of numbered leaves (1-100, unique) delivered ONLY to their own
+      device; together, in silence, the grove must play every leaf onto one shared trunk in strictly
+      ascending order. A leaf played while a lower one is still held anywhere loses a bud (life); zero
+      buds loses. Clearing a tier (every hand emptied) climbs to a bigger one (tier N deals N leaves
+      each); clearing the final tier wins. An optional hush - once every holder proposes it - spends a
+      shared firefly and discards everyone's lowest leaf. A live game (spec `0044`): the shared grove
+      (trunk, buds, tier, fireflies, per-player leaf COUNTS) streams on the broadcast `sim`, while each
+      player's exact leaves ride the per-player `private` channel and never touch a broadcast frame -
+      a test proves a player never receives another player's hand. Purely cooperative: everyone shares
+      one final standing. Deterministic per-tier deal from a seeded rng; no content bank. The shared
+      Viewer paints the grove; each player's Remote shows their own hand + the play/hush moves
+      (`@branchout/game-nightleaf`).
 
 ## Web
 
