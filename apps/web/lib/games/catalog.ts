@@ -209,6 +209,39 @@ const MARKETING: Record<string, GameMarketing> = {
       'Reversi is a phone-first two-player disc-flip strategy game in insider testing. Bracket a ' +
       "line of your opponent's discs to flip them; the most discs of your color wins.",
   },
+  // Checkers is insider-only (spec 0055): like Reversi, the entry exists so the build-time "every
+  // registered game needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so
+  // it never appears on the public /games index, the feature pages, or the sitemap. Its share card is
+  // a placeholder (no public raster is generated for an insider game); it satisfies the shape check.
+  checkers: {
+    description:
+      'Checkers (English draughts) is the classic strategy game for two, built for phones. Move your ' +
+      'Violet or Amber pieces diagonally forward, jump an opponent to capture, and chain multi-jumps ' +
+      'in one turn. Reach the far row to crown a King that moves both ways. Capture every piece, or ' +
+      'leave your opponent no move, to win.',
+    howToPlay: [
+      {
+        title: 'Move and jump',
+        body: 'Slide a piece one square diagonally forward, or jump over a touching opponent into the empty square beyond to capture it.',
+      },
+      {
+        title: 'Chain and crown',
+        body: 'If a jump is open you must take it, and a landed piece keeps jumping. Reach the far row to crown a King that moves and jumps both ways.',
+      },
+      {
+        title: 'Clear the board',
+        body: 'Capture all of your opponent pieces, or block their last move, to win the game.',
+      },
+    ],
+    categories: ['Classic', 'Strategy', 'Two-player'],
+    shareImage: '/share-trivia.png',
+    shareAlt: 'Branch Out Checkers',
+    badge: { label: 'Insider', variant: 'primary' },
+    seoTitle: 'Checkers - the classic draughts strategy game | Branch Out Games',
+    seoDescription:
+      'Checkers (English draughts) is a phone-first two-player strategy game in insider testing. Jump ' +
+      'to capture, chain multi-jumps, and crown a King; capture every piece to win.',
+  },
 };
 
 /** A game's full marketing + display data - the registry basics plus the catalog copy. */
