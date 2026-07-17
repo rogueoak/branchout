@@ -56,6 +56,7 @@ export function validateSeedBank(seeds: readonly SketchySeed[]): void {
   const seen = new Set<string>();
   const categories = new Set<string>(CATEGORIES);
   const textsByCategory = new Map<string, Set<string>>();
+  const idPattern = /^[a-z]+-\d{3}$/;
 
   for (const seed of seeds) {
     const pos = `seed id=${JSON.stringify(seed.id)}`;
@@ -77,7 +78,6 @@ export function validateSeedBank(seeds: readonly SketchySeed[]): void {
 
     // Id must follow the <category>-NNN convention (3-digit zero-padded suffix). Static pattern +
     // startsWith check (category is pre-validated), matching the Liar Liar/Trivia validators.
-    const idPattern = /^[a-z]+-\d{3}$/;
     if (!idPattern.test(seed.id) || !seed.id.startsWith(`${seed.category}-`)) {
       throw new Error(
         `sketchy seed bank: seed id "${seed.id}" must match ${seed.category}-NNN (3 digits)`,

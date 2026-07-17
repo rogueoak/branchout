@@ -24,6 +24,9 @@ export const CATEGORIES = ['nature', 'everyday', 'places', 'food', 'animals', 'f
 
 export type LoneLeafCategory = (typeof CATEGORIES)[number];
 
+/** Id convention: `<category>-NNN` (3-digit zero-padded suffix). */
+const ID_PATTERN = /^[a-z]+-\d{3}$/;
+
 /**
  * Read every category file (`data/lone-leaf/<category>.json`) through the injected loader and return
  * the flattened seed array. Rooted at this package via the asset loader, so it works from `src` under
@@ -79,11 +82,10 @@ export function validateSeedBank(seeds: readonly LoneLeafSeed[]): void {
       );
     }
 
-    // Id must follow the <category>-NNN convention (3-digit zero-padded suffix). A static pattern plus
-    // a startsWith check (matching the trivia/liar-liar validators) - category is pre-validated, and
-    // the static form removes the injection footgun.
-    const idPattern = /^[a-z]+-\d{3}$/;
-    if (!idPattern.test(seed.id) || !seed.id.startsWith(`${seed.category}-`)) {
+    // Id must follow the <category>-NNN convention (a static pattern plus a startsWith check, matching
+    // the trivia/liar-liar validators) - category is pre-validated, and the static form removes the
+    // injection footgun.
+    if (!ID_PATTERN.test(seed.id) || !seed.id.startsWith(`${seed.category}-`)) {
       throw new Error(
         `lone-leaf seed bank: seed id "${seed.id}" must match ${seed.category}-NNN (3 digits)`,
       );

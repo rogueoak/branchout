@@ -155,9 +155,8 @@ function toSim(scratch: CheckersScratch): CheckersSim {
   const { board, turns } = boardAndTurns(scratch);
   const score = scoreOf(board);
   const toMove = scratch.over ? null : colorOf(turns.turn);
-  const legal: CheckersMove[] = scratch.over
-    ? []
-    : legalMoves(board, turns.turn).map((m) => ({ from: m.from, path: m.path }));
+  // A rule Move is structurally a CheckersMove ({from, path}), so it serializes directly to the wire.
+  const legal: CheckersMove[] = scratch.over ? [] : legalMoves(board, turns.turn);
   return {
     size: BOARD_SIZE,
     cells: scratch.cells.map(wireCellOf),
@@ -242,7 +241,8 @@ export function createCheckersGame(): GameModule {
 
       // Legality: the move must be one of the seat's legal moves (this enforces mandatory capture and
       // the full multi-jump continuation - a partial jump is not in the legal list, so it is rejected).
-      const candidate: Move = { from: parsed.from, path: parsed.path };
+      // The parsed wire move already has the {from, path} shape a rule Move needs.
+      const candidate: Move = parsed;
       if (!isLegalMove(board, turns.turn, candidate)) {
         return {
           scratch: ctx.scratch as Record<string, unknown>,

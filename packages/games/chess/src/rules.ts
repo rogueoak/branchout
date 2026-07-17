@@ -357,12 +357,11 @@ function slideMoves(
     let c = from.col + dir.dc;
     while (board.inBounds(r, c)) {
       const target = board.at(r, c);
-      if (target === 'empty') {
-        moves.push({ from, to: { row: r, col: c } });
-      } else {
+      if (target !== 'empty') {
         if (cellColor(target) !== color) moves.push({ from, to: { row: r, col: c } });
         break; // blocked by any piece
       }
+      moves.push({ from, to: { row: r, col: c } });
       r += dir.dr;
       c += dir.dc;
     }
@@ -678,26 +677,19 @@ export function isInsufficientMaterial(pos: Position): boolean {
   });
   if (sufficient) return false;
 
-  // No minors: bare kings.
-  if (minors.length === 0) return true;
-  // A single minor (either side): insufficient.
-  if (minors.length === 1) return true;
+  // No minors (bare kings) or a single minor (either side): insufficient.
+  if (minors.length <= 1) return true;
   // Two minors: only K+B vs K+B with same-colored bishops is a forced draw; anything else (two
-  // knights, bishop+knight, or two bishops on one side) is treated as sufficient (a mate can exist or
-  // the position is not a trivially dead draw).
-  if (minors.length === 2) {
-    const [a, b] = minors as [(typeof minors)[number], (typeof minors)[number]];
-    if (
-      a.type === 'B' &&
-      b.type === 'B' &&
-      a.color !== b.color &&
-      squareColor(a.square) === squareColor(b.square)
-    ) {
-      return true;
-    }
-    return false;
-  }
-  return false;
+  // knights, bishop+knight, two bishops on one side, or more than two minors) is treated as sufficient
+  // (a mate can exist or the position is not a trivially dead draw).
+  if (minors.length !== 2) return false;
+  const [a, b] = minors as [(typeof minors)[number], (typeof minors)[number]];
+  return (
+    a.type === 'B' &&
+    b.type === 'B' &&
+    a.color !== b.color &&
+    squareColor(a.square) === squareColor(b.square)
+  );
 }
 
 /** The light/dark color of a square (used for the same-colored-bishops insufficient-material case). */

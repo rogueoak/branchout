@@ -26,6 +26,9 @@ export const CATEGORIES = ['senses', 'feelings', 'everyday', 'nature', 'people',
 
 export type SpectrumCategory = (typeof CATEGORIES)[number];
 
+/** Id convention: `<category>-NNN` (3-digit zero-padded suffix). */
+const ID_PATTERN = /^[a-z]+-\d{3}$/;
+
 /**
  * Read every category file (`data/same-branch/<category>.json`) through the injected loader and return
  * the flattened spectrum array. Rooted at this package via the asset loader, so it works from `src`
@@ -80,11 +83,9 @@ export function validateSpectrumBank(spectrums: readonly Spectrum[]): void {
       );
     }
 
-    // Id must follow the <category>-NNN convention (3-digit zero-padded suffix). Use a static pattern
-    // plus a startsWith check (matching the Liar Liar validator) rather than interpolating the
-    // category into a regex source.
-    const idPattern = /^[a-z]+-\d{3}$/;
-    if (!idPattern.test(spectrum.id) || !spectrum.id.startsWith(`${spectrum.category}-`)) {
+    // Id must follow the <category>-NNN convention (a static pattern plus a startsWith check, matching
+    // the Liar Liar validator) rather than interpolating the category into a regex source.
+    if (!ID_PATTERN.test(spectrum.id) || !spectrum.id.startsWith(`${spectrum.category}-`)) {
       throw new Error(
         `same-branch spectrum bank: spectrum id "${spectrum.id}" must match ${spectrum.category}-NNN (3 digits)`,
       );

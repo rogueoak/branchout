@@ -320,7 +320,6 @@ export function createWhispergroveGame(rng: () => number, bank: readonly string[
     id: WHISPERGROVE_GAME_ID,
 
     configure(config: unknown, players: readonly SessionPlayer[]): ConfigureResult {
-      validateConfig(config);
       const scratch = deal(validateConfig(config), players ?? []);
       // Live game: no round timer, one continuous phase. `rounds` must be >= 1 for the SDK; a single
       // logical round covers the whole match, which ends via `tick.over`.
@@ -340,74 +339,38 @@ export function createWhispergroveGame(rng: () => number, bank: readonly string[
 
     collectMove(ctx: RoundContext, player: string, move: string): ScratchResult {
       const scratch = asScratch(ctx.scratch);
+      const unchanged = ctx.scratch as Record<string, unknown>;
+      const reject = (reason: string): ScratchResult => ({
+        scratch: unchanged,
+        rejected: { reason },
+      });
 
-      if (scratch.phase === 'over') {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'game over' },
-        };
-      }
+      if (scratch.phase === 'over') return reject('game over');
 
       const seat = seatFor(scratch.seats, player);
-      if (!seat) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'not a player in this grove' },
-        };
-      }
+      if (!seat) return reject('not a player in this grove');
       // Only the grove whose turn it is may act.
-      if (seat.team !== scratch.turn) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'not your grove turn' },
-        };
-      }
+      if (seat.team !== scratch.turn) return reject('not your grove turn');
 
       const parsed = parseMove(move);
-      if (!parsed) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'malformed move' },
-        };
-      }
+      if (!parsed) return reject('malformed move');
 
       // --- A whisper: only the active grove's Whisperer, only while awaiting one ---
       if (parsed.kind === 'whisper') {
-        if (seat.role !== 'whisperer') {
-          return {
-            scratch: ctx.scratch as Record<string, unknown>,
-            rejected: { reason: 'only the Whisperer may whisper' },
-          };
-        }
-        if (scratch.phase !== 'whispering') {
-          return {
-            scratch: ctx.scratch as Record<string, unknown>,
-            rejected: { reason: 'a whisper is already in play' },
-          };
-        }
+        if (seat.role !== 'whisperer') return reject('only the Whisperer may whisper');
+        if (scratch.phase !== 'whispering') return reject('a whisper is already in play');
         const word = parsed.word.trim();
-        if (!isSingleToken(word)) {
-          return {
-            scratch: ctx.scratch as Record<string, unknown>,
-            rejected: { reason: 'a whisper must be a single word' },
-          };
-        }
+        if (!isSingleToken(word)) return reject('a whisper must be a single word');
         // The whisper may not BE a word printed on the grove (a hidden leaf leaks otherwise). Compare
         // case-insensitively against every leaf still on the board (revealed or not).
         const upper = word.toUpperCase();
         if (scratch.words.some((w) => w.toUpperCase() === upper)) {
-          return {
-            scratch: ctx.scratch as Record<string, unknown>,
-            rejected: { reason: 'the whisper cannot be a word on the grove' },
-          };
+          return reject('the whisper cannot be a word on the grove');
         }
         // N must be in range 1..(your remaining leaves). The tap budget is N + 1 (the classic bonus tap).
         const ownLeft = leavesLeft(scratch.key, scratch.revealed, seat.team);
         if (parsed.count < 1 || parsed.count > ownLeft) {
-          return {
-            scratch: ctx.scratch as Record<string, unknown>,
-            rejected: { reason: `whisper count must be between 1 and ${ownLeft}` },
-          };
+          return reject(`whisper count must be between 1 and ${ownLeft}`);
         }
         scratch.whisper = { word, count: parsed.count, team: seat.team };
         scratch.guessesLeft = parsed.count + 1;
@@ -416,38 +379,13 @@ export function createWhispergroveGame(rng: () => number, bank: readonly string[
       }
 
       // --- A tap: only a member of the active grove, only while guessing, only if taps remain ---
-      if (scratch.phase !== 'guessing') {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'wait for your Whisperer to whisper' },
-        };
-      }
+      if (scratch.phase !== 'guessing') return reject('wait for your Whisperer to whisper');
       // The Whisperer knows the key; they must not tap their own team's leaves.
-      if (seat.role === 'whisperer') {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'the Whisperer cannot tap leaves' },
-        };
-      }
-      if (scratch.guessesLeft <= 0) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'no taps left this turn' },
-        };
-      }
+      if (seat.role === 'whisperer') return reject('the Whisperer cannot tap leaves');
+      if (scratch.guessesLeft <= 0) return reject('no taps left this turn');
       const index = parsed.index;
-      if (index < 0 || index >= GRID_SIZE) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'that leaf is not on the grove' },
-        };
-      }
-      if (scratch.revealed[index]) {
-        return {
-          scratch: ctx.scratch as Record<string, unknown>,
-          rejected: { reason: 'that leaf is already revealed' },
-        };
-      }
+      if (index < 0 || index >= GRID_SIZE) return reject('that leaf is not on the grove');
+      if (scratch.revealed[index]) return reject('that leaf is already revealed');
 
       // Reveal the leaf; resolve the outcome from its true role.
       scratch.revealed[index] = true;
@@ -461,25 +399,18 @@ export function createWhispergroveGame(rng: () => number, bank: readonly string[
       }
 
       // A win check after every reveal: whichever grove now has zero hidden leaves has cleared.
-      const violetLeft = leavesLeft(scratch.key, scratch.revealed, 'violet');
-      const amberLeft = leavesLeft(scratch.key, scratch.revealed, 'amber');
-      if (violetLeft === 0) {
+      if (leavesLeft(scratch.key, scratch.revealed, 'violet') === 0) {
         endGameWith(scratch, 'violet', 'cleared');
         return { scratch: toRecord(scratch) };
       }
-      if (amberLeft === 0) {
+      if (leavesLeft(scratch.key, scratch.revealed, 'amber') === 0) {
         endGameWith(scratch, 'amber', 'cleared');
         return { scratch: toRecord(scratch) };
       }
 
-      // A correct (own) leaf: the grove keeps guessing while taps remain. Otherwise (a sapling or an
-      // enemy leaf) the turn ends and passes to the other grove.
-      if (role === seat.team) {
-        if (scratch.guessesLeft <= 0) passTurn(scratch);
-        return { scratch: toRecord(scratch) };
-      }
-      // A sapling or an enemy leaf ends the turn immediately.
-      passTurn(scratch);
+      // A correct (own) leaf keeps the grove guessing while taps remain; a sapling or an enemy leaf
+      // (or spending the last tap) ends the turn and passes it to the other grove.
+      if (role !== seat.team || scratch.guessesLeft <= 0) passTurn(scratch);
       return { scratch: toRecord(scratch) };
     },
 

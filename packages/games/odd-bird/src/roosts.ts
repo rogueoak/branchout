@@ -35,6 +35,9 @@ export const MAX_PLAYERS = 8;
 /** A roost must ship at least this many distinct perches (one per flock member at the max table). */
 export const MIN_PERCHES = MAX_PLAYERS - 1;
 
+/** Id convention: `<category>-NNN` (3-digit zero-padded suffix). */
+const ID_PATTERN = /^[a-z]+-\d{3}$/;
+
 /**
  * Read every category file (`data/odd-bird/<category>.json`) through the injected loader and return
  * the flattened roost array. Rooted at this package via the asset loader, so it works from `src`
@@ -89,11 +92,10 @@ export function validateRoostBank(roosts: readonly OddBirdRoost[]): void {
       );
     }
 
-    // Id must follow the <category>-NNN convention (3-digit zero-padded suffix). A static pattern
-    // plus a startsWith check (matching the Liar Liar validator) - correct here since category is
-    // pre-validated, and the static form removes any injection footgun.
-    const idPattern = /^[a-z]+-\d{3}$/;
-    if (!idPattern.test(roost.id) || !roost.id.startsWith(`${roost.category}-`)) {
+    // Id must follow the <category>-NNN convention (a static pattern plus a startsWith check, matching
+    // the Liar Liar validator) - correct since category is pre-validated, and the static form removes
+    // any injection footgun.
+    if (!ID_PATTERN.test(roost.id) || !roost.id.startsWith(`${roost.category}-`)) {
       throw new Error(
         `odd-bird roost bank: roost id "${roost.id}" must match ${roost.category}-NNN (3 digits)`,
       );
