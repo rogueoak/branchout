@@ -118,7 +118,7 @@ test('four insiders play a full two-team Whispergrove match to a winner', async 
         }
         // Tap every available leaf on the seeker's controller (one at a time; the turn may pass).
         const controller = seeker.getByRole('region', { name: /your controller/i });
-        const tap = controller.getByRole('button', { name: /^tap / });
+        const tap = controller.getByRole('button', { name: /^tap /i });
         if (
           await tap
             .first()
