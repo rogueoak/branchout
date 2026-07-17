@@ -469,6 +469,20 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   uses). A module may also **reject a single submission** (`collectMove` returns `rejected`): the
   engine replies to that one device with a targeted `move_rejected` frame and writes no state -
   never a broadcast (used for "someone already submitted that" in a bluffing game).
+- **Per-player private payloads** (spec `0052`, the hidden-information seam). A lifecycle result
+  (`startRound`/`reveal`/`tick`) may carry an optional `private: Record<playerId, unknown>` -
+  opaque, game-defined secrets (a spymaster key, a hidden role, a private hand). The engine delivers
+  each entry ONLY to that player's device(s) over a **per-player private channel**
+  (`private:{room}:{game}:{player}`) that only that player's connection(s) subscribe to - it never
+  hits the broadcast `stream:` channel, so no other player receives it even by inspecting the wire.
+  It is a new server-only `private` frame (targeted like `move_rejected`, additive under the same
+  `PROTOCOL_VERSION`, never parsed on ingress). The engine persists the latest per-player payload in
+  session state (scoped to the round) so a (re)joining device recovers ITS OWN secret as ordered join
+  catch-up, and clears it when the next round starts (the same per-round pruning as `reveal`/
+  `standings`). The module runs in a worker and returns plain data; the main thread owns the sockets
+  and does the targeted send. The web client folds the frame into `state.private` for a game's UI.
+  Secrecy is only as strong as the WebSocket `join` identity, which is self-asserted and not yet
+  authenticated (playerIds are public), so a hardened join is a tracked follow-up (feedback `0033`).
 - **Server-authoritative games** (spec `0043`, Teeter Tower). A game's payloads are opaque, so a
   module can own *shared simulation state*, not just per-player answers: Teeter runs Matter.js
   **headless in the engine**, keeps the authoritative tower in `scratch`, and treats one piece-drop
@@ -490,8 +504,9 @@ the *public* identity a UI needs, never the secret that authenticates the caller
   the host is disconnected. Per-session operations are serialized in-process so concurrent frames
   cannot lose an update; cross-instance locking is a future concern.
 - **Streaming over Redis pub/sub** - the engine publishes server frames to a per-session channel;
-  each connected device subscribes and forwards them to its socket. Both the store and pub/sub
-  sit behind interfaces with in-memory implementations for tests.
+  each connected device subscribes and forwards them to its socket. A device also subscribes to its
+  own per-player private channel (spec `0052`) for targeted hidden-information frames. Both the store
+  and pub/sub sit behind interfaces with in-memory implementations for tests.
 - **Host controls** (`pause`, `advance`, `restart`, `exit`) and the control-plane channel as
   Fastify routes (`POST /sessions`, `POST /sessions/:room/:game/control`) plus an outbound
   reporter client.

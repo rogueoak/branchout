@@ -56,6 +56,16 @@ export interface SessionState {
   reveal?: unknown;
   standings?: Standing[];
   /**
+   * The latest per-player private (hidden-information) payload for the round in play, keyed by
+   * playerId (spec 0052). A game's lifecycle result (`startRound`/`reveal`/`tick`) may carry a
+   * `private` map; the engine delivers each entry only to that player's connection(s) over the
+   * per-player private channel (never the broadcast channel) and stores it here so a (re)joining
+   * device recovers ITS OWN secret as part of join catch-up - it is never used to serve another
+   * player's payload. Cleared when a new round starts, mirroring the per-round `reveal`/`standings`
+   * pruning, so a stale secret never leaks into a later round. Absent when no game set one.
+   */
+  privatePayloads?: Record<string, unknown>;
+  /**
    * True when the engine auto-paused because the host disconnected (spec 0014), distinct from a
    * deliberate host pause. Only an auto-pause is cleared when the host reconnects, so a manual
    * pause is never silently undone.

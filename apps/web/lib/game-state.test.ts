@@ -165,6 +165,70 @@ describe('reduceGameState', () => {
     expect(second.sim).toEqual({ bodies: [{ id: 2 }], height: 20 });
   });
 
+  it('stores the local private payload, clears it on a new round, and a reconnect frame restores it (spec 0052)', () => {
+    // The engine already targeted this frame to this device, so the reducer just stores its payload.
+    let next = reduceGameState(initialGameState('p1'), {
+      v: 1,
+      type: 'private',
+      room: ROOM,
+      game: GAME,
+      round: 1,
+      player: 'p1',
+      private: { key: ['red', 'blue'] },
+    });
+    expect(next.private).toEqual({ key: ['red', 'blue'] });
+
+    // A new round (prompt) supersedes the secret: it must clear so nothing bleeds into the question.
+    next = reduceGameState(next, prompt());
+    expect(next.private).toBeNull();
+
+    // A reconnect replays the catch-up private frame, re-hydrating the local secret.
+    const restored = reduceGameState(next, {
+      v: 1,
+      type: 'private',
+      room: ROOM,
+      game: GAME,
+      round: 2,
+      player: 'p1',
+      private: { key: ['green'] },
+    });
+    expect(restored.private).toEqual({ key: ['green'] });
+  });
+
+  it('ignores a private frame addressed to another player (defense-in-depth, spec 0052)', () => {
+    // Delivery is targeted server-side, but if a mis-targeted or replayed frame ever names a DIFFERENT
+    // recipient than the local player, the reducer must drop it so another player's secret never paints
+    // into this device's UI. The local player id is seeded via initialGameState.
+    const start = initialGameState('p1');
+    const next = reduceGameState(start, {
+      v: 1,
+      type: 'private',
+      room: ROOM,
+      game: GAME,
+      round: 1,
+      player: 'p2', // NOT us
+      private: { key: ['victims-secret'] },
+    });
+    expect(next.private).toBeNull();
+    // Same object back (no-op) - nothing about the state changed.
+    expect(next).toBe(start);
+  });
+
+  it('falls back to trusting server targeting when the local player is unknown (spec 0052)', () => {
+    // A reducer constructed without a local id (e.g. some unit paths) still stores a targeted frame -
+    // the extra check only hardens the common case, it never blocks the server-side guarantee.
+    const next = reduceGameState(initialGameState(), {
+      v: 1,
+      type: 'private',
+      room: ROOM,
+      game: GAME,
+      round: 1,
+      player: 'p2',
+      private: { key: ['ok'] },
+    });
+    expect(next.private).toEqual({ key: ['ok'] });
+  });
+
   it('folds the leaderboard standings', () => {
     const leaderboard: LeaderboardMessage = {
       v: 1,

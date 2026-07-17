@@ -16,6 +16,12 @@ export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting' | 'closed'
 
 /** One immutable snapshot of the game the UI renders. */
 export interface GameState {
+  /**
+   * This device's own player id, or null when unknown (a reducer constructed without one, e.g. some
+   * unit tests). Used only to reject a mis-targeted `private` frame (spec 0052) - defense-in-depth so
+   * a replayed or misrouted secret never paints another player's payload into this device's UI.
+   */
+  player: string | null;
   connection: ConnectionStatus;
   /** True once at least one `state` frame has arrived (we know the real phase). */
   joined: boolean;
@@ -50,6 +56,15 @@ export interface GameState {
    */
   sim: unknown;
   /**
+   * This device's own private (hidden-information) payload for the current round (spec 0052's
+   * `private` frame), or null when this player has no secret. The frame is already targeted to this
+   * device by the engine, so the reducer just stores its `private` field - replaced on each new one,
+   * cleared when a new prompt (round) lands, and restored from the reconnect catch-up frame. A game's
+   * UI module reads `state.private` to render what only this player may see. Opaque; the module
+   * decodes it.
+   */
+  private: unknown;
+  /**
    * The reason the engine rejected this device's last submission (spec 0020's `move_rejected`), or
    * null. Set on the targeted reject frame, cleared on the next prompt. The remote clears it too on a
    * fresh submit; a game that never rejects leaves it null.
@@ -59,8 +74,9 @@ export interface GameState {
   error: string | null;
 }
 
-export function initialGameState(): GameState {
+export function initialGameState(player: string | null = null): GameState {
   return {
+    player,
     connection: 'connecting',
     joined: false,
     phase: 'configuring',
@@ -74,6 +90,7 @@ export function initialGameState(): GameState {
     reveals: [],
     standings: [],
     sim: null,
+    private: null,
     rejected: null,
     error: null,
   };
@@ -123,6 +140,9 @@ export function reduceGameState(
         prompt: frame.prompt,
         reveals: [],
         standings: [],
+        // A new round supersedes the prior round's secret; clear it so a stale private payload never
+        // bleeds into the new question (spec 0052). The engine re-deals this round's secret targeted.
+        private: null,
         rejected: null,
       };
 
@@ -138,6 +158,16 @@ export function reduceGameState(
 
     case 'leaderboard':
       return { ...state, standings: frame.standings };
+
+    case 'private':
+      // The frame is already targeted to this device server-side (spec 0052), so normally it just
+      // stores this player's own secret, replacing any prior one; a reconnect restores it from the
+      // catch-up frame the same way. Defense-in-depth: if the frame names a DIFFERENT recipient than
+      // the local player (a mis-targeted or replayed frame), ignore it so another player's secret can
+      // never paint into this device's UI. When the local player is unknown, fall back to trusting the
+      // server's targeting (this only relaxes the extra check, not the server-side guarantee).
+      if (state.player !== null && frame.player !== state.player) return state;
+      return { ...state, private: frame.private };
 
     case 'move_rejected':
       return { ...state, rejected: frame.reason };

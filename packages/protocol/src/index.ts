@@ -29,6 +29,7 @@ export {
   type IngressMessage,
   type JoinMessage,
   type LeaderboardMessage,
+  type PrivateMessage,
   type ProtocolMessage,
   type PromptMessage,
   type RevealMessage,

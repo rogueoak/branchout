@@ -21,6 +21,17 @@ export function streamChannel(room: string, game: string): string {
 }
 
 /**
+ * The per-player private channel (spec 0052): a targeted fan-out that carries a `private` frame to
+ * ONLY one player's device(s). A connection subscribes to its own player's channel in addition to
+ * the session's broadcast channel, so a hidden-information payload the engine publishes here reaches
+ * that player alone and never the broadcast `stream:` channel every other device is on. The player id
+ * is a bounded, `:`-free identity (see `requireId`), so it cannot collide the channel namespace.
+ */
+export function privateChannel(room: string, game: string, player: string): string {
+  return `private:${room}:${game}:${player}`;
+}
+
+/**
  * Redis pub/sub. `redis` requires a dedicated connection for subscriptions, so this takes a
  * subscriber client (typically `client.duplicate()`) separate from the publisher client.
  */

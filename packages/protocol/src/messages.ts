@@ -112,6 +112,22 @@ export interface MoveRejectedMessage {
 }
 
 /**
+ * A per-player secret payload (hidden information: a spymaster key, a hidden role, a private hand).
+ * Targeted, sent only to the recipient's device(s), never broadcast over pub/sub, so no other player
+ * receives it. `private` is opaque, game-defined. Additive, server -> client only (never parsed off
+ * the wire), under the same PROTOCOL_VERSION.
+ */
+export interface PrivateMessage {
+  v: number;
+  type: 'private';
+  room: string;
+  game: string;
+  round: number;
+  player: string; // the recipient; echoed so the client can confirm the target is itself
+  private: unknown;
+}
+
+/**
  * A live simulation snapshot for a continuous ("live") game, streamed at a fixed cadence while the
  * world is in motion (spec 0044). `sim` is opaque, game-defined payload - for a physics game the
  * current tower (body transforms + geometry) plus its HUD. Unlike `reveal` (which accumulates), a
@@ -176,7 +192,8 @@ export type ServerMessage =
   | SimMessage
   | LeaderboardMessage
   | StateMessage
-  | MoveRejectedMessage;
+  | MoveRejectedMessage
+  | PrivateMessage;
 
 export type ProtocolMessage = EchoMessage | ErrorMessage | ClientMessage | ServerMessage;
 

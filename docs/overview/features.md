@@ -151,6 +151,14 @@ What the product does for users, grouped by area. Each capability maps to one or
       hard shapes (L/octagon/triangle) rare; the spinning piece follows the cursor vertically; a
       below-the-line drop is clamped to the line, not blocked; and clearing a round plays a
       server-authoritative "Complete!" -> "Round X" beat (a `phase` on the streamed sim).
+- [x] Per-player private payloads - the hidden-information seam the next wave of games (spymaster
+      key, hidden role, private hand) build on (spec `0052`). A lifecycle result may carry an optional
+      `private` map (playerId -> opaque secret); the engine delivers each entry ONLY to that player's
+      device(s) over a per-player private channel - never the broadcast channel, so no other player
+      receives it even off the wire. It is a new server-only `private` frame (targeted like
+      `move_rejected`, additive under the same `PROTOCOL_VERSION`), persisted per round for join
+      catch-up (a reconnect recovers its own secret) and cleared when the next round starts. The web
+      client exposes the local player's secret as `state.private` for a game's UI module.
 
 ## Web
 

@@ -169,6 +169,13 @@ Capture durable lessons as they emerge.
   and nothing private. Keep that projection minimal and assert in a test that member/session
   fields never appear, so a later change cannot widen it into a leak. (Spec `0025`.)
 
+- **A new secret channel inherits the weakest identity gate on the connection it rides.** A
+  perfectly targeted per-player channel is only as private as the identity it keys on. The engine's
+  WebSocket `join` self-asserts its `player` id (playerIds are public), so a secret delivered over
+  `private:{room}:{game}:{player}` is only as secret as that unauthenticated join. Authenticate
+  identity *before* keying secrets on it, or the secret is only as private as that gate. (Feedback
+  `0033`, spec `0052`.)
+
 ## Module boundaries
 
 - **A privilege that is orthogonal to a role is a flag, not a role.** Modeling the host as a third
