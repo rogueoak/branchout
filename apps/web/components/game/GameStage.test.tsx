@@ -469,7 +469,8 @@ describe('GameStage help sheet (spec 0051)', () => {
   });
 
   it('opens the rules sheet showing the objective, without ending or pausing the game', () => {
-    renderStage({ mode: 'interactive' });
+    const onMove = vi.fn();
+    renderStage({ mode: 'interactive', onMove });
     // No dialog until the help control is tapped.
     expect(screen.queryByRole('dialog')).toBeNull();
 
@@ -479,8 +480,21 @@ describe('GameStage help sheet (spec 0051)', () => {
     // The sheet is a modal dialog (role="dialog" + Radix's focus trap) and shows this game's rules.
     expect(dialog.getAttribute('role')).toBe('dialog');
     expect(screen.getByText(/score the most points/i)).toBeDefined();
-    // The live game is untouched behind the sheet - the question is still on screen.
+    // WHILE the dialog is open the prompt is still rendered behind it (Radix marks it inert/aria-
+    // hidden for the modal, but it is not unmounted) - the round did not end or swap phases.
     expect(screen.getByText('What is H2O?')).toBeDefined();
+
+    // Close the sheet and prove the live game is genuinely UNTOUCHED, not merely that a prompt is
+    // present: the answer input is still enabled and a fresh submit still reaches onMove. If opening
+    // the sheet had paused the round (input disabled) or ended it (input gone / different phase),
+    // this would fail - which the old "prompt still present" assertion could not catch.
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const answer = screen.getByLabelText('Your answer') as HTMLInputElement;
+    expect(answer.disabled).toBe(false);
+    fireEvent.change(answer, { target: { value: 'water' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+    expect(onMove).toHaveBeenCalledWith(collecting.round, 'water');
   });
 });
 

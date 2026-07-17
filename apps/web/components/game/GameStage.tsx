@@ -13,7 +13,7 @@ import type { ConnectionStatus, GameState } from '../../lib/game-state';
 import { isComplete } from '../../lib/game-state';
 import { getGameUi } from '../../lib/games/registry';
 import { FeedbackDialog } from './FeedbackDialog';
-import { HelpSheet } from './HelpSheet';
+import { HowToPlayButton } from './HowToPlayButton';
 
 /** Every host control the browser can issue, including `advance` (proxied by the control-plane). */
 export type HostControl = 'advance' | 'pause' | 'restart' | 'exit';
@@ -137,7 +137,7 @@ export function GameStage({
           rules are reachable at any time - including mid-round. The help sheet is pure client UI over
           the game id; opening it does not pause or mutate game state. */}
       <div className="flex items-center justify-end">
-        <HelpSheet game={game} />
+        <HowToPlayButton game={game} variant="outline" label="How to play" />
       </div>
 
       {connectionNote ? (

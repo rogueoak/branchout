@@ -9,6 +9,7 @@ import {
   startGameHref,
 } from '../../../lib/games/catalog';
 import { getViewer } from '../../../lib/session';
+import { Chip } from '../../../components/game/Chip';
 import { RulesContent } from '../../../components/game/RulesContent';
 import { getGameRules, getLibraryMeta } from '../../../lib/games/library';
 
@@ -113,42 +114,41 @@ export default async function GameFeaturePage({ params }: PageProps) {
         </section>
       ) : null}
 
-      {/* Categories: the library category/tag chips (the game-level taxonomy, spec 0051) next to the
-          existing content categories (a different axis, kept for SEO / JSON-LD). */}
+      {/* Categories: two distinct axes, each under its own sub-label so they never read as one
+          duplicated chip list (spec 0051). "Type" is the game-level taxonomy (library categories +
+          tags: genre, group size, pace); "Topics" is the content categories (the question/subject
+          axis, kept for SEO / JSON-LD). */}
       <section aria-labelledby="cats-heading" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <h2 id="cats-heading" className="text-h4 mb-4 text-text">
           Categories
         </h2>
         {meta ? (
-          <ul className="mb-4 flex flex-wrap gap-2" role="list">
-            {meta.categories.map((chip) => (
-              <li
-                key={`c-${chip.slug}`}
-                className="text-body-sm rounded-full bg-primary/10 px-3 py-1 font-medium text-primary"
-              >
-                {chip.label}
-              </li>
-            ))}
-            {meta.tags.map((chip) => (
-              <li
-                key={`t-${chip.slug}`}
-                className="text-body-sm rounded-full bg-surface-raised px-3 py-1 text-text-muted"
-              >
-                {chip.label}
-              </li>
+          <div className="mb-6">
+            <h3 className="text-body-sm mb-2 font-medium text-text-muted">Type</h3>
+            <ul className="flex flex-wrap gap-2" role="list">
+              {meta.categories.map((chip) => (
+                <Chip key={`c-${chip.slug}`} variant="category">
+                  {chip.label}
+                </Chip>
+              ))}
+              {meta.tags.map((chip) => (
+                <Chip key={`t-${chip.slug}`} variant="tag">
+                  {chip.label}
+                </Chip>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        <div>
+          <h3 className="text-body-sm mb-2 font-medium text-text-muted">Topics</h3>
+          <ul className="flex flex-wrap gap-2" role="list">
+            {entry.categories.map((category) => (
+              <Chip key={category} variant="tag">
+                {category}
+              </Chip>
             ))}
           </ul>
-        ) : null}
-        <ul className="flex flex-wrap gap-2" role="list">
-          {entry.categories.map((category) => (
-            <li
-              key={category}
-              className="text-body-sm rounded-full bg-surface-raised px-3 py-1 text-text-muted"
-            >
-              {category}
-            </li>
-          ))}
-        </ul>
+        </div>
       </section>
 
       {/* Closing CTA */}

@@ -93,6 +93,16 @@ describe('searchLibrary', () => {
     expect(searchLibrary(GAMES, 'liar', { category: 'party' })).toEqual(['liar-liar']);
     expect(searchLibrary(GAMES, 'liar', { category: 'strategy' })).toEqual([]);
   });
+
+  it('silently drops a game whose slug is not in the library (does not throw)', () => {
+    const withUnknown: SearchableGame[] = [
+      ...GAMES,
+      { slug: 'not-in-library', name: 'Ghost Game', summary: '' },
+    ];
+    // The unknown slug hits the `if (!entry) return false` branch: excluded, never thrown.
+    expect(searchLibrary(withUnknown, '')).not.toContain('not-in-library');
+    expect(searchLibrary(withUnknown, 'ghost')).toEqual([]);
+  });
 });
 
 describe('categoriesInUse', () => {
@@ -104,6 +114,16 @@ describe('categoriesInUse', () => {
     expect(used).not.toContain('classic');
     // Vocabulary order: party (2nd key) before strategy (6th key).
     expect(used.indexOf('party')).toBeLessThan(used.indexOf('strategy'));
+  });
+
+  it('silently drops a game whose slug is not in the library (does not throw)', () => {
+    const withUnknown: SearchableGame[] = [
+      ...GAMES,
+      { slug: 'not-in-library', name: 'Ghost Game', summary: '' },
+    ];
+    // The unknown slug hits the `if (!entry) continue` branch: it contributes no categories.
+    const used = categoriesInUse(withUnknown).map((c) => c.slug);
+    expect(used).toEqual(categoriesInUse(GAMES).map((c) => c.slug));
   });
 });
 

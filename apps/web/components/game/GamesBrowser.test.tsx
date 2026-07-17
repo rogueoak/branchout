@@ -4,6 +4,10 @@ import { GamesBrowser, type BrowserGame } from './GamesBrowser';
 
 // GamesBrowser filters against the real library entries (it calls searchLibrary/categoriesInUse by
 // slug), so the fixtures use real slugs; only the display fields are stubbed.
+// The chip `categories` mirror the real library entries so the filter test has DISCRIMINATING power:
+// trivia is party-only, liar-liar declares deduction too - so filtering to `deduction` must drop
+// Trivia and keep only Liar Liar. (The filter resolves categories by slug from the real library, so
+// these must match GAME_LIBRARY: trivia -> [party], liar-liar -> [party, deduction].)
 const games: BrowserGame[] = [
   {
     slug: 'trivia',
@@ -20,7 +24,10 @@ const games: BrowserGame[] = [
     summary: 'A bluffing party game.',
     icon: '<svg />',
     href: '/games/liar-liar',
-    categories: [{ slug: 'party', label: 'Party' }],
+    categories: [
+      { slug: 'party', label: 'Party' },
+      { slug: 'deduction', label: 'Deduction' },
+    ],
     tags: [{ slug: 'bluffing', label: 'Bluffing' }],
   },
 ];
@@ -44,9 +51,13 @@ describe('GamesBrowser', () => {
 
   it('narrows the list by the category filter', () => {
     render(<GamesBrowser games={games} />);
-    // Both games are "party"; filter to a category only one uses to prove the filter bites... but
-    // both are party here, so instead assert the filter control lists only used categories and that
-    // selecting party keeps both.
+    // Only liar-liar declares `deduction`, so filtering to it must DROP Trivia and keep only Liar
+    // Liar - a discriminating assertion that fails if the filter is ignored.
+    fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'deduction' } });
+    expect(screen.queryByRole('link', { name: /learn about trivia/i })).toBeNull();
+    expect(screen.getByRole('link', { name: /learn about liar liar/i })).toBeDefined();
+
+    // Both games declare `party`, so filtering to it keeps both (only Trivia is party-only).
     fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'party' } });
     expect(screen.getByRole('link', { name: /learn about trivia/i })).toBeDefined();
     expect(screen.getByRole('link', { name: /learn about liar liar/i })).toBeDefined();

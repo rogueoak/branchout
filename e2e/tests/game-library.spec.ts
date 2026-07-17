@@ -50,10 +50,23 @@ test('in a live game, the help icon opens the rules sheet and the game stays liv
     await expect(sheet).toBeVisible();
     await expect(sheet.getByText(/score the most points/i)).toBeVisible();
 
-    // Dismiss via the close button; the game is still live behind it (question still visible).
+    // The prompt is still on screen WHILE the sheet is open (the round did not end/swap behind it).
+    await expect(host.getByTestId('question-prompt')).toBeVisible();
+
+    // Dismiss via the close button, then prove the live game is genuinely UNTOUCHED - not merely that
+    // the prompt reappears: the answer input is still enabled and editable and typing an answer still
+    // reaches the round (the Submit control accepts it). If opening the sheet had paused the round the
+    // input would be disabled; if it had ended the round the input would be gone. (While the sheet is
+    // open Radix marks this content inert/aria-hidden, so it is asserted just after close, which still
+    // fails if the sheet had mutated game state.)
     await sheet.getByRole('button', { name: 'Close' }).click();
     await expect(host.getByRole('dialog')).toHaveCount(0);
     await expect(host.getByTestId('question-prompt')).toBeVisible();
+    const answer = host.getByLabel('Your answer');
+    await expect(answer).toBeEnabled();
+    await expect(answer).toBeEditable();
+    await answer.fill('water');
+    await expect(host.getByRole('button', { name: /submit/i })).toBeEnabled();
   } finally {
     await hostCtx.close();
   }

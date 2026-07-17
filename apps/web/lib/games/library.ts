@@ -160,14 +160,15 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
         {
           heading: 'Spin and lock',
           body: [
-            'A googly-eyed piece spins on the board. Tap to lock the angle you want it to drop at.',
+            'A googly-eyed piece spins on the board. Tap or drag to position it, then tap the ' +
+              'on-canvas Stop spin button to lock the angle you want it to drop at.',
           ],
         },
         {
           heading: 'Aim and drop',
           body: [
-            'Drag to line the piece up over the tower, then drop it and watch the physics settle it ' +
-              'onto the stack.',
+            'Drag to fine-tune where the piece sits over the tower, then tap Drop and watch the ' +
+              'physics settle it onto the stack.',
           ],
         },
         {
