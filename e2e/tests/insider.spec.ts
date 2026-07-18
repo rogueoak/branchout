@@ -194,10 +194,8 @@ test.describe('insider surface (spec 0035)', () => {
       await expect(nav).toBeVisible();
       await expect(nav.getByText('Insider')).toBeVisible();
       await expect(nav.getByRole('link', { name: 'Games', exact: true })).toBeVisible();
-      await expect(nav.getByRole('link', { name: 'Join', exact: true })).toHaveAttribute(
-        'href',
-        '/join',
-      );
+      const joinLink = nav.getByRole('link', { name: 'Join', exact: true });
+      await expect(joinLink).toHaveAttribute('href', '/join');
       const { scrollWidth, clientWidth } = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,
@@ -207,6 +205,12 @@ test.describe('insider surface (spec 0035)', () => {
         scrollWidth,
         'insider surface should not scroll horizontally on a phone',
       ).toBeLessThanOrEqual(clientWidth + 1);
+      // Tap parity (feedback 0035): the overflow check + toHaveAttribute both pass on an OVERLAPPED
+      // link (it still has a box), so on this most-crowded nav variant tap Join for real - it must
+      // reach the join screen, proving nothing intercepts the tap at 360px.
+      await joinLink.click();
+      await page.waitForURL(/\/join(\?|$)/);
+      await expect(page.getByLabel('Your name')).toBeVisible();
     } finally {
       await context.close();
     }

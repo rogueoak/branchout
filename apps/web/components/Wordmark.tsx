@@ -3,10 +3,11 @@ import { iconSvg } from '@branchout/brand/icon';
 interface WordmarkProps {
   className?: string;
   /**
-   * On the narrowest phones, render the mark icon-only and hide the "Branch Out games" text lockup,
-   * so a crowded nav (wordmark + Games + Join + Log in + Sign up) fits at 360px without the groups
-   * overlapping. The `aria-label` stays on the wrapper, so a screen reader still hears the brand.
-   * The text reappears from ~430px up. Off by default (standalone pages have room for the full mark).
+   * On phones (portrait, below ~430px), render the mark icon-only and hide the "Branch Out games"
+   * text lockup, so a crowded nav (wordmark + Games + Join + Log in + Sign up) fits at 360px without
+   * the groups overlapping. The `aria-label` stays on the wrapper, so a screen reader still hears the
+   * brand. The full text returns from ~430px up (tablet/desktop). Off by default (standalone pages
+   * have room for the full mark).
    */
   collapseTextOnMobile?: boolean;
 }
