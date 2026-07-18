@@ -61,9 +61,15 @@ export function TopNav({
           <a
             href={homeHref}
             aria-label="Branch Out Games home"
-            className="rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            // -m-2 p-2 gives the home link a >=44px thumb target even when the wordmark collapses to
+            // the 32px icon on a phone (the negative margin keeps the icon visually in place).
+            className="-m-2 rounded p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <Wordmark />
+            {/* Collapse the wordmark to icon-only on phones (portrait) so the nav (wordmark + Games +
+                Join + Log in + Sign up, spec 0029) fits at 360px without the left and right groups
+                overlapping (which made the Join link untappable). The full mark returns from ~430px up
+                (tablet/desktop). */}
+            <Wordmark collapseTextOnMobile />
           </a>
           {/* The surface badge (e.g. "Insider", spec 0035) sits right after the wordmark so the
               marker reads as part of the brand lockup - left-aligned, matching the admin console's

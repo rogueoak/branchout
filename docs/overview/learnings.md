@@ -126,6 +126,13 @@ Capture durable lessons as they emerge.
   asserted the old `/learn about .../i` link and were now red. A green unit suite for the new component
   hides a red e2e that still drives the old markup; grep the e2e for the strings the old component
   emitted before merging. (Feedback `0034`, tester review of PR #137.)
+- **A flow change that removes a step must be reconciled against EVERY e2e that drives that flow - grep
+  the whole `e2e/` tree for the removed affordance, not just the specs you remember.** The `?game=`
+  auto-create (spec `0029`) removed the "Create a room" tap, and the PR updated `mobile-smoke.spec.ts`
+  but missed `insider.spec.ts`, which drove the same deep-link -> create flow on the insider surface -
+  so it clicked a button that no longer existed and timed out. A missed spec fails only in the
+  deploy-gating e2e job, after merge. Grep `e2e/tests/` for the removed control's text/role before
+  merging a flow change. (Feedback `0035`.)
 
 ## Services and state
 
@@ -228,6 +235,14 @@ Capture durable lessons as they emerge.
   ahead of its destination is a dead end on the surface in between. Hide it with a stopgap
   (`showDetails={false}`) until the target route exists, and re-enable it in the PR that adds the target.
   (Feedback `0034`, engineer review of PR #137.)
+- **Adding an item to a fixed-width nav means re-verifying the 360px *tap*, not just visibility.**
+  Adding the "Join" link (spec `0029`) pushed the top nav past 360px; the `min-w-0` left group
+  (wordmark + Games + Join) shrank below its content and overflowed *under* the right group, so "Log in"
+  intercepted the tap on "Join". `toBeVisible` passed the whole time - an overlapped control still has a
+  bounding box - so only a real `.click()` at 360px caught it. When a horizontal bar can overflow,
+  collapse the biggest element (here the wordmark to icon-only below a breakpoint) rather than letting a
+  `min-w-0` group overflow its neighbor; and drive an actual tap, not a visibility check, at the phone
+  floor. (Feedback `0035`, e2e failure that blocked the front-door deploy.)
 - **A content-bearing "card as a button" must not reuse the button recipe - it inherits
   `white-space: nowrap` and won't wrap.** Wrapping a detail card in a `<button>` styled with
   `buttonVariants()` pulled in the button base's `white-space: nowrap`, which (being inherited)
@@ -491,6 +506,16 @@ Capture durable lessons as they emerge.
 
 ## Deployment and infra
 
+- **A red `verify / e2e` in `release.yml` means "not deployed", even though the PR merged.** The e2e
+  suite is a DEPLOY gate (the `verify / e2e` job gates `build` + `deploy`), but it is NOT a required PR
+  check - so a PR can merge green on its required checks yet leave prod behind. Worse, every release run
+  redeploys `HEAD`, so one red e2e blocks that push AND every later one until it is fixed (the front-door
+  epic merged four PRs but prod stayed at the last green e2e). After merging a UI/flow change, watch the
+  release run (`gh run list --workflow=release.yml`); a red e2e there is an undeployed change to chase,
+  not a flake to ignore. Reproduce it locally by rebuilding the host workspace packages first (the dev
+  overlay bind-mounts host `packages/*/dist` AND `packages/games/*/dist`; stale dist crashes
+  control-plane/game-engine on boot), and clear any stray host process squatting the shifted e2e port.
+  (Feedback `0035`.)
 - **Don't gate growing content on a fixed count or spread - validate item structure, not the
   collection's shape.** The Trivia/Liar Liar banks carried a total-count, per-category-count, and
   difficulty-spread gate. Content grows over time and its spread is deliberately uneven, so those

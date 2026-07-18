@@ -2,6 +2,14 @@ import { iconSvg } from '@branchout/brand/icon';
 
 interface WordmarkProps {
   className?: string;
+  /**
+   * On phones (portrait, below ~430px), render the mark icon-only and hide the "Branch Out games"
+   * text lockup, so a crowded nav (wordmark + Games + Join + Log in + Sign up) fits at 360px without
+   * the groups overlapping. The `aria-label` stays on the wrapper, so a screen reader still hears the
+   * brand. The full text returns from ~430px up (tablet/desktop). Off by default (standalone pages
+   * have room for the full mark).
+   */
+  collapseTextOnMobile?: boolean;
 }
 
 /**
@@ -15,7 +23,7 @@ interface WordmarkProps {
  * wrapper rounds it (overflow-hidden + rounded) to match the app icon; the `[&>svg]` utilities
  * make it fill the box since the inlined SVG carries its own width/height attributes.
  */
-export function Wordmark({ className }: WordmarkProps) {
+export function Wordmark({ className, collapseTextOnMobile = false }: WordmarkProps) {
   return (
     <span
       className={`inline-flex items-center gap-2 ${className ?? ''}`}
@@ -27,7 +35,9 @@ export function Wordmark({ className }: WordmarkProps) {
         className="inline-block h-8 w-8 shrink-0 overflow-hidden rounded-lg [&>svg]:h-full [&>svg]:w-full sm:h-9 sm:w-9"
         dangerouslySetInnerHTML={{ __html: iconSvg }}
       />
-      <span className="flex items-end font-bold leading-none tracking-tight text-text">
+      <span
+        className={`${collapseTextOnMobile ? 'hidden min-[430px]:flex' : 'flex'} items-end font-bold leading-none tracking-tight text-text`}
+      >
         {/* text-lg on the smallest phones so the nav (wordmark + Games + Log in + Sign up) fits at
             360px without horizontal overflow; scales up from sm. */}
         <span className="text-lg sm:text-2xl">Branch Out</span>
