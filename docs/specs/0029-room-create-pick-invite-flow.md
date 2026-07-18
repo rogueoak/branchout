@@ -1,108 +1,124 @@
 # 0029 - Room flow: create, pick a game, invite, change game
 
+> **Revision (2026-07-18, front-door consolidation).** Starting a game from a game surface now
+> **skips the create-room step**: the `?game=<slug>` deep link creates the room and drops the host
+> straight into the lobby with the game selected - no intermediate "Create a room" tap. A **"Join"**
+> link is added to the top nav, going straight to `/join`. The stepped create -> pick -> invite wizard
+> below still governs the *no-game* create path and the in-room change-game flow. Updated in place.
+
 ## Problem
 
-The room experience is one dense screen. `RoomsHome` creates a room and drops the host straight
-into `RoomClient`, whose `Lobby` piles everything together: room code, share link, roster, mode
-toggle, the game picker, the selected game's config panel, and Start. A host has no guided path, the
-game picker is a row of bare title buttons (no idea what a game *is* before choosing it), and there
-is no way to change the game once in the room without it being tangled into the same panel.
+The room experience was one dense screen, and getting *into* a game still had friction. The original
+`RoomsHome` created a room and dropped the host into `RoomClient`, whose `Lobby` piled everything
+together (code, share link, roster, mode toggle, picker, config, Start). The stepped flow (below)
+fixed the density. But even with a game chosen upstream (a "Start a game" CTA on a feature page or a
+card, spec `0065`), the host still landed on `RoomsHome` and had to tap **"Create a room"** before a
+room existed - the `?game=` deep link only skipped the *picker*, not the create page. That is an extra
+tap and an extra screen between "I want to play this game" and "I'm in the lobby inviting friends".
 
-Invites are weak: `ShareLink` prints the full URL as text with a **"Copy link"** text button, and
-there is no native share sheet - the fastest way to invite on a phone (the OS share menu) is
-missing.
+Separately, a returning player who just wants to enter a code has no direct path: `/join` is reachable
+only from the rooms landing or a share link, not from the nav.
 
-We want a clear host flow - **create -> pick a game -> invite** - that a "Start a game" deep link
-from a game feature page (spec `0030`) can short-circuit past the pick step, plus an in-room
-**change game** path, richer game cards in the picker, and a proper invite surface.
+We want: **"Start a game" creates the room and lands the host in the lobby in one step**, and a
+**"Join" nav link** straight to `/join`.
 
 ## Outcome
 
-- Creating a room runs a **stepped flow**: create the room -> **pick a game** -> **invite friends**.
-  Arriving with a preselected game (the `?game=<slug>` deep link the feature-page CTA uses) **skips
-  the pick step** and lands on invite with that game chosen.
-- The **game picker** (first pick and the change-game flow) shows each game's **detail card** - mark,
-  name, tagline, category/summary line - not just a title button, so a host chooses knowing what the
-  game is.
-- The **invite step** shows: the **room code as a tappable link**, a **copy button that is a copy
-  icon** (not the word "Copy"), and a **share button** that opens the mobile share sheet
-  (`navigator.share`) on devices that support it and falls back to copy on desktop.
-- Once in the room, a **Change game** button opens the change-game flow (the same card picker),
-  updating the room's selected game.
-- Everywhere a join link is offered, it is the **room code text linking to the join URL** + the copy
-  icon - one consistent invite affordance.
-- Tested end to end per the non-negotiable: the create -> pick -> invite flow, the deep-link skip,
-  change-game, and the copy/share affordances.
+- **Start-a-game skips create.** Arriving at the room flow with `?game=<slug>` (the deep link every
+  "Play now" / "Start a game" affordance uses, spec `0065`) - for a signed-in host who can host -
+  **creates the room, selects the game, and routes to the lobby** with no "Create a room" tap and no
+  pick step. The host lands on `/rooms/{code}` (the lobby) ready to invite.
+  - A signed-out visitor still routes through signup first (the existing `startGameHref` ->
+    `/signup?next=...` contract), then completes the same auto-create on return.
+  - Insider games auto-create only on the insider surface (the existing surface gate); on the apex an
+    insider slug is ignored and falls back to the normal create landing.
+  - Auto-create is **idempotent per arrival**: once the room is created the URL is replaced with
+    `/rooms/{code}` so a refresh or back-navigation does not create a second room.
+- **Plain create still works.** Visiting the room flow with **no** `?game=` shows the create/join
+  landing (Create a room / Join a room), and creating there walks the stepped flow: create -> **pick a
+  game** -> lobby. (The invite affordances now live in the lobby, per the earlier revision.)
+- **Join in the nav.** The top nav (spec `0028`) gains a **"Join"** link that goes straight to
+  `/join`, so a player with a code reaches the join screen in one tap from anywhere. It is a
+  surface-owned link (stays relative, so on the insider host it lands on the rewritten insider join).
+- The **game picker** (the no-game create path and the in-room change-game flow) shows each game as a
+  unified `GameCard` (spec `0065`) in its selectable variant.
+- Existing gates hold (host-only, "at least one viewer", affordability); the control-plane stays the
+  authority. Tested end to end: the deep-link auto-create -> lobby, the no-game create -> pick, the
+  Join nav link, and change-game.
 
 ## Scope
 
-In:
+**In**
 
-- **A stepped create flow** (host): after `createRoom()`, route through pick -> invite. Implement as
-  distinct steps (routed sub-paths under the room, e.g. `/rooms/[code]/setup`, or an explicit step
-  state in `RoomClient`) so each step is a clean mobile screen and the deep link can target invite
-  directly. Decide one approach in the plan; keep URLs shareable/back-button sane.
-- **`?game=<slug>` deep link**: `RoomsHome`/create reads a preselected game, calls `selectGame`
-  during creation, and skips the pick step. This is the contract the feature-page CTA (spec `0030`)
-  depends on - define it here.
-- **Game detail cards** for the picker: a reusable `GameCard` (mark + name + tagline + summary),
-  reused by both the first-pick step and the change-game flow. Sources the per-game display data
-  from the web game registry (`lib/games/registry.ts`), extended with the summary/category line
-  needed (kept in sync with, or shared by, the feature-page metadata in spec `0030`).
-- **Invite step**: room code as a link to the join URL, a **copy-icon** button (icon, not text; an
-  inline SVG like the existing arrow icon, `aria-label` for a11y), and a **share button** using
-  `navigator.share` when available (title/text/url), else copy. Rework `ShareLink` into this
-  icon+share affordance and reuse it wherever a join link appears (lobby included).
-- **Change game in-room**: a **Change game** button in the lobby that opens the card picker and calls
-  `selectGame`; the config panel follows the newly selected game.
-- Keep the existing gates intact (host-only, "at least one viewer", affordability) - this is a flow/
-  presentation rework, not a rule change. The control-plane stays the authority (`room-api.ts` is
-  transport only).
-- Update the room e2e (`e2e/`) to cover the new flow and invite affordances.
+- **Auto-create on the deep link.** When the room flow loads with a valid `?game=<slug>` and the
+  viewer is a signed-in host, run the existing `createRoom` + `selectGame` sequence automatically
+  (the logic already in `RoomsHome.onCreate`, previously gated behind the "Create a room" button) and
+  `router.replace` to `/rooms/{code}` (the lobby - no `?step`). Guard it so it fires once per arrival
+  (a ref/flag) and never double-creates on re-render or back-nav.
+  - Keep the surface gate: an insider slug only auto-selects on the insider surface; otherwise ignore
+    the slug and show the landing.
+  - Failure (create/select error, control-plane unreachable) falls back to the create landing with a
+    clear message, not a dead end.
+- **"Join" nav link** in `TopNav` (spec `0028`), beside "Games", relative `/join` (surface-owned, not
+  crossed to the apex), with the a11y/label conventions the other nav links use.
+- The **no-game create path** and the **in-room change-game** flow keep using the stepped
+  create -> pick pattern and the unified `GameCard` picker (spec `0065`).
+- Keep the existing invite affordances in the lobby (room code as a link, copy icon, native share).
+- Keep all gates intact (host-only, viewer present, affordability); `room-api.ts` stays transport
+  only; the control-plane endpoints (`createRoom`, `selectGame`, `startGame`, `controlGame`) are
+  unchanged.
+- Update the room e2e (`e2e/`) to cover: the deep-link auto-create landing directly in the lobby (no
+  "Create a room" tap), a refresh not creating a second room, the "Join" nav link reaching `/join`,
+  the no-game create -> pick flow, and change-game.
 
-Out:
+**Out**
 
-- Changing the room create/select/start **endpoints** or their rules (control-plane) - the flow uses
-  the existing `createRoom`, `selectGame`, `startGame`, `controlGame`.
-- The game feature pages and the CTA that produces the deep link (spec `0030`) - this spec only
-  defines and consumes the `?game=` contract.
-- QR codes, SMS/email invite integrations, or per-room dynamic share images (share cards are spec
-  `0025`).
-- The top nav (spec `0028`) - the room pages adopt it there.
+- Changing the room create/select/start **endpoints** or their rules (control-plane).
+- The **feature page / cards** that produce the deep link (specs `0030`, `0065`) - this spec consumes
+  the `?game=` contract, it does not define the card.
+- The **signup redirect** mechanics for a signed-out starter (the existing `?next=` contract is
+  reused, not changed).
+- The join page's **name field behavior** (autofill / remembered name / random name) - spec `0066`.
+- QR codes, SMS/email invites, per-room dynamic share images (spec `0025`).
 
 ## Approach
 
-- **Steps as screens, not one panel.** Break the lobby's overloaded setup into a create-time wizard
-  (pick -> invite) and a leaner in-room lobby (roster, mode, start, change-game). Each step is a
-  single-purpose, phone-first screen. The deep link enters at invite with the game preset, which is
-  why the step must be addressable, not just internal state.
-- **Reuse the config/registry seam.** The game picker already resolves modules from the web registry
-  (spec `0023`); the detail card is a presentational read of that registry plus a one-line summary,
-  so adding a game stays "add a module + registry entry" with no picker edits. Keep the summary the
-  single source shared with the feature page (spec `0030`) to avoid drift.
-- **Progressive enhancement for share.** `navigator.share` exists on most mobile browsers and few
-  desktops; feature-detect and fall back to clipboard copy, so the button always does something
-  useful. The copy control is an icon with an accessible label and a transient "copied" state (the
-  current `ShareLink` copy behavior, restyled).
-- **Absolute URL for the shared link** (as `ShareLink` does today): resolve the relative
-  `shareLink` against the origin after mount so a copied/shared link is pasteable, avoiding an
-  SSR/CSR mismatch.
-- **Mobile-first, ASCII-only.** Every step reads well at 360px; the share sheet is the fast path on
-  a phone.
+- **Reuse the create sequence, drop the button gate.** `onCreate` already does `createRoom` ->
+  (deep-link) `selectGame` -> route to the lobby when a game is preselected. The change is to run that
+  path **automatically on mount** when a valid `?game=` is present and the host can host, instead of
+  waiting for a tap - and to `router.replace` (not `push`) so the created-room URL supersedes the
+  `?game=` URL and a back/refresh cannot re-trigger the create. A one-shot guard (a ref set before the
+  first create) prevents a double-create under React re-render/StrictMode.
+- **Keep the manual landing for the no-game case.** With no `?game=`, nothing auto-runs; the host sees
+  Create a room / Join a room and the stepped pick flow, exactly as before. This preserves the
+  browse-then-host path and the plain "I'll pick in the room" path.
+- **Join is a surface-owned nav link.** `/join` is rewritten into the insider tree on the insider
+  host, so the nav link stays relative (like Games and the wordmark) and must not be crossed to the
+  apex via `linkOrigin` - otherwise an insider would be bounced off-surface (feedback `0030`).
+- **Signed-out and error paths stay graceful.** A signed-out starter is already sent to signup with
+  `?next=` and returns to the deep link; an auto-create failure shows the create landing with a
+  message rather than a spinner or a blank screen.
+- **Mobile-first.** One fewer screen and one fewer tap to get into a game; the Join link is a
+  thumb-reachable nav entry for the "I have a code" player.
 
 ## Acceptance
 
-- [ ] Creating a room walks create -> pick a game -> invite; each step is usable at 360px.
-- [ ] Arriving at create with `?game=<slug>` selects that game and lands directly on invite,
-      skipping the pick step.
-- [ ] The game picker (first pick and change-game) shows each game's detail card (mark, name,
-      tagline, summary), not a bare title.
-- [ ] The invite step shows the room code as a link to the join URL, a copy **icon** button that
-      copies the absolute link (with a "copied" state), and a share button that invokes the native
-      share sheet where supported and copies otherwise.
-- [ ] A **Change game** button in the room opens the card picker and updates the selected game (and
-      its config panel) without leaving the room.
+- [ ] Arriving at the room flow with `?game=<slug>` as a signed-in host creates the room, selects the
+      game, and lands **directly in the lobby** (`/rooms/{code}`) with no "Create a room" tap and no
+      pick step.
+- [ ] A refresh or back-navigation after that auto-create does **not** create a second room (the URL
+      is replaced; the create fires once per arrival).
+- [ ] A signed-out visitor starting a game is routed through signup and, on return, completes the same
+      auto-create into the lobby.
+- [ ] An insider slug auto-creates only on the insider surface; on the apex it is ignored and the
+      create landing shows.
+- [ ] Visiting the room flow with **no** `?game=` shows the create/join landing and the stepped
+      create -> pick flow; the picker uses the unified `GameCard` (spec `0065`).
+- [ ] The top nav shows a **"Join"** link that navigates straight to `/join` (relative/surface-owned,
+      correct on both the apex and the insider host).
+- [ ] A **Change game** button in the room still opens the card picker and updates the selected game.
 - [ ] Existing gates (host-only, viewer present, affordability) still hold; the control-plane rules
       are unchanged.
-- [ ] The room e2e covers the new create->pick->invite flow, the deep-link skip, and change-game.
-</content>
+- [ ] The room e2e covers the deep-link auto-create -> lobby, no double-create on refresh, the Join
+      nav link, the no-game create -> pick flow, and change-game. `pnpm build`, lint, typecheck, and
+      tests are green.

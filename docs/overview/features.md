@@ -384,16 +384,23 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Room create flow and richer invites (spec `0029`) - hosting is a stepped, phone-first flow:
       create a room -> pick a game (shown as a detail card: mark, name, tagline, summary - not a bare
       title) -> invite friends. A `?game=<slug>` deep link (the "Start a game" CTA a feature page
-      will use, spec `0030`) pre-selects the game and skips the pick step, landing on invite. The
+      uses, spec `0030` / `0065`) now SKIPS the create step entirely: for a signed-in host who can
+      host, the room flow auto-creates the room, selects the game, and `router.replace`s straight to
+      the lobby with no "Create a room" tap (a one-shot guard + the replaced URL make it idempotent
+      per arrival, so a refresh/back does not create a second room; a failure falls back to the create
+      landing with a message). The no-game path still walks create -> pick. The insider surface gate
+      holds (an insider slug auto-creates only on the insider surface). The
       invite affordance is the room code as a link into the join URL, a copy-icon button (not the
       word "Copy"), and a share button that opens the native share sheet where supported (falling
       back to copy on desktop) - reused in the invite step and the lobby. In the room, a "Change
       game" button reopens the card picker; the lobby shows the selected game's detail card and its
       config panel. The per-game summary lives on the web game registry so the picker and a later
       feature page share one source.
-- [x] Top nav and account menu - a shared `TopNav` (wordmark + Games link on the left; Sign up (the
-      one primary) + Log in on the right when signed out; the player's avatar with an accessible
-      dropdown to Manage account / Log out when signed in). Auth state is read server-side
+- [x] Top nav and account menu - a shared `TopNav` (wordmark + Games + Join links on the left; Sign
+      up (the one primary) + Log in on the right when signed out; the player's avatar with an
+      accessible dropdown to Manage account / Log out when signed in). The Join link (spec `0029`)
+      goes straight to `/join` for a player with a code, and is surface-owned (relative), so on the
+      insider host it lands on the rewritten insider join. Auth state is read server-side
       (`getViewer`) and injected so the correct nav renders on the first byte (no flash). Present on
       the marketing and rooms/join surfaces, omitted inside a running game (spec `0028`).
 - [x] Legal pages - a plain-language `/privacy` (first-party analytics, what accounts store,

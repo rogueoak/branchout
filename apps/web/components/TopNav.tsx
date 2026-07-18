@@ -79,6 +79,15 @@ export function TopNav({
           >
             Games
           </a>
+          {/* Join (spec 0029): a one-tap path to the join screen for a player who already has a code.
+              Surface-owned like Games - stays relative so on the insider host the middleware rewrites
+              it into the insider join tree; never crossed to the apex (feedback 0030). */}
+          <a
+            href="/join"
+            className="text-body-sm font-medium text-text-muted underline-offset-4 hover:text-text hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            Join
+          </a>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">

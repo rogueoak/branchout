@@ -27,6 +27,31 @@ describe('TopNav', () => {
     expect(screen.queryByRole('button', { name: /account menu/i })).toBeNull();
   });
 
+  it('shows a Join link straight to /join for a signed-out player with a code (spec 0029)', () => {
+    render(<TopNav viewer={{ signedIn: false }} />);
+    expect(screen.getByRole('link', { name: 'Join' }).getAttribute('href')).toBe('/join');
+  });
+
+  it('shows the Join link for a signed-in viewer too (spec 0029)', () => {
+    render(<TopNav viewer={{ signedIn: true, gamerTag: 'CoolCat', nickname: 'Cat' }} />);
+    expect(screen.getByRole('link', { name: 'Join' }).getAttribute('href')).toBe('/join');
+  });
+
+  it('keeps the Join link surface-owned (relative) on the insider surface (spec 0029)', () => {
+    render(
+      <TopNav
+        viewer={{ signedIn: false }}
+        label="Insider"
+        linkOrigin="https://branchout.games"
+        insider
+      />,
+    );
+    const join = screen.getByRole('link', { name: 'Join' });
+    // Relative so the insider middleware rewrites it into the insider join tree; never crossed to apex.
+    expect(join.getAttribute('href')).toBe('/join');
+    expect(join.getAttribute('href')).not.toContain('branchout.games');
+  });
+
   it('signed in: replaces Log in / Sign up with the account avatar menu', () => {
     render(<TopNav viewer={{ signedIn: true, gamerTag: 'CoolCat', nickname: 'Cat' }} />);
     expect(screen.getByRole('button', { name: /account menu for cat/i })).toBeDefined();

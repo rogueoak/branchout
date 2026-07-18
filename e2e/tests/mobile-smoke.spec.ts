@@ -96,8 +96,22 @@ test.describe('the shared top nav (spec 0028) at 360px', () => {
       // `exact` so "Games" does not also match the wordmark link ("Branch Out Games home").
       await expect(nav.getByRole('link', { name: 'Games', exact: true })).toBeVisible();
       await expect(nav.getByRole('link', { name: 'Sign up', exact: true })).toBeVisible();
+      // The Join link (spec 0029) is a one-tap path to the join screen, present for signed-out too.
+      await expect(nav.getByRole('link', { name: 'Join', exact: true })).toHaveAttribute(
+        'href',
+        '/join',
+      );
       await expectFits(page);
     }
+  });
+
+  test('the Join nav link reaches the join screen in one tap (spec 0029)', async ({ page }) => {
+    await page.goto('/rooms');
+    const nav = page.getByRole('navigation', { name: /site navigation/i });
+    await nav.getByRole('link', { name: 'Join', exact: true }).click();
+    await page.waitForURL(/\/join(\?|$)/);
+    await expect(page.getByLabel('Your name')).toBeVisible();
+    await expectFits(page);
   });
 
   test('signed-in nav shows the avatar menu on first paint (no flash) and the dropdown fits', async ({
@@ -149,6 +163,29 @@ test('host create -> pick -> invite flow renders and fits on a phone (spec 0029)
   await expect(page.getByRole('link', { name: code })).toBeVisible();
   await expect(page.getByRole('button', { name: /^share$/i })).toBeVisible();
   await expectFits(page);
+});
+
+test('a game deep link auto-creates and lands the host straight in the lobby (spec 0029)', async ({
+  page,
+}) => {
+  // The "Start a game" deep link (`?game=<slug>`) for a signed-in host must SKIP the create step:
+  // create the room, select the game, and land in the lobby with NO "Create a room" tap and NO pick
+  // step. This is the front-door consolidation the revised spec 0029 requires.
+  await signUp(page);
+  await page.goto('/rooms?game=trivia');
+  // Lands directly in the lobby (no `?step=pick`); the invite affordance proves it is the lobby.
+  await page.waitForURL(/\/rooms\/[A-Z2-9]{5}$/);
+  await expect(page.getByRole('heading', { name: /invite friends/i })).toBeVisible();
+  const code = page.url().match(/\/rooms\/([A-Z2-9]{5})/)?.[1] ?? '';
+  expect(code).toMatch(/^[A-Z2-9]{5}$/);
+  // No "Create a room" button was ever tapped, and no pick step was shown.
+  await expect(page.getByRole('button', { name: /create a room/i })).toHaveCount(0);
+
+  // A refresh must NOT create a second room: the auto-create replaced the `?game=` URL with the
+  // room URL, so reloading stays on the same room (idempotent per arrival, spec 0029 acceptance).
+  await page.reload();
+  await page.waitForURL(new RegExp(`/rooms/${code}$`));
+  expect(page.url()).toContain(`/rooms/${code}`);
 });
 
 test.describe('legal pages (spec 0031) at 360px', () => {

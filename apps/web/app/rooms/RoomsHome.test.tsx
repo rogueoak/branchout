@@ -4,8 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // The rooms home drives the create flow: a plain create routes to the pick step; a `?game=` deep
 // link (spec 0029) pre-selects the game and skips straight to invite. Mock the router + room-api so
 // the test asserts exactly where the host is routed.
-const hoisted = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: hoisted.push }) }));
+const hoisted = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: hoisted.push, replace: hoisted.replace }),
+}));
 
 vi.mock('../../lib/room-api', () => ({
   RoomApiError: class RoomApiError extends Error {},
@@ -44,6 +46,7 @@ beforeEach(() => {
   vi.mocked(roomApi.createRoom).mockResolvedValue({ room, playerId: 'p1' });
   vi.mocked(roomApi.setMode).mockResolvedValue(undefined);
   hoisted.push.mockReset();
+  hoisted.replace.mockReset();
 });
 
 afterEach(() => vi.clearAllMocks());
@@ -57,14 +60,50 @@ describe('RoomsHome create flow', () => {
     expect(trackRoomCreated).toHaveBeenCalledTimes(1);
   });
 
-  it('pre-selects the game and skips to the lobby when ?game names a known game', async () => {
+  it('auto-creates and REPLACES to the lobby when ?game names a known game (no Create tap)', async () => {
     vi.mocked(roomApi.selectGame).mockResolvedValue({ ...room, selectedGame: 'liar-liar' });
-    render(<RoomsHome viewer={{ signedIn: false }} initialGame="liar-liar" />);
-    fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
+    render(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
+    // The auto-create runs on mount with no "Create a room" tap: the setup state shows, the game is
+    // selected, and the host is REPLACED (not pushed) straight into the lobby.
+    expect(await screen.findByText(/setting up your room/i)).toBeDefined();
     await waitFor(() =>
       expect(roomApi.selectGame).toHaveBeenCalledWith('ABC12', 'liar-liar', expect.anything()),
     );
-    await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12'));
+    await waitFor(() => expect(hoisted.replace).toHaveBeenCalledWith('/rooms/ABC12'));
+    expect(hoisted.push).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /create a room/i })).toBeNull();
+  });
+
+  it('auto-creates exactly ONCE across re-renders (the one-shot guard, spec 0029)', async () => {
+    vi.mocked(roomApi.selectGame).mockResolvedValue({ ...room, selectedGame: 'liar-liar' });
+    const { rerender } = render(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
+    await waitFor(() => expect(roomApi.createRoom).toHaveBeenCalledTimes(1));
+    // A re-render (React can re-invoke effects / StrictMode double-invokes) must not create a second
+    // room: the ref guard fires the create once per arrival.
+    rerender(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
+    rerender(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
+    await waitFor(() => expect(hoisted.replace).toHaveBeenCalledWith('/rooms/ABC12'));
+    expect(roomApi.createRoom).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT auto-create for a viewer who cannot host - shows the landing (spec 0029)', async () => {
+    // Identity resolves to anonymous (not an account): the deep-link host gate fails, so no room is
+    // created and the create landing shows with the "Log in to host" affordance.
+    vi.mocked(roomApi.fetchIdentity).mockResolvedValue({ kind: 'anonymous' });
+    render(<RoomsHome viewer={{ signedIn: false }} initialGame="liar-liar" />);
+    expect(await screen.findByRole('link', { name: /log in to host/i })).toBeDefined();
+    expect(roomApi.createRoom).not.toHaveBeenCalled();
+    expect(roomApi.selectGame).not.toHaveBeenCalled();
+    expect(hoisted.replace).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the create landing with a message when the auto-create fails (spec 0029)', async () => {
+    vi.mocked(roomApi.createRoom).mockRejectedValue(new Error('boom'));
+    render(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
+    // The setup state gives way to the landing with an alert; no navigation happens.
+    expect(await screen.findByRole('alert')).toBeDefined();
+    expect(screen.getByRole('button', { name: /create a room/i })).toBeDefined();
+    expect(hoisted.replace).not.toHaveBeenCalled();
   });
 
   it('ignores an unknown ?game and falls back to the pick step', async () => {
@@ -89,7 +128,7 @@ describe('RoomsHome create flow', () => {
     expect(roomApi.selectGame).not.toHaveBeenCalled();
   });
 
-  it('pre-selects an insider-only game deep link on the insider surface (feedback 0029)', async () => {
+  it('auto-creates an insider-only game deep link on the insider surface (feedback 0029)', async () => {
     vi.mocked(roomApi.selectGame).mockResolvedValue({ ...room, selectedGame: 'teeter-tower' });
     render(
       <RoomsHome
@@ -98,11 +137,10 @@ describe('RoomsHome create flow', () => {
         surface={{ insider: true, linkOrigin: 'https://branchout.games' }}
       />,
     );
-    fireEvent.click(await screen.findByRole('button', { name: /create a room/i }));
     await waitFor(() =>
       expect(roomApi.selectGame).toHaveBeenCalledWith('ABC12', 'teeter-tower', expect.anything()),
     );
-    await waitFor(() => expect(hoisted.push).toHaveBeenCalledWith('/rooms/ABC12'));
+    await waitFor(() => expect(hoisted.replace).toHaveBeenCalledWith('/rooms/ABC12'));
   });
 
   it('does NOT autofocus the join-code input on mount (feedback 0031)', async () => {
