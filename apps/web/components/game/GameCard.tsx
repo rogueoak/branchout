@@ -4,8 +4,10 @@
 // every surface - the home teaser, the /games index, the insider landing, and the lobby/room picker.
 // It replaces the old bespoke `GameCard`, the shared `GameListCard`, and the two inline card renders,
 // so the surfaces can never drift again. Modelled on the insider landing card (the best prior
-// version): a 16:9 hero, the game mark + title inline, a badge + tags row under the title, a brief
-// description, and a configurable Play/Details row. Canopy Twigs (Card) call React.createContext at
+// version): a 16:9 hero, the game mark + title inline, a badge under the title, a brief
+// description, and a configurable Play/Details row. Library tags stay in `GameCardData` (they still
+// feed the /games search and the game page) but are NOT rendered on the card - a row of tag pills read
+// as clutter here, so the card keeps only the single badge. Canopy Twigs (Card) call React.createContext at
 // module scope (see docs/overview/learnings.md, Theming), so the consumer owns this 'use client'
 // boundary.
 //
@@ -18,7 +20,6 @@ import { Badge, buttonVariants } from '@rogueoak/canopy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rogueoak/canopy/twigs';
 import type { ReactNode } from 'react';
 import { featurePath, playHref, type GameBadge, type GameCardData } from '../../lib/games/catalog';
-import { Chip } from './Chip';
 
 interface GameCardProps {
   /** The resolved display data - one lookup per surface (see `getGameCard` in catalog.ts). */
@@ -117,7 +118,6 @@ export function GameCard({
   if (badge !== undefined || !game.insider) {
     rowBadge = <Badge variant={cardBadge.variant}>{cardBadge.label}</Badge>;
   }
-  const hasTags = game.tags.length > 0;
 
   const body = (
     <Card
@@ -156,24 +156,11 @@ export function GameCard({
           </div>
           {insidersBadge}
         </div>
-        {/* The badge + tags row, directly under the title. Wraps at 360px. The badge is a canopy Badge;
-            the tags are library-taxonomy Chips (each an <li>), so they live in their own role="list".
-            Omitted entirely when an insider game has no tags (nothing left to show once its duplicate
-            catalog badge is suppressed). */}
-        {rowBadge || hasTags ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {rowBadge}
-            {hasTags ? (
-              <ul className="flex flex-wrap gap-2" role="list">
-                {game.tags.map((tag) => (
-                  <Chip key={tag.slug} variant="tag">
-                    {tag.label}
-                  </Chip>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
+        {/* The badge row, directly under the title. Tags are intentionally NOT shown on the card -
+            they stay in GameCardData for the /games search and the game page, but a row of tag pills
+            reads as clutter here. Omitted for an insider game, whose duplicate catalog badge is
+            suppressed (the top-right "Insiders" badge already conveys it). */}
+        {rowBadge ? <div className="flex flex-wrap items-center gap-2">{rowBadge}</div> : null}
         <CardDescription>{game.summary}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">{footer}</CardContent>

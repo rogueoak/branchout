@@ -62,14 +62,15 @@ describe('InsiderHome (spec 0035)', () => {
     expect(screen.getAllByText('Insiders').length).toBeGreaterThan(0);
   });
 
-  it('renders "Play now" but NOT a Details link inside each insider card (Details deferred to spec 0030)', () => {
+  it('renders "Play now" AND a Details link into the insider feature page on each card (spec 0030)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
-    // The insider cards pass showDetails={false}: a "Details" link would point at /games/<slug>, which
-    // has no route on the insider host and notFound()s on the apex (getCatalogEntry is public-only). So
-    // only the relative "Play now" affordance shows; the insider per-game page arrives in spec 0030.
+    // Both affordances show now that the insider per-game page exists (spec 0030). "Play now" is the
+    // relative room deep link; "Details" is the relative /games/<slug>, which the insider host rewrites
+    // into the gated /insider/games/<slug> feature page - so both stay on the insider surface.
     const playLink = screen.getByRole('link', { name: /play teeter tower now/i });
     expect(playLink.getAttribute('href')).toBe('/rooms?game=teeter-tower');
-    expect(screen.queryByRole('link', { name: /details about teeter tower/i })).toBeNull();
+    const detailsLink = screen.getByRole('link', { name: /details about teeter tower/i });
+    expect(detailsLink.getAttribute('href')).toBe('/games/teeter-tower');
   });
 
   it('shows a top-right "Insiders" badge and no rules sheet on the card (spec 0065)', () => {

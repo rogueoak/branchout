@@ -556,6 +556,31 @@ export function getCatalogEntry(slug: string | undefined | null): GameCatalogEnt
   return toEntry(module);
 }
 
+/**
+ * Resolve a feature-page entry by slug for a given SURFACE (spec 0030). A public game resolves on
+ * both the apex and the insider surface; an insider-only game (spec 0043) resolves ONLY when the
+ * request is on the insider surface, and is undefined on the apex - so an insider slug still 404s
+ * publicly (it must never exist on the public site) but renders behind the insider gate. This is the
+ * surface-aware path the feature page uses; it does NOT weaken {@link getCatalogEntry}'s public-only
+ * guarantee (the SEO/JSON-LD/sitemap helpers stay public-only).
+ *
+ * LOAD-BEARING INVARIANT: `surface.insider` is trustworthy only because `middleware.ts` decides it
+ * from the request HOST (the insider subdomain), not from anything a client can spoof, and rewrites
+ * every insider-host `/games/*` request into the gated `/insider` tree that auth-walls non-insiders.
+ * An insider game therefore resolves here ONLY behind that gate. A future middleware/matcher change
+ * that stopped host-gating `/games/*` would silently let an insider slug resolve on the apex - keep
+ * the host rewrite and the insider layout gate in lockstep with this branch.
+ */
+export function getFeatureEntry(
+  slug: string | undefined | null,
+  surface: { insider: boolean },
+): GameCatalogEntry | undefined {
+  const module = getGameUi(slug);
+  if (!module) return undefined;
+  if (!isPublicGame(module) && !surface.insider) return undefined;
+  return toEntry(module);
+}
+
 // Client/server module hygiene (spec 0065 review): the client `GameCard` imports the card-facing
 // exports below (`GameCardData`, `GameBadge`, `featurePath`, `playHref`, `startGameHref`) from this
 // module, which ALSO holds the SEO-heavy `MARKETING` copy and `gameJsonLd`/`gameFeatureMetadata`. The
@@ -636,11 +661,12 @@ export function absoluteUrl(path: string): string {
   return new URL(path, SITE_URL).toString();
 }
 
-/** The Next.js metadata for a feature page: unique title/description, canonical, and OG/Twitter
- *  reusing the game's share card. Returns undefined for an unknown slug (the page then 404s). */
-export function gameFeatureMetadata(slug: string): Metadata | undefined {
-  const entry = getCatalogEntry(slug);
-  if (!entry) return undefined;
+/** The Next.js metadata for a PUBLIC feature page: unique title/description, canonical, and
+ *  OG/Twitter reusing the game's share card. Takes the already-resolved public entry (like
+ *  `insiderFeatureMetadata`/`gameJsonLd`), so the caller resolves the slug once - passing an insider
+ *  entry here would emit an indexable public share card, so only call it for a `visibility: 'public'`
+ *  entry (the feature page branches on that before calling). */
+export function gameFeatureMetadata(entry: GameCatalogEntry): Metadata {
   const url = absoluteUrl(featurePath(entry.slug));
   return {
     title: entry.seoTitle,
@@ -662,6 +688,20 @@ export function gameFeatureMetadata(slug: string): Metadata | undefined {
       description: entry.seoDescription,
       images: [absoluteUrl(entry.shareImage)],
     },
+  };
+}
+
+/**
+ * The metadata for an INSIDER feature page (spec 0030): a plain title + description marked
+ * `noindex, nofollow`, with NO canonical, OG/Twitter share card, or JSON-LD. The insider surface is
+ * gated (the layout auth-walls it), so a crawler never reaches these pages - and they must never be
+ * indexed or leak the game even if one did. Only public games carry the full SEO block above.
+ */
+export function insiderFeatureMetadata(entry: GameCatalogEntry): Metadata {
+  return {
+    title: entry.seoTitle,
+    description: entry.seoDescription,
+    robots: { index: false, follow: false },
   };
 }
 

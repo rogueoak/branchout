@@ -269,6 +269,18 @@ insider-only game appears (and its deep link is honored) only on the insider sur
 apex, even for an entitled insider. The shared chrome crosses its marketing/legal links back to the
 apex via `linkOrigin` while the flow's own relative links stay on the insider host.
 
+**The per-game feature page is mirrored the same way** (spec `0030`). `app/insider/games/[slug]` is a
+thin re-export of the surface-aware apex `app/games/[slug]/page.tsx`; the insider host rewrites
+`/games/...` into it (middleware blanket-prefixes `/insider`, so no route allowlist is needed), so an
+insider game's page renders behind the layout gate. The page resolves its game via
+`getFeatureEntry(slug, surface)` in `catalog.ts`: a public game resolves on both surfaces, an insider
+game only when `surface.insider` is true (else `notFound()`) - so the same insider slug 404s on the
+apex but renders on `insider.`. `getFeatureEntry` is the surface-aware path; `getCatalogEntry` stays
+public-only, so the SEO/JSON-LD/sitemap helpers never resolve an insider game. SEO is gated by
+visibility: a public page emits title/description/canonical/OG + `VideoGame` JSON-LD; an insider page
+returns `noindex` metadata (`insiderFeatureMetadata`) with no canonical or structured data, and the
+sitemap keeps mapping only `PUBLIC_GAME_CATALOG`.
+
 **Surface-owned nav links stay on the host** (feedback `0030`). `linkOrigin` alone is too blunt: it
 crosses *every* nav link, which drags the surface's own content links to the apex too. `TopNav` takes
 an explicit `insider` flag so it can split them - the apex-only links (Log in, Sign up, Manage

@@ -90,8 +90,9 @@ export function GamesBrowser({ games, signedIn }: GamesBrowserProps) {
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2" role="list">
           {visible.map((game) => (
             <li key={game.slug}>
-              {/* The one unified game card (spec 0065): hero, mark + title, badge + tags, summary, and
-                  the Play/Details row. "Play now" routes an anonymous visitor through signup first. */}
+              {/* The one unified game card (spec 0065): hero, mark + title, badge, summary, and the
+                  Play/Details row. Tags stay in the card data (they drive this page's search/filter)
+                  but are not shown on the card. "Play now" routes an anonymous visitor through signup. */}
               <GameCard game={game} playHref={startGameHref(game.slug, signedIn)} />
             </li>
           ))}

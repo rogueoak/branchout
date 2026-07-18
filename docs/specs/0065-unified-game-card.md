@@ -27,8 +27,10 @@ and behave inconsistently. We want **one configurable game card** used everywher
 - The card, modelled on the insider landing card (the best current version), shows top to bottom:
   - a **hero image** (the game's 16:9 hero art, `GAME_HERO[slug]`, falling back to the mark),
   - the **game icon (mark) + title inline**,
-  - directly under the title, an **optional badge** (New, Popular, Insider-defined, etc.) and the
-    game's **tags** (the library taxonomy chips),
+  - directly under the title, an **optional badge** (New, Popular, Insider-defined, etc.). The
+    game's **tags** stay in the card's data (`GameCardData`, feeding the `/games` search and the game
+    page) but are **not rendered on the card** - a row of tag pills read as clutter, so the card
+    keeps only the single badge (revision 2026-07-18, front-door polish),
   - a **brief description**,
   - a **"Play now" button**,
   - a **"Details" link** (this replaces the old "How to play" trigger) that navigates to the game's
@@ -108,8 +110,9 @@ and behave inconsistently. We want **one configurable game card** used everywher
 
 - [ ] A single `GameCard` renders the home teaser, `/games` index, insider landing, and lobby/picker;
       `GameListCard` and the two bespoke inline card renders are gone.
-- [ ] The card shows a hero, icon + title inline, an optional badge + tags row beneath the title, a
-      brief description, a "Play now" button, and a "Details" link to `/games/[slug]`.
+- [ ] The card shows a hero, icon + title inline, an optional badge beneath the title (tags are kept
+      in `GameCardData` but not rendered on the card), a brief description, a "Play now" button, and a
+      "Details" link to `/games/[slug]`.
 - [ ] `showPlay` and `showDetails` each hide their affordance; the lobby/picker renders the card with
       both hidden, selectable in the picker (`aria-pressed`, selection ring) and read-only in the
       lobby.
@@ -118,6 +121,7 @@ and behave inconsistently. We want **one configurable game card** used everywher
       edit.
 - [ ] The card reads and taps well at 360px; no nested interactive controls (one accessible action
       per element).
-- [ ] Unit tests cover the show/hide flags, the badge + tags, the insiders badge, and the picker
+- [ ] Unit tests cover the show/hide flags, the badge (and that tags are NOT rendered on the card),
+      the insiders badge, and the picker
       selectable variant; the `/games` search/filter and picker-selection behaviors stay covered; a
       360px render guard passes. `pnpm build`, lint, typecheck, and tests are green.
