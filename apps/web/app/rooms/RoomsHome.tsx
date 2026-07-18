@@ -6,7 +6,7 @@
 
 import { Button, Input, buttonVariants } from '@rogueoak/canopy';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { trackRoomCreated } from '../../lib/analytics';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
@@ -16,6 +16,10 @@ import { recallDeviceMode, rememberMembership } from '../../lib/membership';
 import { RoomApiError, createRoom, fetchIdentity, selectGame, setMode } from '../../lib/room-api';
 import type { Viewer } from '../../lib/session';
 import { APEX_SURFACE, type Surface } from '../../lib/surface';
+
+// If the deep-link auto-create stalls (flaky network), do not strand the host on the setup screen
+// forever - after this long, drop back to the create landing with a retry-able message (review #138).
+const SETUP_TIMEOUT_MS = 8000;
 
 interface RoomsHomeProps {
   /** The `?game=<slug>` deep link from a feature-page "Start a game" CTA (spec 0030): create a room
@@ -35,6 +39,18 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState('');
+  // One-shot guard (spec 0029): the deep-link auto-create must fire exactly once per arrival, so a
+  // React re-render or StrictMode double-invoke never creates a second room.
+  const autoStarted = useRef(false);
+
+  // Resolve the deep-link game once, respecting the insider surface gate (spec 0043 / feedback 0029):
+  // an insider-only game is only pre-selected on the insider surface. On the apex an insider slug is
+  // dropped (the host falls back to the picker), so an insider game never starts on the main site -
+  // even for an insider. Stable across renders so the auto-create effect fires once.
+  const preselected = useMemo(() => {
+    const candidate = initialGame ? getGameUi(initialGame) : undefined;
+    return candidate && (isPublicGame(candidate) || surface.insider) ? candidate : undefined;
+  }, [initialGame, surface.insider]);
 
   useEffect(() => {
     let active = true;
@@ -50,7 +66,10 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
     };
   }, []);
 
-  async function onCreate() {
+  // The create + select sequence. `useReplace` swaps the created-room URL in for the current one
+  // (the `?game=` deep link) so a back/refresh cannot re-trigger the create; the manual button path
+  // pushes so the landing stays in history.
+  async function runCreate(useReplace: boolean) {
     setCreating(true);
     setError(null);
     try {
@@ -66,14 +85,9 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
         userAgent: typeof navigator === 'undefined' ? '' : navigator.userAgent,
       });
 
-      // Deep link (spec 0029): if the "Start a game" CTA named a known game, select it now and skip
-      // the pick step, landing the host straight in the lobby. Otherwise the host picks a game first.
-      // Insider gate (spec 0043 / feedback 0029): an insider-only game is only pre-selected on the
-      // insider surface. On the apex the pre-select is dropped (they fall back to the picker), so an
-      // insider game never starts on the main site - even for an insider.
-      const candidate = initialGame ? getGameUi(initialGame) : undefined;
-      const preselected =
-        candidate && (isPublicGame(candidate) || surface.insider) ? candidate : undefined;
+      // Deep link (spec 0029): if the "Start a game" CTA named a known game (resolved above with the
+      // surface gate), select it now and skip the pick step, landing the host straight in the lobby.
+      // Otherwise the host picks a game first.
       let roomToStore = room;
       if (preselected) {
         try {
@@ -100,16 +114,86 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
           // the lobby, so a failed refinement should not block entering the room.
         }
       }
-      router.push(step ? `/rooms/${room.code}?step=${step}` : `/rooms/${room.code}`);
+      const dest = step ? `/rooms/${room.code}?step=${step}` : `/rooms/${room.code}`;
+      if (useReplace) router.replace(dest);
+      else router.push(dest);
     } catch (err) {
+      // An error clears `creating` and, since `showSetup` keys off `error`, drops the "Setting up
+      // your room..." state so an auto-create failure falls back to the create landing with the
+      // message rather than a stuck spinner.
       setError(err instanceof RoomApiError ? err.message : 'Could not create a room. Try again.');
       setCreating(false);
     }
   }
 
+  const onCreate = () => runCreate(false);
+
+  // Auto-create on the deep link (spec 0029): a signed-in host who can host and arrived with a valid
+  // `?game=<slug>` skips the "Create a room" tap - create the room, select the game, and replace to
+  // the lobby. Waits for the identity to resolve (isAccount === true); a signed-out / cannot-host
+  // viewer never auto-creates (they see the landing with "Log in to host"). The ref guard makes it
+  // fire once per arrival.
+  useEffect(() => {
+    if (autoStarted.current) return;
+    if (!preselected || isAccount !== true) return;
+    autoStarted.current = true;
+    void runCreate(true);
+    // runCreate is a stable closure over the render's props; it is intentionally omitted from deps so
+    // the effect keys only on the auto-create trigger (the resolved game + host identity).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselected, isAccount]);
+
+  // Show a lightweight setup state for an eligible deep-link host instead of flashing the landing,
+  // while the identity resolves (isAccount === null) and while the auto-create runs. Gated on the
+  // SERVER-KNOWN `viewer.signedIn` (review #138) so a signed-OUT visitor opening a shared
+  // `?game=` link never flashes "Setting up your room..." during the async identity window - they
+  // go straight to the "Log in to host" landing. An error drops back to the landing (which surfaces
+  // the message); a signed-out viewer (isAccount === false) also sees the landing so they can log in.
+  const showSetup = Boolean(preselected) && viewer.signedIn && !error && isAccount !== false;
+
+  // Safety timeout (review #138): if the setup (identity + auto-create) stalls, drop the host to the
+  // create landing with a retry-able message instead of a spinner that never resolves. Keyed on
+  // `showSetup`, so it is armed only while the setup screen is up and is cleared on navigation/unmount.
+  useEffect(() => {
+    if (!showSetup) return;
+    const timer = setTimeout(() => {
+      setCreating(false);
+      setError('This is taking longer than expected. Try again.');
+    }, SETUP_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [showSetup]);
+
+  // A signed-out deep-linker must resume into the game after auth (review #138): carry the current
+  // `?game=` deep link as a validated internal `next` on the login / sign-up links so, once they have
+  // an account, they land back here and the auto-create fires. No deep link -> plain auth links. The
+  // links stay relative (surface-owned): the insider host serves /login + /signup directly, so this
+  // resolves on whichever surface the host is on. `preselected.id` is used (not the raw slug) so an
+  // insider game dropped on the apex carries no `next` - matching where the auto-create would land.
+  const deepLink = preselected ? `/rooms?game=${encodeURIComponent(preselected.id)}` : null;
+  const loginHref = deepLink ? `/login?next=${encodeURIComponent(deepLink)}` : '/login';
+  const signupHref = deepLink ? `/signup?next=${encodeURIComponent(deepLink)}` : '/signup';
+
   function onJoin() {
     const trimmed = code.trim().toUpperCase();
     if (trimmed) router.push(`/join?code=${encodeURIComponent(trimmed)}`);
+  }
+
+  if (showSetup) {
+    return (
+      <div className="flex min-h-screen flex-col bg-bg text-text">
+        <TopNav
+          viewer={viewer}
+          label={surface.insider ? 'Insider' : undefined}
+          linkOrigin={surface.linkOrigin || undefined}
+          insider={surface.insider}
+        />
+        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 px-4 py-16 text-center sm:px-6">
+          <h1 className="text-h2 text-text">Setting up your room...</h1>
+          <p className="text-body text-text-muted">Hang tight - we are getting your game ready.</p>
+        </main>
+        <Footer linkOrigin={surface.linkOrigin || undefined} />
+      </div>
+    );
   }
 
   return (
@@ -135,8 +219,11 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
           {isAccount === false ? (
             <div className="flex flex-col gap-2">
               <p className="text-body-sm text-text-muted">Hosting needs an account.</p>
-              <a href="/login" className={buttonVariants({ variant: 'primary' })}>
+              <a href={loginHref} className={buttonVariants({ variant: 'primary' })}>
                 Log in to host
+              </a>
+              <a href={signupHref} className={buttonVariants({ variant: 'outline' })}>
+                Sign up
               </a>
             </div>
           ) : (
