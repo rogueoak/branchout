@@ -37,12 +37,19 @@ const games: GameCardData[] = [
 describe('GamesBrowser', () => {
   it('lists every game with its Play + Details affordances and tag chips', () => {
     render(<GamesBrowser games={games} signedIn />);
-    expect(screen.getByRole('link', { name: /details about trivia/i })).toBeDefined();
-    expect(screen.getByRole('link', { name: /details about liar liar/i })).toBeDefined();
-    expect(screen.getByRole('link', { name: /play trivia now/i })).toBeDefined();
-    // Tag chips render.
-    expect(screen.getByText('Quick')).toBeDefined();
-    expect(screen.getByText('Bluffing')).toBeDefined();
+    // Each card carries a Details link to the feature page and a Play link to the room deep link.
+    expect(screen.getByRole('link', { name: /details about trivia/i }).getAttribute('href')).toBe(
+      '/games/trivia',
+    );
+    expect(
+      screen.getByRole('link', { name: /details about liar liar/i }).getAttribute('href'),
+    ).toBe('/games/liar-liar');
+    expect(screen.getByRole('link', { name: /play trivia now/i }).getAttribute('href')).toBe(
+      '/rooms?game=trivia',
+    );
+    // Tag chips render with their exact labels.
+    expect(screen.getByText('Quick').textContent).toBe('Quick');
+    expect(screen.getByText('Bluffing').textContent).toBe('Bluffing');
   });
 
   it('routes an anonymous visitor through signup on Play', () => {
@@ -63,7 +70,9 @@ describe('GamesBrowser', () => {
     render(<GamesBrowser games={games} signedIn />);
     fireEvent.change(screen.getByLabelText(/search games/i), { target: { value: 'liar' } });
     expect(screen.queryByRole('link', { name: /details about trivia/i })).toBeNull();
-    expect(screen.getByRole('link', { name: /details about liar liar/i })).toBeDefined();
+    expect(
+      screen.getByRole('link', { name: /details about liar liar/i }).getAttribute('href'),
+    ).toBe('/games/liar-liar');
   });
 
   it('narrows the list by the category filter', () => {
@@ -72,12 +81,18 @@ describe('GamesBrowser', () => {
     // Liar - a discriminating assertion that fails if the filter is ignored.
     fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'deduction' } });
     expect(screen.queryByRole('link', { name: /details about trivia/i })).toBeNull();
-    expect(screen.getByRole('link', { name: /details about liar liar/i })).toBeDefined();
+    expect(
+      screen.getByRole('link', { name: /details about liar liar/i }).getAttribute('href'),
+    ).toBe('/games/liar-liar');
 
     // Both games declare `party`, so filtering to it keeps both (only Trivia is party-only).
     fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'party' } });
-    expect(screen.getByRole('link', { name: /details about trivia/i })).toBeDefined();
-    expect(screen.getByRole('link', { name: /details about liar liar/i })).toBeDefined();
+    expect(screen.getByRole('link', { name: /details about trivia/i }).getAttribute('href')).toBe(
+      '/games/trivia',
+    );
+    expect(
+      screen.getByRole('link', { name: /details about liar liar/i }).getAttribute('href'),
+    ).toBe('/games/liar-liar');
   });
 
   it('shows a no-match state when nothing matches', () => {
@@ -85,7 +100,7 @@ describe('GamesBrowser', () => {
     fireEvent.change(screen.getByLabelText(/search games/i), {
       target: { value: 'zzzznotathing' },
     });
-    expect(screen.getByText(/no games match/i)).toBeDefined();
+    expect(screen.getByText(/no games match/i).textContent).toMatch(/no games match/i);
     expect(screen.queryByRole('link', { name: /details about/i })).toBeNull();
   });
 });

@@ -68,10 +68,12 @@ export function GameCard({
     let playControl: ReactNode = null;
     if (renderPlay) {
       playControl = (
+        // Primary CTA: a full-width one-tap target on a phone (mobile-first non-negotiable), auto
+        // width from sm up so it does not stretch across a wide card. Details stays secondary.
         <a
           href={playHrefProp ?? playHref(game.slug)}
           aria-label={`Play ${game.name} now`}
-          className={buttonVariants({ variant: 'primary', size: 'sm' })}
+          className={`${buttonVariants({ variant: 'primary', size: 'sm' })} w-full sm:w-auto`}
         >
           Play now
         </a>
@@ -107,6 +109,15 @@ export function GameCard({
       </Badge>
     );
   }
+
+  // The catalog badge in the badge/tags row. Suppressed on an insider game (whose catalog badge is
+  // always `Insider`) because the top-right "Insiders" badge already conveys that - two near-identical
+  // pills otherwise. An explicit `badge` override (a caller intentionally relabelling the row) still shows.
+  let rowBadge: ReactNode = null;
+  if (badge !== undefined || !game.insider) {
+    rowBadge = <Badge variant={cardBadge.variant}>{cardBadge.label}</Badge>;
+  }
+  const hasTags = game.tags.length > 0;
 
   const body = (
     <Card
@@ -146,19 +157,23 @@ export function GameCard({
           {insidersBadge}
         </div>
         {/* The badge + tags row, directly under the title. Wraps at 360px. The badge is a canopy Badge;
-            the tags are library-taxonomy Chips (each an <li>), so they live in their own role="list". */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={cardBadge.variant}>{cardBadge.label}</Badge>
-          {game.tags.length > 0 ? (
-            <ul className="flex flex-wrap gap-2" role="list">
-              {game.tags.map((tag) => (
-                <Chip key={tag.slug} variant="tag">
-                  {tag.label}
-                </Chip>
-              ))}
-            </ul>
-          ) : null}
-        </div>
+            the tags are library-taxonomy Chips (each an <li>), so they live in their own role="list".
+            Omitted entirely when an insider game has no tags (nothing left to show once its duplicate
+            catalog badge is suppressed). */}
+        {rowBadge || hasTags ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {rowBadge}
+            {hasTags ? (
+              <ul className="flex flex-wrap gap-2" role="list">
+                {game.tags.map((tag) => (
+                  <Chip key={tag.slug} variant="tag">
+                    {tag.label}
+                  </Chip>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
         <CardDescription>{game.summary}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">{footer}</CardContent>

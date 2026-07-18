@@ -39,10 +39,12 @@ test.describe('game feature pages (spec 0030) at 360px', () => {
   test.use({ viewport: { width: 360, height: 780 } });
 
   test('the games index and a feature page render, fit, and carry JSON-LD', async ({ page }) => {
-    // Index lists the games and links to each feature page.
+    // Index lists the games and links to each feature page. The unified card (spec 0065) exposes a
+    // per-game "Details about <name>" link (to the feature page) instead of the old whole-card "Learn
+    // about <name>" link; assert a known game's card is present and the index still fits at 360px.
     await page.goto('/games');
     await expect(page.getByRole('heading', { name: 'Games', level: 1 })).toBeVisible();
-    await expect(page.getByRole('link', { name: /learn about trivia/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /details about trivia/i })).toBeVisible();
     await expectFits(page);
 
     // Feature page: hero + the how-to and categories sections, all fitting at 360.

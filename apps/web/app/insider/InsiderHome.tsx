@@ -9,7 +9,7 @@ import type { Surface } from '../../lib/surface';
 import { Footer } from '../../components/Footer';
 import { TopNav } from '../../components/TopNav';
 import { GameCard } from '../../components/game/GameCard';
-import { GAME_CATALOG, getGameCard } from '../../lib/games/catalog';
+import { GAME_CATALOG, getGameCard, type GameCardData } from '../../lib/games/catalog';
 
 // The games available to try on the insider surface (spec 0043): every catalog entry marked
 // insider-only, resolved to the one unified card shape (spec 0065) so the insider cards render exactly
@@ -18,7 +18,8 @@ import { GAME_CATALOG, getGameCard } from '../../lib/games/catalog';
 // page. A friendly empty state stands in when no test games are live.
 const INSIDER_GAMES = GAME_CATALOG.filter((game) => game.visibility === 'insider')
   .map((game) => getGameCard(game.slug))
-  .filter((game) => game !== undefined);
+  // Explicit type-predicate guard (matches app/games/page.tsx) so the list narrows to GameCardData.
+  .filter((game): game is GameCardData => game !== undefined);
 
 export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surface }) {
   // This surface lives on the insider subdomain, where middleware rewrites every path into the
@@ -62,13 +63,13 @@ export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surf
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {INSIDER_GAMES.map((game) => (
-              // The one unified game card (spec 0065). Play + Details both show: "Play now" is the
-              // RELATIVE room-create deep link (feedback 0029) so play stays on the insider surface
-              // (rewritten into /insider/rooms), and "Details" links to the game's page where its rules
-              // now live (spec 0030). The Play/Details links are the only interactive elements - the
-              // card itself is not a link, so there is no interactive-in-interactive a11y violation.
-              // The "Insiders" badge shows top-right (game.insider is true for every entry here).
-              <GameCard key={game.slug} game={game} />
+              // The one unified game card (spec 0065). "Play now" is the RELATIVE room-create deep
+              // link (feedback 0029) so play stays on the insider surface (rewritten into
+              // /insider/rooms). Details is OFF here: it links to /games/<slug>, which has no route on
+              // the insider host and notFound()s on the apex (getCatalogEntry is public-only). The
+              // insider per-game page arrives in spec 0030, which will re-enable Details on this
+              // surface. The "Insiders" badge shows top-right (game.insider is true for every entry).
+              <GameCard key={game.slug} game={game} showDetails={false} />
             ))}
           </div>
         )}

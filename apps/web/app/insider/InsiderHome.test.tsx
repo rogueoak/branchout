@@ -15,17 +15,17 @@ describe('InsiderHome (spec 0035)', () => {
 
   it('renders a single centered welcome that carries the insider identity (feedback 0030)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
-    // One combined welcome heading + message, replacing the old bare "Insider" heading.
+    // One combined welcome heading + message, replacing the old bare "Insider" heading. The welcome is
+    // centered (feedback 0030): assert the class so a regression cannot stay green.
     const heading = screen.getByRole('heading', { name: /branch out games for insiders/i });
-    expect(heading).toBeDefined();
-    // The welcome is centered (feedback 0030): assert the class so a regression cannot stay green.
     expect(heading.className).toContain('text-center');
-    expect(screen.getByText(/unreleased games still in testing/i)).toBeDefined();
-    expect(screen.getByText(/your feedback shapes what ships/i)).toBeDefined();
+    expect(screen.getByText(/unreleased games still in testing/i).tagName).toBe('P');
+    expect(screen.getByText(/your feedback shapes what ships/i).tagName).toBe('P');
     // The nav still carries the "Insider" surface badge. Scope to the nav landmark: the insider game
-    // cards now also render an "Insider" catalog badge, so a bare getByText would match several.
+    // cards carry an "Insiders" (plural) top-right badge, and scoping keeps this assertion pinned to
+    // the surface badge rather than any card copy.
     const nav = screen.getByRole('navigation', { name: /site navigation/i });
-    expect(within(nav).getByText('Insider')).toBeDefined();
+    expect(within(nav).getByText('Insider').textContent).toBe('Insider');
   });
 
   it('offers a "Play now" CTA that is the RELATIVE play link on the Teeter Tower card (feedback 0030)', () => {
@@ -55,24 +55,21 @@ describe('InsiderHome (spec 0035)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
     // Teeter Tower (an insider-only game) is offered, not the empty state.
     expect(screen.queryByText(/no test games yet/i)).toBeNull();
-    // The card renders the game name as a heading and the "Insider" catalog badge (there is at least
-    // one - every insider game carries it), matching the main-site card look.
-    expect(screen.getByRole('heading', { name: 'Teeter Tower' })).toBeDefined();
-    expect(screen.getAllByText('Insider').length).toBeGreaterThan(0);
+    // The card renders the game name as an h3 heading and the top-right "Insiders" badge (every insider
+    // game carries it); its duplicate "Insider" catalog badge is suppressed. (The nav still carries its
+    // own "Insider" surface badge, so the badge-suppression itself is asserted in GameCard.test.tsx.)
+    expect(screen.getByRole('heading', { name: 'Teeter Tower' }).tagName).toBe('H3');
+    expect(screen.getAllByText('Insiders').length).toBeGreaterThan(0);
   });
 
-  it('renders the "Play now" and "Details" controls inside each card (spec 0065)', () => {
+  it('renders "Play now" but NOT a Details link inside each insider card (Details deferred to spec 0030)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
-    // The unified card carries two independent link affordances - Play and Details - as siblings in
-    // the same controls row (no interactive-in-interactive nesting). Locate the Teeter card by its
-    // play link, then its sibling Details link.
+    // The insider cards pass showDetails={false}: a "Details" link would point at /games/<slug>, which
+    // has no route on the insider host and notFound()s on the apex (getCatalogEntry is public-only). So
+    // only the relative "Play now" affordance shows; the insider per-game page arrives in spec 0030.
     const playLink = screen.getByRole('link', { name: /play teeter tower now/i });
-    const controls = playLink.parentElement;
-    expect(controls).not.toBeNull();
-    const details = within(controls as HTMLElement).getByRole('link', {
-      name: /details about teeter tower/i,
-    });
-    expect(details.getAttribute('href')).toBe('/games/teeter-tower');
+    expect(playLink.getAttribute('href')).toBe('/rooms?game=teeter-tower');
+    expect(screen.queryByRole('link', { name: /details about teeter tower/i })).toBeNull();
   });
 
   it('shows a top-right "Insiders" badge and no rules sheet on the card (spec 0065)', () => {
@@ -87,7 +84,7 @@ describe('InsiderHome (spec 0035)', () => {
 
   it('renders the shared account menu (main site look and feel)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
-    expect(screen.getByRole('button', { name: /account menu for cat/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /account menu for cat/i }).tagName).toBe('BUTTON');
   });
 
   it('crosses APEX-ONLY chrome links to the apex, but keeps surface-owned nav on the host (feedback 0030)', () => {

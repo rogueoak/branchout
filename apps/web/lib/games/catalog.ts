@@ -556,6 +556,15 @@ export function getCatalogEntry(slug: string | undefined | null): GameCatalogEnt
   return toEntry(module);
 }
 
+// Client/server module hygiene (spec 0065 review): the client `GameCard` imports the card-facing
+// exports below (`GameCardData`, `GameBadge`, `featurePath`, `playHref`, `startGameHref`) from this
+// module, which ALSO holds the SEO-heavy `MARKETING` copy and `gameJsonLd`/`gameFeatureMetadata`. The
+// pure helpers and types are trivially tree-shakeable, so `GameCard` (which imports only those) pulls
+// no marketing copy into the client bundle. A clean split into a client-only module was considered and
+// deliberately NOT done: `getGameCard` sources a game's card badge from `MARKETING` (via `toEntry`), so
+// resolving card data is inherently a catalog concern - and `getGameCard` is already imported by client
+// components (LandingContent, GamePicker, Lobby), which pull `MARKETING` in regardless. Extracting only
+// the pure helpers would be cosmetic churn without removing that dependency. Left as-is on tree-shaking.
 /**
  * The single display shape the unified game card consumes (spec 0065): the registry basics (name,
  * mark, one-line summary), the catalog badge, the library tags, the hero art, and the insider flag -
@@ -597,7 +606,7 @@ export function getGameCard(slug: string | undefined | null): GameCardData | und
     hero: GAME_HERO[module.id] ?? module.icon,
     badge: entry.badge,
     tags: meta?.tags ?? [],
-    insider: (module.visibility ?? 'public') === 'insider',
+    insider: entry.visibility === 'insider',
   };
 }
 
