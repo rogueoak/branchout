@@ -13,12 +13,14 @@ describe('generateRandomName', () => {
     expect(generateRandomName(seq(0, 0))).toBe('Prickly Ostrich');
   });
 
-  it('picks distinct list entries as the rng advances', () => {
-    // 0.5 lands mid-list for both lists.
-    const adj = ADJECTIVES[Math.floor(0.5 * ADJECTIVES.length)]!;
-    const noun = NOUNS[Math.floor(0.5 * NOUNS.length)]!;
-    const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
-    expect(generateRandomName(seq(0.5, 0.5))).toBe(`${cap(adj)} ${cap(noun)}`);
+  it('maps low vs high rng to genuinely different list entries', () => {
+    // Assert real distinctness against hand-picked expected values (NOT recomputed with the
+    // implementation's own index formula, which would make this test vacuously pass).
+    // rng 0 -> first entry of each list; rng ~1 -> last entry of each list.
+    expect(generateRandomName(seq(0, 0))).toBe('Prickly Ostrich');
+    expect(generateRandomName(seq(0.999, 0.999))).toBe('Zippy Poppy');
+    // A mid-list draw is different again, so advancing the rng really moves through the lists.
+    expect(generateRandomName(seq(0.5, 0.5))).toBe('Dewy Clover');
   });
 
   it('has an "Adjective Noun" shape (two title-cased ASCII words)', () => {

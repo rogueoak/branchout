@@ -16,6 +16,8 @@ vi.mock('../../lib/membership', () => ({
   recallMembership: vi.fn(() => null),
   recallPlayerName: vi.fn(() => null),
   rememberPlayerName: vi.fn(),
+  recallAnonName: vi.fn(() => null),
+  rememberAnonName: vi.fn(),
 }));
 vi.mock('../../lib/random-name', () => ({
   generateRandomName: vi.fn(() => 'Prickly Ostrich'),
@@ -35,6 +37,7 @@ vi.mock('../../lib/room-api', () => ({
 import * as roomApi from '../../lib/room-api';
 import { trackRoomJoined } from '../../lib/analytics';
 import * as membership from '../../lib/membership';
+import { generateRandomName } from '../../lib/random-name';
 import { JoinForm } from './JoinForm';
 
 afterEach(() => vi.clearAllMocks());
@@ -89,24 +92,47 @@ describe('JoinForm name seeding (spec 0066)', () => {
     vi.mocked(membership.recallPlayerName).mockReturnValue(null);
     render(<JoinForm initialCode="ABC12" viewer={{ signedIn: true, gamerTag: 'AdaLovelace' }} />);
     await waitFor(() => expect(nameValue()).toBe('AdaLovelace'));
+    // The gamer tag is authoritative: no random name is minted and nothing is persisted to either
+    // slot, so a "always generate/persist" regression fails here.
+    expect(generateRandomName).not.toHaveBeenCalled();
+    expect(membership.rememberAnonName).not.toHaveBeenCalled();
+    expect(membership.rememberPlayerName).not.toHaveBeenCalled();
   });
 
   it('a remembered name wins over the gamer tag', async () => {
     vi.mocked(membership.recallPlayerName).mockReturnValue('Mossy Otter');
     render(<JoinForm initialCode="ABC12" viewer={{ signedIn: true, gamerTag: 'AdaLovelace' }} />);
     await waitFor(() => expect(nameValue()).toBe('Mossy Otter'));
+    // A picked name short-circuits precedence: no generate, no re-persist of the seeded value.
+    expect(generateRandomName).not.toHaveBeenCalled();
+    expect(membership.rememberAnonName).not.toHaveBeenCalled();
+    expect(membership.rememberPlayerName).not.toHaveBeenCalled();
   });
 
-  it('a fresh anonymous player gets a generated name that is then persisted', async () => {
+  it('a fresh anonymous player gets a generated name persisted under the anon key (once)', async () => {
     vi.mocked(membership.recallPlayerName).mockReturnValue(null);
+    vi.mocked(membership.recallAnonName).mockReturnValue(null);
     render(<JoinForm initialCode="ABC12" viewer={{ signedIn: false }} />);
     await waitFor(() => expect(nameValue()).toBe('Prickly Ostrich'));
-    // Persisted on first use so the same browser keeps the name across visits.
-    expect(membership.rememberPlayerName).toHaveBeenCalledWith('Prickly Ostrich');
+    // Persisted on first use under the DISTINCT anon key (never the picked key, so it can never
+    // shadow a future gamer tag), and minted at most once per browser.
+    expect(membership.rememberAnonName).toHaveBeenCalledWith('Prickly Ostrich');
+    expect(membership.rememberAnonName).toHaveBeenCalledTimes(1);
+    expect(membership.rememberPlayerName).not.toHaveBeenCalled();
+  });
+
+  it('reuses a previously generated anon name without minting a new one', async () => {
+    vi.mocked(membership.recallPlayerName).mockReturnValue(null);
+    vi.mocked(membership.recallAnonName).mockReturnValue('Sunny Robin');
+    render(<JoinForm initialCode="ABC12" viewer={{ signedIn: false }} />);
+    await waitFor(() => expect(nameValue()).toBe('Sunny Robin'));
+    expect(generateRandomName).not.toHaveBeenCalled();
+    expect(membership.rememberAnonName).not.toHaveBeenCalled();
   });
 
   it('persists an edited name on submit so the next visit reuses it', async () => {
     vi.mocked(membership.recallPlayerName).mockReturnValue(null);
+    vi.mocked(membership.recallAnonName).mockReturnValue(null);
     vi.mocked(roomApi.joinRoom).mockResolvedValue({
       room: { code: 'ABC12' },
       playerId: 'p1',
@@ -116,5 +142,19 @@ describe('JoinForm name seeding (spec 0066)', () => {
     fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Ada' } });
     fireEvent.click(screen.getByRole('button', { name: 'Join room' }));
     await waitFor(() => expect(membership.rememberPlayerName).toHaveBeenCalledWith('Ada'));
+  });
+
+  it('persists a typed name on blur, but never the untouched seeded default', async () => {
+    vi.mocked(membership.recallPlayerName).mockReturnValue(null);
+    vi.mocked(membership.recallAnonName).mockReturnValue(null);
+    render(<JoinForm initialCode="ABC12" viewer={{ signedIn: false }} />);
+    await waitFor(() => expect(nameValue()).toBe('Prickly Ostrich'));
+    // Blurring the seeded default (untouched) must NOT write it to the picked slot.
+    fireEvent.blur(screen.getByLabelText('Your name'));
+    expect(membership.rememberPlayerName).not.toHaveBeenCalled();
+    // Once the player types, blur commits that value to the picked slot.
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Ada' } });
+    fireEvent.blur(screen.getByLabelText('Your name'));
+    expect(membership.rememberPlayerName).toHaveBeenCalledWith('Ada');
   });
 });

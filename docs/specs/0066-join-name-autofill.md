@@ -16,16 +16,26 @@ player who has nothing - so joining is one tap.
 ## Outcome
 
 - The "pick your name" field is **pre-filled on load** using this precedence:
-  1. the **last name the player picked**, if we remembered one (localStorage) - even for an anonymous
-     player with no account;
-  2. otherwise, for a **signed-in** player, their **gamer tag**;
-  3. otherwise (an anonymous player with no remembered name), a **randomly generated name** - a
-     friendly adjective + noun like "prickly ostrich" - generated once and then remembered.
-- When the player **edits** the name, the chosen value is **saved to localStorage** and reused as the
-  default on their next visit (any room), regardless of whether they have an account.
-- The randomly generated name is **only generated when the player has nothing** (no remembered name
-  and no gamer tag); once generated it is stored, so the same anonymous player keeps the same fun name
-  across visits rather than getting a new one each time.
+  1. the **last name the player actually picked (typed)**, if we remembered one - even for an
+     anonymous player with no account;
+  2. otherwise, for a **signed-in** player, their **gamer tag** (authoritative for their identity);
+  3. otherwise (an anonymous player with no picked name and no gamer tag), a **randomly generated
+     name** - a friendly adjective + noun like "prickly ostrich" - generated once and then remembered.
+- **Two separate storage slots.** The picked name and the generated anonymous default live under
+  **distinct localStorage keys** (`branchout:playerName` vs. `branchout:anonName`). Only a name the
+  player *typed* is written to the picked slot; the generated default is written only to the anon
+  slot. This keeps a signed-in player's gamer tag authoritative: an anonymous name generated before
+  sign-in can never shadow the gamer tag afterwards (precedence step 2 still wins), yet a name the
+  player deliberately picked still wins for everyone (step 1).
+- When the player **edits** the name, that typed value is **saved to the picked slot** (on submit and
+  on blur-when-non-empty) and reused as the default on their next visit (any room), account or not.
+  The seeded default is **never** written to the picked slot.
+- The randomly generated name is **only generated when the player has nothing** (no picked name and
+  no gamer tag); once generated it is stored in the anon slot, so the same anonymous player keeps the
+  same fun name across visits rather than getting a new one each time.
+- The seeding effect is **guarded**: if the field is already non-empty (the player has started
+  typing, or a value was already seeded) it does nothing, so it never clobbers an early keystroke or
+  re-seeds when `viewer.gamerTag` resolves mid-edit.
 - The field is still editable and still required to be non-empty; a player can always overwrite the
   default. Joining works in one tap when the default is acceptable.
 - The behavior is identical on the apex and the insider join surface (the insider join re-exports the
@@ -41,10 +51,13 @@ player who has nothing - so joining is one tap.
   hydration-safe, mirroring the existing device-mode effect) using the precedence above. The initial
   SSR value stays empty/neutral; the effect fills it so localStorage and randomness never run on the
   server and never cause a hydration mismatch.
-- **A remembered-name localStorage helper** alongside the existing device-mode helpers in
-  `apps/web/lib/membership.ts` (e.g. `rememberPlayerName(name)` / `recallPlayerName()`, keyed
-  `branchout:playerName`, guarded on `typeof window`). Persist on a meaningful edit (on submit, and/or
-  on change/blur) so the last chosen name survives.
+- **Two remembered-name localStorage helper pairs** alongside the existing device-mode helpers in
+  `apps/web/lib/membership.ts`: `rememberPlayerName(name)` / `recallPlayerName()` (the picked name,
+  keyed `branchout:playerName`) and `rememberAnonName(name)` / `recallAnonName()` (the generated
+  anonymous default, keyed `branchout:anonName`). Both are guarded on `typeof window` and ignore a
+  blank value. Persist the picked name only on a meaningful edit (on submit, and on blur when
+  non-empty) so the last name the player *typed* survives; the seeded default is never written to the
+  picked key.
 - **A random adjective + noun name generator** - a new small pure util (e.g.
   `apps/web/lib/random-name.ts`) with a curated, on-brand, ASCII, family-friendly adjective list and
   noun list (nature/party/critter flavor to match the brand), combining one of each ("prickly
@@ -73,9 +86,11 @@ player who has nothing - so joining is one tap.
 ## Approach
 
 - **Precedence in one place.** A small resolver - `recallPlayerName() ?? viewer.gamerTag ??
-  generateRandomName()` - computes the default once after mount and sets the field. Because the
-  generator's result is immediately persisted (and future visits recall it), the "only generate when
-  they have nothing" rule holds automatically: step 3 runs at most once per browser.
+  (recallAnonName() ?? generateAndPersistAnonName())` - computes the default once after mount and sets
+  the field. Because the generated name is immediately persisted to the anon slot (and future visits
+  recall it), the "only generate when they have nothing" rule holds automatically: the generate branch
+  runs at most once per browser. Keeping the generated default in its own slot (never the picked slot)
+  is what lets a later sign-in fall through to the authoritative gamer tag.
 - **Client-only, hydration-safe.** localStorage and randomness cannot run during SSR (they would
   diverge between server and client), so the field initializes empty on the server and a `useEffect`
   (the same shape the existing `recallDeviceMode` effect uses) fills it on the client - no flash of a

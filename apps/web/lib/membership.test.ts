@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { recallPlayerName, rememberPlayerName } from './membership';
+import {
+  recallAnonName,
+  recallPlayerName,
+  rememberAnonName,
+  rememberPlayerName,
+} from './membership';
 
 // jsdom here ships no localStorage, so back it with a plain Map for these tests.
 beforeEach(() => {
@@ -37,8 +42,37 @@ describe('player-name memory (spec 0066)', () => {
     expect(recallPlayerName()).toBe('Fuzzy Newt');
   });
 
-  it('persists across rooms in localStorage (a cross-visit convenience)', () => {
+  it('keeps the most recently picked name (last pick wins across visits)', () => {
     rememberPlayerName('Sunny Robin');
-    expect(window.localStorage.getItem('branchout:playerName')).toBe('Sunny Robin');
+    rememberPlayerName('Mossy Otter');
+    expect(recallPlayerName()).toBe('Mossy Otter');
+  });
+});
+
+describe('anonymous-default memory (spec 0066)', () => {
+  it('recalls the anon default under a DISTINCT key from the picked name', () => {
+    rememberAnonName('Prickly Ostrich');
+    expect(recallAnonName()).toBe('Prickly Ostrich');
+    expect(window.localStorage.getItem('branchout:anonName')).toBe('Prickly Ostrich');
+    // Crucially it does NOT bleed into the picked-name slot, so it can never shadow a gamer tag.
+    expect(window.localStorage.getItem('branchout:playerName')).toBeNull();
+    expect(recallPlayerName()).toBeNull();
+  });
+
+  it('keeps the anon default and the picked name independent of each other', () => {
+    rememberAnonName('Prickly Ostrich');
+    rememberPlayerName('Ada');
+    expect(recallAnonName()).toBe('Prickly Ostrich');
+    expect(recallPlayerName()).toBe('Ada');
+  });
+
+  it('returns null when no anon default was remembered', () => {
+    expect(recallAnonName()).toBeNull();
+  });
+
+  it('ignores a blank anon name rather than storing an empty default', () => {
+    rememberAnonName('Fuzzy Newt');
+    rememberAnonName('   ');
+    expect(recallAnonName()).toBe('Fuzzy Newt');
   });
 });

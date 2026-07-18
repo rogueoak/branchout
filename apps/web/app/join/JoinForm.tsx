@@ -16,9 +16,11 @@ import type { Viewer } from '../../lib/session';
 import { APEX_SURFACE, type Surface } from '../../lib/surface';
 import { defaultMode } from '../../lib/default-mode';
 import {
+  recallAnonName,
   recallDeviceMode,
   recallMembership,
   recallPlayerName,
+  rememberAnonName,
   rememberMembership,
   rememberPlayerName,
 } from '../../lib/membership';
@@ -34,6 +36,13 @@ interface JoinFormProps {
   surface?: Surface;
 }
 
+/** Mint a fresh generated name and stash it under the anon key so this browser reuses it next time. */
+function generateAndPersistAnonName(): string {
+  const generated = generateRandomName();
+  rememberAnonName(generated);
+  return generated;
+}
+
 export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFormProps) {
   const router = useRouter();
   const [code, setCode] = useState(initialCode);
@@ -45,6 +54,10 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
   const [mode, setMode] = useState<Mode>('interactive');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // True once the player has actually typed in the name field, so we only ever persist a name they
+  // chose to the "picked" slot - never the seeded default (a gamer tag stays authoritative on the
+  // account; a generated name lives under its own anon key).
+  const [nameEdited, setNameEdited] = useState(false);
 
   // Apply the device-aware default after mount, where `navigator`/storage are available (not during
   // SSR). A second join from this device (an extra tab / rejoin) defaults to `viewer`; the roster is
@@ -61,24 +74,27 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
   }, [initialCode]);
 
   // Seed the name field after mount so localStorage and randomness never run on the server (they
-  // would diverge and cause a hydration mismatch). Precedence (spec 0066): the last name this player
-  // picked, else a signed-in player's gamer tag, else a friendly random name that is remembered
-  // immediately so this browser keeps the same name instead of getting a new one each visit. Runs
-  // once; the SSR field stays empty until this fills it.
+  // would diverge and cause a hydration mismatch). Precedence (spec 0066):
+  //   1. the last name this player actually *picked* (typed) - wins for everyone, account or not;
+  //   2. else a signed-in player's gamer tag - authoritative for their identity;
+  //   3. else a friendly generated name, kept under a distinct anon key so it can never shadow a
+  //      future gamer tag, and minted at most once so this browser keeps the same name each visit.
+  // Guarded so it never clobbers a name the player has already started typing (also stops a re-seed
+  // if `viewer.gamerTag` resolves mid-edit). The SSR field stays empty until this fills it.
   useEffect(() => {
-    const remembered = recallPlayerName();
-    if (remembered) {
-      setNickname(remembered);
+    if (nickname !== '') return;
+    const picked = recallPlayerName();
+    if (picked) {
+      setNickname(picked);
       return;
     }
     if (viewer.gamerTag) {
       setNickname(viewer.gamerTag);
       return;
     }
-    const generated = generateRandomName();
-    rememberPlayerName(generated);
-    setNickname(generated);
-  }, [viewer.gamerTag]);
+    const anon = recallAnonName() ?? generateAndPersistAnonName();
+    setNickname(anon);
+  }, [viewer.gamerTag, nickname]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,8 +102,9 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
     const trimmedName = nickname.trim();
     setError(null);
     setSubmitting(true);
-    // Remember the committed name so the next /join (any room) pre-fills it, account or not.
-    rememberPlayerName(trimmedName);
+    // Remember the committed name so the next /join (any room) pre-fills it, account or not - but
+    // only a name the player actually typed, so the seeded default never lands in the picked slot.
+    if (nameEdited) rememberPlayerName(trimmedName);
 
     const attempt = () => joinRoom(trimmedCode, { nickname: trimmedName, mode });
 
@@ -156,8 +173,14 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
             value={nickname}
             autoComplete="nickname"
             placeholder="Pick a name to show others"
-            onChange={(event) => setNickname(event.target.value)}
-            onBlur={() => rememberPlayerName(nickname)}
+            onChange={(event) => {
+              setNickname(event.target.value);
+              setNameEdited(true);
+            }}
+            onBlur={() => {
+              // Persist only a name the player typed (non-empty, trimmed); never the seeded default.
+              if (nameEdited) rememberPlayerName(nickname);
+            }}
             required
           />
         </div>

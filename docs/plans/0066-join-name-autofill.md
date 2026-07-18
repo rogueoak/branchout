@@ -4,6 +4,25 @@ Source spec: `docs/specs/0066-join-name-autofill.md`. Branch `feat/join-name-aut
 control-plane or endpoint changes. The insider join surface (`app/insider/join/page.tsx`) re-exports
 the apex join page, so every change applies to both automatically.
 
+## Review refinement (PR #136)
+
+Persona review split the one storage slot into two so the generated default can never shadow a
+signed-in gamer tag:
+
+- **Two keys.** Picked name (`branchout:playerName`, written only when the player types) vs. generated
+  anonymous default (`branchout:anonName`, written at most once). New precedence:
+  `recallPlayerName() ?? viewer.gamerTag ?? (recallAnonName() ?? generateAndPersistAnonName())`. So a
+  typed name wins for everyone; else a signed-in player sees their (authoritative) gamer tag; else an
+  anonymous player gets a stable generated name that never overrides a future gamer tag.
+- **Seeding effect guarded.** It returns early when the field is already non-empty, so it never
+  clobbers an early keystroke or re-seeds when `viewer.gamerTag` resolves mid-edit.
+- **Picked slot holds only typed names.** A `nameEdited` flag gates the picked-name persist on submit
+  and on blur (non-empty, trimmed); the seeded default is never written to the picked key.
+- **Test hardening.** Precedence tests assert generate/persist were NOT called; the fresh-anonymous
+  test pins the anon persist to once; a blur/commit persistence test was added; the vacuous
+  membership "persists across rooms" and the circular random-name "distinct entries" tests were made
+  to assert something real.
+
 ## Design decisions
 
 - **Precedence resolved once, after mount.** A client-only `useEffect` in `JoinForm` seeds the name
