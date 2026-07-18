@@ -2,7 +2,7 @@
 // are build-time SVG strings from the brand package (not user input), inlined the same way the game
 // marks are. Both the public landing teaser and the insider hub read from this one map so the two
 // surfaces render the same hero art and can never drift; a slug with no hero falls back to the game
-// mark at the call site (the shared GameListCard always renders a hero box).
+// mark in the shared card reader (getGameCard in catalog.ts always resolves a hero).
 import { heroTriviaSvg } from '@branchout/brand/hero-trivia';
 import { heroLiarLiarSvg } from '@branchout/brand/hero-liarliar';
 import { heroTeeterTowerSvg } from '@branchout/brand/hero-teeter-tower';

@@ -310,13 +310,26 @@ What the product does for users, grouped by area. Each capability maps to one or
 ## Web
 
 - [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, games teaser, footer.
-      Dark theme by default; pricing/tier content is dropped for now. Each teaser card carries a wide
-      on-brand hero illustration (per-game 800x450 scene from `@branchout/brand`, gold-root rule kept)
-      above the title and is a link into the feature page; a signed-in player also gets a per-card
-      "Play <game> now" deep link into the room flow. Signed-in visitors see "Play now" (pointing at
-      `/games` so they pick a game before hosting) instead of "Sign up free" via a server-side session
-      check; graceful fallback to anonymous view if the control plane is unreachable (specs `0005`,
-      `0046`).
+      Dark theme by default; pricing/tier content is dropped for now. The games teaser renders the ONE
+      unified `GameCard` (spec `0065`) - the same configurable card used across the home teaser, the
+      `/games` index, the insider landing, and the lobby/room picker, so the surfaces cannot drift.
+      Each card carries a wide on-brand hero illustration (per-game 800x450 scene from `@branchout/brand`,
+      gold-root rule kept), the game mark + title, a badge + tags row, a brief summary, a "Play now"
+      button, and a "Details" link to the feature page (`/games/[slug]`). Play routes an anonymous
+      visitor through signup first (`startGameHref`) and a signed-in one straight into the room deep
+      link. Signed-in visitors see the hero "Play now" (pointing at `/games` so they pick a game before
+      hosting) instead of "Sign up free" via a server-side session check; graceful fallback to anonymous
+      view if the control plane is unreachable (specs `0005`, `0046`, `0065`).
+- [x] One game card everywhere (spec `0065`) - a single configurable `components/game/GameCard.tsx`
+      replaces the old bespoke `GameCard`, the shared `GameListCard`, and the two inline card renders.
+      Configurable affordances: `showPlay` / `showDetails` (default on) render the Play button and the
+      Details link; `onSelect`/`selected`/`disabled` make the whole card a pressable picker control
+      (`aria-pressed` + selection ring) with both affordances forced off, so there is never a link
+      nested in a link. Insider-only games carry an extra "Insiders" badge top-right beside the title.
+      Every surface reads ONE resolved shape from `getGameCard(slug)` in `catalog.ts` (registry basics +
+      catalog badge + library tags + hero art), so adding a game stays "a module + a catalog entry + a
+      library entry". The lobby/picker uses it with both affordances off; the insider landing's rules
+      now live on the game page (Details), not a card sheet.
 - [x] Game client shell - the browser client for Trivia (spec `0010`). A rooms home to create a
       room (host) or join by code, and the `/join?code=ABC12` share-link route where a player picks
       a nickname, player/observer, and interactive/remote (minting an anonymous session if needed).
@@ -408,7 +421,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       the insider host they stay relative (Games reaches the insider games on the landing, the
       wordmark returns to the insider landing), and only the genuinely apex-only chrome (Log in /
       Sign up / Manage account, footer legal) crosses to the apex; the landing leads with one
-      centered welcome and each test-game card carries a "Play now" CTA (feedback `0030`).
+      centered welcome and each test-game card is the unified `GameCard` (spec `0065`) with a "Play now"
+      CTA and a "Details" link to the game's page (where the rules now live) plus a top-right "Insiders"
+      badge (feedback `0030`, spec `0065`).
 - [x] Host in-game feedback - a "Feedback" button, right-aligned in the host-controls row, opens a
       ResponsiveDialog (a modal on desktop, a bottom sheet on a phone) where the host types a note at
       any point during a game. Submitting emails it to feedback@rogueoak.com (from
@@ -434,8 +449,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       structured `GameRules` shape (an objective plus headed sections), a per-game `GAME_LIBRARY`
       entry, and search/lookup helpers, with a fail-loud completeness check (every registered game
       needs an entry; every declared category/tag must be in the vocabulary). The `/games` index gains
-      a client search box + native category filter and category/tag chips per card (a no-match state
-      reads as intentional); the `/games/[slug]` feature page adds a full Rules section and the chips.
+      a client search box + native category filter, and renders the unified `GameCard` (spec `0065`)
+      per game with its tag chips (a no-match state reads as intentional); the `/games/[slug]` feature
+      page adds a full Rules section and the chips.
       A shared, presentational `RulesContent` renders the same rules in three homes. A responsive
       `Sheet` (Radix Dialog: bottom on mobile, right on desktop, backdrop/close/Escape dismiss) hosts a
       `HelpSheet` behind an always-present "?" help control in `GameStage` - reachable for every mode

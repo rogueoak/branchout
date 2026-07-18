@@ -10,14 +10,16 @@ test('the /games index search narrows the list', async ({ page }) => {
   await page.goto('/games');
   await expect(page.getByRole('heading', { name: 'Games', level: 1 })).toBeVisible();
 
-  // Both public games are listed before searching.
-  await expect(page.getByRole('link', { name: /learn about trivia/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /learn about liar liar/i })).toBeVisible();
+  // Both public games are listed before searching. The unified card (spec 0065) replaced the old
+  // "Learn about <name>" whole-card link with a "Details about <name>" link (plus a "Play <name> now"
+  // button) per card, so a game is identified by its Details link here.
+  await expect(page.getByRole('link', { name: /details about trivia/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /details about liar liar/i })).toBeVisible();
 
   // Typing a query narrows the list to the matching game.
   await page.getByLabel(/search games/i).fill('liar');
-  await expect(page.getByRole('link', { name: /learn about liar liar/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /learn about trivia/i })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /details about liar liar/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /details about trivia/i })).toHaveCount(0);
 
   // A query that matches nothing shows the intentional no-match state.
   await page.getByLabel(/search games/i).fill('zzzznotathing');

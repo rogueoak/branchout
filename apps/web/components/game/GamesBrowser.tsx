@@ -9,30 +9,18 @@
 
 import { Input, Label, inputVariants } from '@rogueoak/canopy';
 import { useMemo, useState } from 'react';
-import {
-  categoriesInUse,
-  searchLibrary,
-  type GameCategory,
-  type LibraryChip,
-} from '../../lib/games/library';
-import { Chip } from './Chip';
-
-/** One game the browser lists: display basics + its resolved category/tag chips + its feature path. */
-export interface BrowserGame {
-  slug: string;
-  name: string;
-  summary: string;
-  icon: string;
-  href: string;
-  categories: LibraryChip[];
-  tags: LibraryChip[];
-}
+import { startGameHref, type GameCardData } from '../../lib/games/catalog';
+import { categoriesInUse, searchLibrary, type GameCategory } from '../../lib/games/library';
+import { GameCard } from './GameCard';
 
 interface GamesBrowserProps {
-  games: readonly BrowserGame[];
+  /** The public games to list, as resolved card data (one lookup per game, spec 0065). */
+  games: readonly GameCardData[];
+  /** Whether the viewer is signed in, so each card's "Play now" routes anon visitors via signup. */
+  signedIn: boolean;
 }
 
-export function GamesBrowser({ games }: GamesBrowserProps) {
+export function GamesBrowser({ games, signedIn }: GamesBrowserProps) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<GameCategory | ''>('');
 
@@ -102,37 +90,9 @@ export function GamesBrowser({ games }: GamesBrowserProps) {
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2" role="list">
           {visible.map((game) => (
             <li key={game.slug}>
-              {/* A descriptive accessible name per card - the visible "Learn more" text repeats across
-                  cards (an a11y anti-pattern), so the link is labelled by the game it opens. */}
-              <a
-                href={game.href}
-                aria-label={`Learn about ${game.name}`}
-                className="flex h-full flex-col gap-3 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="inline-block h-12 w-12 shrink-0 overflow-hidden rounded-xl [&>svg]:h-full [&>svg]:w-full"
-                    dangerouslySetInnerHTML={{ __html: game.icon }}
-                  />
-                  <h2 className="text-h4 text-text break-words">{game.name}</h2>
-                </div>
-                <p className="text-body-sm text-text-muted">{game.summary}</p>
-                {/* Category + tag chips: the category first (primary genre), then the first few tags. */}
-                <ul className="flex flex-wrap gap-2" role="list">
-                  {game.categories.map((chip) => (
-                    <Chip key={`c-${chip.slug}`} variant="category">
-                      {chip.label}
-                    </Chip>
-                  ))}
-                  {game.tags.slice(0, 3).map((chip) => (
-                    <Chip key={`t-${chip.slug}`} variant="tag">
-                      {chip.label}
-                    </Chip>
-                  ))}
-                </ul>
-                <span className="text-body-sm mt-auto font-medium text-primary">Learn more</span>
-              </a>
+              {/* The one unified game card (spec 0065): hero, mark + title, badge + tags, summary, and
+                  the Play/Details row. "Play now" routes an anonymous visitor through signup first. */}
+              <GameCard game={game} playHref={startGameHref(game.slug, signedIn)} />
             </li>
           ))}
         </ul>

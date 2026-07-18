@@ -10,6 +10,7 @@
 
 import { Badge, Button } from '@rogueoak/canopy';
 import { playerLimits } from '@branchout/protocol';
+import { getGameCard } from '../../lib/games/catalog';
 import { DEFAULT_GAME_UI, getGameUi } from '../../lib/games/registry';
 import {
   isDisplayMode,
@@ -87,6 +88,10 @@ export function Lobby({
   // Resolve the selected game's UI module. `game` is always a registered id (the picker only sets
   // ids from GAME_UI_LIST); fall back to the first registered game for an unexpected value.
   const activeModule = getGameUi(game) ?? DEFAULT_GAME_UI;
+  // The read-only "Your game" card (spec 0065): the same unified card, both affordances off (selection
+  // and play happen elsewhere - the change-game picker and Start). Falls back to the default game's
+  // card for an unexpected id, mirroring the module fallback above.
+  const activeCard = getGameCard(game) ?? getGameCard(DEFAULT_GAME_UI.id);
   const ConfigPanel = activeModule.ConfigPanel;
   const validation = activeModule.validateConfig(config);
 
@@ -137,7 +142,7 @@ export function Lobby({
             </Button>
           ) : null}
         </div>
-        <GameCard game={activeModule} />
+        {activeCard ? <GameCard game={activeCard} showPlay={false} showDetails={false} /> : null}
         <p className="text-body-sm text-text-muted">
           {limits.min === limits.max
             ? `${limits.min} player${limits.min === 1 ? '' : 's'}.`

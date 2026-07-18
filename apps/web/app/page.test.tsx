@@ -60,49 +60,47 @@ describe('home page - anonymous visitor', () => {
 
   it('renders each game card with its inline SVG game mark', () => {
     const { container } = render(<LandingContent viewer={{ signedIn: false }} />);
-    // Each card links to the game's feature page with aria-label "Learn about <game>"; the game mark
-    // is an inline SVG (from the brand package) inside that link, aria-hidden so it does not double
-    // up the accessible name.
-    for (const name of ['Learn about Trivia', 'Learn about Liar Liar']) {
-      const card = screen.getByRole('link', { name: new RegExp(name, 'i') });
-      expect(card.querySelector('svg')).not.toBeNull();
-    }
-    // Both marks plus the two arrow affordances render as SVGs.
+    // The unified card (spec 0065) shows the game mark inline beside the title, aria-hidden (the card
+    // title and the "Details about <game>" link name the game). The compact 512 mark renders as an
+    // inline SVG on each card.
+    expect(screen.getByRole('link', { name: /details about trivia/i })).toBeDefined();
+    expect(screen.getByRole('link', { name: /details about liar liar/i })).toBeDefined();
+    // Two marks + two heroes at least render as SVGs.
     expect(container.querySelectorAll('svg').length).toBeGreaterThanOrEqual(4);
   });
 
   it('renders a wide hero illustration in each game teaser card (spec 0046)', () => {
-    render(<LandingContent viewer={{ signedIn: false }} />);
-    // The hero art is inlined inside the "Learn about <game>" card link, aria-hidden (the card title
-    // and the link name the game). It is the wide 800x450 scene, distinct from the compact 512 mark.
-    for (const name of ['Learn about Trivia', 'Learn about Liar Liar']) {
-      const card = screen.getByRole('link', { name: new RegExp(name, 'i') });
-      const heroSvg = card.querySelector('svg[viewBox="0 0 800 450"]');
-      expect(heroSvg, `${name} hero illustration`).not.toBeNull();
-      // The gold-root rule holds in the hero art (spec 0046 / BRAND.md).
-      expect(card.innerHTML).toContain('#d2a463');
-    }
+    const { container } = render(<LandingContent viewer={{ signedIn: false }} />);
+    // The hero art is inlined in each card, aria-hidden (the card title names the game). It is the
+    // wide 800x450 scene, distinct from the compact 512 mark - one per public game.
+    const heroes = container.querySelectorAll('svg[viewBox="0 0 800 450"]');
+    expect(heroes.length).toBeGreaterThanOrEqual(2);
+    // The gold-root rule holds in the hero art (spec 0046 / BRAND.md).
+    expect(container.innerHTML).toContain('#d2a463');
   });
 
-  it('links each game card to its feature page (learn first, spec 0030)', () => {
+  it('links each game card to its feature page via Details (spec 0030)', () => {
     render(<LandingContent viewer={{ signedIn: false }} />);
-    const trivia = screen.getByRole('link', { name: /learn about trivia/i });
+    const trivia = screen.getByRole('link', { name: /details about trivia/i });
     expect(trivia).toHaveProperty('href', expect.stringContaining('/games/trivia'));
-    const liarLiar = screen.getByRole('link', { name: /learn about liar liar/i });
+    const liarLiar = screen.getByRole('link', { name: /details about liar liar/i });
     expect(liarLiar).toHaveProperty('href', expect.stringContaining('/games/liar-liar'));
   });
 
-  it('adds a direct Play shortcut on each card for a signed-in player (skips the learn hop)', () => {
+  it('sends a signed-in player straight into the room deep link on Play (spec 0065)', () => {
     render(<LandingContent viewer={{ signedIn: true, gamerTag: 'CoolCat' }} />);
     const playTrivia = screen.getByRole('link', { name: /play trivia now/i });
     expect(playTrivia).toHaveProperty('href', expect.stringContaining('/rooms?game=trivia'));
-    // The learn-first card link is still present for everyone.
-    expect(screen.getByRole('link', { name: /learn about trivia/i })).toBeDefined();
+    // The Details link to the feature page is still present for everyone.
+    expect(screen.getByRole('link', { name: /details about trivia/i })).toBeDefined();
   });
 
-  it('shows no Play shortcut for an anonymous visitor (learn first only)', () => {
+  it('routes an anonymous visitor through signup on Play (spec 0065)', () => {
     render(<LandingContent viewer={{ signedIn: false }} />);
-    expect(screen.queryByRole('link', { name: /play trivia now/i })).toBeNull();
+    // Play now shows for everyone now; an anonymous visitor (who cannot host yet) is carried to signup
+    // first, with the intended game preserved as a validated internal next.
+    const playTrivia = screen.getByRole('link', { name: /play trivia now/i });
+    expect(playTrivia.getAttribute('href')).toContain('/signup');
   });
 
   it('renders a footer landmark', () => {
@@ -138,15 +136,15 @@ describe('home page - signed-in visitor', () => {
     expect(heroCta?.getAttribute('href')).not.toContain('/rooms');
   });
 
-  it('still links the game cards to the feature pages when signed in (learn first, spec 0030)', () => {
-    // The cards are learn-first (feature page) links regardless of auth; the play CTA lives on the
-    // feature page and on the hero ("Play now"). So the card target does not change with sign-in.
+  it('still links the game cards to the feature pages via Details when signed in (spec 0030)', () => {
+    // The Details affordance targets the feature page regardless of auth; only the Play target changes
+    // with sign-in. So the Details link does not change when signed in.
     render(<LandingContent viewer={{ signedIn: true, gamerTag: 'CoolCat' }} />);
-    expect(screen.getByRole('link', { name: /learn about trivia/i })).toHaveProperty(
+    expect(screen.getByRole('link', { name: /details about trivia/i })).toHaveProperty(
       'href',
       expect.stringContaining('/games/trivia'),
     );
-    expect(screen.getByRole('link', { name: /learn about liar liar/i })).toHaveProperty(
+    expect(screen.getByRole('link', { name: /details about liar liar/i })).toHaveProperty(
       'href',
       expect.stringContaining('/games/liar-liar'),
     );

@@ -5,37 +5,14 @@
 'use client';
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
-import { PUBLIC_GAME_CATALOG, featurePath, playHref } from '../lib/games/catalog';
-import { GAME_HERO } from '../lib/games/heroes';
+import { PUBLIC_GAME_CATALOG, getGameCard, startGameHref } from '../lib/games/catalog';
 import type { Viewer } from '../lib/session';
 import { Footer } from './Footer';
-import { GameListCard } from './game/GameListCard';
+import { GameCard } from './game/GameCard';
 import { TopNav } from './TopNav';
 
 interface LandingContentProps {
   viewer: Viewer;
-}
-
-/**
- * A right-pointing arrow, drawn as an SVG so the "Start a game" affordance is a real icon rather
- * than an ASCII "->". Canopy does not export a general-purpose arrow, so we inline it the same way
- * FinalResults draws its star; `currentColor` lets it inherit the link's primary colour.
- */
-function ArrowRightIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      className="size-4"
-    >
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
 }
 
 // How it works: three steps from join code to playing.
@@ -122,52 +99,20 @@ export function LandingContent({ viewer }: LandingContentProps) {
           What you can play
         </h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          {/* Each card links to the game's feature page (learn first); the feature page carries the
-              "Start a game" CTA into the play path (spec 0030). The whole card is the tap target, and
-              the marketing data comes from the shared catalog so the teaser never drifts from the
-              feature page or the room picker. */}
-          {PUBLIC_GAME_CATALOG.map((game) => {
-            // The hero: the game's wide illustration, or its mark as a fallback so the card still
-            // leads with art (the shared GameListCard always renders a hero box). Public games ship a
-            // hero today; the fallback covers a future public game before its hero lands.
-            const hero = GAME_HERO[game.slug] ?? game.icon;
-            // A signed-in player who already knows the game gets a "Play" shortcut below the card that
-            // skips the learn hop straight into the room deep link. Hoisted (no inline JSX ternary).
-            let playShortcut = null;
-            if (viewer.signedIn) {
-              playShortcut = (
-                <a
-                  href={playHref(game.slug)}
-                  aria-label={`Play ${game.name} now`}
-                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                >
-                  Play now
-                </a>
-              );
-            }
+          {/* One unified game card per public game (spec 0065): hero, mark + title, badge + tags, a
+              brief summary, a "Play now" button, and a "Details" link to the feature page. The card
+              data comes from the shared catalog reader so the teaser never drifts from the /games
+              index, the insider hub, or the room picker. Play routes an anonymous visitor through
+              signup first (startGameHref), a signed-in one straight into the room deep link. */}
+          {PUBLIC_GAME_CATALOG.map((entry) => {
+            const game = getGameCard(entry.slug);
+            if (!game) return null;
             return (
-              // The whole card links to the feature page (learn first). The signed-in "Play" link is a
-              // SIBLING of the card link (not nested) so the markup stays valid.
-              <div key={game.slug} className="flex flex-col gap-2">
-                <a
-                  href={featurePath(game.slug)}
-                  aria-label={`Learn about ${game.name}`}
-                  className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                >
-                  <GameListCard
-                    game={game}
-                    hero={hero}
-                    className="transition-colors hover:border-primary"
-                  >
-                    <p className="text-body-sm text-text-muted">{game.categories.join(', ')}</p>
-                    <p className="text-body-sm mt-4 flex items-center gap-1.5 font-medium text-primary">
-                      Learn more
-                      <ArrowRightIcon />
-                    </p>
-                  </GameListCard>
-                </a>
-                {playShortcut}
-              </div>
+              <GameCard
+                key={game.slug}
+                game={game}
+                playHref={startGameHref(game.slug, viewer.signedIn)}
+              />
             );
           })}
         </div>
