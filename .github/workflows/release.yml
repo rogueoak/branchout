@@ -158,6 +158,11 @@ jobs:
             printf 'export GHCR_ACTOR=%q\n' "$GITHUB_ACTOR_NAME"
             printf 'export POSTGRES_PASSWORD=%q\n' "$POSTGRES_PASSWORD"
             printf 'export SESSION_SECRET=%q\n' "$SESSION_SECRET"
+            # Engine-join auth (spec 0064). Must be forwarded to the remote shell like the other
+            # secrets: the remote script writes it to .env.prod under `set -u`, so a missing export
+            # here is an "unbound variable" that aborts every deploy. %q keeps an unset value a safe
+            # empty assignment (bound, so nounset is happy) rather than undefined.
+            printf 'export ENGINE_AUTH_SECRET=%q\n' "$ENGINE_AUTH_SECRET"
             printf 'export RESEND_API_KEY=%q\n' "$RESEND_API_KEY"
             # Subscribe / Constant Contact (spec 0047). Optional: empty when the secret/var is unset,
             # which the remote script treats as "leave the endpoint inert" (writes no .env.prod line).
