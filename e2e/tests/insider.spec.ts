@@ -50,12 +50,11 @@ test.describe('insider surface (spec 0035)', () => {
 
     await page.goto(INSIDER_URL);
     // Tap the Teeter Tower card: the room-create deep link keeps the player on the insider host (the
-    // rooms home, now hosted under the gated /insider tree). It never bounced to the apex.
+    // rooms home, now hosted under the gated /insider tree). It never bounced to the apex. The
+    // `?game=` deep link AUTO-CREATES the room (spec 0029) and drops straight into the lobby - no
+    // "Create a room" tap - the insider game is pre-selected (allowed on this surface), all on the
+    // insider host.
     await page.getByRole('link', { name: /play teeter tower now/i }).click();
-    await page.waitForURL(/insider\.localhost.*\/rooms\?game=teeter-tower/);
-    // Create the room: the deep link pre-selects the insider game (allowed on this surface) and
-    // drops straight into the lobby, still on the insider host.
-    await page.getByRole('button', { name: /create a room/i }).click();
     await page.waitForURL(/\/rooms\/[A-Z2-9]{5}$/);
     // The URL never left the insider subdomain - hosting an insider game stays on the insider
     // surface, proving both the relative deep link and the room flow mirrored under /insider.
