@@ -20,15 +20,39 @@ export interface EngineClient {
   control(room: string, game: string, action: ControlAction): Promise<void>;
 }
 
-/** Raised when the engine rejects a start or control call - the room service maps it to a 502. */
+/** Raised when the engine rejects a start or control call - the room route maps it to a 502. */
 export class EngineError extends Error {
   constructor(
     message: string,
     public status: number,
+    /**
+     * Whether the engine was actually reached. `false` means the transport failed (engine down /
+     * wrong URL); `true` means the engine answered but refused the call (e.g. a 400 for a missing
+     * data bank or bad config, a 503 at worker cap). The route uses this to avoid reporting a
+     * reached-but-refused start as "could not be reached", which hides a data/config fault.
+     */
+    public reached: boolean = true,
   ) {
     super(message);
     this.name = 'EngineError';
   }
+}
+
+/**
+ * Pull the engine's own error text out of a non-ok response so it survives into the EngineError
+ * message (and the operator log). The engine answers `{ error: string }` on a refused start; fall
+ * back to the raw body, then to nothing. Never throws - diagnostics must not mask the real failure.
+ */
+async function engineErrorDetail(response: Response): Promise<string> {
+  const text = await response.text().catch(() => '');
+  if (!text) return '';
+  try {
+    const body = JSON.parse(text) as { error?: unknown };
+    if (typeof body.error === 'string' && body.error.length > 0) return body.error;
+  } catch {
+    // Not JSON - use the raw text below.
+  }
+  return text;
 }
 
 /**
@@ -66,14 +90,18 @@ export class HttpEngineClient implements EngineClient {
       });
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
-      throw new EngineError(`engine ${what} unreachable: ${detail}`, 502);
+      throw new EngineError(`engine ${what} unreachable: ${detail}`, 502, false);
     }
   }
 
   async start(request: StartHandoffRequest): Promise<StartHandoffResponse> {
     const response = await this.request(`${this.baseUrl}${V1_PREFIX}/sessions`, request, 'start');
     if (!response.ok) {
-      throw new EngineError(`engine start failed (${response.status})`, response.status);
+      const detail = await engineErrorDetail(response);
+      throw new EngineError(
+        `engine start failed (${response.status})${detail ? `: ${detail}` : ''}`,
+        response.status,
+      );
     }
     return (await response.json()) as StartHandoffResponse;
   }
@@ -85,7 +113,11 @@ export class HttpEngineClient implements EngineClient {
       'control',
     );
     if (!response.ok) {
-      throw new EngineError(`engine control failed (${response.status})`, response.status);
+      const detail = await engineErrorDetail(response);
+      throw new EngineError(
+        `engine control failed (${response.status})${detail ? `: ${detail}` : ''}`,
+        response.status,
+      );
     }
   }
 }

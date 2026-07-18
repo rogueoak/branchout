@@ -90,7 +90,20 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
         return reply.code(statusFor(error.code)).send({ error: error.message, code: error.code });
       }
       if (error instanceof EngineError) {
-        return reply.code(502).send({ error: 'The game engine could not be reached.' });
+        // The engine failing is a 502 either way (an upstream fault the browser cannot fix), but the
+        // CAUSE matters: a transport failure (reached=false) is genuinely "could not be reached",
+        // while a reached-but-refused start (reached=true, e.g. a 400 for a missing data bank or a
+        // 503 at worker cap) is not - flattening both to one message hid a data/config fault as a
+        // network fault. Log the real status + engine message (control-plane logs via console) so an
+        // operator can see it in `docker logs`; keep the browser copy generic.
+        console.error(
+          `[control-plane] engine call failed (status=${error.status}, reached=${error.reached}): ${error.message}`,
+        );
+        return reply.code(502).send({
+          error: error.reached
+            ? 'The game engine could not start the game.'
+            : 'The game engine could not be reached.',
+        });
       }
       throw error;
     }
