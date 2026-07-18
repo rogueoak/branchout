@@ -11,9 +11,10 @@ const request: StartHandoffRequest = {
 };
 
 describe('HttpEngineClient error mapping', () => {
-  it('maps an unreachable engine (fetch rejects) to a 502 EngineError, not a raw throw', async () => {
+  it('maps an unreachable engine (fetch rejects) to a 502 EngineError flagged not-reached', async () => {
     // A rejected fetch (ECONNREFUSED when the engine is down or the URL is wrong) would otherwise
-    // escape the room route as an unlogged 500. It must surface as a mapped 502.
+    // escape the room route as an unlogged 500. It must surface as a mapped 502, flagged as a
+    // genuine transport failure so the route reports "could not be reached".
     const fetchImpl = (async () => {
       throw new TypeError('fetch failed');
     }) as unknown as typeof fetch;
@@ -22,9 +23,10 @@ describe('HttpEngineClient error mapping', () => {
     const error = await client.start(request).catch((e) => e);
     expect(error).toBeInstanceOf(EngineError);
     expect((error as EngineError).status).toBe(502);
+    expect((error as EngineError).reached).toBe(false);
   });
 
-  it('maps a non-ok engine response to an EngineError carrying that status', async () => {
+  it('maps a non-ok engine response to an EngineError carrying that status, flagged reached', async () => {
     const fetchImpl = (async () =>
       new Response('nope', { status: 503 })) as unknown as typeof fetch;
     const client = new HttpEngineClient('http://engine:4001', undefined, fetchImpl);
@@ -32,6 +34,25 @@ describe('HttpEngineClient error mapping', () => {
     const error = await client.start(request).catch((e) => e);
     expect(error).toBeInstanceOf(EngineError);
     expect((error as EngineError).status).toBe(503);
+    // The engine answered (it just refused), so this is NOT an unreachable failure.
+    expect((error as EngineError).reached).toBe(true);
+  });
+
+  it("carries the engine's error detail into the EngineError message so the real cause is not lost", async () => {
+    // The engine reports the real fault as `{ error }` (e.g. a missing data bank at worker init).
+    // Discarding it is what let a data fault masquerade as "could not be reached".
+    const fetchImpl = (async () =>
+      new Response(
+        JSON.stringify({ error: "worker init failed: ENOENT: open 'data/zinger/prompts.json'" }),
+        { status: 400 },
+      )) as unknown as typeof fetch;
+    const client = new HttpEngineClient('http://engine:4001', undefined, fetchImpl);
+
+    const error = await client.start(request).catch((e) => e);
+    expect(error).toBeInstanceOf(EngineError);
+    expect((error as EngineError).status).toBe(400);
+    expect((error as EngineError).reached).toBe(true);
+    expect((error as EngineError).message).toContain('data/zinger/prompts.json');
   });
 
   it('sends the internal token header to the versioned /v1/sessions handoff', async () => {

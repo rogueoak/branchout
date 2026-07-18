@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ENGINE_ROUNDS_SUBPATH, V1_PREFIX, verifyEngineToken } from '@branchout/protocol';
 import type { PasswordHasher } from './accounts/hasher';
 import { InMemoryAccountRepository } from './accounts/repository.memory';
@@ -22,6 +22,7 @@ import { InMemoryPlaysRepository } from './profiles/plays.memory';
 import { ProfileService } from './profiles/service';
 import type { RateLimitConfig } from './config';
 import { InMemoryRateLimiter } from './ratelimit/limiter.memory';
+import { EngineError } from './rooms/engine-client';
 import { FakeEngineClient } from './rooms/engine-client.fake';
 import { InMemoryMembershipStore } from './rooms/membership.memory';
 import { InMemoryRoomRepository } from './rooms/repository.memory';
@@ -712,6 +713,72 @@ describe('POST /rooms (create + share link)', () => {
       headers: { cookie: sessionCookie(join) },
     });
     expect(res.statusCode).toBe(403);
+    await app.close();
+  });
+});
+
+describe('POST /rooms/:code/start - engine failure mapping', () => {
+  /** Sign up a host, create a room, and select trivia so the room is startable. Returns its code. */
+  async function startableRoom(
+    app: ReturnType<typeof makeApp>['app'],
+  ): Promise<{ code: string; cookie: string }> {
+    const cookie = await withHost(app);
+    const create = await app.inject({ method: 'POST', url: '/v1/rooms', headers: { cookie } });
+    const { code } = create.json().room;
+    await app.inject({
+      method: 'POST',
+      url: `/v1/rooms/${code}/select`,
+      headers: { cookie },
+      payload: { game: 'trivia', config: {} },
+    });
+    return { code, cookie };
+  }
+
+  it('reports "could not be reached" only when the engine transport actually failed', async () => {
+    const { app, engine } = makeApp();
+    const { code, cookie } = await startableRoom(app);
+    // The engine was never reached (fetch rejected).
+    engine.startError = new EngineError('engine start unreachable: fetch failed', 502, false);
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/v1/rooms/${code}/start`,
+      headers: { cookie },
+      payload: { rounds: 1 },
+    });
+
+    expect(res.statusCode).toBe(502);
+    expect(res.json().error).toBe('The game engine could not be reached.');
+    expect(errorLog).toHaveBeenCalled();
+    errorLog.mockRestore();
+    await app.close();
+  });
+
+  it('does NOT say "could not be reached" when the engine was reached but refused the start', async () => {
+    const { app, engine } = makeApp();
+    const { code, cookie } = await startableRoom(app);
+    // The engine answered with a 400 (e.g. a missing data bank at worker init) - reached, refused.
+    engine.startError = new EngineError(
+      "engine start failed (400): worker init failed: ENOENT: open 'data/zinger/prompts.json'",
+      400,
+      true,
+    );
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/v1/rooms/${code}/start`,
+      headers: { cookie },
+      payload: { rounds: 1 },
+    });
+
+    // Still a 502 to the browser (an upstream fault), but not the misleading network message.
+    expect(res.statusCode).toBe(502);
+    expect(res.json().error).toBe('The game engine could not start the game.');
+    // The real cause is logged for the operator, not swallowed.
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('data/zinger/prompts.json'));
+    errorLog.mockRestore();
     await app.close();
   });
 });
