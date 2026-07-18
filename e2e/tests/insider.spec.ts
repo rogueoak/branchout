@@ -240,6 +240,37 @@ test.describe('insider surface (spec 0035)', () => {
     expect(apex?.status()).toBe(404);
   });
 
+  test('the insider feature page fits a 360px phone with the Insiders badge (mobile-first, spec 0030)', async ({
+    browser,
+  }) => {
+    // The insider feature page pins an "Insiders" badge in a justify-between title row - a real
+    // overflow risk at the 360px floor that the Desktop-Chrome render test above never exercises. The
+    // apex-facing feature page is covered at 360px in mobile-smoke; this pins the INSIDER variant.
+    const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
+    try {
+      const page = await context.newPage();
+      const account = await signUp(page);
+      await spanSessionToInsider(context);
+      grantInsider(account.gamerTag);
+      await page.goto(`${INSIDER_URL}/games/teeter-tower`);
+      // The gated feature page renders: the title, and the pinned "Insiders" badge is actually present
+      // (so the overflow check below is meaningful - it is the badge in the justify-between row at risk).
+      await expect(page.getByRole('heading', { name: 'Teeter Tower', level: 1 })).toBeVisible();
+      await expect(page.getByText('Insiders', { exact: true })).toBeVisible();
+      const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      // 1px rounding slack; more means the Insiders badge / title row pushes past the phone viewport.
+      expect(
+        scrollWidth,
+        'the insider feature page with the Insiders badge should not scroll horizontally on a phone',
+      ).toBeLessThanOrEqual(clientWidth + 1);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('a signed-out visitor cannot reach an insider feature page (sent to the apex login)', async ({
     browser,
   }) => {

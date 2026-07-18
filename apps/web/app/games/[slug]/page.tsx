@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // noindex with no canonical/JSON-LD; a public game keeps the full share-card + canonical block.
   return entry.visibility === 'insider'
     ? insiderFeatureMetadata(entry)
-    : (gameFeatureMetadata(entry.slug) ?? { title: 'Game not found - Branch Out Games' });
+    : gameFeatureMetadata(entry);
 }
 
 export default async function GameFeaturePage({ params }: PageProps) {
@@ -56,6 +56,11 @@ export default async function GameFeaturePage({ params }: PageProps) {
   const surface = await getSurface();
   // Surface-aware resolution (spec 0030): public games resolve on both surfaces; an insider game
   // resolves only on the insider surface, else notFound() - so an insider slug 404s on the apex.
+  // LOAD-BEARING: this is safe on the apex ONLY because middleware.ts host-gates the insider surface -
+  // it derives `surface.insider` from the request host and rewrites every insider-host `/games/*` into
+  // the auth-walled `/insider` tree. If that host rewrite/matcher ever stops covering `/games/*`, an
+  // insider slug could resolve on the public apex. Keep middleware and this branch in lockstep (see
+  // getFeatureEntry in catalog.ts).
   const entry = getFeatureEntry(slug, surface);
   if (!entry) notFound();
   const viewer = await getViewer();
@@ -102,7 +107,10 @@ export default async function GameFeaturePage({ params }: PageProps) {
         >
           {/* The wide 16:9 hero: a build-time SVG string from the brand package (not user input),
               inlined like the game mark. block + h-full + w-full on the SVG stops any intrinsic width
-              leaking past the box and overflowing the phone. aria-hidden - the heading names the game. */}
+              leaking past the box and overflowing the phone. aria-hidden - the heading names the game.
+              The literal `bg-[#0d0a15]` backdrop is intentional and theme-independent (no token): the
+              hero art is fixed dark SVG art, so its backdrop stays this near-black in both light and
+              dark themes - it matches the unified GameCard's hero box exactly so the two never drift. */}
           <div
             aria-hidden="true"
             className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-[#0d0a15] [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
@@ -147,7 +155,14 @@ export default async function GameFeaturePage({ params }: PageProps) {
             </div>
           ) : null}
 
-          <p className="text-body text-text-muted">{entry.description}</p>
+          {/* The tagline hook as a lead line above the fuller description (spec 0030): the short,
+              punchy one-liner from the registry that the card leads with, in the primary text color so
+              it reads as the hook and the muted paragraph beneath fills in the detail. Grouped so the
+              lead sits tight above its paragraph (not spread by the section's gap-6). Fine at 360px. */}
+          <div className="flex flex-col gap-2">
+            <p className="text-lg font-medium text-text">{entry.tagline}</p>
+            <p className="text-body text-text-muted">{entry.description}</p>
+          </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <a href={startHref} className={buttonVariants({ variant: 'primary', size: 'lg' })}>

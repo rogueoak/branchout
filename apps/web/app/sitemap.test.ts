@@ -16,4 +16,14 @@ describe('sitemap', () => {
     expect(urls.some((u) => u.includes('/account') || u.includes('/join'))).toBe(false);
     expect(urls.some((u) => /\/rooms\//.test(u))).toBe(false);
   });
+
+  it('never lists an insider-only game (the security-critical public/insider partition, spec 0043)', () => {
+    // The sitemap enumerates PUBLIC_GAME_CATALOG, so an insider-only slug must be absent - it must
+    // never exist on the public site. A regression that enumerated the full catalog would leak these.
+    const urls = sitemap().map((entry) => entry.url);
+    for (const insiderSlug of ['teeter-tower', 'lone-leaf']) {
+      expect(urls).not.toContain(`${SITE_URL}/games/${insiderSlug}`);
+      expect(urls.some((u) => u.includes(`/games/${insiderSlug}`))).toBe(false);
+    }
+  });
 });

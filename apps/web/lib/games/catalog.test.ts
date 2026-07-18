@@ -90,7 +90,7 @@ describe('insiderFeatureMetadata (SEO only where public, spec 0030)', () => {
 
 describe('gameFeatureMetadata', () => {
   it('sets a unique title, description, canonical, and OG/Twitter share card per game', () => {
-    const meta = gameFeatureMetadata('trivia')!;
+    const meta = gameFeatureMetadata(getCatalogEntry('trivia')!);
     expect(meta.title).toContain('Trivia');
     expect(String(meta.description)).toContain('Trivia');
     expect(meta.alternates?.canonical).toBe(`${SITE_URL}/games/trivia`);
@@ -99,9 +99,12 @@ describe('gameFeatureMetadata', () => {
     expect((meta.twitter as { card?: string }).card).toBe('summary_large_image');
   });
 
-  it('differs between games and is undefined for an unknown slug', () => {
-    expect(gameFeatureMetadata('trivia')!.title).not.toBe(gameFeatureMetadata('liar-liar')!.title);
-    expect(gameFeatureMetadata('nope')).toBeUndefined();
+  it('differs between games (built from the passed-in resolved entry)', () => {
+    // Takes the already-resolved public entry (single-resolve, review #139), so the slug is resolved
+    // once by the caller; unknown-slug resolution is getCatalogEntry's job, tested above.
+    expect(gameFeatureMetadata(getCatalogEntry('trivia')!).title).not.toBe(
+      gameFeatureMetadata(getCatalogEntry('liar-liar')!).title,
+    );
   });
 });
 
