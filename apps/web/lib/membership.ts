@@ -64,3 +64,25 @@ export function recallDeviceMode(): Mode | null {
   const raw = window.localStorage.getItem(DEVICE_MODE_KEY);
   return raw === 'viewer' || raw === 'interactive' || raw === 'remote' ? raw : null;
 }
+
+// The last name this player picked on /join (spec 0066), remembered across rooms in localStorage so
+// the join form can pre-fill it next time - even for an anonymous player with no account. A
+// cross-visit convenience, so it lives in localStorage like the device mode, not the per-tab
+// sessionStorage seat state.
+const PLAYER_NAME_KEY = 'branchout:playerName';
+
+/** Remember the name this player just used, so the next /join defaults to it. */
+export function rememberPlayerName(name: string): void {
+  if (typeof window === 'undefined') return;
+  const trimmed = name.trim();
+  if (trimmed === '') return;
+  window.localStorage.setItem(PLAYER_NAME_KEY, trimmed);
+}
+
+/** The name this player last used, or null if none was remembered (or storage is unavailable). */
+export function recallPlayerName(): string | null {
+  if (typeof window === 'undefined') return null;
+  const raw = window.localStorage.getItem(PLAYER_NAME_KEY);
+  const trimmed = raw?.trim();
+  return trimmed ? trimmed : null;
+}

@@ -76,6 +76,10 @@ export async function createRoom(page: Page): Promise<string> {
 /** A second player joins a room by code through the /join UI (anonymous session is minted). */
 export async function joinRoom(page: Page, code: string, nickname: string): Promise<void> {
   await page.goto(`/join?code=${code}`);
+  // The name field always arrives pre-filled (spec 0066): a remembered name, a gamer tag, or a
+  // generated adjective+noun. A fresh anonymous joiner here gets the generated default, so the field
+  // is non-empty before the test overwrites it with its own nickname.
+  await expect(page.getByLabel('Your name')).not.toHaveValue('');
   await page.getByLabel('Your name').fill(nickname);
   await page.getByRole('button', { name: /join room/i }).click();
   await page.waitForURL(new RegExp(`/rooms/${code}$`));

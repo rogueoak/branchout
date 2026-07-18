@@ -15,7 +15,14 @@ import { TopNav } from '../../components/TopNav';
 import type { Viewer } from '../../lib/session';
 import { APEX_SURFACE, type Surface } from '../../lib/surface';
 import { defaultMode } from '../../lib/default-mode';
-import { recallDeviceMode, recallMembership, rememberMembership } from '../../lib/membership';
+import {
+  recallDeviceMode,
+  recallMembership,
+  recallPlayerName,
+  rememberMembership,
+  rememberPlayerName,
+} from '../../lib/membership';
+import { generateRandomName } from '../../lib/random-name';
 import { RoomApiError, joinRoom, startAnonymousSession, type Mode } from '../../lib/room-api';
 
 interface JoinFormProps {
@@ -53,12 +60,34 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
     );
   }, [initialCode]);
 
+  // Seed the name field after mount so localStorage and randomness never run on the server (they
+  // would diverge and cause a hydration mismatch). Precedence (spec 0066): the last name this player
+  // picked, else a signed-in player's gamer tag, else a friendly random name that is remembered
+  // immediately so this browser keeps the same name instead of getting a new one each visit. Runs
+  // once; the SSR field stays empty until this fills it.
+  useEffect(() => {
+    const remembered = recallPlayerName();
+    if (remembered) {
+      setNickname(remembered);
+      return;
+    }
+    if (viewer.gamerTag) {
+      setNickname(viewer.gamerTag);
+      return;
+    }
+    const generated = generateRandomName();
+    rememberPlayerName(generated);
+    setNickname(generated);
+  }, [viewer.gamerTag]);
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedCode = code.trim().toUpperCase();
     const trimmedName = nickname.trim();
     setError(null);
     setSubmitting(true);
+    // Remember the committed name so the next /join (any room) pre-fills it, account or not.
+    rememberPlayerName(trimmedName);
 
     const attempt = () => joinRoom(trimmedCode, { nickname: trimmedName, mode });
 
@@ -128,6 +157,7 @@ export function JoinForm({ initialCode, viewer, surface = APEX_SURFACE }: JoinFo
             autoComplete="nickname"
             placeholder="Pick a name to show others"
             onChange={(event) => setNickname(event.target.value)}
+            onBlur={() => rememberPlayerName(nickname)}
             required
           />
         </div>
