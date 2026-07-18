@@ -320,6 +320,9 @@ What the product does for users, grouped by area. Each capability maps to one or
 - [x] Game client shell - the browser client for Trivia (spec `0010`). A rooms home to create a
       room (host) or join by code, and the `/join?code=ABC12` share-link route where a player picks
       a nickname, player/observer, and interactive/remote (minting an anonymous session if needed).
+      The name field always arrives pre-filled (spec `0066`): the last name this device picked, else
+      a signed-in gamer tag, else a generated adjective+noun ("Prickly Ostrich"), remembered in
+      localStorage so joining is one tap even without an account.
       A host config panel (category incl. Random, rounds 1-100, difficulty 1-10) with a Start button
       gated on a viewer being present, valid settings, and the server's affordability check. The
       in-game stage renders by mode and role from one layout (viewer left, remote right, stacked on
