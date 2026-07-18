@@ -463,8 +463,19 @@ What the product does for users, grouped by area. Each capability maps to one or
       `Sheet` (Radix Dialog: bottom on mobile, right on desktop, backdrop/close/Escape dismiss) hosts a
       `HelpSheet` behind an always-present "?" help control in `GameStage` - reachable for every mode
       and phase, opening the rules over the live game without pausing or ending it. The insider index
-      exposes each game's rules via a separate "How to play" trigger, since insider games have no
-      public feature page. Backfilled for Trivia, Liar Liar, and Teeter Tower.
+      surfaces each game's rules via its card's "Details" link into the game's own feature page (spec
+      `0030`). Backfilled for Trivia, Liar Liar, and Teeter Tower.
+- [x] Game feature pages, reworked (spec `0030`) - the `/games/[slug]` page is now hero-first: the
+      wide 16:9 hero art, the game mark + title inline, the badge + tags row (the same resolved
+      `getGameCard` data the cards show), the full Rules section (spec `0051`), and a closing "Ready to
+      play {name}?" CTA. The old "How to play" teaser and the "Categories" block are removed. EVERY
+      game now has a feature page, including insider ones: resolution is SURFACE-aware
+      (`getFeatureEntry(slug, surface)`) - a public game resolves on both surfaces, an insider game
+      resolves ONLY on the insider surface (else `notFound()`), so an insider slug still 404s on the
+      apex but renders behind the gate via the mirrored `/insider/games/[slug]` route. SEO stays
+      public-only: a public page keeps its title/description/canonical/OG + JSON-LD (`VideoGame`); an
+      insider page is `noindex` with no canonical/JSON-LD, and the sitemap still lists only public
+      games. The insider landing card's "Details" link now resolves to this gated page.
 - [ ] Profile pages and friend search/invite.
 
 ## Future

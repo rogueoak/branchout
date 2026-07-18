@@ -556,6 +556,24 @@ export function getCatalogEntry(slug: string | undefined | null): GameCatalogEnt
   return toEntry(module);
 }
 
+/**
+ * Resolve a feature-page entry by slug for a given SURFACE (spec 0030). A public game resolves on
+ * both the apex and the insider surface; an insider-only game (spec 0043) resolves ONLY when the
+ * request is on the insider surface, and is undefined on the apex - so an insider slug still 404s
+ * publicly (it must never exist on the public site) but renders behind the insider gate. This is the
+ * surface-aware path the feature page uses; it does NOT weaken {@link getCatalogEntry}'s public-only
+ * guarantee (the SEO/JSON-LD/sitemap helpers stay public-only).
+ */
+export function getFeatureEntry(
+  slug: string | undefined | null,
+  surface: { insider: boolean },
+): GameCatalogEntry | undefined {
+  const module = getGameUi(slug);
+  if (!module) return undefined;
+  if (!isPublicGame(module) && !surface.insider) return undefined;
+  return toEntry(module);
+}
+
 // Client/server module hygiene (spec 0065 review): the client `GameCard` imports the card-facing
 // exports below (`GameCardData`, `GameBadge`, `featurePath`, `playHref`, `startGameHref`) from this
 // module, which ALSO holds the SEO-heavy `MARKETING` copy and `gameJsonLd`/`gameFeatureMetadata`. The
@@ -662,6 +680,20 @@ export function gameFeatureMetadata(slug: string): Metadata | undefined {
       description: entry.seoDescription,
       images: [absoluteUrl(entry.shareImage)],
     },
+  };
+}
+
+/**
+ * The metadata for an INSIDER feature page (spec 0030): a plain title + description marked
+ * `noindex, nofollow`, with NO canonical, OG/Twitter share card, or JSON-LD. The insider surface is
+ * gated (the layout auth-walls it), so a crawler never reaches these pages - and they must never be
+ * indexed or leak the game even if one did. Only public games carry the full SEO block above.
+ */
+export function insiderFeatureMetadata(entry: GameCatalogEntry): Metadata {
+  return {
+    title: entry.seoTitle,
+    description: entry.seoDescription,
+    robots: { index: false, follow: false },
   };
 }
 

@@ -212,4 +212,46 @@ test.describe('insider surface (spec 0035)', () => {
       await context.close();
     }
   });
+
+  test('an insider game has a gated feature page on the insider surface; the apex 404s it (spec 0030)', async ({
+    page,
+  }) => {
+    const account = await signUp(page);
+    await spanSessionToInsider(page.context());
+    grantInsider(account.gamerTag);
+
+    // The insider landing card's "Details" link now resolves (spec 0030): it targets the RELATIVE
+    // /games/<slug>, which the insider host rewrites into the gated /insider/games/<slug> page.
+    await page.goto(INSIDER_URL);
+    const details = page.getByRole('link', { name: /details about teeter tower/i });
+    await expect(details).toBeVisible();
+    expect(await details.getAttribute('href')).toBe('/games/teeter-tower');
+    await details.click();
+    await page.waitForURL(/insider\.localhost.*\/games\/teeter-tower/);
+    // The hero-first feature page renders behind the gate: title + Rules, and it stays on the host.
+    await expect(page.getByRole('heading', { name: 'Teeter Tower', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^rules$/i })).toBeVisible();
+    expect(new URL(page.url()).host).toBe(`insider.localhost:${WEB_PORT}`);
+    // SEO only where public: an insider page is noindex with NO VideoGame structured data.
+    await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0);
+
+    // On the apex the same insider slug must 404 - it never exists on the public site.
+    const apex = await page.goto(`${BASE_URL}/games/teeter-tower`);
+    expect(apex?.status()).toBe(404);
+  });
+
+  test('a signed-out visitor cannot reach an insider feature page (sent to the apex login)', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext();
+    try {
+      const page = await context.newPage();
+      await page.goto(`${INSIDER_URL}/games/teeter-tower`);
+      // The insider layout gate (via middleware's signed-out shortcut) crosses to the apex login.
+      await page.waitForURL(/\/login/);
+      expect(new URL(page.url()).host).toBe(`localhost:${WEB_PORT}`);
+    } finally {
+      await context.close();
+    }
+  });
 });

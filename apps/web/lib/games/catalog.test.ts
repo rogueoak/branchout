@@ -8,6 +8,8 @@ import {
   gameFeatureMetadata,
   gameJsonLd,
   getCatalogEntry,
+  getFeatureEntry,
+  insiderFeatureMetadata,
   playHref,
   startGameHref,
 } from './catalog';
@@ -53,6 +55,36 @@ describe('game catalog', () => {
     expect(startGameHref('trivia', true)).toBe('/rooms?game=trivia');
     // An anonymous visitor goes to signup first, carrying the game as a validated internal `next`.
     expect(startGameHref('trivia', false)).toBe('/signup?next=%2Frooms%3Fgame%3Dtrivia');
+  });
+});
+
+describe('getFeatureEntry (surface-aware resolution, spec 0030)', () => {
+  it('resolves a public game on both the apex and the insider surface', () => {
+    expect(getFeatureEntry('trivia', { insider: false })?.name).toBe('Trivia');
+    expect(getFeatureEntry('trivia', { insider: true })?.name).toBe('Trivia');
+  });
+
+  it('resolves an insider game ONLY on the insider surface (404s on the apex)', () => {
+    // lone-leaf is insider-only; it must not exist publicly but renders behind the insider gate.
+    expect(getFeatureEntry('lone-leaf', { insider: false })).toBeUndefined();
+    expect(getFeatureEntry('lone-leaf', { insider: true })?.visibility).toBe('insider');
+  });
+
+  it('returns undefined for an unknown slug on either surface, and never weakens getCatalogEntry', () => {
+    expect(getFeatureEntry('nope', { insider: true })).toBeUndefined();
+    // The public-only guarantee is unchanged: getCatalogEntry never resolves an insider game.
+    expect(getCatalogEntry('lone-leaf')).toBeUndefined();
+  });
+});
+
+describe('insiderFeatureMetadata (SEO only where public, spec 0030)', () => {
+  it('is noindex/nofollow with a title/description but NO canonical or share card', () => {
+    const entry = getFeatureEntry('lone-leaf', { insider: true })!;
+    const meta = insiderFeatureMetadata(entry);
+    expect(String(meta.title)).toContain('Lone Leaf');
+    expect(meta.robots).toEqual({ index: false, follow: false });
+    expect(meta.alternates).toBeUndefined();
+    expect(meta.openGraph).toBeUndefined();
   });
 });
 

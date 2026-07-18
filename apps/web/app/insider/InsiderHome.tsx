@@ -65,11 +65,11 @@ export function InsiderHome({ viewer, surface }: { viewer: Viewer; surface: Surf
             {INSIDER_GAMES.map((game) => (
               // The one unified game card (spec 0065). "Play now" is the RELATIVE room-create deep
               // link (feedback 0029) so play stays on the insider surface (rewritten into
-              // /insider/rooms). Details is OFF here: it links to /games/<slug>, which has no route on
-              // the insider host and notFound()s on the apex (getCatalogEntry is public-only). The
-              // insider per-game page arrives in spec 0030, which will re-enable Details on this
-              // surface. The "Insiders" badge shows top-right (game.insider is true for every entry).
-              <GameCard key={game.slug} game={game} showDetails={false} />
+              // /insider/rooms). "Details" (default on) links to the RELATIVE /games/<slug>, which the
+              // insider host rewrites into the gated /insider/games/<slug> feature page (spec 0030) -
+              // so it stays on the insider surface and renders the insider game's page. The "Insiders"
+              // badge shows top-right (game.insider is true for every entry).
+              <GameCard key={game.slug} game={game} />
             ))}
           </div>
         )}
