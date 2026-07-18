@@ -74,14 +74,16 @@ describe('RoomsHome create flow', () => {
     expect(screen.queryByRole('button', { name: /create a room/i })).toBeNull();
   });
 
-  it('auto-creates exactly ONCE across re-renders (the one-shot guard, spec 0029)', async () => {
+  it('auto-creates exactly ONCE even when the deep-link game changes (the one-shot guard, spec 0029)', async () => {
     vi.mocked(roomApi.selectGame).mockResolvedValue({ ...room, selectedGame: 'liar-liar' });
     const { rerender } = render(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
     await waitFor(() => expect(roomApi.createRoom).toHaveBeenCalledTimes(1));
-    // A re-render (React can re-invoke effects / StrictMode double-invokes) must not create a second
-    // room: the ref guard fires the create once per arrival.
-    rerender(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
-    rerender(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
+    // Re-render with a DIFFERENT valid slug: this changes the `preselected` memo, so the auto-create
+    // effect (deps `[preselected, isAccount]`) actually RE-FIRES - the discriminating case a same-props
+    // rerender never exercises. The ref guard must still block the second run, so exactly one room is
+    // ever minted per arrival. Without the guard this second slug fires a second createRoom and the
+    // final assertion goes red (confirmed by mutation).
+    rerender(<RoomsHome viewer={{ signedIn: true }} initialGame="trivia" />);
     await waitFor(() => expect(hoisted.replace).toHaveBeenCalledWith('/rooms/ABC12'));
     expect(roomApi.createRoom).toHaveBeenCalledTimes(1);
   });
@@ -95,6 +97,49 @@ describe('RoomsHome create flow', () => {
     expect(roomApi.createRoom).not.toHaveBeenCalled();
     expect(roomApi.selectGame).not.toHaveBeenCalled();
     expect(hoisted.replace).not.toHaveBeenCalled();
+  });
+
+  it('never flashes the setup screen for a signed-out visitor on a deep link (review #138)', async () => {
+    // Identity fetch is still in flight (isAccount === null). A signed-out viewer opening a shared
+    // `?game=` link must NOT see the "Setting up your room..." head-fake during that async window -
+    // showSetup is gated on the server-known viewer.signedIn.
+    vi.mocked(roomApi.fetchIdentity).mockReturnValue(new Promise<never>(() => {}));
+    render(<RoomsHome viewer={{ signedIn: false }} initialGame="liar-liar" />);
+    // The create landing shows immediately; the setup text never appears and no room is created.
+    expect(await screen.findByRole('heading', { name: /play a game/i })).toBeDefined();
+    expect(screen.queryByText(/setting up your room/i)).toBeNull();
+    expect(roomApi.createRoom).not.toHaveBeenCalled();
+  });
+
+  it('the signed-out deep link carries the game as ?next on login and sign up (review #138)', async () => {
+    // A signed-out deep-linker must resume into the game after auth: both auth links carry the
+    // `?game=` deep link as a validated internal `next`.
+    vi.mocked(roomApi.fetchIdentity).mockResolvedValue({ kind: 'anonymous' });
+    render(<RoomsHome viewer={{ signedIn: false }} initialGame="liar-liar" />);
+    const login = await screen.findByRole('link', { name: /log in to host/i });
+    expect(login.getAttribute('href')).toBe('/login?next=%2Frooms%3Fgame%3Dliar-liar');
+    // Scope to the Host section - the shared top nav also carries a (plain) "Sign up" link.
+    const host = within(screen.getByRole('region', { name: /host a room/i }));
+    expect(host.getByRole('link', { name: /^sign up$/i }).getAttribute('href')).toBe(
+      '/signup?next=%2Frooms%3Fgame%3Dliar-liar',
+    );
+  });
+
+  it('times out of the setup screen to a retry-able landing when the create stalls (review #138)', async () => {
+    // A flaky-network stall must not leave the host on "Setting up your room..." forever: after the
+    // safety timeout, drop to the create landing with a retry-able message.
+    vi.useFakeTimers();
+    try {
+      vi.mocked(roomApi.createRoom).mockReturnValue(new Promise(() => {}) as never);
+      render(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
+      // Flush the identity resolve + auto-create kickoff, then run out the setup timeout (8s).
+      await vi.advanceTimersByTimeAsync(8000);
+      expect(screen.getByRole('alert').textContent).toMatch(/taking longer than expected/i);
+      expect(screen.getByRole('button', { name: /create a room/i })).toBeDefined();
+      expect(hoisted.replace).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('falls back to the create landing with a message when the auto-create fails (spec 0029)', async () => {

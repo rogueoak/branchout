@@ -176,7 +176,7 @@ test.describe('insider surface (spec 0035)', () => {
     }
   });
 
-  test('the insider surface fits a 360px phone (mobile-first)', async ({ browser }) => {
+  test('the insider surface + its nav fit a 360px phone (mobile-first)', async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
     try {
       const page = await context.newPage();
@@ -185,6 +185,20 @@ test.describe('insider surface (spec 0035)', () => {
       grantInsider(account.gamerTag);
       await page.goto(INSIDER_URL);
       await expect(page.getByRole('heading', { name: 'Insider' })).toBeVisible();
+      // Guard the insider NAV variant at 360px (review #138): it now carries the most items of any
+      // surface - the wordmark + INSIDER badge + Games + Join on the left plus the account control on
+      // the right - so it is the most likely to collide at the narrow floor. (A signed-out visitor
+      // never renders this six-item nav: the gate sends them to the apex login, which carries no
+      // TopNav; the signed-in insider here is the reachable worst case.) Assert the Join link and the
+      // Insider badge are present, then that nothing overflows the phone viewport.
+      const nav = page.getByRole('navigation', { name: /site navigation/i });
+      await expect(nav).toBeVisible();
+      await expect(nav.getByText('Insider')).toBeVisible();
+      await expect(nav.getByRole('link', { name: 'Games', exact: true })).toBeVisible();
+      await expect(nav.getByRole('link', { name: 'Join', exact: true })).toHaveAttribute(
+        'href',
+        '/join',
+      );
       const { scrollWidth, clientWidth } = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,

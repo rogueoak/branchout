@@ -3,19 +3,25 @@
 import { V1_PREFIX } from '@branchout/protocol';
 import { type FormEvent, useEffect, useState } from 'react';
 import { isTrustedHost } from '../../lib/subdomain';
+import { internalNext } from '../../lib/internal-next';
 
 // The control-plane base URL. Overridable per environment; defaults to the local dev port.
 const CONTROL_PLANE_URL = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? 'http://localhost:4000';
 
 /**
- * A `?next=` return target, kept only if it points at one of our own hosts (open-redirect defence -
- * the value can come from a subdomain gate, e.g. insider sends the visitor here to log in and
- * return). Read on the client from the current URL so the page needs no Suspense boundary.
+ * A `?next=` return target, kept only if it is safe to return to (open-redirect defence). Two shapes
+ * are honored: a same-origin internal PATH (a feature/room deep link, e.g. `/rooms?game=<slug>`, so a
+ * signed-out deep-linker resumes into the game after logging in - review #138), or an absolute URL to
+ * one of our own hosts (the value can come from a subdomain gate, e.g. insider sends the visitor here
+ * to log in and return). Read on the client from the current URL so the page needs no Suspense boundary.
  */
 function readTrustedNext(): string | null {
   try {
     const next = new URLSearchParams(window.location.search).get('next');
-    return next && isTrustedHost(new URL(next).host) ? next : null;
+    if (!next) return null;
+    const internal = internalNext(next);
+    if (internal) return internal;
+    return isTrustedHost(new URL(next).host) ? next : null;
   } catch {
     return null;
   }

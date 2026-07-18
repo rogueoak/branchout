@@ -17,6 +17,10 @@ import { RoomApiError, createRoom, fetchIdentity, selectGame, setMode } from '..
 import type { Viewer } from '../../lib/session';
 import { APEX_SURFACE, type Surface } from '../../lib/surface';
 
+// If the deep-link auto-create stalls (flaky network), do not strand the host on the setup screen
+// forever - after this long, drop back to the create landing with a retry-able message (review #138).
+const SETUP_TIMEOUT_MS = 8000;
+
 interface RoomsHomeProps {
   /** The `?game=<slug>` deep link from a feature-page "Start a game" CTA (spec 0030): create a room
    * pre-selected to this game and skip the pick step. Ignored if it is not a known game id. */
@@ -139,11 +143,35 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselected, isAccount]);
 
-  // Show a lightweight setup state for an eligible deep-link host instead of flashing the landing:
-  // while the identity resolves (isAccount === null) and while the auto-create runs. An error drops
-  // back to the landing (which surfaces the message); a signed-out viewer (isAccount === false) sees
-  // the landing so they can log in to host.
-  const showSetup = Boolean(preselected) && !error && isAccount !== false;
+  // Show a lightweight setup state for an eligible deep-link host instead of flashing the landing,
+  // while the identity resolves (isAccount === null) and while the auto-create runs. Gated on the
+  // SERVER-KNOWN `viewer.signedIn` (review #138) so a signed-OUT visitor opening a shared
+  // `?game=` link never flashes "Setting up your room..." during the async identity window - they
+  // go straight to the "Log in to host" landing. An error drops back to the landing (which surfaces
+  // the message); a signed-out viewer (isAccount === false) also sees the landing so they can log in.
+  const showSetup = Boolean(preselected) && viewer.signedIn && !error && isAccount !== false;
+
+  // Safety timeout (review #138): if the setup (identity + auto-create) stalls, drop the host to the
+  // create landing with a retry-able message instead of a spinner that never resolves. Keyed on
+  // `showSetup`, so it is armed only while the setup screen is up and is cleared on navigation/unmount.
+  useEffect(() => {
+    if (!showSetup) return;
+    const timer = setTimeout(() => {
+      setCreating(false);
+      setError('This is taking longer than expected. Try again.');
+    }, SETUP_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [showSetup]);
+
+  // A signed-out deep-linker must resume into the game after auth (review #138): carry the current
+  // `?game=` deep link as a validated internal `next` on the login / sign-up links so, once they have
+  // an account, they land back here and the auto-create fires. No deep link -> plain auth links. The
+  // links stay relative (surface-owned): the insider host serves /login + /signup directly, so this
+  // resolves on whichever surface the host is on. `preselected.id` is used (not the raw slug) so an
+  // insider game dropped on the apex carries no `next` - matching where the auto-create would land.
+  const deepLink = preselected ? `/rooms?game=${encodeURIComponent(preselected.id)}` : null;
+  const loginHref = deepLink ? `/login?next=${encodeURIComponent(deepLink)}` : '/login';
+  const signupHref = deepLink ? `/signup?next=${encodeURIComponent(deepLink)}` : '/signup';
 
   function onJoin() {
     const trimmed = code.trim().toUpperCase();
@@ -191,8 +219,11 @@ export function RoomsHome({ initialGame, viewer, surface = APEX_SURFACE }: Rooms
           {isAccount === false ? (
             <div className="flex flex-col gap-2">
               <p className="text-body-sm text-text-muted">Hosting needs an account.</p>
-              <a href="/login" className={buttonVariants({ variant: 'primary' })}>
+              <a href={loginHref} className={buttonVariants({ variant: 'primary' })}>
                 Log in to host
+              </a>
+              <a href={signupHref} className={buttonVariants({ variant: 'outline' })}>
+                Sign up
               </a>
             </div>
           ) : (

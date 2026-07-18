@@ -172,6 +172,8 @@ test('a game deep link auto-creates and lands the host straight in the lobby (sp
   // create the room, select the game, and land in the lobby with NO "Create a room" tap and NO pick
   // step. This is the front-door consolidation the revised spec 0029 requires.
   await signUp(page);
+  // Land on a real feature page first, so browser BACK later has a prior history entry to return to.
+  await page.goto('/games/trivia');
   await page.goto('/rooms?game=trivia');
   // Lands directly in the lobby (no `?step=pick`); the invite affordance proves it is the lobby.
   await page.waitForURL(/\/rooms\/[A-Z2-9]{5}$/);
@@ -181,11 +183,15 @@ test('a game deep link auto-creates and lands the host straight in the lobby (sp
   // No "Create a room" button was ever tapped, and no pick step was shown.
   await expect(page.getByRole('button', { name: /create a room/i })).toHaveCount(0);
 
-  // A refresh must NOT create a second room: the auto-create replaced the `?game=` URL with the
-  // room URL, so reloading stays on the same room (idempotent per arrival, spec 0029 acceptance).
-  await page.reload();
-  await page.waitForURL(new RegExp(`/rooms/${code}$`));
-  expect(page.url()).toContain(`/rooms/${code}`);
+  // Browser BACK must NOT mint a second room (spec 0029 idempotency, review #138). Because the
+  // auto-create REPLACED the `?game=` URL with the room URL, the deep-link entry is gone from
+  // history: back returns to the feature page and the app never re-enters `/rooms?game=trivia`, so no
+  // second room is created. (With `push` - the regression - back WOULD land on `/rooms?game=trivia`,
+  // re-mount RoomsHome, and auto-create a SECOND, distinct room code. This asserts that does not
+  // happen: we settle back on the feature page, never on a fresh `/rooms/<code>`.)
+  await page.goBack();
+  await page.waitForURL(/\/games\/trivia$/);
+  expect(page.url()).not.toMatch(/\/rooms\/[A-Z2-9]{5}/);
 });
 
 test.describe('legal pages (spec 0031) at 360px', () => {
