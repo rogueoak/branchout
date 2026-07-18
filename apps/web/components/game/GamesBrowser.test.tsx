@@ -35,7 +35,7 @@ const games: GameCardData[] = [
 ];
 
 describe('GamesBrowser', () => {
-  it('lists every game with its Play + Details affordances and tag chips', () => {
+  it('lists every game with its Play + Details affordances, and shows no tag chips on the cards', () => {
     render(<GamesBrowser games={games} signedIn />);
     // Each card carries a Details link to the feature page and a Play link to the room deep link.
     expect(screen.getByRole('link', { name: /details about trivia/i }).getAttribute('href')).toBe(
@@ -47,9 +47,10 @@ describe('GamesBrowser', () => {
     expect(screen.getByRole('link', { name: /play trivia now/i }).getAttribute('href')).toBe(
       '/rooms?game=trivia',
     );
-    // Tag chips render with their exact labels.
-    expect(screen.getByText('Quick').textContent).toBe('Quick');
-    expect(screen.getByText('Bluffing').textContent).toBe('Bluffing');
+    // Tags stay in the card data (they still drive the search/filter below and the game page) but are
+    // NOT rendered on the cards - the fixture's tag labels must not appear.
+    expect(screen.queryByText('Quick')).toBeNull();
+    expect(screen.queryByText('Bluffing')).toBeNull();
   });
 
   it('routes an anonymous visitor through signup on Play', () => {

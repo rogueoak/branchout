@@ -25,7 +25,9 @@ public pages.
   **feature page per game** at `/games/[slug]`, laid out top to bottom:
   1. the game's **hero image** across the top (the 16:9 hero art, `GAME_HERO[slug]`),
   2. the **game icon (mark) + title inline** beneath the hero,
-  3. directly under the title, the **badge + tags** row (same as the card, spec `0065`),
+  3. directly under the title, the **badge + tags** row. Unlike the card (which drops the tags,
+     spec `0065`), the page **keeps the tags and renders them as `Chip` pill components** (not floating
+     text), so a visitor can see a game's facets on its page,
   4. the **Rules** section (objective + sections via `RulesContent`, spec `0051`),
   5. a closing **"Ready to play {name}?"** CTA that starts the game.
   - The old **"How to play"** teaser section and the **"Categories"** section are **removed**.
@@ -108,7 +110,8 @@ public pages.
 
 - [ ] `/games` lists every public game as a unified `GameCard` (spec `0065`), each linking to its
       feature page via Details; the search/category filter still works.
-- [ ] `/games/[slug]` renders, top to bottom: hero art, icon + title inline, a badge + tags row, a
+- [ ] `/games/[slug]` renders, top to bottom: hero art, icon + title inline, a badge + tags row (the
+      tags as `Chip` pills), a
       Rules section, and a closing "Ready to play {name}?" CTA - and does **not** render a "How to
       play" section or a "Categories" section. Reads well at 360px.
 - [ ] An insider game's `/games/[slug]` **404s on the apex** and **renders on the insider surface**

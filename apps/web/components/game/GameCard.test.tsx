@@ -3,8 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { GameCardData } from '../../lib/games/catalog';
 import { GameCard } from './GameCard';
 
-// The one unified game card (spec 0065). These tests pin the configurable contract: the badge + tags
-// row, the show/hide of the Play and Details affordances, the top-right Insiders badge on an insider
+// The one unified game card (spec 0065). These tests pin the configurable contract: the badge row
+// (tags stay in the data but are not rendered on the card), the show/hide of the Play and Details
+// affordances, the top-right Insiders badge on an insider
 // game, the selectable picker variant (aria-pressed + selection ring), and a 360px render guard.
 // jsdom has no jest-dom here, so assertions check discriminating DOM properties (href/text/tag/role)
 // rather than the get-then-`.toBeDefined()` anti-pattern (the Testing Library getters already throw on
@@ -34,17 +35,20 @@ const insiderGame: GameCardData = {
 };
 
 describe('GameCard', () => {
-  it('renders the hero, mark, name, badge, tags, and summary', () => {
+  it('renders the hero, mark, name, badge, and summary but not the tags', () => {
     const { container } = render(<GameCard game={publicGame} />);
     // The name renders as the card's h3 heading.
     expect(screen.getByRole('heading', { name: 'Demo Game' }).tagName).toBe('H3');
     // Both the wide hero (800x450) and the compact mark (24x24) render as inline SVGs.
     expect(container.querySelector('svg[viewBox="0 0 800 450"]')).not.toBeNull();
     expect(container.querySelector('svg[viewBox="0 0 24 24"]')).not.toBeNull();
-    // The catalog badge shows its exact label; each tag renders as an <li> in the tag list.
+    // The catalog badge shows its exact label.
     expect(screen.getByText('Featured').textContent).toBe('Featured');
-    expect(screen.getByText('Trivia').closest('li')).not.toBeNull();
-    expect(screen.getByText('Quick').closest('li')).not.toBeNull();
+    // Tags stay in the card data but are NOT rendered on the card (they live on the game page); the
+    // fixture's tags must not appear, and no tag list is emitted.
+    expect(screen.queryByText('Trivia')).toBeNull();
+    expect(screen.queryByText('Quick')).toBeNull();
+    expect(container.querySelector('ul[role="list"]')).toBeNull();
     expect(screen.getByText(/one-line summary of the demo game/i).textContent).toContain(
       'demo game',
     );

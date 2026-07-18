@@ -314,7 +314,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       unified `GameCard` (spec `0065`) - the same configurable card used across the home teaser, the
       `/games` index, the insider landing, and the lobby/room picker, so the surfaces cannot drift.
       Each card carries a wide on-brand hero illustration (per-game 800x450 scene from `@branchout/brand`,
-      gold-root rule kept), the game mark + title, a badge + tags row, a brief summary, a "Play now"
+      gold-root rule kept), the game mark + title, a badge (tags are kept in the card data but not
+      shown on the card - they read as clutter; they render as pills on the game page instead), a brief
+      summary, a "Play now"
       button, and a "Details" link to the feature page (`/games/[slug]`). Play routes an anonymous
       visitor through signup first (`startGameHref`) and a signed-in one straight into the room deep
       link. Signed-in visitors see the hero "Play now" (pointing at `/games` so they pick a game before
@@ -328,7 +330,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       nested in a link. Insider-only games carry an extra "Insiders" badge top-right beside the title.
       Every surface reads ONE resolved shape from `getGameCard(slug)` in `catalog.ts` (registry basics +
       catalog badge + library tags + hero art), so adding a game stays "a module + a catalog entry + a
-      library entry". The lobby/picker uses it with both affordances off; the insider landing's rules
+      library entry". The card renders only the badge (not the tags) under the title; the tags stay in
+      the resolved data to drive the `/games` search and to render as pills on the game page. The
+      lobby/picker uses it with both affordances off; the insider landing's rules
       now live on the game page (Details), not a card sheet.
 - [x] Game client shell - the browser client for Trivia (spec `0010`). A rooms home to create a
       room (host) or join by code, and the `/join?code=ABC12` share-link route where a player picks
