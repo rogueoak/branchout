@@ -109,6 +109,23 @@ Capture durable lessons as they emerge.
   notch from a blob, so the fix exposed a non-wire `GeneratedPiece.type` the test asserts directly (both
   notch types appear; each hard shape is individually rare). If a shape/mix assertion can pass without
   the thing it names, it is vacuous. (Feedback `0032`, tester/engineer review of PR #94.)
+- **A test named for a guard / one-shot / idempotency invariant must construct the second invocation
+  the guard defends against - not just rerender the happy path.** The `RoomsHome` auto-create had a
+  `useRef` one-shot guard "tested" by rerendering with identical props and asserting `createRoom` fired
+  once - but the effect deps (`[preselected, isAccount]`) never changed on an identical rerender, so the
+  effect never re-fired and deleting the guard kept the test green. The discriminating test forces the
+  re-fire by changing the effect's *dependency* (rerender with a different game slug so `preselected`
+  changes) and asserts still-called-once; mutation-test it (remove the guard, watch it go red). For a
+  refresh/idempotency e2e, prove the risk: after an auto-create that `router.replace`s the URL, a
+  `reload()` never re-mounts the creating component - navigate *back* instead, so a `push` regression
+  would mint a second room and fail. (Feedback `0034`, tester review of PR #138.)
+- **Consolidating a shared component means porting the tests on every surface that asserted the old
+  markup - especially the e2e.** The unified `GameCard` (spec `0065`) replaced the old whole-card "Learn
+  about <game>" link with a "Play now" button + a "Details" link, and the new component's unit suite was
+  green - but two e2e specs on other surfaces (`game-library.spec.ts`, `mobile-smoke.spec.ts`) still
+  asserted the old `/learn about .../i` link and were now red. A green unit suite for the new component
+  hides a red e2e that still drives the old markup; grep the e2e for the strings the old component
+  emitted before merging. (Feedback `0034`, tester review of PR #137.)
 
 ## Services and state
 
@@ -204,6 +221,13 @@ Capture durable lessons as they emerge.
 
 ## UI and CTAs
 
+- **Ship an outbound link and the route it targets together, or gate the link.** The unified `GameCard`
+  (spec `0065`) defaulted `showDetails` on, so insider landing cards rendered a "Details" link to
+  `/games/<slug>` - a route that 404s on the insider surface (the insider per-game page did not exist
+  until spec `0030`, a later PR) and `notFound()`s on the apex. A "Details"/"Learn more" link added
+  ahead of its destination is a dead end on the surface in between. Hide it with a stopgap
+  (`showDetails={false}`) until the target route exists, and re-enable it in the PR that adds the target.
+  (Feedback `0034`, engineer review of PR #137.)
 - **A content-bearing "card as a button" must not reuse the button recipe - it inherits
   `white-space: nowrap` and won't wrap.** Wrapping a detail card in a `<button>` styled with
   `buttonVariants()` pulled in the button base's `white-space: nowrap`, which (being inherited)
