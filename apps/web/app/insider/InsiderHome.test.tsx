@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { InsiderHome } from './InsiderHome';
 
@@ -61,35 +61,28 @@ describe('InsiderHome (spec 0035)', () => {
     expect(screen.getAllByText('Insider').length).toBeGreaterThan(0);
   });
 
-  it('renders the "Play now" and "How to play" controls inside each card', () => {
+  it('renders the "Play now" and "Details" controls inside each card (spec 0065)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
-    // Both controls sit in the same card body: the play link and its sibling rules button share a
-    // controls row. Locate the Teeter card by its play link, then the shared controls container.
+    // The unified card carries two independent link affordances - Play and Details - as siblings in
+    // the same controls row (no interactive-in-interactive nesting). Locate the Teeter card by its
+    // play link, then its sibling Details link.
     const playLink = screen.getByRole('link', { name: /play teeter tower now/i });
     const controls = playLink.parentElement;
     expect(controls).not.toBeNull();
-    // The "How to play" trigger is a sibling of the play link in the same controls row (not nested).
-    const howTo = controls?.querySelector('button');
-    expect(howTo?.textContent).toContain('How to play');
-    // The controls stack on mobile (flex-col) and reverse into a row from sm up (Play on the right).
-    expect(controls?.className).toContain('flex-col');
-    expect(controls?.className).toContain('sm:flex-row-reverse');
+    const details = within(controls as HTMLElement).getByRole('link', {
+      name: /details about teeter tower/i,
+    });
+    expect(details.getAttribute('href')).toBe('/games/teeter-tower');
   });
 
-  it('opens the rules sheet from an icon-free "How to play" control on this page (spec 0051)', () => {
+  it('shows a top-right "Insiders" badge and no rules sheet on the card (spec 0065)', () => {
     render(<InsiderHome viewer={viewer} surface={surface} />);
-    // No dialog until a rules trigger is clicked.
+    // Rules now live on the game's page (Details), not in a card sheet: no "How to play" trigger and
+    // no dialog on the insider landing card.
+    expect(screen.queryByRole('button', { name: /how to play/i })).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
-    // The rules trigger text on this page carries NO icon svg (showIcon={false}) - text only.
-    const howToButtons = screen.getAllByRole('button', { name: /how to play/i });
-    const teeterRules = howToButtons.find((b) =>
-      /teeter tower/i.test(b.getAttribute('aria-label') ?? ''),
-    );
-    expect(teeterRules).toBeDefined();
-    expect(teeterRules?.querySelector('svg')).toBeNull();
-    // Clicking it opens the game's rules sheet.
-    fireEvent.click(teeterRules as HTMLElement);
-    expect(screen.getByRole('dialog')).toBeDefined();
+    // Every insider game card carries the extra "Insiders" badge beside the title.
+    expect(screen.getAllByText('Insiders').length).toBeGreaterThan(0);
   });
 
   it('renders the shared account menu (main site look and feel)', () => {

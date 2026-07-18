@@ -9,6 +9,8 @@
 
 import type { Metadata } from 'next';
 import { SITE_URL } from '../site';
+import { GAME_HERO } from './heroes';
+import { getLibraryMeta, type LibraryChip } from './library';
 import { GAME_UI_LIST, getGameUi, isPublicGame, type GameUiModule } from './registry';
 
 /** One how-to-play step shown on a feature page. */
@@ -552,6 +554,51 @@ export function getCatalogEntry(slug: string | undefined | null): GameCatalogEnt
   const module = getGameUi(slug);
   if (!module || !isPublicGame(module)) return undefined;
   return toEntry(module);
+}
+
+/**
+ * The single display shape the unified game card consumes (spec 0065): the registry basics (name,
+ * mark, one-line summary), the catalog badge, the library tags, the hero art, and the insider flag -
+ * merged here so every surface does ONE lookup instead of three. Adding a game stays "a module + a
+ * catalog entry + a library entry"; the card never reaches into three data layers itself.
+ */
+export interface GameCardData {
+  slug: string;
+  name: string;
+  summary: string;
+  /** The game's on-theme mark as an inline SVG string (from the registry / brand package). */
+  icon: string;
+  /** The wide 16:9 hero as an inline SVG string, or the mark when the game ships no hero. */
+  hero: string;
+  /** The card badge (label + canopy variant), e.g. `Featured`, `New`, or `Insider`. */
+  badge: GameBadge;
+  /** The game's library tags, resolved to display labels, for the card's chip row. */
+  tags: LibraryChip[];
+  /** Whether this game is insider-only (spec 0043) - drives the extra top-right "Insiders" badge. */
+  insider: boolean;
+}
+
+/**
+ * Resolve a game's card data by slug (== registry id), or undefined for an unknown game. Merges the
+ * registry module, its marketing badge, its library tags, and its hero art into the one shape the card
+ * reads. Works for public AND insider games (the insider landing lists insider-only entries), so it
+ * uses the full registry, not the public catalog.
+ */
+export function getGameCard(slug: string | undefined | null): GameCardData | undefined {
+  const module = getGameUi(slug);
+  if (!module) return undefined;
+  const entry = toEntry(module);
+  const meta = getLibraryMeta(module.id);
+  return {
+    slug: module.id,
+    name: module.name,
+    summary: module.summary,
+    icon: module.icon,
+    hero: GAME_HERO[module.id] ?? module.icon,
+    badge: entry.badge,
+    tags: meta?.tags ?? [],
+    insider: (module.visibility ?? 'public') === 'insider',
+  };
 }
 
 /** The feature page path for a game. */

@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { ComingSoonBanner } from '../../components/ComingSoonBanner';
 import { TopNav } from '../../components/TopNav';
-import { GamesBrowser, type BrowserGame } from '../../components/game/GamesBrowser';
-import { PUBLIC_GAME_CATALOG, featurePath } from '../../lib/games/catalog';
-import { getLibraryMeta } from '../../lib/games/library';
+import { GamesBrowser } from '../../components/game/GamesBrowser';
+import { PUBLIC_GAME_CATALOG, getGameCard, type GameCardData } from '../../lib/games/catalog';
 import { getViewer } from '../../lib/session';
 
 // The games index (spec 0030, extended by spec 0051): an unauthenticated, server-rendered list of
@@ -23,21 +22,12 @@ export const metadata: Metadata = {
 export default async function GamesIndexPage() {
   const viewer = await getViewer();
 
-  // Build the browser's game list on the server: display basics from the catalog + resolved
-  // category/tag chips from the library. Every public game has a library entry (the completeness
-  // check holds), so the meta is always present.
-  const games: BrowserGame[] = PUBLIC_GAME_CATALOG.map((game) => {
-    const meta = getLibraryMeta(game.slug);
-    return {
-      slug: game.slug,
-      name: game.name,
-      summary: game.summary,
-      icon: game.icon,
-      href: featurePath(game.slug),
-      categories: meta?.categories ?? [],
-      tags: meta?.tags ?? [],
-    };
-  });
+  // Build the browser's game list on the server: one resolved card shape per public game (spec 0065),
+  // merging the registry basics, the catalog badge, the library tags, and the hero art. Every public
+  // game resolves (the completeness checks hold), so the filter drops any stray undefined defensively.
+  const games: GameCardData[] = PUBLIC_GAME_CATALOG.map((game) => getGameCard(game.slug)).filter(
+    (game): game is GameCardData => game !== undefined,
+  );
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -56,7 +46,7 @@ export default async function GamesIndexPage() {
 
         <ComingSoonBanner />
 
-        <GamesBrowser games={games} />
+        <GamesBrowser games={games} signedIn={viewer.signedIn} />
       </section>
     </div>
   );
