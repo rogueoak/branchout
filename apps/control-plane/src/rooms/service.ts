@@ -11,7 +11,7 @@ import type { Session } from '../sessions/session';
 import { canHost } from '../sessions/session';
 import { validateDisplayName } from '../validation/display-name';
 import { generateCode, shareLink } from './code';
-import type { ControlAction, EngineClient } from './engine-client';
+import { EngineError, type ControlAction, type EngineClient } from './engine-client';
 import type { PlaysRecorder, RoomGamePlay } from './plays-recorder';
 import {
   hasDisplay,
@@ -382,11 +382,24 @@ export class RoomService {
     if (!room.selectedGame) {
       throw new RoomError('no_game', 'No game is running.');
     }
-    await this.engine.control(room.id, room.selectedGame, action);
     if (action === 'exit') {
+      // The finale now LINGERS (WS7), so the host may click "Back to lobby" long after the engine
+      // session is gone - it lives in Redis only under COMPLETE_SESSION_TTL (~1h) and is also
+      // disposed on redeploy or a duplicate exit. A 404 from the engine means the session is already
+      // gone, which for an exit is success, not failure. Swallow only that case and STILL return the
+      // room to the lobby, so the host can never be wedged in a `running` room with no way back. Any
+      // other engine error (unreachable transport, an unexpected status) still surfaces.
+      try {
+        await this.engine.control(room.id, room.selectedGame, action);
+      } catch (error) {
+        if (!(error instanceof EngineError && error.status === 404)) {
+          throw error;
+        }
+      }
       const lobby = await this.repo.setStatus(room.id, 'lobby');
       return toView(lobby ?? room);
     }
+    await this.engine.control(room.id, room.selectedGame, action);
     return toView(room);
   }
 

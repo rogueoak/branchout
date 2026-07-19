@@ -15,6 +15,12 @@ export class FakeEngineClient implements EngineClient {
   /** When set, `start` throws this instead of recording - lets a test drive the EngineError path. */
   startError?: Error;
 
+  /**
+   * When set, `control` throws this instead of recording - lets a test drive a gone/refused session
+   * (e.g. a 404 EngineError when the finale's session has already expired, WS7).
+   */
+  controlError?: Error;
+
   constructor(private readonly failStart = false) {}
 
   async start(request: StartHandoffRequest): Promise<StartHandoffResponse> {
@@ -29,6 +35,9 @@ export class FakeEngineClient implements EngineClient {
   }
 
   async control(room: string, game: string, action: ControlAction): Promise<void> {
+    if (this.controlError) {
+      throw this.controlError;
+    }
     this.controls.push({ room, game, action });
   }
 }

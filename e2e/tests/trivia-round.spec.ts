@@ -61,6 +61,11 @@ test('a host and a second player play a full one-round Trivia game', async ({ br
     await expect(host.getByTestId('final-results')).toBeVisible();
     await expect(player.getByTestId('final-results')).toBeVisible();
 
+    // Rejoin-onto-finale: a device that reloads a still-`running` completed room must land back on
+    // the finale (the engine replays the terminal `complete` state on reconnect), not a broken state.
+    await host.reload();
+    await expect(host.getByTestId('final-results')).toBeVisible({ timeout: 30_000 });
+
     // The host's explicit "Back to lobby" is the one way off the finale: it returns every device to
     // the lobby (the start control reappears, the finale is gone).
     await host.getByRole('button', { name: /back to lobby/i }).click();
