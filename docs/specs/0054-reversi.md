@@ -31,6 +31,16 @@ so unlike Teeter Tower (spec 0044) it holds **no in-process world** (no Matter.j
 - The presentation is themed to Branch Out: **Violet vs Amber** leaf discs (canopy grape/sunbeam
   tokens, no hardcoded brand hex) on a **wood-grain** board. The game keeps its generic name Reversi;
   no trademarked branding is referenced.
+- Captured discs **animate their flip** (WS8a): when a move flips a line, each captured disc turns over
+  (a canvas-drawn rotateY, thinning to edge-on and widening in its new color, ~320ms) so the capture
+  reads clearly. Under `prefers-reduced-motion` the color swaps instantly (no animation).
+- The start of a turn shows a brief, self-dismissing **popup on the board** (WS8a), driven by the
+  authoritative sim: "Your turn" for the player who now moves, "&lt;other&gt; has no moves, your turn"
+  when the opponent was skipped, and "You have no moves, turn skipped" on the skipped player's device.
+  It holds ~1.8s then fades (instant under reduced motion) and mirrors the aria-live status line.
+- Reversi is a **strict 2-player** game: exactly two seats, enforced by a single source of truth in
+  `PLAYER_LIMITS` (protocol) alongside the plugin's `minPlayers`/`maxPlayers`, so the lobby, the
+  room-create gate, and the picker all agree on "2" (not the permissive 1-8 default).
 - The board machinery (grid, coordinates + the eight compass rays, two-seat turn management, the
   single-surface board renderer's layout + tap hit-test) is factored **separately** from Reversi's
   rules, so Checkers and Chess reuse it.
@@ -130,3 +140,9 @@ serializable, so the whole game lives in **scratch** and there is no in-process 
     first player taps a legal opening square; the engine applies the flip and streams the new board
     (disc counts change, the turn passes) - all at a 360px viewport. *(e2e `reversi.spec.ts`; runs in
     CI - see notes if docker cannot run in the sandbox)*
+12. **Flip animation + turn popup (WS8a).** A captured disc animates its flip (instant under
+    `prefers-reduced-motion`); the flipped-index detection and the turn-start popup copy are pure,
+    state-driven functions. *(web unit tests: `turn-notice` for `detectFlips` + `turnPopupMessage`;
+    `Viewer` for the popup message shown per vantage, none when over / plain-waiting)*
+13. **Strict 2-player limit (WS8a).** `PLAYER_LIMITS.reversi` is `{ min: 2, max: 2 }` and the plugin
+    capabilities agree, so the lobby shows exactly 2 (not 1-8). *(protocol unit test: `games`)*

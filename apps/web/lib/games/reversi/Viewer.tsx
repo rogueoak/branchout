@@ -15,7 +15,7 @@
 // screen-reader status mirror) rather than canvas text, so assistive tech and automated tests can read
 // them.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GameViewProps } from '../registry';
 import { asReversiSim, type Cell, type ReversiSim } from './protocol';
 import {
@@ -26,6 +26,23 @@ import {
   type BoardChrome,
   type BoardLayout,
 } from './board-render';
+import { detectFlips, turnPopupMessage } from './turn-notice';
+
+/** How long a captured disc takes to flip to its new color (matches the --duration-slow token). */
+const FLIP_MS = 320;
+/** How long the turn-start popup stays up before it fades out. */
+const POPUP_MS = 1800;
+
+/** An in-flight flip: the disc's NEW color and when the flip started (a rAF-clock timestamp). */
+interface FlipAnim {
+  to: Exclude<Cell, 'empty'>;
+  start: number;
+}
+
+/** The disc color a flip animates AWAY from - the opposite of its new color. */
+function fromColor(to: Exclude<Cell, 'empty'>): Exclude<Cell, 'empty'> {
+  return to === 'violet' ? 'amber' : 'violet';
+}
 
 /** The color name shown to players for each side. */
 const SIDE_LABEL: Record<'violet' | 'amber', string> = { violet: 'Violet', amber: 'Amber' };
@@ -63,23 +80,59 @@ function rejectionMessage(reason: string): string {
   return map[reason] ?? 'That move did not land - tap a highlighted square.';
 }
 
-/** Draw one disc filling a cell box, with a subtle rim, in the given color. */
+/**
+ * Draw one disc filling a cell box, with a subtle rim, in the given color. `scaleX` squashes the disc
+ * horizontally (1 = full circle, 0 = edge-on) so the flip animation can spin it about its vertical axis
+ * like a coin turning over - a rotateY flip drawn on the canvas.
+ */
 function drawDisc(
   ctx: CanvasRenderingContext2D,
   box: { x: number; y: number; size: number },
   fill: string,
   rim: string,
+  scaleX = 1,
 ): void {
   const cx = box.x + box.size / 2;
   const cy = box.y + box.size / 2;
   const r = box.size * 0.38;
+  ctx.save();
+  // Scale about the disc center so it thins toward a vertical line and back, never drifting.
+  ctx.translate(cx, cy);
+  ctx.scale(Math.max(scaleX, 0.02), 1);
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fillStyle = fill;
   ctx.fill();
   ctx.lineWidth = Math.max(1, box.size * 0.05);
   ctx.strokeStyle = rim;
   ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * The disc paint for a cell, applying an in-flight flip. A flip runs the disc from its OLD color at full
+ * width, thinning to edge-on at the mid-point, then widening in its NEW color - so a capture reads as
+ * the disc turning over. Past the flip's duration (or with no flip) it draws the disc solid.
+ */
+function discPaint(
+  cell: Exclude<Cell, 'empty'>,
+  chrome: BoardChrome,
+  flip: FlipAnim | undefined,
+  now: number,
+): { fill: string; rim: string; scaleX: number } {
+  const solid = (c: Exclude<Cell, 'empty'>): { fill: string; rim: string; scaleX: number } => ({
+    fill: c === 'violet' ? chrome.violet : chrome.amber,
+    rim: c === 'violet' ? chrome.violetRim : chrome.amberRim,
+    scaleX: 1,
+  });
+  if (!flip) return solid(cell);
+  const t = (now - flip.start) / FLIP_MS;
+  if (t >= 1 || t < 0) return solid(cell);
+  // Width tracks |cos(pi*t)|: full at t=0, edge-on at t=0.5, full again at t=1. The color swaps at the
+  // half-way point, when the disc is edge-on, so the change is hidden inside the turn.
+  const scaleX = Math.abs(Math.cos(Math.PI * t));
+  const shown = t < 0.5 ? fromColor(flip.to) : flip.to;
+  return { ...solid(shown), scaleX };
 }
 
 /** Draw the whole board: wood-grain squares, grid lines, discs, and the active player's legal hints. */
@@ -89,6 +142,8 @@ function drawBoard(
   layout: BoardLayout,
   chrome: BoardChrome,
   showHints: boolean,
+  flips: Map<number, FlipAnim>,
+  now: number,
 ): void {
   const legal = new Set(showHints ? sim.legal.map((m) => `${m.row},${m.col}`) : []);
   // Tint the legal-move hint to the side to move, so a violet turn shows violet hints and an amber
@@ -104,10 +159,12 @@ function drawBoard(
       ctx.lineWidth = 1;
       ctx.strokeRect(box.x, box.y, box.size, box.size);
 
-      const cell: Cell = sim.cells[row * sim.size + col] ?? 'empty';
-      if (cell === 'violet') drawDisc(ctx, box, chrome.violet, chrome.violetRim);
-      else if (cell === 'amber') drawDisc(ctx, box, chrome.amber, chrome.amberRim);
-      else if (legal.has(`${row},${col}`)) {
+      const index = row * sim.size + col;
+      const cell: Cell = sim.cells[index] ?? 'empty';
+      if (cell !== 'empty') {
+        const paint = discPaint(cell, chrome, flips.get(index), now);
+        drawDisc(ctx, box, paint.fill, paint.rim, paint.scaleX);
+      } else if (legal.has(`${row},${col}`)) {
         // A hollow hint dot on a legal empty square for the side to move.
         const cx = box.x + box.size / 2;
         const cy = box.y + box.size / 2;
@@ -134,7 +191,66 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
   const isActiveRef = useRef(isActive);
   isActiveRef.current = isActive;
 
-  // The single draw loop: redraw the board whenever the sim (or size) changes. A rAF loop keeps the
+  // In-flight disc flips, keyed by board index, read every frame by the draw loop and populated when a
+  // new board arrives (below). Empty under prefers-reduced-motion, so discs simply swap color at once.
+  const flipsRef = useRef<Map<number, FlipAnim>>(new Map());
+  // The previous board, to diff against the next snapshot for flipped discs + turn transitions.
+  const prevCellsRef = useRef<Cell[] | null>(null);
+
+  // Honor prefers-reduced-motion: no disc-flip animation, no popup fade - the state still updates, it
+  // just lands instantly. Resolved on mount (SSR has no matchMedia) and kept live if the setting flips.
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const reducedMotionRef = useRef(reducedMotion);
+  reducedMotionRef.current = reducedMotion;
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(query.matches);
+    const onChange = (event: MediaQueryListEvent): void => setReducedMotion(event.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+
+  // The brief turn-start popup and its dismiss timer.
+  const [popup, setPopup] = useState<string | null>(null);
+  const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // React to a NEW board snapshot: register the disc flips (so the draw loop animates them) and pop the
+  // turn-start notice. Keyed on the board contents so it fires exactly once per move / pass, driven by
+  // the authoritative sim rather than a guess. Score/label re-renders that leave the board unchanged do
+  // not retrigger it. `over` boards still animate their final flips but never pop a "your turn" notice.
+  const boardKey = sim ? sim.cells.join(',') : '';
+  useEffect(() => {
+    if (!sim) return;
+    const prev = prevCellsRef.current;
+    if (prev && !reducedMotionRef.current) {
+      const now = performance.now();
+      for (const index of detectFlips(prev, sim.cells)) {
+        const to = sim.cells[index];
+        if (to === 'violet' || to === 'amber') flipsRef.current.set(index, { to, start: now });
+      }
+    }
+    prevCellsRef.current = sim.cells;
+
+    if (!sim.over) {
+      const otherName = nicknameOf(
+        state,
+        state.players.find((player) => player.player !== sim.activePlayer)?.player ?? '',
+      );
+      const message = turnPopupMessage({ isActive, passed: sim.passed, otherName });
+      if (message) {
+        if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+        setPopup(message);
+        popupTimerRef.current = setTimeout(() => setPopup(null), POPUP_MS);
+      }
+    }
+    // boardKey is the stable signal for "the board changed"; the rest is read fresh at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardKey]);
+
+  useEffect(() => () => clearTimeout(popupTimerRef.current ?? undefined), []);
+
+  // The single draw loop: redraw the board every frame so in-flight flips animate. A rAF loop keeps the
   // canvas crisp across DPR / resize without a manual resize observer.
   useEffect(() => {
     let raf = 0;
@@ -152,11 +268,16 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
         }
         const ctx = canvas.getContext('2d');
         if (ctx) {
+          const now = performance.now();
+          // Drop flips that have finished so the map stays bounded.
+          for (const [index, flip] of flipsRef.current) {
+            if (now - flip.start >= FLIP_MS) flipsRef.current.delete(index);
+          }
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
           ctx.clearRect(0, 0, rect.width, rect.height);
           const layout = layoutBoard(rect.width, rect.height, live.size);
           const chrome = resolveBoardChrome(canvas);
-          drawBoard(ctx, live, layout, chrome, isActiveRef.current);
+          drawBoard(ctx, live, layout, chrome, isActiveRef.current, flipsRef.current, now);
         }
       }
       raf = requestAnimationFrame(render);
@@ -201,12 +322,21 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
 
   // The forced-pass notice is broadcast to both devices, so phrase it relative to `me`: if I now hold
   // the turn again the OTHER side was skipped (I got an extra turn); otherwise it was MY turn that got
-  // skipped. A single fixed vantage would read backwards on the skipped player's phone.
+  // skipped. A single fixed vantage would read backwards on the skipped player's phone. The wording is
+  // kept in step with the on-board popup ("<other> has no moves" / "you have no moves") so the visible
+  // pill and the announced status line describe the same event the same way.
+  const otherName =
+    sim && sim.activePlayer
+      ? nicknameOf(
+          state,
+          state.players.find((player) => player.player !== sim.activePlayer)?.player ?? '',
+        )
+      : null;
   let passLine = '';
   if (sim?.passed && !sim.over) {
     passLine = isActive
-      ? 'The other side had no legal move - your turn again.'
-      : 'You had no legal move - your turn was skipped.';
+      ? `${otherName} has no moves - your turn again.`
+      : 'You have no moves - your turn was skipped.';
   }
   const statusLine = passLine ? `${turnLine} ${passLine}` : turnLine;
 
@@ -219,6 +349,28 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
       >
         {rejectionMessage(state.rejected)}
       </p>
+    );
+  }
+
+  // The turn-start popup ON the board (a brief, self-dismissing notice). It mirrors the aria-live status
+  // line for sighted players, so it is aria-hidden to avoid a double announcement. The fade is a canopy
+  // motion token; under reduced motion it appears + clears instantly (no animation class). Anchored to
+  // the BOTTOM edge, not dead-center: the opening / early-game legal-move hint dots cluster mid-board,
+  // so a centered pill would cover exactly where the active player needs to tap.
+  let popupNotice = null;
+  if (popup) {
+    const fade = reducedMotion ? '' : 'animate-reversi-turn-notice';
+    popupNotice = (
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center px-4"
+      >
+        <span
+          className={`rounded-full bg-surface-raised/95 px-4 py-2 text-body-sm font-semibold text-text shadow-lg ring-1 ring-border ${fade}`}
+        >
+          {popup}
+        </span>
+      </div>
     );
   }
 
@@ -269,6 +421,7 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
           className="block h-full w-full"
         />
         {rejectedBanner}
+        {popupNotice}
       </div>
     </section>
   );

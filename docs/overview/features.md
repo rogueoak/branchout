@@ -167,6 +167,12 @@ What the product does for users, grouped by area. Each capability maps to one or
       a single-surface board renderer with the layout + tap hit-test in a game-agnostic `board-render.ts`.
       Themed Violet vs Amber discs (canopy grape/sunbeam tokens, no hardcoded hex) on a wood-grain
       board (`@branchout/game-reversi`). Insider-gated by SURFACE like Teeter (feedback `0029`).
+      Captured discs **animate their flip** (a canvas rotateY, ~320ms; instant under
+      `prefers-reduced-motion`), and the **start of a turn pops a brief on-board notice** ("Your turn" /
+      "&lt;other&gt; has no moves, your turn" / "You have no moves, turn skipped"), both driven by the
+      authoritative sim (board deltas + turn/pass state), not guessed (WS8a). It is a **strict 2-player**
+      game: `PLAYER_LIMITS.reversi = { min: 2, max: 2 }` (protocol) plus the plugin capabilities are the
+      single source of truth, so the lobby/gate/picker all show exactly 2.
 - [~] Chess (insider-only) - classic two-player chess, the correctness-heaviest board game, reusing the
       `@branchout/game-board` harness (spec `0056`). Full standard rules: all six pieces, castling
       (both sides with the through/into/out-of-check conditions), en passant (the one-move window),

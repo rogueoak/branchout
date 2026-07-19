@@ -1,5 +1,5 @@
-import { createEvent, fireEvent, render, screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { act, createEvent, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
 import { ReversiViewer } from './Viewer';
 
@@ -184,5 +184,173 @@ describe('ReversiViewer single interactive surface', () => {
       />,
     );
     expect(screen.getByRole('alert').textContent).toMatch(/does not flip/i);
+  });
+
+  describe('turn-start popup', () => {
+    it('pops "Your turn" on the board for the player who now holds the turn', () => {
+      render(<ReversiViewer state={state({ sim: reversiSim() })} me="p1" onMove={noop} />);
+      expect(screen.getByText('Your turn')).toBeDefined();
+    });
+
+    it('names the skipped opponent when the active player got an extra turn', () => {
+      render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ passed: true, activePlayer: 'p1' }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      // p2's nickname is "Am" in the test roster.
+      expect(screen.getByText('Am has no moves, your turn')).toBeDefined();
+    });
+
+    it('tells the skipped player their turn was skipped', () => {
+      render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ passed: true, activePlayer: 'p1' }) })}
+          me="p2"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByText('You have no moves, turn skipped')).toBeDefined();
+    });
+
+    it('does not pop a turn notice for the plain waiting player', () => {
+      render(<ReversiViewer state={state({ sim: reversiSim() })} me="p2" onMove={noop} />);
+      expect(screen.queryByText('Your turn')).toBeNull();
+    });
+
+    it('does not pop a turn notice once the game is over', () => {
+      render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ over: true, toMove: null, outcome: 'violet' }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.queryByText('Your turn')).toBeNull();
+    });
+  });
+
+  // These prove the popup is keyed on the BOARD (a new move), not merely mounted once - a regression
+  // that swapped the effect dep to [sim] / [state] or [activePlayer] would break at least one of them.
+  describe('turn-start popup across successive sims (rerender)', () => {
+    const emptyBoard = (): string[] => Array.from({ length: 64 }, () => 'empty');
+
+    it('re-fires "Your turn" on the next move when the board changes', () => {
+      const before = emptyBoard();
+      const after = emptyBoard();
+      after[20] = 'violet';
+      const { rerender } = render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ cells: before, activePlayer: 'p1' }) })}
+          me="p2"
+          onMove={noop}
+        />,
+      );
+      // p2 is the plain waiting player on p1's turn: no popup yet.
+      expect(screen.queryByText('Your turn')).toBeNull();
+      // p1 moved -> a NEW board -> it is now p2's turn.
+      rerender(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ cells: after, activePlayer: 'p2' }) })}
+          me="p2"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByText('Your turn')).toBeDefined();
+    });
+
+    it('stays quiet on a score/label-only re-render where the board is unchanged', () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      try {
+        const board = emptyBoard();
+        const { rerender } = render(
+          <ReversiViewer
+            state={state({ sim: reversiSim({ cells: board, activePlayer: 'p1' }) })}
+            me="p1"
+            onMove={noop}
+          />,
+        );
+        expect(screen.getByText('Your turn')).toBeDefined();
+        // Let the self-dismiss timer clear the pill.
+        act(() => {
+          vi.advanceTimersByTime(5000);
+        });
+        expect(screen.queryByText('Your turn')).toBeNull();
+        // A score-only update: the SAME board, only the disc counts differ. The popup must NOT return.
+        rerender(
+          <ReversiViewer
+            state={state({
+              sim: reversiSim({ cells: board, activePlayer: 'p1', violet: 4, amber: 1 }),
+            })}
+            me="p1"
+            onMove={noop}
+          />,
+        );
+        expect(screen.queryByText('Your turn')).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('fires exactly one "has no moves" popup on a forced-pass double turn (active player unchanged)', () => {
+      const before = emptyBoard();
+      const after = emptyBoard();
+      after[20] = 'violet';
+      const { rerender } = render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ cells: before, activePlayer: 'p1', passed: false }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByText('Your turn')).toBeDefined();
+      // p1 moved; p2 had no legal move, so the turn PASSES back to p1: activePlayer is unchanged but the
+      // board changed and passed is true. The popup must still re-fire, now with the skip copy.
+      rerender(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ cells: after, activePlayer: 'p1', passed: true }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      // Exactly one pill carries the skip copy (the aria-live status line uses a different phrasing).
+      expect(screen.getAllByText('Am has no moves, your turn')).toHaveLength(1);
+      // The single pill state was replaced, not duplicated.
+      expect(screen.queryByText('Your turn')).toBeNull();
+    });
+  });
+
+  describe('turn-start popup honors prefers-reduced-motion', () => {
+    const originalMatchMedia = window.matchMedia;
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    function stubReducedMotion(matches: boolean): void {
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+    }
+
+    it('applies the fade animation class when motion is allowed', () => {
+      stubReducedMotion(false);
+      render(<ReversiViewer state={state({ sim: reversiSim() })} me="p1" onMove={noop} />);
+      expect(screen.getByText('Your turn').className).toContain('animate-reversi-turn-notice');
+    });
+
+    it('drops the fade animation class under reduced motion', () => {
+      stubReducedMotion(true);
+      render(<ReversiViewer state={state({ sim: reversiSim() })} me="p1" onMove={noop} />);
+      expect(screen.getByText('Your turn').className).not.toContain('animate-reversi-turn-notice');
+    });
   });
 });
