@@ -11,6 +11,7 @@
 // data and the actions. The config is opaque (the chosen game's blob), so the lobby is game-agnostic:
 // it resolves the game's UI module by id (spec 0023) and renders that module's config panel.
 
+import type { ReactNode } from 'react';
 import { Badge, Button } from '@rogueoak/canopy';
 import {
   Accordion,
@@ -45,6 +46,13 @@ interface LobbyProps {
   /** The opaque config for the selected game. */
   config: unknown;
   onConfigChange: (next: unknown) => void;
+  /**
+   * Optional advanced game-setup content (spec: WS2 frame). When provided, Game setup shows an
+   * "Advanced settings" accordion (collapsed) below the standard config panel; when absent - the
+   * case for every game today - the accordion is omitted so there is no empty disclosure. A later
+   * workstream (trivia config) passes the game's advanced knobs here.
+   */
+  advanced?: ReactNode;
   onStart: () => void;
   starting: boolean;
   startError: string | null;
@@ -93,6 +101,7 @@ export function Lobby({
   onChangeGame,
   config,
   onConfigChange,
+  advanced,
   onStart,
   starting,
   startError,
@@ -209,18 +218,17 @@ export function Lobby({
           {/* Standard config: the always-visible, common options for this game. */}
           <ConfigPanel value={config} onChange={onConfigChange} disabled={starting} />
 
-          {/* Advanced config: a collapsed frame a later workstream fills with the rarely-touched
-              knobs. Kept below the standard config so the common path stays front-and-centre. */}
-          <Accordion type="single" collapsible>
-            <AccordionItem value="advanced">
-              <AccordionTrigger>Advanced settings</AccordionTrigger>
-              <AccordionContent>
-                <p className="text-body-sm text-text-muted">
-                  No advanced settings for this game yet.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          {/* Advanced config: a collapsed disclosure for the rarely-touched knobs, kept below the
+              standard config so the common path stays front-and-centre. Rendered only when the game
+              supplies advanced content - no game does yet, so it stays out of the way. */}
+          {advanced ? (
+            <Accordion type="single" collapsible>
+              <AccordionItem value="advanced">
+                <AccordionTrigger>Advanced settings</AccordionTrigger>
+                <AccordionContent>{advanced}</AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          ) : null}
 
           <div className="flex flex-col gap-2">
             <Button type="button" variant="primary" onClick={onStart} disabled={!canStart}>
@@ -284,14 +292,17 @@ export function Lobby({
                   );
                 })}
               </div>
-              {full && mode === 'viewer' ? (
-                <p className="mt-2 text-body-sm text-text-muted" role="status">
-                  This game is full at {limits.max} players, so you can join as a viewer to watch.
-                </p>
-              ) : null}
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+        {/* The forced-viewer explanation lives OUTSIDE the accordion: Your mode is collapsed by
+            default and Radix unmounts collapsed content, so keeping it here means a player bumped to
+            viewer always sees the reason and the live region announces it. */}
+        {full && mode === 'viewer' ? (
+          <p className="text-body-sm text-text-muted" role="status">
+            This game is full at {limits.max} players, so you can join as a viewer to watch.
+          </p>
+        ) : null}
       </section>
 
       {me ? <span className="sr-only">Joined as {me}</span> : null}
