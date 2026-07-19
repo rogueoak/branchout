@@ -41,12 +41,6 @@ export const MIN_ROUNDS = 1;
 export const MAX_ROUNDS = 100;
 export const DEFAULT_ROUNDS = 10;
 
-/** The dispute/answer-screen dwell the spec once fixed at 10s; now driven by `advanceAfterSeconds`. */
-export const DISPUTE_WINDOW_MS = 10_000;
-
-/** The default answer window: a round auto-closes to reveal when it expires (spec 0017). */
-export const ANSWER_WINDOW_MS = 60_000;
-
 /** Auto-advance defaults (spec 0068): on, with a 5s dwell for each hop. */
 export const DEFAULT_AUTO_ADVANCE = true;
 export const DEFAULT_ADVANCE_AFTER_SECONDS = 5;
@@ -330,7 +324,7 @@ export function createTriviaGame(
         rounds: cfg.rounds,
         disputeWindowMs: dwellMs,
         moveWindowMs: cfg.timeLimitMs,
-        autoAdvanceMs: dwellMs,
+        leaderboardWindowMs: dwellMs,
       };
     },
 

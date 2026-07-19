@@ -51,11 +51,12 @@ export interface ConfigureResult {
    */
   moveWindowMs?: number;
   /**
-   * Leaderboard auto-advance dwell in ms (spec 0068): after this delay the engine advances the
+   * Leaderboard-window duration in ms (spec 0068): after this delay the engine advances the
    * `leaderboard` phase to the next round (or ends the game). 0 (default) means the host advances the
-   * leaderboard manually, so a game that never sets it keeps today's host-driven pacing.
+   * leaderboard manually, so a game that never sets it keeps today's host-driven pacing. Named for the
+   * phase it drives, like its `moveWindowMs`/`disputeWindowMs` siblings.
    */
-  autoAdvanceMs?: number;
+  leaderboardWindowMs?: number;
 }
 
 export interface StartRoundResult {

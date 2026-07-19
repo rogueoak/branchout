@@ -55,6 +55,9 @@ export function TriviaAdvancedConfigPanel({ value, onChange, disabled }: GameCon
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="trivia-advance-after">Advance after (seconds)</Label>
+        <p className="text-body-sm text-text-muted">
+          How long each answer and leaderboard screen shows before moving on.
+        </p>
         <Input
           id="trivia-advance-after"
           type="number"

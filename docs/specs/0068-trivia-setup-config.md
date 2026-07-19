@@ -60,14 +60,19 @@ Trivia's `configure()` resolves the config and returns to the engine, via `Confi
 - `moveWindowMs = timeLimitSeconds * 1000` - the answer window (always on).
 - `disputeWindowMs = autoAdvance ? advanceAfterSeconds * 1000 : 0` - the answer-screen (reveal /
   dispute) dwell; `0` makes it host-advanced.
-- `autoAdvanceMs = autoAdvance ? advanceAfterSeconds * 1000 : 0` - a NEW `ConfigureResult` field the
+- `leaderboardWindowMs = autoAdvance ? advanceAfterSeconds * 1000 : 0` - a NEW `ConfigureResult`
+  field (named for the phase it drives, like its `moveWindowMs`/`disputeWindowMs` siblings) the
   engine uses to auto-advance the `leaderboard` phase to the next round; `0` keeps today's
   host-advanced behavior.
 
-The engine gains a `leaderboard`-phase window (`windowMsFor` + `armWindow('leaderboard')`, re-armed
-across pause/resume like the dispute window) driven by `SessionState.autoAdvanceMs`. When
-`autoAdvanceMs` is 0 (the default for every other game and for auto-advance-off), the leaderboard
-waits on the host exactly as before.
+The engine gains a `leaderboard`-phase window (`windowMsFor` + `armWindow('leaderboard')`) driven by
+`SessionState.leaderboardWindowMs`. `armWindow` cancels any prior window timer on a superseding arm
+and guards on `phase`/`round`/`runId`/`paused` on fire (like `armMoveWindow`/`armAutoAdvance`), so a
+stale timer from an earlier round or a pre-restart run can never advance a later one; a pause freezes
+the window and stashes the time left (`windowDeadline`/`windowRemainingMs`) so a resume re-bases on
+the remaining dwell rather than a fresh full one, mirroring the move window. When
+`leaderboardWindowMs` is 0 (the default for every other game and for auto-advance-off), the
+leaderboard waits on the host exactly as before.
 
 ## Backward compatibility
 
@@ -75,16 +80,17 @@ waits on the host exactly as before.
 - Legacy `category` string still validates (`Random` -> all; a named category -> that one).
 - A pre-WS3 persisted scratch (single `category`) is read as the equivalent `categories` list, so an
   in-progress game survives an engine deploy.
-- `autoAdvanceMs` is additive and optional on `ConfigureResult`; games that never set it are
+- `leaderboardWindowMs` is additive and optional on `ConfigureResult`; games that never set it are
   unaffected.
 
 ## Testing
 
 - Trivia plugin: resolve/validate (categories subset + Random + legacy `category`, rounds bounds,
   difficulty defaults 3-6, new pacing defaults + bounds), pool draw across a subset, configure result
-  (move/dispute/auto-advance ms from the config).
-- Engine: a stub with `autoAdvanceMs` auto-advances `leaderboard` -> next round after the dwell and
-  re-arms across pause; `moveWindowMs` from config still force-closes the answer round.
+  (move/dispute/leaderboard-window ms from the config).
+- Engine: a stub with `leaderboardWindowMs` auto-advances `leaderboard` -> next round after the dwell,
+  ends the game on the final round, re-arms across pause and host reconnect, and a stale timer never
+  advances a later round; `moveWindowMs` from config still force-closes the answer round.
 - Web: ConfigPanel renders category multi-select + Random, rounds presets + custom, difficulty via
   the shared option selector; AdvancedConfigPanel renders the toggle + two numbers with min/max;
   validation mirrors the engine.

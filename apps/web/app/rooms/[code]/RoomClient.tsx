@@ -543,14 +543,6 @@ export function RoomClient({
             onChangeGame={onChangeGame}
             config={config}
             onConfigChange={(next) => setConfig(next)}
-            advanced={(() => {
-              // The selected game's advanced settings, if any (spec 0068), fed the same opaque config
-              // the standard panel edits. Omitted for a game without an AdvancedConfigPanel.
-              const AdvancedPanel = getGameUi(game)?.AdvancedConfigPanel;
-              return AdvancedPanel ? (
-                <AdvancedPanel value={config} onChange={setConfig} disabled={starting} />
-              ) : undefined;
-            })()}
             onStart={onStart}
             starting={starting}
             startError={startError}

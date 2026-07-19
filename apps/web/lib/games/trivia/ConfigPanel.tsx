@@ -88,6 +88,9 @@ export function TriviaConfigPanel({ value, onChange, disabled }: GameConfigPanel
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <Label>Categories</Label>
+        <p className="text-body-sm text-text-muted">
+          Pick Random for all eight, or choose one or more categories to play.
+        </p>
         <div className="flex flex-col gap-2">
           <button
             type="button"

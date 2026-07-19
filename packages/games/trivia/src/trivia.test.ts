@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundContext, SessionPlayer } from '@branchout/game-sdk';
 import { CATEGORIES, type TriviaQuestion } from './question-bank';
-import {
-  ANSWER_WINDOW_MS,
-  createTriviaGame,
-  DISPUTE_WINDOW_MS,
-  MAX_ROUNDS,
-  validateConfig,
-} from './trivia';
+import { createTriviaGame, MAX_ROUNDS, validateConfig } from './trivia';
 
 /** Deterministic PRNG so an entire game replays identically. */
 function mulberry32(seed: number): () => number {
@@ -158,10 +152,7 @@ describe('configure', () => {
     // Defaults: 60s answer window, 5s dwell for the answer-screen and leaderboard hops.
     expect(result.moveWindowMs).toBe(60_000);
     expect(result.disputeWindowMs).toBe(5_000);
-    expect(result.autoAdvanceMs).toBe(5_000);
-    // Pin the reference literals so a change to a default is caught.
-    expect(DISPUTE_WINDOW_MS).toBe(10_000);
-    expect(ANSWER_WINDOW_MS).toBe(60_000);
+    expect(result.leaderboardWindowMs).toBe(5_000);
   });
 
   it('honors custom pacing and turns the dwell off when auto-advance is off', () => {
@@ -172,11 +163,11 @@ describe('configure', () => {
     );
     expect(on.moveWindowMs).toBe(20_000);
     expect(on.disputeWindowMs).toBe(8_000);
-    expect(on.autoAdvanceMs).toBe(8_000);
+    expect(on.leaderboardWindowMs).toBe(8_000);
     // Auto-advance off: both dwell windows go host-manual (0); the answer window still stands.
     const off = game.configure({ categories: ['Food'], autoAdvance: false }, players);
     expect(off.disputeWindowMs).toBe(0);
-    expect(off.autoAdvanceMs).toBe(0);
+    expect(off.leaderboardWindowMs).toBe(0);
     expect(off.moveWindowMs).toBe(60_000);
   });
 

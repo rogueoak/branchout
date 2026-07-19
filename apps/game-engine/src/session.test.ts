@@ -22,7 +22,7 @@ function makeState(overrides: Partial<SessionState> = {}): SessionState {
     disputeWindowMs: 0,
     decisionWindowMs: 0,
     moveWindowMs: 0,
-    autoAdvanceMs: 0,
+    leaderboardWindowMs: 0,
     players: [{ player: 'p1', nickname: 'Ada', connected: true }],
     scores: { p1: 0 },
     roundScores: [],

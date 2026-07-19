@@ -118,6 +118,16 @@ export function Lobby({
   const activeCard = getGameCard(game) ?? getGameCard(DEFAULT_GAME_UI.id);
   const ConfigPanel = activeModule.ConfigPanel;
   const validation = activeModule.validateConfig(config);
+  // The advanced-settings content: the selected game's own AdvancedConfigPanel (spec 0068), resolved
+  // HERE from the same module the standard panel came from, so one game's setup resolves in one place.
+  // An explicit `advanced` prop still overrides it (used by tests). When neither exists, the accordion
+  // is omitted so no game shows an empty disclosure.
+  const AdvancedConfigPanel = activeModule.AdvancedConfigPanel;
+  const advancedContent =
+    advanced ??
+    (AdvancedConfigPanel ? (
+      <AdvancedConfigPanel value={config} onChange={onConfigChange} disabled={starting} />
+    ) : null);
 
   // Player-limit maths (spec 0050). Viewers do not count; only interactive + remote fill the seats.
   const limits = playerLimits(game);
@@ -221,12 +231,13 @@ export function Lobby({
 
           {/* Advanced config: a collapsed disclosure for the rarely-touched knobs, kept below the
               standard config so the common path stays front-and-centre. Rendered only when the game
-              supplies advanced content - no game does yet, so it stays out of the way. */}
-          {advanced ? (
+              supplies advanced content (via its AdvancedConfigPanel), so a game without any shows no
+              empty disclosure. */}
+          {advancedContent ? (
             <Accordion type="single" collapsible>
               <AccordionItem value="advanced">
                 <AccordionTrigger>Advanced settings</AccordionTrigger>
-                <AccordionContent>{advanced}</AccordionContent>
+                <AccordionContent>{advancedContent}</AccordionContent>
               </AccordionItem>
             </Accordion>
           ) : null}

@@ -29,6 +29,21 @@ describe('TriviaConfigPanel categories', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ categories: ['Science'] }));
   });
 
+  it('ACCUMULATES onto a non-empty subset rather than overwriting it (multi-select)', () => {
+    const onChange = renderPanel({ categories: ['Science'] });
+    // Science is already selected; tapping Food must append, not replace.
+    fireEvent.click(screen.getByRole('button', { name: 'Food' }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ categories: ['Science', 'Food'] }),
+    );
+  });
+
+  it('removes just the tapped category from a multi-selection', () => {
+    const onChange = renderPanel({ categories: ['Science', 'Food'] });
+    fireEvent.click(screen.getByRole('button', { name: 'Science' }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ categories: ['Food'] }));
+  });
+
   it('removes a selected category and clears back to Random via the Random button', () => {
     const onChange = renderPanel({ categories: ['Science', 'Food'] });
     fireEvent.click(screen.getByRole('button', { name: /^random/i }));
