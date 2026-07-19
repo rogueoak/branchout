@@ -46,6 +46,14 @@
       "types": "./dist/hero-liarliar.d.ts",
       "import": "./dist/hero-liarliar.js"
     },
+    "./hero-portrait-trivia": {
+      "types": "./dist/hero-portrait-trivia.d.ts",
+      "import": "./dist/hero-portrait-trivia.js"
+    },
+    "./hero-portrait-liarliar": {
+      "types": "./dist/hero-portrait-liarliar.d.ts",
+      "import": "./dist/hero-portrait-liarliar.js"
+    },
     "./hero-teeter-tower": {
       "types": "./dist/hero-teeter-tower.d.ts",
       "import": "./dist/hero-teeter-tower.js"

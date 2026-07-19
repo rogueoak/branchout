@@ -11,6 +11,8 @@ export default defineConfig({
     'src/loneleaf.ts',
     'src/hero-trivia.ts',
     'src/hero-liarliar.ts',
+    'src/hero-portrait-trivia.ts',
+    'src/hero-portrait-liarliar.ts',
     'src/hero-teeter-tower.ts',
     'src/hero-brambles.ts',
     'src/hero-nightleaf.ts',

@@ -17,6 +17,8 @@ import { checkersSvg } from '../checkers.js';
 import { sameBranchSvg } from '../samebranch.js';
 import { heroTriviaSvg } from '../hero-trivia.js';
 import { heroLiarLiarSvg } from '../hero-liarliar.js';
+import { heroPortraitTriviaSvg } from '../hero-portrait-trivia.js';
+import { heroPortraitLiarLiarSvg } from '../hero-portrait-liarliar.js';
 import { heroTeeterTowerSvg } from '../hero-teeter-tower.js';
 import { heroBramblesSvg } from '../hero-brambles.js';
 import { heroNightleafSvg } from '../hero-nightleaf.js';
@@ -93,6 +95,20 @@ describe('SVG exports', () => {
       // The hero is a wider "scene" (roughly 16:9), not the compact 512 mark.
       expect(svg).toContain('viewBox="0 0 800 450"');
       // The gold-root rule holds for the hero art too.
+      expect(svg).toContain('#d2a463');
+    },
+  );
+
+  it.each([
+    ['heroPortraitTriviaSvg', heroPortraitTriviaSvg],
+    ['heroPortraitLiarLiarSvg', heroPortraitLiarLiarSvg],
+  ])(
+    '%s is a 600x800 portrait hero illustration that keeps the gold root (spec 0067)',
+    (_name, svg) => {
+      expect(svg).toMatch(/^<svg /);
+      // The portrait hero is a 3:4 scene for the mobile home carousel, not the wide 16:9 hero.
+      expect(svg).toContain('viewBox="0 0 600 800"');
+      // The gold-root rule holds for the portrait art too.
       expect(svg).toContain('#d2a463');
     },
   );

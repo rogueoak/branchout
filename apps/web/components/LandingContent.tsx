@@ -9,6 +9,7 @@ import { PUBLIC_GAME_CATALOG, getGameCard, startGameHref } from '../lib/games/ca
 import type { Viewer } from '../lib/session';
 import { Footer } from './Footer';
 import { GameCard } from './game/GameCard';
+import { HomeHeroCarousel, type HomeHeroSlide } from './home/HomeHeroCarousel';
 import { TopNav } from './TopNav';
 
 interface LandingContentProps {
@@ -41,6 +42,15 @@ export function LandingContent({ viewer }: LandingContentProps) {
     ? { label: 'Play now', href: '/games' }
     : { label: 'Sign up free', href: '/signup' };
 
+  // One portrait slide per public game (spec 0067), sourced from the same shared catalog reader as
+  // the teaser grid so the carousel never drifts. A public game always ships a portrait hero, but we
+  // fall back to its wide hero defensively so a new public game can never render an empty slide.
+  const heroSlides: HomeHeroSlide[] = PUBLIC_GAME_CATALOG.flatMap((entry) => {
+    const game = getGameCard(entry.slug);
+    if (!game) return [];
+    return [{ slug: game.slug, name: game.name, art: game.heroPortrait ?? game.hero }];
+  });
+
   return (
     // flex min-h-screen flex-col so the shared Footer's `mt-auto` pins to the bottom the same way it
     // does on /rooms and /join - one consistent footer contract across surfaces (spec 0031 review).
@@ -55,6 +65,9 @@ export function LandingContent({ viewer }: LandingContentProps) {
         aria-labelledby="hero-heading"
         className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-4 py-16 text-center sm:px-6 sm:py-24"
       >
+        {/* The hero carousel rotates through a portrait card per public game (spec 0067); the tagline
+            below reads as its caption. */}
+        {heroSlides.length > 0 && <HomeHeroCarousel slides={heroSlides} />}
         <h1 id="hero-heading" className="text-display text-text">
           where game night grows
         </h1>
