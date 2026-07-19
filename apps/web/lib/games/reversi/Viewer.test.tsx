@@ -185,4 +185,50 @@ describe('ReversiViewer single interactive surface', () => {
     );
     expect(screen.getByRole('alert').textContent).toMatch(/does not flip/i);
   });
+
+  describe('turn-start popup', () => {
+    it('pops "Your turn" on the board for the player who now holds the turn', () => {
+      render(<ReversiViewer state={state({ sim: reversiSim() })} me="p1" onMove={noop} />);
+      expect(screen.getByText('Your turn')).toBeDefined();
+    });
+
+    it('names the skipped opponent when the active player got an extra turn', () => {
+      render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ passed: true, activePlayer: 'p1' }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      // p2's nickname is "Am" in the test roster.
+      expect(screen.getByText('Am has no moves, your turn')).toBeDefined();
+    });
+
+    it('tells the skipped player their turn was skipped', () => {
+      render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ passed: true, activePlayer: 'p1' }) })}
+          me="p2"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByText('You have no moves, turn skipped')).toBeDefined();
+    });
+
+    it('does not pop a turn notice for the plain waiting player', () => {
+      render(<ReversiViewer state={state({ sim: reversiSim() })} me="p2" onMove={noop} />);
+      expect(screen.queryByText('Your turn')).toBeNull();
+    });
+
+    it('does not pop a turn notice once the game is over', () => {
+      render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ over: true, toMove: null, outcome: 'violet' }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.queryByText('Your turn')).toBeNull();
+    });
+  });
 });

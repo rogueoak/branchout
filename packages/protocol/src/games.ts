@@ -16,6 +16,8 @@ export const PLAYER_LIMITS: Readonly<Record<string, PlayerLimits>> = {
   trivia: { min: 1, max: 8 },
   'liar-liar': { min: 2, max: 8 },
   'teeter-tower': { min: 1, max: 4 },
+  // Reversi is a strict 2-player board game (spec 0054): exactly two seats, no viewers-as-players.
+  reversi: { min: 2, max: 2 },
 };
 
 /** Permissive fallback (1-8) for an unknown or unregistered game id. */
