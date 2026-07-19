@@ -7,6 +7,7 @@ import { StaticTierProvider, type Tier } from '../credits/tiers';
 import { InMemoryPlaysRepository } from '../profiles/plays.memory';
 import type { Session } from '../sessions/session';
 import type { Account } from '../accounts/repository';
+import { EngineError } from './engine-client';
 import { FakeEngineClient } from './engine-client.fake';
 import { newPlayerId } from './membership';
 import { InMemoryMembershipStore } from './membership.memory';
@@ -682,6 +683,26 @@ describe('host controls', () => {
     expect(view.status).toBe('lobby');
     expect((await repo.findById(room.id))?.status).toBe('lobby');
   });
+
+  it('exit still returns a wedged room to the lobby when the engine session is already gone (404, WS7)', async () => {
+    const { service, room, host, engine, repo } = await runningRoom();
+    // The finale lingers (WS7), so the host can exit after the engine session expired / was disposed.
+    // The engine then 404s the exit; the room must still recover to the lobby, never stay wedged in
+    // `running` with no way back.
+    engine.controlError = new EngineError('engine control failed (404): no session', 404);
+    const view = await service.control(room.code, host, 'exit');
+    expect(view.status).toBe('lobby');
+    expect((await repo.findById(room.id))?.status).toBe('lobby');
+  });
+
+  it('surfaces a real (non-404) engine error on exit and leaves the room running', async () => {
+    const { service, room, host, engine, repo } = await runningRoom();
+    // A genuine failure (engine unreachable) is not "already exited": it must surface, and the room
+    // stays running rather than falsely reporting it returned to the lobby.
+    engine.controlError = new EngineError('engine control unreachable', 502, false);
+    await expect(service.control(room.code, host, 'exit')).rejects.toBeInstanceOf(EngineError);
+    expect((await repo.findById(room.id))?.status).toBe('running');
+  });
 });
 
 describe('round and game-complete intake', () => {
@@ -730,7 +751,7 @@ describe('round and game-complete intake', () => {
     );
   });
 
-  it('converts final standings to stars, records once, and returns the room to the lobby', async () => {
+  it('converts final standings to stars, records once, and KEEPS the room running (finale stays, WS7)', async () => {
     const { service, room, repo } = await runningRoom('party');
     const report: GameCompleteReport = {
       v: PROTOCOL_VERSION,
@@ -740,9 +761,49 @@ describe('round and game-complete intake', () => {
       standings: [await standing('a', 1), await standing('b', 2), await standing('c', 3)],
     };
     expect(await service.recordGameComplete(report)).toBe('recorded');
-    expect((await repo.findById(room.id))?.status).toBe('lobby');
+    // The finale is terminal: the room must NOT auto-return to the lobby, or the poll-driven web
+    // clients would drop out of the game-over screen without the host acting (WS7).
+    expect((await repo.findById(room.id))?.status).toBe('running');
     // Idempotent on the game id.
     expect(await service.recordGameComplete(report)).toBe('duplicate');
+  });
+
+  it('only the host exit returns a completed room to the lobby (the manual "Return to lobby", WS7)', async () => {
+    const { service, room, repo, host } = await runningRoom('party');
+    const report: GameCompleteReport = {
+      v: PROTOCOL_VERSION,
+      room: room.id,
+      game: 'trivia',
+      gameId: 'g1',
+      standings: [await standing('a', 1), await standing('b', 2), await standing('c', 3)],
+    };
+    await service.recordGameComplete(report);
+    expect((await repo.findById(room.id))?.status).toBe('running');
+    // The host clicks "Back to lobby" on the finale -> the exit control flips the room to lobby.
+    const view = await service.control(room.code, host, 'exit');
+    expect(view.status).toBe('lobby');
+    expect((await repo.findById(room.id))?.status).toBe('lobby');
+  });
+
+  it('lets the host start a SECOND game after exiting a completed finale (exit is the replay path, WS7)', async () => {
+    const { service, room, repo, host, engine } = await runningRoom('party');
+    const report: GameCompleteReport = {
+      v: PROTOCOL_VERSION,
+      room: room.id,
+      game: 'trivia',
+      gameId: 'g1',
+      standings: [await standing('a', 1), await standing('b', 2), await standing('c', 3)],
+    };
+    await service.recordGameComplete(report);
+    // The finale is terminal, so the host's exit is the only replay path. Exiting must tear the room
+    // down cleanly enough that a fresh start works.
+    await service.control(room.code, host, 'exit');
+    expect((await repo.findById(room.id))?.status).toBe('lobby');
+    expect(engine.starts).toHaveLength(1);
+
+    await service.start(room.code, host, 5);
+    expect(engine.starts).toHaveLength(2);
+    expect((await repo.findById(room.id))?.status).toBe('running');
   });
 });
 

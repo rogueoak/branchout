@@ -40,8 +40,8 @@ test('a host and a second player play a full one-round Trivia game', async ({ br
     // The round reveals its answer to the shared viewer.
     await expect(host.getByTestId('reveal-answer')).toBeVisible({ timeout: 30_000 });
 
-    // Drive the (last) round to completion from the host controls; auto-advance may also do it, so
-    // click Next when it is offered and poll for the final results either way.
+    // Drive the (last) round to completion from the host controls: the finale is host-advanced (it
+    // never auto-advances), so click Next when it is offered and poll for the final results.
     await expect(async () => {
       const next = host.getByRole('button', { name: /^next$/i });
       if (await next.isVisible().catch(() => false)) {
@@ -53,6 +53,25 @@ test('a host and a second player play a full one-round Trivia game', async ({ br
     // Both players land on the final standings.
     await expect(host.getByRole('list', { name: /final standings/i })).toBeVisible();
     await expect(player.getByTestId('final-results')).toBeVisible();
+
+    // WS7: the finale is terminal and must STAY until the host returns to the lobby - nothing may
+    // auto-advance off it. The room-status poll runs every 3s; wait past two cycles and confirm both
+    // devices are still on the finale (the game did not silently drop back to the lobby).
+    await host.waitForTimeout(7_000);
+    await expect(host.getByTestId('final-results')).toBeVisible();
+    await expect(player.getByTestId('final-results')).toBeVisible();
+
+    // Rejoin-onto-finale: a device that reloads a still-`running` completed room must land back on
+    // the finale (the engine replays the terminal `complete` state on reconnect), not a broken state.
+    await host.reload();
+    await expect(host.getByTestId('final-results')).toBeVisible({ timeout: 30_000 });
+
+    // The host's explicit "Back to lobby" is the one way off the finale: it returns every device to
+    // the lobby (the start control reappears, the finale is gone).
+    await host.getByRole('button', { name: /back to lobby/i }).click();
+    await expect(host.getByRole('button', { name: /start game/i })).toBeVisible();
+    // The player leaves the finale once its 3s room-status poll observes the lobby.
+    await expect(player.getByTestId('final-results')).toBeHidden({ timeout: 10_000 });
   } finally {
     await hostCtx.close();
     await playerCtx.close();

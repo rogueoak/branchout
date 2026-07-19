@@ -11,7 +11,7 @@ import type { Session } from '../sessions/session';
 import { canHost } from '../sessions/session';
 import { validateDisplayName } from '../validation/display-name';
 import { generateCode, shareLink } from './code';
-import type { ControlAction, EngineClient } from './engine-client';
+import { EngineError, type ControlAction, type EngineClient } from './engine-client';
 import type { PlaysRecorder, RoomGamePlay } from './plays-recorder';
 import {
   hasDisplay,
@@ -382,11 +382,24 @@ export class RoomService {
     if (!room.selectedGame) {
       throw new RoomError('no_game', 'No game is running.');
     }
-    await this.engine.control(room.id, room.selectedGame, action);
     if (action === 'exit') {
+      // The finale now LINGERS (WS7), so the host may click "Back to lobby" long after the engine
+      // session is gone - it lives in Redis only under COMPLETE_SESSION_TTL (~1h) and is also
+      // disposed on redeploy or a duplicate exit. A 404 from the engine means the session is already
+      // gone, which for an exit is success, not failure. Swallow only that case and STILL return the
+      // room to the lobby, so the host can never be wedged in a `running` room with no way back. Any
+      // other engine error (unreachable transport, an unexpected status) still surfaces.
+      try {
+        await this.engine.control(room.id, room.selectedGame, action);
+      } catch (error) {
+        if (!(error instanceof EngineError && error.status === 404)) {
+          throw error;
+        }
+      }
       const lobby = await this.repo.setStatus(room.id, 'lobby');
       return toView(lobby ?? room);
     }
+    await this.engine.control(room.id, room.selectedGame, action);
     return toView(room);
   }
 
@@ -539,9 +552,15 @@ export class RoomService {
 
   /**
    * Intake for the engine's game-complete report. Converts the final standings to stars (3/2/1 by
-   * rank, ties share) and records them, idempotent by `gameId`. On the first record it returns the
-   * room to the lobby so the host can start another game (allowance is re-checked at the next
-   * start). Returns `recorded` the first time, `duplicate` on a retry.
+   * rank, ties share) and records them, idempotent by `gameId`. Returns `recorded` the first time,
+   * `duplicate` on a retry.
+   *
+   * The room deliberately STAYS `running` on complete so the finale/game-over screen persists on
+   * every device until the host explicitly returns to the lobby (WS7). The finale is the terminal
+   * state; nothing must auto-advance off it. The host's `exit` control (see {@link control}) is the
+   * one path that flips the room back to `lobby` - tearing the engine session down and letting the
+   * host start another game (allowance is re-checked at the next start). Auto-flipping here would
+   * make the poll-driven web clients drop out of the finale a beat after it appeared.
    */
   async recordGameComplete(report: GameCompleteReport): Promise<'recorded' | 'duplicate'> {
     const room = await this.repo.findById(report.room);
@@ -582,7 +601,8 @@ export class RoomService {
       if (plays.length > 0) {
         await this.plays.recordPlays(plays);
       }
-      await this.repo.setStatus(room.id, 'lobby');
+      // The room stays `running` so the finale persists until the host exits (WS7); do NOT flip to
+      // lobby here.
     }
     return recorded ? 'recorded' : 'duplicate';
   }
