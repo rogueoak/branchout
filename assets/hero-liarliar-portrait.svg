@@ -22,7 +22,7 @@
   <circle cx="300" cy="300" r="340" fill="url(#hllp-glow)"/>
   <!-- The masquerade-mask motif, recomposed upright: the shared 800x450 scene's motif, recentered
        on the portrait column (translate/scale wrap keeps the exact brand geometry). -->
-  <g transform="translate(300 296) scale(1.15) translate(-510 -244)">
+  <g transform="translate(300 272) scale(1.15) translate(-510 -244)">
     <!-- The stick the mask is held on: a branch stem down to the gold root (two-pass spark stroke). -->
     <g stroke-linecap="round" fill="none" stroke="url(#hllp-spark)">
       <path d="M510 232 L510 404" stroke-width="18" opacity="0.16"/>
