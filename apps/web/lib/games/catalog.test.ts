@@ -3,12 +3,14 @@ import { SITE_URL } from '../site';
 import { GAME_UI_LIST } from './registry';
 import {
   GAME_CATALOG,
+  PUBLIC_GAME_CATALOG,
   absoluteUrl,
   featurePath,
   gameFeatureMetadata,
   gameJsonLd,
   getCatalogEntry,
   getFeatureEntry,
+  getGameCard,
   insiderFeatureMetadata,
   playHref,
   startGameHref,
@@ -30,6 +32,18 @@ describe('game catalog', () => {
       expect(game.badge.label).toBeTruthy();
       expect(game.seoTitle).toContain('Branch Out');
       expect(game.seoDescription.length).toBeGreaterThan(40);
+    }
+  });
+
+  it('gives every public game a portrait hero for the home carousel (spec 0067)', () => {
+    // The carousel force-fits each slide into an aspect-[3/4] box, so a public game that forgot its
+    // portrait art would render a distorted wide hero. Assert every public slug resolves a real
+    // 600x800 portrait so a missing one fails loudly here instead of silently on the home page.
+    for (const entry of PUBLIC_GAME_CATALOG) {
+      const card = getGameCard(entry.slug);
+      expect(card?.heroPortrait, `public game ${entry.slug} is missing a portrait hero`).toContain(
+        'viewBox="0 0 600 800"',
+      );
     }
   });
 

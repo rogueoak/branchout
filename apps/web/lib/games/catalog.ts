@@ -10,6 +10,7 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '../site';
 import { GAME_HERO } from './heroes';
+import { GAME_HERO_PORTRAIT } from './heroes-portrait';
 import { getLibraryMeta, type LibraryChip } from './library';
 import { GAME_UI_LIST, getGameUi, isPublicGame, type GameUiModule } from './registry';
 
@@ -604,6 +605,12 @@ export interface GameCardData {
   icon: string;
   /** The wide 16:9 hero as an inline SVG string, or the mark when the game ships no hero. */
   hero: string;
+  /**
+   * The portrait (3:4) hero as an inline SVG string, for tall surfaces like the home hero carousel
+   * (spec 0067). `undefined` when the game ships no portrait art (only the public games have one),
+   * so callers fall back to the wide `hero`.
+   */
+  heroPortrait?: string;
   /** The card badge (label + canopy variant), e.g. `Featured`, `New`, or `Insider`. */
   badge: GameBadge;
   /** The game's library tags, resolved to display labels, for the card's chip row. */
@@ -629,6 +636,7 @@ export function getGameCard(slug: string | undefined | null): GameCardData | und
     summary: module.summary,
     icon: module.icon,
     hero: GAME_HERO[module.id] ?? module.icon,
+    heroPortrait: GAME_HERO_PORTRAIT[module.id],
     badge: entry.badge,
     tags: meta?.tags ?? [],
     insider: entry.visibility === 'insider',

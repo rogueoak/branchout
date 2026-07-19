@@ -313,6 +313,25 @@ Capture durable lessons as they emerge.
   the responsive path with a *real mouse moving to the controls*, not only the phone - the bug was
   invisible to touch playtesting and to jsdom (which also drops synthetic-pointer clientX/Y). (Feedback
   `0023`.)
+- **An auto-rotating carousel must be designed for touch first: `stopOnInteraction: true`, and treat
+  reduced-motion as a hard no-autoplay.** The first home hero carousel (spec `0067`) used
+  `embla-carousel-autoplay` with `stopOnInteraction: false` and only `stopOnMouseEnter` /
+  `stopOnFocusIn` pause triggers. Those are pointer-only - on a phone nothing pauses it, and
+  `stopOnInteraction: false` actively *resumes* after a swipe, so the strip kept yanking the next card
+  under a reaching finger (a WCAG 2.2.2 failure and a mobile-first violation). Fix: `stopOnInteraction:
+  true` so the first swipe / dot tap / arrow hands control to the player for good; drop the autoplay
+  plugin entirely under `prefers-reduced-motion`; and add a persistent tap affordance (a "View game"
+  cue) because the hover scale never fires on touch. Reach for canopy's `Carousel` + `CarouselDots`
+  rather than hand-rolling, but own the autoplay config. (Feedback `0036`, spec `0067`.)
+- **Consuming an unpublished first-party package version: build it, `pnpm pack`, and point a
+  `pnpm-workspace.yaml` `overrides` at the tarball for local dev - then swap to the registry version
+  once published.** The carousel needed a `CarouselDots` part that only existed on an unmerged canopy
+  branch. Publishing canopy is tag-driven (a bare-SemVer tag triggers the OIDC release workflow), so
+  the flow is: land the canopy change on its `main` + tag it (`1.2.0` here - an additive feature, so a
+  minor, which also side-stepped the `1.1.1` already reserved by an in-flight fix), wait for the npm
+  publish, then bump the consumer to `^1.2.0`. Note pnpm 11 moved `overrides` out of `package.json`
+  into `pnpm-workspace.yaml`, and `minimumReleaseAgeExclude` there is what lets a just-published
+  first-party canopy install immediately past the release-age gate. (Spec `0067`.)
 
 ## Live game state and the seam
 

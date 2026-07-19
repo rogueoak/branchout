@@ -309,8 +309,17 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 ## Web
 
-- [x] Marketing landing page - hero (tagline, CTA), "how it works" three steps, games teaser, footer.
-      Dark theme by default; pricing/tier content is dropped for now. The games teaser renders the ONE
+- [x] Marketing landing page - hero (carousel + tagline + CTA), "how it works" three steps, games
+      teaser, footer. The hero opens with a **portrait hero carousel** (spec `0067`): it rotates
+      through one tall (3:4) on-brand card per public game (Trivia, Liar Liar - insider games stay
+      gated off the home page), with the `where game night grows` tagline and the CTA row reading as
+      its caption directly below. Built on canopy's `Carousel` (embla) + the new `CarouselDots` pager
+      + `embla-carousel-autoplay` (5s, paused on hover/focus/drag, dropped under
+      `prefers-reduced-motion`); tapping a card goes to that game's feature page (`/games/[slug]`).
+      The portrait art is new `@branchout/brand` `hero-portrait-*` exports (600x800, gold-root rule
+      kept); the slides come from the same shared catalog reader (`getGameCard`, now carrying an
+      optional `heroPortrait`) as the teaser grid, so a new public game adds a slide with no carousel
+      edits. Dark theme by default; pricing/tier content is dropped for now. The games teaser renders the ONE
       unified `GameCard` (spec `0065`) - the same configurable card used across the home teaser, the
       `/games` index, the insider landing, and the lobby/room picker, so the surfaces cannot drift.
       Each card carries a wide on-brand hero illustration (per-game 800x450 scene from `@branchout/brand`,
