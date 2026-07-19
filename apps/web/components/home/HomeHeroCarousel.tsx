@@ -27,21 +27,26 @@ const CAROUSEL_OPTS = { loop: true } as const;
 
 /**
  * HomeHeroCarousel - the landing page's hero: a rotating strip of one portrait card per public game
- * (spec 0067). Auto-advances every 5s via the autoplay plugin (paused on hover / focus / while
- * dragging), supports swipe and the `CarouselDots` pager, and each slide is a link to that game's
- * feature page. Honors `prefers-reduced-motion` by dropping the autoplay plugin, so the carousel
- * holds still and is driven only by swipe / dots for players who ask for less motion.
+ * (spec 0067). Auto-advances every 5s via the autoplay plugin, but the FIRST player interaction -
+ * swipe, dot tap, or arrow key (`stopOnInteraction: true`) - hands control over and stops the
+ * rotation for good, so the strip never yanks a card out from under a reaching finger on a phone
+ * (WCAG 2.2.2 / mobile-first). It also pauses on hover / focus for pointer users. Honors
+ * `prefers-reduced-motion` by dropping the autoplay plugin entirely, so it holds still from the
+ * start and is driven only by swipe / dots. Each slide links to that game's feature page.
  */
 export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
   const [reducedMotion, setReducedMotion] = useState(false);
-  const autoplay = useRef(
-    Autoplay({
+  // Lazy singleton: `useRef(Autoplay(...))` would re-invoke the factory (allocating a throwaway
+  // plugin) on every render even though React keeps only the first. Create it once, on first render.
+  const autoplayRef = useRef<ReturnType<typeof Autoplay> | null>(null);
+  if (!autoplayRef.current) {
+    autoplayRef.current = Autoplay({
       delay: 5000,
       stopOnMouseEnter: true,
       stopOnFocusIn: true,
-      stopOnInteraction: false,
-    }),
-  );
+      stopOnInteraction: true,
+    });
+  }
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -51,7 +56,7 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
     return () => query.removeEventListener('change', onChange);
   }, []);
 
-  const plugins = useMemo(() => (reducedMotion ? [] : [autoplay.current]), [reducedMotion]);
+  const plugins = useMemo(() => (reducedMotion ? [] : [autoplayRef.current!]), [reducedMotion]);
 
   return (
     <div className="mx-auto w-full max-w-xs">
@@ -62,7 +67,7 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
               <a
                 href={featurePath(slide.slug)}
                 aria-label={`${slide.name} - game details`}
-                className="block overflow-hidden rounded-2xl transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                className="group relative block overflow-hidden rounded-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               >
                 {/* The portrait hero art is decorative here - the link carries the accessible name -
                     so the injected SVG (which has its own role/label) is hidden from the a11y tree. */}
@@ -71,6 +76,28 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
                   className="aspect-[3/4] w-full overflow-hidden bg-[#0d0a15] [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
                   dangerouslySetInnerHTML={{ __html: slide.art }}
                 />
+                {/* A persistent "View game" cue so it reads as tappable on touch, where the hover
+                    scale never fires. Decorative (the link already carries the name); it lifts a
+                    touch on press and on hover for pointer users. */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-body-sm font-medium text-white/90 backdrop-blur-sm transition-colors group-hover:bg-white/20"
+                >
+                  View game
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3.5 w-3.5"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </span>
               </a>
             </CarouselItem>
           ))}
