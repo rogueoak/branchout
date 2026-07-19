@@ -730,7 +730,7 @@ describe('round and game-complete intake', () => {
     );
   });
 
-  it('converts final standings to stars, records once, and returns the room to the lobby', async () => {
+  it('converts final standings to stars, records once, and KEEPS the room running (finale stays, WS7)', async () => {
     const { service, room, repo } = await runningRoom('party');
     const report: GameCompleteReport = {
       v: PROTOCOL_VERSION,
@@ -740,9 +740,28 @@ describe('round and game-complete intake', () => {
       standings: [await standing('a', 1), await standing('b', 2), await standing('c', 3)],
     };
     expect(await service.recordGameComplete(report)).toBe('recorded');
-    expect((await repo.findById(room.id))?.status).toBe('lobby');
+    // The finale is terminal: the room must NOT auto-return to the lobby, or the poll-driven web
+    // clients would drop out of the game-over screen without the host acting (WS7).
+    expect((await repo.findById(room.id))?.status).toBe('running');
     // Idempotent on the game id.
     expect(await service.recordGameComplete(report)).toBe('duplicate');
+  });
+
+  it('only the host exit returns a completed room to the lobby (the manual "Return to lobby", WS7)', async () => {
+    const { service, room, repo, host } = await runningRoom('party');
+    const report: GameCompleteReport = {
+      v: PROTOCOL_VERSION,
+      room: room.id,
+      game: 'trivia',
+      gameId: 'g1',
+      standings: [await standing('a', 1), await standing('b', 2), await standing('c', 3)],
+    };
+    await service.recordGameComplete(report);
+    expect((await repo.findById(room.id))?.status).toBe('running');
+    // The host clicks "Back to lobby" on the finale -> the exit control flips the room to lobby.
+    const view = await service.control(room.code, host, 'exit');
+    expect(view.status).toBe('lobby');
+    expect((await repo.findById(room.id))?.status).toBe('lobby');
   });
 });
 
