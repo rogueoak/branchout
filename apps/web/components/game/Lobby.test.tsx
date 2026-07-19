@@ -163,6 +163,8 @@ describe('Lobby', () => {
       ],
       onModeChange,
     });
+    // Your mode is collapsed by default - expand it to reach the picker.
+    fireEvent.click(screen.getByRole('button', { name: /your mode/i }));
     // The picker offers Viewer / Interactive / Remote.
     expect(screen.getByRole('radio', { name: /viewer/i })).toBeDefined();
     const interactive = screen.getByRole('radio', { name: /interactive/i }) as HTMLButtonElement;
@@ -179,5 +181,76 @@ describe('Lobby', () => {
     renderLobby({ game: 'trivia', config: { ...defaultTriviaConfig(), rounds: 0 }, onStart });
     fireEvent.click(screen.getByRole('button', { name: /start game/i }));
     expect(onStart).not.toHaveBeenCalled();
+  });
+
+  it('collapses Your mode by default, showing the current selection on the trigger', () => {
+    renderLobby({ mode: 'interactive' });
+    // The trigger reads "Your mode" and carries the current mode so a collapsed state still informs.
+    const trigger = screen.getByRole('button', { name: /your mode/i });
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(trigger.textContent).toMatch(/interactive/i);
+    // Collapsed means the mode radios are not rendered until the section is expanded.
+    expect(screen.queryByRole('radio', { name: /viewer/i })).toBeNull();
+    fireEvent.click(trigger);
+    expect(screen.getByRole('radio', { name: /viewer/i })).toBeDefined();
+  });
+
+  it('renders Game setup above Your mode', () => {
+    renderLobby({});
+    const setup = screen.getByRole('heading', { name: /game setup/i });
+    const yourMode = screen.getByRole('button', { name: /your mode/i });
+    // A preceding node comes first in document order (bitmask 4 = DOCUMENT_POSITION_FOLLOWING).
+    expect(setup.compareDocumentPosition(yourMode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('omits the Advanced settings accordion when the game supplies no advanced content', () => {
+    // Every game today supplies no advanced content, so the disclosure must not render (no empty
+    // drawer). The prop is left unset here to model that default.
+    renderLobby({});
+    expect(screen.queryByRole('button', { name: /advanced settings/i })).toBeNull();
+  });
+
+  it('renders the Advanced settings accordion (collapsed) when advanced content is provided', () => {
+    // A later workstream passes the game's advanced knobs via the `advanced` slot; model that with a
+    // dummy node. The accordion appears, collapsed, below the standard config and above Your mode.
+    renderLobby({ advanced: <p>Shuffle seed 42</p> });
+    const advanced = screen.getByRole('button', { name: /advanced settings/i });
+    expect(advanced.getAttribute('aria-expanded')).toBe('false');
+    // Collapsed: Radix unmounts the content until it is opened.
+    expect(screen.queryByText('Shuffle seed 42')).toBeNull();
+    // Ordering: after Game setup's standard config heading, before Your mode.
+    const setup = screen.getByRole('heading', { name: /game setup/i });
+    const yourMode = screen.getByRole('button', { name: /your mode/i });
+    expect(setup.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      advanced.compareDocumentPosition(yourMode) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Opening it reveals the provided content.
+    fireEvent.click(advanced);
+    expect(screen.getByText('Shuffle seed 42')).toBeDefined();
+  });
+
+  it('shows the forced-viewer reason while Your mode stays collapsed (never buried in the drawer)', () => {
+    // Teeter Tower caps at 4. Fill it with 4 remotes and make the host a viewer who cannot take a
+    // 5th playing seat: the explanation must be visible even though Your mode is collapsed, since
+    // Radix unmounts collapsed content and the live region would otherwise never announce.
+    renderLobby({
+      game: 'teeter-tower',
+      mode: 'viewer',
+      members: [
+        hostMember('viewer'),
+        member('a', 'remote'),
+        member('b', 'remote'),
+        member('c', 'remote'),
+        member('d', 'remote'),
+      ],
+    });
+    // Your mode is still collapsed (radios not mounted)...
+    expect(screen.getByRole('button', { name: /your mode/i }).getAttribute('aria-expanded')).toBe(
+      'false',
+    );
+    expect(screen.queryByRole('radio', { name: /viewer/i })).toBeNull();
+    // ...yet the reason is visible.
+    expect(screen.getByText(/this game is full at 4 players/i)).toBeDefined();
   });
 });

@@ -2,13 +2,23 @@
 
 // The pre-game lobby (spec 0050): the invite affordance, the selected game, who is here, each
 // member's mode (viewer / interactive / remote), and - for the host - the game config + Start.
-// Layout order: Invite -> Your game -> Who is here -> Your mode -> Game Setup. Game SELECTION happens
-// in the create flow's pick step and the change-game flow (spec 0029), not here; the lobby shows what
-// is chosen and lets the host swap it. Presentational and controlled; the parent owns the data and
-// the actions. The config is opaque (the chosen game's blob), so the lobby is game-agnostic: it
-// resolves the game's UI module by id (spec 0023) and renders that module's config panel.
+// Layout order: Invite -> Your game -> Who is here -> Game Setup -> Your mode. Game Setup (host
+// config) leads because it is the host's main pre-game task; Your mode is a collapsed accordion
+// since a player rarely changes it. Game Setup itself splits standard config (always visible) from
+// an "Advanced settings" accordion (collapsed, a frame a later workstream fills). Game SELECTION
+// happens in the create flow's pick step and the change-game flow (spec 0029), not here; the lobby
+// shows what is chosen and lets the host swap it. Presentational and controlled; the parent owns the
+// data and the actions. The config is opaque (the chosen game's blob), so the lobby is game-agnostic:
+// it resolves the game's UI module by id (spec 0023) and renders that module's config panel.
 
+import type { ReactNode } from 'react';
 import { Badge, Button } from '@rogueoak/canopy';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@rogueoak/canopy/branches';
 import { playerLimits } from '@branchout/protocol';
 import { getGameCard } from '../../lib/games/catalog';
 import { DEFAULT_GAME_UI, getGameUi } from '../../lib/games/registry';
@@ -36,6 +46,13 @@ interface LobbyProps {
   /** The opaque config for the selected game. */
   config: unknown;
   onConfigChange: (next: unknown) => void;
+  /**
+   * Optional advanced game-setup content (spec: WS2 frame). When provided, Game setup shows an
+   * "Advanced settings" accordion (collapsed) below the standard config panel; when absent - the
+   * case for every game today - the accordion is omitted so there is no empty disclosure. A later
+   * workstream (trivia config) passes the game's advanced knobs here.
+   */
+  advanced?: ReactNode;
   onStart: () => void;
   starting: boolean;
   startError: string | null;
@@ -69,6 +86,11 @@ function memberLabel(member: RoomMember): string {
   return member.isHost ? `Host - ${base}` : base;
 }
 
+/** The picker label for a mode, for the collapsed "Your mode" summary. */
+function modeLabel(mode: Mode): string {
+  return MODE_OPTIONS.find((option) => option.mode === mode)?.label ?? 'Interactive';
+}
+
 export function Lobby({
   room,
   members,
@@ -79,6 +101,7 @@ export function Lobby({
   onChangeGame,
   config,
   onConfigChange,
+  advanced,
   onStart,
   starting,
   startError,
@@ -109,7 +132,7 @@ export function Lobby({
   // One plain reason a start is blocked, in priority order.
   const blockedReason = !displayPresent
     ? mode === 'remote'
-      ? "No screen yet - switch yourself to Viewer or Interactive above so there's something to watch."
+      ? "No screen yet - switch yourself to Viewer or Interactive below so there's something to watch."
       : 'Waiting for a screen - someone in viewer or interactive mode.'
     : !enoughPlayers
       ? `This game needs at least ${limits.min} player${limits.min === 1 ? '' : 's'} (${playing} so far).`
@@ -189,48 +212,23 @@ export function Lobby({
         </ul>
       </section>
 
-      <section aria-label="Your mode" className="flex flex-col gap-3">
-        <h2 className="text-h4 text-text">Your mode</h2>
-        <div className="flex flex-col gap-2" role="radiogroup" aria-label="Choose your mode">
-          {MODE_OPTIONS.map((option) => {
-            const selected = mode === option.mode;
-            // A playing seat (interactive/remote) is unavailable when the game is already full and I
-            // am not already one of the players - I can still watch as a viewer.
-            const disabled = full && isPlayingMode(option.mode) && !selected;
-            return (
-              <button
-                key={option.mode}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                disabled={disabled}
-                onClick={() => onModeChange(option.mode)}
-                className={`flex flex-col gap-1 rounded-lg border px-4 py-3 text-left transition-colors ${
-                  selected
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border bg-surface-raised hover:border-border-strong'
-                } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
-              >
-                <span className="flex items-center gap-2 text-body font-medium text-text">
-                  {option.label}
-                  {selected ? <Badge variant="primary">Selected</Badge> : null}
-                </span>
-                <span className="text-body-sm text-text-muted">{option.description}</span>
-              </button>
-            );
-          })}
-        </div>
-        {full && mode === 'viewer' ? (
-          <p className="text-body-sm text-text-muted" role="status">
-            This game is full at {limits.max} players, so you can join as a viewer to watch.
-          </p>
-        ) : null}
-      </section>
-
       {isHost ? (
         <section aria-label="Game setup" className="flex flex-col gap-4">
           <h2 className="text-h3 text-text">Game Setup</h2>
+          {/* Standard config: the always-visible, common options for this game. */}
           <ConfigPanel value={config} onChange={onConfigChange} disabled={starting} />
+
+          {/* Advanced config: a collapsed disclosure for the rarely-touched knobs, kept below the
+              standard config so the common path stays front-and-centre. Rendered only when the game
+              supplies advanced content - no game does yet, so it stays out of the way. */}
+          {advanced ? (
+            <Accordion type="single" collapsible>
+              <AccordionItem value="advanced">
+                <AccordionTrigger>Advanced settings</AccordionTrigger>
+                <AccordionContent>{advanced}</AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          ) : null}
 
           <div className="flex flex-col gap-2">
             <Button type="button" variant="primary" onClick={onStart} disabled={!canStart}>
@@ -248,6 +246,64 @@ export function Lobby({
           Waiting for the host to start the game.
         </p>
       )}
+
+      {/* Your mode: collapsed by default - a player rarely changes it, so the trigger carries the
+          current selection to stay informative while closed. */}
+      <section aria-label="Your mode" className="flex flex-col gap-3">
+        <Accordion type="single" collapsible>
+          <AccordionItem value="your-mode">
+            <AccordionTrigger>
+              <span className="flex items-center gap-2 text-h4 text-text">
+                Your mode
+                <Badge variant="neutral">{modeLabel(mode)}</Badge>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div
+                className="flex flex-col gap-2 pt-1"
+                role="radiogroup"
+                aria-label="Choose your mode"
+              >
+                {MODE_OPTIONS.map((option) => {
+                  const selected = mode === option.mode;
+                  // A playing seat (interactive/remote) is unavailable when the game is already full
+                  // and I am not already one of the players - I can still watch as a viewer.
+                  const disabled = full && isPlayingMode(option.mode) && !selected;
+                  return (
+                    <button
+                      key={option.mode}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={disabled}
+                      onClick={() => onModeChange(option.mode)}
+                      className={`flex flex-col gap-1 rounded-lg border px-4 py-3 text-left transition-colors ${
+                        selected
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-surface-raised hover:border-border-strong'
+                      } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+                    >
+                      <span className="flex items-center gap-2 text-body font-medium text-text">
+                        {option.label}
+                        {selected ? <Badge variant="primary">Selected</Badge> : null}
+                      </span>
+                      <span className="text-body-sm text-text-muted">{option.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        {/* The forced-viewer explanation lives OUTSIDE the accordion: Your mode is collapsed by
+            default and Radix unmounts collapsed content, so keeping it here means a player bumped to
+            viewer always sees the reason and the live region announces it. */}
+        {full && mode === 'viewer' ? (
+          <p className="text-body-sm text-text-muted" role="status">
+            This game is full at {limits.max} players, so you can join as a viewer to watch.
+          </p>
+        ) : null}
+      </section>
 
       {me ? <span className="sr-only">Joined as {me}</span> : null}
     </div>
