@@ -164,7 +164,7 @@ export default async function GameFeaturePage({ params }: PageProps) {
             <p className="text-body text-text-muted">{entry.description}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <a href={startHref} className={buttonVariants({ variant: 'primary', size: 'lg' })}>
               Start a game
             </a>

@@ -71,7 +71,7 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
               <a
                 href={featurePath(slide.slug)}
                 aria-label={`${slide.name} - game details`}
-                className="group relative block overflow-hidden rounded-lg transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg md:rounded-2xl"
+                className="group relative block overflow-hidden rounded-lg border border-border transition-[transform,border-color] hover:scale-[1.02] hover:border-primary active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg md:rounded-2xl"
               >
                 {/* The hero art is decorative here - the link carries the accessible name - so the
                     injected SVG (which has its own role/label) is hidden from the a11y tree. Phones

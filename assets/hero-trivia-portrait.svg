@@ -18,7 +18,7 @@
   <circle cx="300" cy="300" r="340" fill="url(#htvp-glow)"/>
   <!-- The question-mark branch motif, recomposed upright: the shared 800x450 scene's motif,
        recentered on the portrait column (translate/scale wrap keeps the exact brand geometry). -->
-  <g transform="translate(300 296) scale(1.25) translate(-518 -244)">
+  <g transform="translate(300 272) scale(1.25) translate(-518 -244)">
     <!-- Question-mark hook + stem, drawn as a branch of connected nodes (two-pass spark stroke). -->
     <g stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="url(#htvp-spark)">
       <g stroke-width="18" opacity="0.16">
