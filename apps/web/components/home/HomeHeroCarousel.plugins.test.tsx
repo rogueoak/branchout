@@ -22,7 +22,9 @@ vi.mock('embla-carousel-autoplay', () => ({ default: () => ({ name: 'autoplay' }
 
 import { HomeHeroCarousel } from './HomeHeroCarousel';
 
-const SLIDES = [{ slug: 'trivia', name: 'Trivia', art: '<svg></svg>' }];
+const SLIDES = [
+  { slug: 'trivia', name: 'Trivia', artPortrait: '<svg></svg>', artLandscape: '<svg></svg>' },
+];
 
 function stubReducedMotion(matches: boolean) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({

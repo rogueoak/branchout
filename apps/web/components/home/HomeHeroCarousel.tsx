@@ -8,12 +8,14 @@ import Autoplay from 'embla-carousel-autoplay';
 import { Carousel, CarouselContent, CarouselDots, CarouselItem } from '@rogueoak/canopy/branches';
 import { featurePath } from '../../lib/games/catalog';
 
-/** One carousel slide: a public game, its display name, and the portrait hero SVG string to show. */
+/** One carousel slide: a public game, its display name, and its hero art in both shapes. */
 export interface HomeHeroSlide {
   slug: string;
   name: string;
-  /** Inline portrait (3:4) hero SVG string. */
-  art: string;
+  /** Inline portrait (3:4) hero SVG string - shown on phones. */
+  artPortrait: string;
+  /** Inline wide (16:9) hero SVG string - shown from `md` up. */
+  artLandscape: string;
 }
 
 interface HomeHeroCarouselProps {
@@ -32,7 +34,9 @@ const CAROUSEL_OPTS = { loop: true } as const;
  * rotation for good, so the strip never yanks a card out from under a reaching finger on a phone
  * (WCAG 2.2.2 / mobile-first). It also pauses on hover / focus for pointer users. Honors
  * `prefers-reduced-motion` by dropping the autoplay plugin entirely, so it holds still from the
- * start and is driven only by swipe / dots. Each slide links to that game's feature page.
+ * start and is driven only by swipe / dots. Each slide links to that game's feature page. On phones
+ * the slide is a tall portrait (3:4) card; from `md` up it swaps to the wide (16:9) hero so it reads
+ * as a landscape banner on desktop.
  */
 export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -59,7 +63,7 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
   const plugins = useMemo(() => (reducedMotion ? [] : [autoplayRef.current!]), [reducedMotion]);
 
   return (
-    <div className="mx-auto w-full max-w-xs">
+    <div className="mx-auto w-full max-w-xs md:max-w-2xl">
       <Carousel opts={CAROUSEL_OPTS} plugins={plugins} aria-label="Featured games">
         <CarouselContent>
           {slides.map((slide) => (
@@ -67,21 +71,29 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
               <a
                 href={featurePath(slide.slug)}
                 aria-label={`${slide.name} - game details`}
-                className="group relative block overflow-hidden rounded-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                className="group relative block overflow-hidden rounded-lg transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg md:rounded-2xl"
               >
-                {/* The portrait hero art is decorative here - the link carries the accessible name -
-                    so the injected SVG (which has its own role/label) is hidden from the a11y tree. */}
+                {/* The hero art is decorative here - the link carries the accessible name - so the
+                    injected SVG (which has its own role/label) is hidden from the a11y tree. Phones
+                    get the tall 3:4 portrait; from md up the wide 16:9 hero reads as a banner. */}
                 <div
                   aria-hidden="true"
-                  className="aspect-[3/4] w-full overflow-hidden bg-[#0d0a15] [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
-                  dangerouslySetInnerHTML={{ __html: slide.art }}
+                  className="aspect-[3/4] w-full overflow-hidden bg-[#0d0a15] md:hidden [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
+                  dangerouslySetInnerHTML={{ __html: slide.artPortrait }}
+                />
+                <div
+                  aria-hidden="true"
+                  className="hidden aspect-[16/9] w-full overflow-hidden bg-[#0d0a15] md:block [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
+                  dangerouslySetInnerHTML={{ __html: slide.artLandscape }}
                 />
                 {/* A persistent "View game" cue so it reads as tappable on touch, where the hover
                     scale never fires. Decorative (the link already carries the name); it lifts a
                     touch on press and on hover for pointer users. */}
+                {/* Portrait centers the cue under the stacked wordmark; landscape moves it to the
+                    bottom-left under the left-aligned wordmark, clear of the centered mark motif. */}
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-body-sm font-medium text-white/90 backdrop-blur-sm transition-colors group-hover:bg-white/20"
+                  className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-body-sm font-medium text-white/90 backdrop-blur-sm transition-colors group-hover:bg-white/20 md:bottom-6 md:left-8 md:translate-x-0"
                 >
                   View game
                   <svg

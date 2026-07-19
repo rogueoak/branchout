@@ -21,6 +21,10 @@ test.describe('home hero carousel (spec 0067) at 360px', () => {
     await expect(carousel).toBeVisible();
     await expect(page.getByRole('heading', { name: /where game night grows/i })).toBeVisible();
 
+    // On a phone the slide shows the portrait (3:4) art, not the wide (16:9) hero (spec 0067).
+    await expect(carousel.locator('svg[viewBox="0 0 600 800"]').first()).toBeVisible();
+    await expect(carousel.locator('svg[viewBox="0 0 800 450"]').first()).toBeHidden();
+
     // One dot per public game (Trivia, Liar Liar) - the pager reflects the slide count.
     const dots = page.getByRole('button', { name: /^Go to slide/ });
     await expect(dots).toHaveCount(2);
@@ -49,5 +53,20 @@ test.describe('home hero carousel (spec 0067) at 360px', () => {
       scrollWidth,
       'landing page should not scroll horizontally on a phone',
     ).toBeLessThanOrEqual(clientWidth + 1);
+  });
+});
+
+// From md up the carousel swaps each portrait card for the wide (16:9) hero, so it reads as a
+// landscape banner on desktop (spec 0067).
+test.describe('home hero carousel on wide screens', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('shows the landscape (16:9) hero, not the portrait, from md up', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    const carousel = page.getByRole('region', { name: 'Featured games' });
+    await expect(carousel).toBeVisible();
+    await expect(carousel.locator('svg[viewBox="0 0 800 450"]').first()).toBeVisible();
+    await expect(carousel.locator('svg[viewBox="0 0 600 800"]').first()).toBeHidden();
   });
 });
