@@ -42,13 +42,21 @@ export function LandingContent({ viewer }: LandingContentProps) {
     ? { label: 'Play now', href: '/games' }
     : { label: 'Sign up free', href: '/signup' };
 
-  // One portrait slide per public game (spec 0067), sourced from the same shared catalog reader as
-  // the teaser grid so the carousel never drifts. A public game always ships a portrait hero, but we
-  // fall back to its wide hero defensively so a new public game can never render an empty slide.
+  // One slide per public game (spec 0067), sourced from the same shared catalog reader as the teaser
+  // grid so the carousel never drifts. Each slide carries both hero shapes: the portrait (3:4) for
+  // phones and the wide (16:9) hero for md+. A public game always ships a portrait, but we fall back
+  // to its wide hero defensively so a new public game can never render an empty portrait slide.
   const heroSlides: HomeHeroSlide[] = PUBLIC_GAME_CATALOG.flatMap((entry) => {
     const game = getGameCard(entry.slug);
     if (!game) return [];
-    return [{ slug: game.slug, name: game.name, art: game.heroPortrait ?? game.hero }];
+    return [
+      {
+        slug: game.slug,
+        name: game.name,
+        artPortrait: game.heroPortrait ?? game.hero,
+        artLandscape: game.hero,
+      },
+    ];
   });
 
   return (

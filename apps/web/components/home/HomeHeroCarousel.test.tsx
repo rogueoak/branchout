@@ -7,8 +7,8 @@ import { HomeHeroCarousel, type HomeHeroSlide } from './HomeHeroCarousel';
 // embla does no real layout in jsdom, so we assert observable wiring - the labelled region and each
 // slide's link/href - not snap math or the dot pager (which needs a real snap list).
 const SLIDES: HomeHeroSlide[] = [
-  { slug: 'trivia', name: 'Trivia', art: '<svg aria-label="Branch out Trivia"></svg>' },
-  { slug: 'liar-liar', name: 'Liar Liar', art: '<svg aria-label="Branch out Liar Liar"></svg>' },
+  { slug: 'trivia', name: 'Trivia', artPortrait: '<svg></svg>', artLandscape: '<svg></svg>' },
+  { slug: 'liar-liar', name: 'Liar Liar', artPortrait: '<svg></svg>', artLandscape: '<svg></svg>' },
 ];
 
 describe('HomeHeroCarousel', () => {
