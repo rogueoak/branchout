@@ -322,12 +322,21 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
 
   // The forced-pass notice is broadcast to both devices, so phrase it relative to `me`: if I now hold
   // the turn again the OTHER side was skipped (I got an extra turn); otherwise it was MY turn that got
-  // skipped. A single fixed vantage would read backwards on the skipped player's phone.
+  // skipped. A single fixed vantage would read backwards on the skipped player's phone. The wording is
+  // kept in step with the on-board popup ("<other> has no moves" / "you have no moves") so the visible
+  // pill and the announced status line describe the same event the same way.
+  const otherName =
+    sim && sim.activePlayer
+      ? nicknameOf(
+          state,
+          state.players.find((player) => player.player !== sim.activePlayer)?.player ?? '',
+        )
+      : null;
   let passLine = '';
   if (sim?.passed && !sim.over) {
     passLine = isActive
-      ? 'The other side had no legal move - your turn again.'
-      : 'You had no legal move - your turn was skipped.';
+      ? `${otherName} has no moves - your turn again.`
+      : 'You have no moves - your turn was skipped.';
   }
   const statusLine = passLine ? `${turnLine} ${passLine}` : turnLine;
 
@@ -345,14 +354,16 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
 
   // The turn-start popup ON the board (a brief, self-dismissing notice). It mirrors the aria-live status
   // line for sighted players, so it is aria-hidden to avoid a double announcement. The fade is a canopy
-  // motion token; under reduced motion it appears + clears instantly (no animation class).
+  // motion token; under reduced motion it appears + clears instantly (no animation class). Anchored to
+  // the BOTTOM edge, not dead-center: the opening / early-game legal-move hint dots cluster mid-board,
+  // so a centered pill would cover exactly where the active player needs to tap.
   let popupNotice = null;
   if (popup) {
     const fade = reducedMotion ? '' : 'animate-reversi-turn-notice';
     popupNotice = (
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-center justify-center px-4"
+        className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center px-4"
       >
         <span
           className={`rounded-full bg-surface-raised/95 px-4 py-2 text-body-sm font-semibold text-text shadow-lg ring-1 ring-border ${fade}`}
