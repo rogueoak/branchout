@@ -87,6 +87,12 @@ export interface GameUiModule {
    */
   roundsOf: (config: unknown) => number;
   ConfigPanel: ComponentType<GameConfigPanelProps>;
+  /**
+   * Optional advanced host settings (spec 0068), rendered into the lobby's collapsed "Advanced
+   * settings" slot. Same controlled `value`/`onChange` contract as `ConfigPanel` - both edit the one
+   * opaque config blob. Games without advanced settings omit it and the lobby shows no accordion.
+   */
+  AdvancedConfigPanel?: ComponentType<GameConfigPanelProps>;
   Viewer: ComponentType<GameViewProps>;
   Remote: ComponentType<GameRemoteProps>;
 }

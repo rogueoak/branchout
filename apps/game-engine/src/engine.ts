@@ -194,6 +194,7 @@ export class GameEngine {
         disputeWindowMs: cfg.disputeWindowMs ?? 0,
         decisionWindowMs: 0,
         moveWindowMs: cfg.moveWindowMs ?? 0,
+        autoAdvanceMs: cfg.autoAdvanceMs ?? 0,
         players,
         scores: Object.fromEntries(players.map((p) => [p.player, 0])),
         roundScores: [],
@@ -254,7 +255,12 @@ export class GameEngine {
         const runtime = await this.runtimeFor(state);
         if (state.phase === 'guessing') {
           await this.resumeDecisionWindow(state, runtime);
-        } else if (state.phase === 'disputing' || state.phase === 'voting') {
+        } else if (
+          state.phase === 'disputing' ||
+          state.phase === 'voting' ||
+          state.phase === 'leaderboard'
+        ) {
+          // `leaderboard` re-arms its auto-advance dwell on host reconnect too (spec 0068).
           this.armWindow(state, state.phase);
         } else {
           // Continue the answer countdown from where the host's drop froze it (spec 0017).
@@ -439,7 +445,13 @@ export class GameEngine {
           // strand the round waiting for a manual advance.
           if (!state.paused && state.phase === 'guessing') {
             await this.resumeDecisionWindow(state, runtime);
-          } else if (!state.paused && (state.phase === 'disputing' || state.phase === 'voting')) {
+          } else if (
+            !state.paused &&
+            (state.phase === 'disputing' ||
+              state.phase === 'voting' ||
+              state.phase === 'leaderboard')
+          ) {
+            // `leaderboard` re-arms its auto-advance dwell too (spec 0068); a no-op when the dwell is 0.
             this.armWindow(state, state.phase);
           }
           return;
@@ -642,6 +654,10 @@ export class GameEngine {
     state.standings = standings;
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
+    // Auto-advance the leaderboard to the next round after the configured dwell (spec 0068). A no-op
+    // when `autoAdvanceMs` is 0 (the default for every game and for auto-advance-off), so the
+    // leaderboard then waits on the host exactly as before.
+    this.armWindow(state, 'leaderboard');
 
     const roundId = `${state.room}:${state.game}:${state.runId}:${state.round}`;
     const known =
@@ -728,6 +744,7 @@ export class GameEngine {
     state.disputeWindowMs = cfg.disputeWindowMs ?? 0;
     state.decisionWindowMs = 0;
     state.moveWindowMs = cfg.moveWindowMs ?? 0;
+    state.autoAdvanceMs = cfg.autoAdvanceMs ?? 0;
     state.paused = false;
     state.hostPaused = false;
     state.scratch = cfg.scratch;
@@ -944,9 +961,15 @@ export class GameEngine {
     if (await runtime.allDecided(this.context(state))) this.armAutoAdvance(state, 'guessing');
   }
 
-  /** The timed-window duration for a phase: the guess window for `guessing`, else the dispute window. */
+  /**
+   * The timed-window duration for a phase: the guess window for `guessing`, the leaderboard
+   * auto-advance dwell for `leaderboard` (spec 0068), else the dispute window. A 0 means the phase is
+   * host-advanced (no timer).
+   */
   private windowMsFor(state: SessionState, phase: SessionState['phase']): number {
-    return phase === 'guessing' ? state.decisionWindowMs : state.disputeWindowMs;
+    if (phase === 'guessing') return state.decisionWindowMs;
+    if (phase === 'leaderboard') return state.autoAdvanceMs;
+    return state.disputeWindowMs;
   }
 
   /** Arm the dispute/guess-window timer; a no-op when the window is manual (0) or paused. */

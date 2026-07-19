@@ -78,79 +78,136 @@ function questionAt(scratch: Record<string, unknown>, round: number): StoredQues
 }
 
 describe('validateConfig', () => {
-  it('defaults rounds to 10 and the difficulty range to 4-6', () => {
-    expect(validateConfig({ category: 'Science' })).toEqual({
-      category: 'Science',
+  it('defaults to Random, 10 rounds, difficulty 3-6, auto-advance on at 5s, 60s answer window', () => {
+    expect(validateConfig({})).toEqual({
+      categories: [],
       rounds: 10,
-      difficultyMin: 4,
+      difficultyMin: 3,
       difficultyMax: 6,
+      autoAdvance: true,
+      advanceAfterMs: 5_000,
+      timeLimitMs: 60_000,
     });
   });
 
-  it('accepts Random and every named category', () => {
-    for (const category of [...CATEGORIES, 'Random']) {
-      expect(validateConfig({ category }).category).toBe(category);
+  it('resolves a single-category subset', () => {
+    expect(validateConfig({ categories: ['Science'] }).categories).toEqual(['Science']);
+  });
+
+  it('resolves a multi-category subset, de-duplicating and dropping the Random sentinel', () => {
+    expect(validateConfig({ categories: ['Science', 'Food', 'Science'] }).categories).toEqual([
+      'Science',
+      'Food',
+    ]);
+    // A stray `Random` in the list means "all", so it drops out and leaves the empty (Random) subset.
+    expect(validateConfig({ categories: ['Random'] }).categories).toEqual([]);
+    expect(validateConfig({ categories: [] }).categories).toEqual([]);
+  });
+
+  it('accepts the legacy single `category` field (Random -> all, named -> that one)', () => {
+    expect(validateConfig({ category: 'Random' }).categories).toEqual([]);
+    for (const category of CATEGORIES) {
+      expect(validateConfig({ category }).categories).toEqual([category]);
     }
   });
 
-  it('rejects an unknown category', () => {
+  it('rejects an unknown category, in either the subset or the legacy field', () => {
+    expect(() => validateConfig({ categories: ['Sportsball'] })).toThrow();
+    expect(() => validateConfig({ categories: ['Science', 'Nope'] })).toThrow();
     expect(() => validateConfig({ category: 'Sportsball' })).toThrow();
-    expect(() => validateConfig({})).toThrow();
-    expect(() => validateConfig({ category: 5 })).toThrow();
   });
 
   it('rejects rounds outside 1-100', () => {
-    expect(() => validateConfig({ category: 'Food', rounds: 0 })).toThrow();
-    expect(() => validateConfig({ category: 'Food', rounds: 101 })).toThrow();
-    expect(() => validateConfig({ category: 'Food', rounds: 3.5 })).toThrow();
-    expect(validateConfig({ category: 'Food', rounds: 1 }).rounds).toBe(1);
-    expect(validateConfig({ category: 'Food', rounds: MAX_ROUNDS }).rounds).toBe(MAX_ROUNDS);
+    expect(() => validateConfig({ rounds: 0 })).toThrow();
+    expect(() => validateConfig({ rounds: 101 })).toThrow();
+    expect(() => validateConfig({ rounds: 3.5 })).toThrow();
+    expect(validateConfig({ rounds: 1 }).rounds).toBe(1);
+    expect(validateConfig({ rounds: MAX_ROUNDS }).rounds).toBe(MAX_ROUNDS);
   });
 
   it('rejects a difficulty range outside 1-10 or with min > max', () => {
-    expect(() =>
-      validateConfig({ category: 'Food', difficultyMin: 0, difficultyMax: 6 }),
-    ).toThrow();
-    expect(() =>
-      validateConfig({ category: 'Food', difficultyMin: 4, difficultyMax: 11 }),
-    ).toThrow();
-    expect(() =>
-      validateConfig({ category: 'Food', difficultyMin: 7, difficultyMax: 4 }),
-    ).toThrow();
-    expect(() =>
-      validateConfig({ category: 'Food', difficultyMin: 4.5, difficultyMax: 6 }),
-    ).toThrow();
+    expect(() => validateConfig({ difficultyMin: 0, difficultyMax: 6 })).toThrow();
+    expect(() => validateConfig({ difficultyMin: 4, difficultyMax: 11 })).toThrow();
+    expect(() => validateConfig({ difficultyMin: 7, difficultyMax: 4 })).toThrow();
+    expect(() => validateConfig({ difficultyMin: 4.5, difficultyMax: 6 })).toThrow();
     // A valid custom range passes through.
-    expect(validateConfig({ category: 'Food', difficultyMin: 3, difficultyMax: 8 })).toMatchObject({
+    expect(validateConfig({ difficultyMin: 3, difficultyMax: 8 })).toMatchObject({
       difficultyMin: 3,
       difficultyMax: 8,
     });
   });
+
+  it('validates the auto-advance pacing fields and resolves them to ms', () => {
+    expect(validateConfig({ autoAdvance: false }).autoAdvance).toBe(false);
+    expect(validateConfig({ advanceAfterSeconds: 12 }).advanceAfterMs).toBe(12_000);
+    expect(validateConfig({ timeLimitSeconds: 30 }).timeLimitMs).toBe(30_000);
+    // Bounds: advance-after 1-60, time-limit 10-180.
+    expect(() => validateConfig({ advanceAfterSeconds: 0 })).toThrow();
+    expect(() => validateConfig({ advanceAfterSeconds: 61 })).toThrow();
+    expect(() => validateConfig({ timeLimitSeconds: 9 })).toThrow();
+    expect(() => validateConfig({ timeLimitSeconds: 181 })).toThrow();
+    expect(() => validateConfig({ advanceAfterSeconds: 5.5 })).toThrow();
+  });
 });
 
 describe('configure', () => {
-  it('sets the dispute and 60s answer windows and passes the round count through', () => {
+  it('maps the answer window and auto-advance dwell from the config', () => {
     const game = createTriviaGame(makeBank(4));
     const result = game.configure({ category: 'Food', rounds: 7 }, players);
     expect(result.rounds).toBe(7);
-    // Pin the literals so a change to a window duration is caught (Acceptance: 10s dispute, 60s answer).
-    expect(DISPUTE_WINDOW_MS).toBe(10_000);
-    expect(result.disputeWindowMs).toBe(10_000);
-    expect(ANSWER_WINDOW_MS).toBe(60_000);
+    // Defaults: 60s answer window, 5s dwell for the answer-screen and leaderboard hops.
     expect(result.moveWindowMs).toBe(60_000);
+    expect(result.disputeWindowMs).toBe(5_000);
+    expect(result.autoAdvanceMs).toBe(5_000);
+    // Pin the reference literals so a change to a default is caught.
+    expect(DISPUTE_WINDOW_MS).toBe(10_000);
+    expect(ANSWER_WINDOW_MS).toBe(60_000);
+  });
+
+  it('honors custom pacing and turns the dwell off when auto-advance is off', () => {
+    const game = createTriviaGame(makeBank(4));
+    const on = game.configure(
+      { categories: ['Food'], advanceAfterSeconds: 8, timeLimitSeconds: 20 },
+      players,
+    );
+    expect(on.moveWindowMs).toBe(20_000);
+    expect(on.disputeWindowMs).toBe(8_000);
+    expect(on.autoAdvanceMs).toBe(8_000);
+    // Auto-advance off: both dwell windows go host-manual (0); the answer window still stands.
+    const off = game.configure({ categories: ['Food'], autoAdvance: false }, players);
+    expect(off.disputeWindowMs).toBe(0);
+    expect(off.autoAdvanceMs).toBe(0);
+    expect(off.moveWindowMs).toBe(60_000);
   });
 
   it('throws on invalid config so the engine rejects the start', () => {
     const game = createTriviaGame(makeBank(4));
-    expect(() => game.configure({ category: 'Nope' }, players)).toThrow();
+    expect(() => game.configure({ categories: ['Nope'] }, players)).toThrow();
   });
 
-  it('rejects more rounds than the chosen category has questions', () => {
+  it('rejects more rounds than the chosen categories have questions', () => {
     const game = createTriviaGame(makeBank(1)); // 3 per category, 24 across Random
-    expect(() => game.configure({ category: 'Nature', rounds: 4 }, players)).toThrow(/fewer than/);
-    expect(game.configure({ category: 'Nature', rounds: 3 }, players).rounds).toBe(3);
+    expect(() => game.configure({ categories: ['Nature'], rounds: 4 }, players)).toThrow(
+      /fewer than/,
+    );
+    expect(game.configure({ categories: ['Nature'], rounds: 3 }, players).rounds).toBe(3);
+    // Two categories pool their questions (3 + 3 = 6), so a 4-round game now fits.
+    expect(() =>
+      game.configure({ categories: ['Nature', 'Food'], rounds: 4 }, players),
+    ).not.toThrow();
     // Random spans every category, so the same round count fits.
-    expect(() => game.configure({ category: 'Random', rounds: 4 }, players)).not.toThrow();
+    expect(() => game.configure({ categories: [], rounds: 4 }, players)).not.toThrow();
+  });
+
+  it('draws only from the selected category subset', () => {
+    const game = createTriviaGame(makeBank(4), mulberry32(7));
+    let scratch = game.configure({ categories: ['Nature', 'Food'], rounds: 6 }, players).scratch;
+    const drawn = new Set<string>();
+    for (let round = 1; round <= 6; round += 1) {
+      scratch = game.startRound(ctx(scratch, { round })).scratch;
+      drawn.add(questionAt(scratch, round).category);
+    }
+    expect([...drawn].sort()).toEqual(['Food', 'Nature']);
   });
 });
 

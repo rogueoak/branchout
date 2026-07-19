@@ -148,6 +148,52 @@ describe('GameEngine lifecycle', () => {
     ]);
   });
 
+  it('auto-advances the leaderboard to the next round after the configured dwell (spec 0068)', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 2, secrets: ['blue', 'green'], autoAdvanceMs: 5_000 } }),
+    );
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'wrong');
+    await playRoundNoDispute(h.engine, 'r1');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    // No host tap: the leaderboard dwell fires and opens round 2 on its own.
+    h.scheduler.advance(5_000);
+    const state = await h.engine.getState('r1', STUB_GAME_ID);
+    expect(state?.round).toBe(2);
+    expect(state?.phase).toBe('collecting');
+  });
+
+  it('re-arms the leaderboard auto-advance across a pause and resume (spec 0068)', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 2, secrets: ['blue', 'green'], autoAdvanceMs: 5_000 } }),
+    );
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    await h.engine.control('r1', STUB_GAME_ID, 'pause');
+    h.scheduler.flush(); // the pre-pause dwell timer fires but no-ops while paused
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    await h.engine.control('r1', STUB_GAME_ID, 'pause'); // resume re-arms the dwell
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.round).toBe(2);
+  });
+
+  it('leaves the leaderboard host-advanced when no auto-advance dwell is configured', async () => {
+    await h.engine.start(handoff({ config: { rounds: 2, secrets: ['blue', 'green'] } }));
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+
+    // With autoAdvanceMs unset (0), firing every timer never leaves the leaderboard - the host must tap.
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.round).toBe(1);
+  });
+
   it('awards 50 to a disputer upheld by a majority of the other players', async () => {
     await h.engine.start(
       handoff({

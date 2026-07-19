@@ -459,44 +459,8 @@ describe('GameStage host controls emphasis', () => {
   });
 });
 
-describe('GameStage help sheet (spec 0051)', () => {
-  it('shows an always-present "How to play" control for every mode', () => {
-    for (const mode of ['viewer', 'interactive', 'remote'] as const) {
-      const { unmount } = renderStage({ mode });
-      expect(screen.getByRole('button', { name: /how to play/i })).toBeDefined();
-      unmount();
-    }
-  });
-
-  it('opens the rules sheet showing the objective, without ending or pausing the game', () => {
-    const onMove = vi.fn();
-    renderStage({ mode: 'interactive', onMove });
-    // No dialog until the help control is tapped.
-    expect(screen.queryByRole('dialog')).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: /how to play/i }));
-
-    const dialog = screen.getByRole('dialog');
-    // The sheet is a modal dialog (role="dialog" + Radix's focus trap) and shows this game's rules.
-    expect(dialog.getAttribute('role')).toBe('dialog');
-    expect(screen.getByText(/score the most points/i)).toBeDefined();
-    // WHILE the dialog is open the prompt is still rendered behind it (Radix marks it inert/aria-
-    // hidden for the modal, but it is not unmounted) - the round did not end or swap phases.
-    expect(screen.getByText('What is H2O?')).toBeDefined();
-
-    // Close the sheet and prove the live game is genuinely UNTOUCHED, not merely that a prompt is
-    // present: the answer input is still enabled and a fresh submit still reaches onMove. If opening
-    // the sheet had paused the round (input disabled) or ended it (input gone / different phase),
-    // this would fail - which the old "prompt still present" assertion could not catch.
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
-    const answer = screen.getByLabelText('Your answer') as HTMLInputElement;
-    expect(answer.disabled).toBe(false);
-    fireEvent.change(answer, { target: { value: 'water' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    expect(onMove).toHaveBeenCalledWith(collecting.round, 'water');
-  });
-});
+// The "How to play" control moved out of GameStage into the room header (spec 0068), inline with the
+// room code; the RoomClient tests cover it there, and HowToPlayButton has its own sheet-behavior test.
 
 describe('GameStage scroll-to-question', () => {
   // Assert against the module-level `window.scrollTo` stub (declared at top); clear between tests

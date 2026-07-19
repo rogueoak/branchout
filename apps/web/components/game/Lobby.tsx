@@ -30,6 +30,7 @@ import {
   type RoomView,
 } from '../../lib/room-api';
 import { GameCard } from './GameCard';
+import { OptionSelector, type SelectorOption } from './OptionSelector';
 import { ShareLink } from './ShareLink';
 
 interface LobbyProps {
@@ -259,38 +260,23 @@ export function Lobby({
               </span>
             </AccordionTrigger>
             <AccordionContent>
-              <div
-                className="flex flex-col gap-2 pt-1"
-                role="radiogroup"
-                aria-label="Choose your mode"
-              >
-                {MODE_OPTIONS.map((option) => {
-                  const selected = mode === option.mode;
-                  // A playing seat (interactive/remote) is unavailable when the game is already full
-                  // and I am not already one of the players - I can still watch as a viewer.
-                  const disabled = full && isPlayingMode(option.mode) && !selected;
-                  return (
-                    <button
-                      key={option.mode}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      disabled={disabled}
-                      onClick={() => onModeChange(option.mode)}
-                      className={`flex flex-col gap-1 rounded-lg border px-4 py-3 text-left transition-colors ${
-                        selected
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border bg-surface-raised hover:border-border-strong'
-                      } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
-                    >
-                      <span className="flex items-center gap-2 text-body font-medium text-text">
-                        {option.label}
-                        {selected ? <Badge variant="primary">Selected</Badge> : null}
-                      </span>
-                      <span className="text-body-sm text-text-muted">{option.description}</span>
-                    </button>
-                  );
-                })}
+              {/* The mode picker shares the same radio-style OptionSelector as the Trivia
+                  difficulty/rounds pickers (spec 0068), so every one reads the same. */}
+              <div className="pt-1">
+                <OptionSelector
+                  ariaLabel="Choose your mode"
+                  value={mode}
+                  selectedBadge="Selected"
+                  onChange={onModeChange}
+                  options={MODE_OPTIONS.map((option): SelectorOption<Mode> => ({
+                    value: option.mode,
+                    label: option.label,
+                    description: option.description,
+                    // A playing seat (interactive/remote) is unavailable when the game is already
+                    // full and I am not already one of the players - I can still watch as a viewer.
+                    disabled: full && isPlayingMode(option.mode) && mode !== option.mode,
+                  }))}
+                />
               </div>
             </AccordionContent>
           </AccordionItem>

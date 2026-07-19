@@ -8,8 +8,8 @@
 export const MIN_DIFFICULTY = 1;
 export const MAX_DIFFICULTY = 10;
 
-/** The default range a fresh game plays: a consistent middle band. */
-export const DEFAULT_DIFFICULTY_MIN = 4;
+/** The default range a fresh game plays: the "Medium" preset band (spec 0068). */
+export const DEFAULT_DIFFICULTY_MIN = 3;
 export const DEFAULT_DIFFICULTY_MAX = 6;
 
 /** True for an integer difficulty bound inside the supported 1-10 range. */

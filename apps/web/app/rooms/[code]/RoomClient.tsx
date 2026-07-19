@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { trackGameCompleted, trackGamePicked, trackGameStarted } from '../../../lib/analytics';
 import { GameStage, type HostControl } from '../../../components/game/GameStage';
 import { GamePicker } from '../../../components/game/GamePicker';
+import { HowToPlayButton } from '../../../components/game/HowToPlayButton';
 import { Lobby } from '../../../components/game/Lobby';
 import { TopNav } from '../../../components/TopNav';
 import type { Viewer } from '../../../lib/session';
@@ -455,18 +456,27 @@ export function RoomClient({
           <div
             className={fitViewport ? 'flex min-h-0 flex-1 flex-col gap-3' : 'flex flex-col gap-6'}
           >
-            <header className="flex items-center justify-between">
+            {/* Room code + How to play share one row (spec 0068): the rules affordance sits inline,
+                right-aligned beside the code (and the non-host Leave link), saving a row on a phone. */}
+            <header className="flex items-center justify-between gap-2">
               <p className="text-body-sm text-text-muted">
                 Room <span className="tabular-nums tracking-widest">{room.code}</span>
               </p>
-              {!isHost ? (
-                <a
-                  href="/rooms"
-                  className="text-body-sm text-text-muted underline-offset-4 hover:underline"
-                >
-                  Leave
-                </a>
-              ) : null}
+              <div className="flex items-center gap-2">
+                <HowToPlayButton
+                  game={room?.selectedGame ?? game}
+                  variant="outline"
+                  label="How to play"
+                />
+                {!isHost ? (
+                  <a
+                    href="/rooms"
+                    className="text-body-sm text-text-muted underline-offset-4 hover:underline"
+                  >
+                    Leave
+                  </a>
+                ) : null}
+              </div>
             </header>
             {me ? (
               <GameStage
@@ -533,6 +543,14 @@ export function RoomClient({
             onChangeGame={onChangeGame}
             config={config}
             onConfigChange={(next) => setConfig(next)}
+            advanced={(() => {
+              // The selected game's advanced settings, if any (spec 0068), fed the same opaque config
+              // the standard panel edits. Omitted for a game without an AdvancedConfigPanel.
+              const AdvancedPanel = getGameUi(game)?.AdvancedConfigPanel;
+              return AdvancedPanel ? (
+                <AdvancedPanel value={config} onChange={setConfig} disabled={starting} />
+              ) : undefined;
+            })()}
             onStart={onStart}
             starting={starting}
             startError={startError}
