@@ -76,10 +76,11 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
           <CarouselContent>
             {slides.map((slide) => (
               // Each slide is narrower than the viewport so the prev/next cards peek at the edges:
-              // ~10% of a neighbor on phones (basis-4/5), a smaller sliver for the wider landscape
-              // banner at md+ (basis-5/6). The extra `pr-4` balances canopy's built-in `pl-4` gutter
-              // so the padding is symmetric and the centered card peeks evenly on both sides.
-              <CarouselItem key={slide.slug} className="basis-4/5 pr-4 md:basis-5/6">
+              // a clear sliver of a neighbor on phones (basis-3/4), a smaller sliver for the wider
+              // landscape banner at md+ (basis-5/6). `px-2` overrides canopy's built-in `pl-4` gutter
+              // (its `cn`/tailwind-merge keeps the last rule) with a small, symmetric 8px gutter, so
+              // the card peeks evenly on both sides and the gutter no longer eats most of the peek.
+              <CarouselItem key={slide.slug} className="basis-3/4 px-2 md:basis-5/6">
                 <a
                   href={featurePath(slide.slug)}
                   aria-label={`${slide.name} - game details`}
@@ -126,16 +127,18 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
               </CarouselItem>
             ))}
           </CarouselContent>
-          {/* Edge fades: the peeking neighbors dissolve into the page background at both sides so the
-              centered card stays the focus. Gradients run from the `bg` token to transparent and are
-              decorative + non-interactive. Matching the viewport's rounded corners keeps them clean. */}
+          {/* Edge fades: only soften the very edge of the peeking neighbors so they read as "more
+              cards, swipe" without erasing the sliver or bleeding onto the centered card. Kept
+              narrower than the peek (w-6 on phones, w-12 for the wider landscape banner). Gradients
+              run from the `bg` token to transparent, decorative + non-interactive; matching the
+              viewport's rounded corners keeps them clean. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 left-0 w-12 rounded-l-md bg-gradient-to-r from-bg to-transparent md:w-20"
+            className="pointer-events-none absolute inset-y-0 left-0 w-6 rounded-l-md bg-gradient-to-r from-bg to-transparent md:w-12"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-0 w-12 rounded-r-md bg-gradient-to-l from-bg to-transparent md:w-20"
+            className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-md bg-gradient-to-l from-bg to-transparent md:w-12"
           />
         </div>
         <CarouselDots className="mt-5" />
