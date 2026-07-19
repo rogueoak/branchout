@@ -163,6 +163,8 @@ describe('Lobby', () => {
       ],
       onModeChange,
     });
+    // Your mode is collapsed by default - expand it to reach the picker.
+    fireEvent.click(screen.getByRole('button', { name: /your mode/i }));
     // The picker offers Viewer / Interactive / Remote.
     expect(screen.getByRole('radio', { name: /viewer/i })).toBeDefined();
     const interactive = screen.getByRole('radio', { name: /interactive/i }) as HTMLButtonElement;
@@ -179,5 +181,38 @@ describe('Lobby', () => {
     renderLobby({ game: 'trivia', config: { ...defaultTriviaConfig(), rounds: 0 }, onStart });
     fireEvent.click(screen.getByRole('button', { name: /start game/i }));
     expect(onStart).not.toHaveBeenCalled();
+  });
+
+  it('collapses Your mode by default, showing the current selection on the trigger', () => {
+    renderLobby({ mode: 'interactive' });
+    // The trigger reads "Your mode" and carries the current mode so a collapsed state still informs.
+    const trigger = screen.getByRole('button', { name: /your mode/i });
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(trigger.textContent).toMatch(/interactive/i);
+    // Collapsed means the mode radios are not rendered until the section is expanded.
+    expect(screen.queryByRole('radio', { name: /viewer/i })).toBeNull();
+    fireEvent.click(trigger);
+    expect(screen.getByRole('radio', { name: /viewer/i })).toBeDefined();
+  });
+
+  it('renders Game setup above Your mode', () => {
+    renderLobby({});
+    const setup = screen.getByRole('heading', { name: /game setup/i });
+    const yourMode = screen.getByRole('button', { name: /your mode/i });
+    // A preceding node comes first in document order (bitmask 4 = DOCUMENT_POSITION_FOLLOWING).
+    expect(setup.compareDocumentPosition(yourMode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('offers an Advanced settings accordion, collapsed by default, below the standard config', () => {
+    renderLobby({});
+    const advanced = screen.getByRole('button', { name: /advanced settings/i });
+    expect(advanced.getAttribute('aria-expanded')).toBe('false');
+    // Advanced sits after Game setup's standard config heading and before Your mode.
+    const setup = screen.getByRole('heading', { name: /game setup/i });
+    const yourMode = screen.getByRole('button', { name: /your mode/i });
+    expect(setup.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      advanced.compareDocumentPosition(yourMode) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
