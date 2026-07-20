@@ -295,14 +295,17 @@ What the product does for users, grouped by area. Each capability maps to one or
       (finding the true seed = 100; a decoy fooling a player = 50 to its author). The Viewer replays
       every sketch read-only; the drawing surface is mobile-first at ~360px. A ~120-prompt sample seed
       bank ships under the package `data/` with a structural validator. Gated by surface like Teeter
-      (`visibility: 'insider'`). Heaviest UI in the wave; a real 3-player e2e drives draw -> decoy ->
-      guess -> score at a 360px viewport. Canvas-UX pass (spec `0063`): an edge-swipe gutter +
-      `overscroll-x` contain around the draw/replay surfaces; the featured player watches their own
-      sketch on their remote while others guess; exactly one canvas per mode (interactive suppresses
-      the viewer's copy via the generic `sharesDeviceWithRemote` flag since the remote already shows it);
-      the replay display
-      background is a prop (default white, strokes carry none); and Undo (3) + Clear (1) are per-GAME
-      allowances shown on the buttons, disabled when spent, Clear behind a confirm dialog.
+      (`visibility: 'insider'`). The host picks a round-length preset (Fast=3, Standard=5 default,
+      Long=7, Marathon=15) or a Custom count (1-15), and Advanced settings mirror Trivia's pacing (spec
+      `0068`): auto-advance (default on, 5s dwell) drives the gallery/leaderboard hops via
+      `leaderboardWindowMs`, and turning it off collapses the host controls open for manual advance.
+      Canvas-UX pass (spec `0063`): an edge-swipe gutter + `overscroll-x` contain around the draw/replay
+      surfaces; the featured player watches their own sketch on their remote while others guess; exactly
+      one canvas per mode (interactive suppresses the viewer's copy via the generic
+      `sharesDeviceWithRemote` flag since the remote already shows it); the replay display background is
+      a prop (default white, strokes carry none); and Undo (3) + Clear (1) are per-GAME allowances shown
+      on the buttons, disabled when spent, Clear behind a confirm dialog. Heaviest UI in the wave; a real
+      3-player e2e drives draw -> decoy -> guess -> score at a 360px viewport.
 - [~] Fourth game (insider-only) - Whispergrove: a two-team word-grid deduction game (spec `0062`).
       A 5x5 grove of 25 word leaves; a secret key marks 9 leaves for the starting grove, 8 for the
       other, 7 neutral saplings, and 1 instant-loss Deadwood. Each grove has one Whisperer who ALONE
@@ -337,7 +340,10 @@ What the product does for users, grouped by area. Each capability maps to one or
       broadcast prompt/viewer/reveal, so the Seeker's device never receives it (a unit test proves the
       Seeker is absent from the private map, and the e2e proves the seed shows on a non-Seeker's device
       but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled ~60-word
-      sample seed bank (`@branchout/game-lone-leaf`).
+      sample seed bank (`@branchout/game-lone-leaf`). Host pacing mirrors Trivia (spec `0068`): rounds
+      from presets (Fast 5 / Standard 10 / Long 20 / Marathon 40, default 10) or a custom number, an
+      auto-advance toggle with an advance-after dwell, and configurable clue and guess windows
+      (default 60s each) in an Advanced panel.
 - [~] Fifth game (insider-only) - Same Branch: a spectrum-guessing party game (2-8 players) on the
       round-based lifecycle (`@branchout/game-same-branch`, spec `0058`). Each round shows a branch
       running between two opposites (the **branch**); a hidden target (the **bud**) sits on it. One

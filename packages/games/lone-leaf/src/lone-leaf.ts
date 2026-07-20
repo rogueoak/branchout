@@ -10,11 +10,12 @@
 // private map and the prompt carries no seed.
 //
 // Lifecycle mapping onto spec 0020's hooks:
-//   configure       -> the answer window (leaf writing) = 90s
+//   configure       -> the answer window (leaf writing), the guess window, and the auto-advance dwell
+//                      are all host-configured (spec 0057 pacing); defaults 60s / 60s / auto-advance 5s
 //   startRound      -> draw an unused seed; pick the Seeker; deliver the seed privately to non-Seekers
 //   collectMove     -> record a non-Seeker's one-word leaf, or `rejected` (the Seeker / blank / two words)
 //   allSubmitted    -> every connected non-Seeker submitted a leaf
-//   reveal          -> wilt matching/invalid leaves; the survivors are the Seeker's clues; `decision` (60s guess)
+//   reveal          -> wilt matching/invalid leaves; the survivors are the Seeker's clues; `decision` (guess window)
 //   collectVote     -> the Seeker's guess (free text carried in the vote target) during `guessing`
 //   allDecided      -> the Seeker has guessed
 //   resolveDecision -> co-op: a correct guess banks +1 for everyone; the seed is revealed here
@@ -35,16 +36,16 @@ import type {
   StartRoundResult,
   VoteInput,
 } from '@branchout/game-sdk';
-import { DEFAULT_ROUNDS, validateConfig, type ResolvedLoneLeafConfig } from './config';
+import {
+  DEFAULT_GUESS_SECONDS,
+  DEFAULT_ROUNDS,
+  validateConfig,
+  type ResolvedLoneLeafConfig,
+} from './config';
 import { isSingleWord, leafKey, normalizeLeaf, sameLeaf } from './matching';
 import { loadSeedBank, validateSeedBank, type LoneLeafSeed } from './seeds';
 
 export const LONE_LEAF_GAME_ID = 'lone-leaf';
-
-/** Non-Seekers have 90s to write their one-word leaf. */
-export const SUBMIT_WINDOW_MS = 90_000;
-/** The Seeker has 60s to guess the seed from the surviving leaves. */
-export const GUESS_WINDOW_MS = 60_000;
 
 /** A correct guess banks this for every player (co-op: the whole grove shares the result). */
 export const BANK_POINTS = 1;
@@ -75,6 +76,8 @@ export interface LeafResult {
 interface LoneLeafScratch {
   categories: string[] | 'random';
   rounds: number;
+  /** The Seeker's guess window in ms, carried from configure so reveal can set the decision window. */
+  guessMs: number;
   /** Seed ids drawn so far this game - the no-repeat guarantee. */
   usedIds: string[];
   // Per-round working state. Only the current round is ever read, so startRound resets it.
@@ -98,6 +101,7 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): LoneLeafScratch 
   return {
     categories: s.categories ?? 'random',
     rounds: s.rounds ?? DEFAULT_ROUNDS,
+    guessMs: s.guessMs ?? DEFAULT_GUESS_SECONDS * 1000,
     usedIds: s.usedIds ?? [],
     round: s.round ?? 0,
     seed: s.seed ?? null,
@@ -188,6 +192,7 @@ export function createLoneLeafGame(
       const scratch: LoneLeafScratch = {
         categories: cfg.categories,
         rounds: cfg.rounds,
+        guessMs: cfg.guessMs,
         usedIds: [],
         round: 0,
         seed: null,
@@ -198,7 +203,15 @@ export function createLoneLeafGame(
         guess: null,
         correct: false,
       };
-      return { scratch: toRecord(scratch), rounds: cfg.rounds, moveWindowMs: SUBMIT_WINDOW_MS };
+      // Pacing (spec 0057): the leaf-writing window is the clue time; the reveal/leaderboard dwell is
+      // the advance-after delay when auto-advance is on, and 0 (host-advanced) when it is off - the
+      // generic engine reports auto-advance = (leaderboardWindowMs > 0), so no extra field is needed.
+      return {
+        scratch: toRecord(scratch),
+        rounds: cfg.rounds,
+        moveWindowMs: cfg.clueMs,
+        leaderboardWindowMs: cfg.autoAdvance ? cfg.advanceAfterMs : 0,
+      };
     },
 
     startRound(ctx: RoundContext): StartRoundResult {
@@ -208,6 +221,7 @@ export function createLoneLeafGame(
       const scratch: LoneLeafScratch = {
         categories: prev.categories,
         rounds: prev.rounds,
+        guessMs: prev.guessMs,
         usedIds: [...prev.usedIds, seed.id],
         round: ctx.round,
         seed: {
@@ -263,7 +277,7 @@ export function createLoneLeafGame(
       const scratch = asScratch(ctx.scratch);
       // Every connected NON-Seeker must have written a leaf (the Seeker writes none). If nobody but the
       // Seeker is connected this stays false and the round does not auto-complete - that is intentional;
-      // the 90s move window is the backstop that advances the round, so it is not a hang.
+      // the host-configured clue (move) window is the backstop that advances the round, so it is not a hang.
       const writers = ctx.players.filter((p) => p.connected && p.player !== scratch.seeker);
       return writers.length > 0 && writers.every((p) => scratch.leaves[p.player] !== undefined);
     },
@@ -296,7 +310,7 @@ export function createLoneLeafGame(
           leaves: results.filter((r) => r.survived),
         },
         scores: [],
-        decision: { windowMs: GUESS_WINDOW_MS },
+        decision: { windowMs: scratch.guessMs },
       };
     },
 

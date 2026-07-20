@@ -135,6 +135,41 @@ describe('Lone Leaf module', () => {
     expect((revealed.reveal as { survivors: string[] }).survivors).toEqual(['flow']);
   });
 
+  it('configure defaults the windows: 60s clue (move), auto-advance dwell 5s', () => {
+    const g = game();
+    const result = g.configure({ categories: ['nature'], rounds: 1 }, roster);
+    expect(result.rounds).toBe(1);
+    expect(result.moveWindowMs).toBe(60_000);
+    // Auto-advance on by default -> leaderboardWindowMs > 0 (the engine infers auto-advance from it).
+    expect(result.leaderboardWindowMs).toBe(5_000);
+  });
+
+  it('configure applies host pacing: clue window, guess window, and auto-advance off', () => {
+    const g = game();
+    const result = g.configure(
+      {
+        categories: ['nature'],
+        rounds: 1,
+        autoAdvance: false,
+        advanceAfterSeconds: 9,
+        clueSeconds: 45,
+        guessSeconds: 90,
+      },
+      roster,
+    );
+    // Clue time drives the move window.
+    expect(result.moveWindowMs).toBe(45_000);
+    // Auto-advance off -> host-advanced (leaderboardWindowMs = 0), regardless of advanceAfterSeconds.
+    expect(result.leaderboardWindowMs).toBe(0);
+    // The guess window rides scratch to the reveal.
+    let scratch = result.scratch;
+    scratch = g.startRound(ctx(1, 'collecting', scratch)).scratch;
+    scratch = g.collectMove(ctx(1, 'collecting', scratch), 'p2', 'water').scratch;
+    scratch = g.collectMove(ctx(1, 'collecting', scratch), 'p3', 'flow').scratch;
+    const revealed = g.reveal(ctx(1, 'collecting', scratch));
+    expect(revealed.decision?.windowMs).toBe(90_000);
+  });
+
   it('runs a full co-op round: a correct guess banks +1 for everyone', () => {
     const g = game();
     let scratch = g.configure({ categories: ['nature'], rounds: 1 }, roster).scratch;

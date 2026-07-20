@@ -19,6 +19,10 @@ export {
   MIN_ROUNDS,
   MAX_ROUNDS,
   DEFAULT_ROUNDS,
+  DEFAULT_AUTO_ADVANCE,
+  DEFAULT_ADVANCE_AFTER_SECONDS,
+  MIN_ADVANCE_AFTER_SECONDS,
+  MAX_ADVANCE_AFTER_SECONDS,
   type SketchyConfig,
   type ResolvedSketchyConfig,
 } from './config';
