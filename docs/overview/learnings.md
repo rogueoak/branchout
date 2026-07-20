@@ -522,6 +522,15 @@ Capture durable lessons as they emerge.
   record; and a state that lives only in `sessionStorage` is forgotten on tab close, not just after a
   TTL - treat "the client forgot" and "the server expired" as two distinct recoveries. (Feedback
   `0021`.)
+- **A UI decision must key on the fact it actually depends on, not a proxy that collapses two cases.**
+  The host-controls accordion opened whenever `autoAdvance !== true`, but `autoAdvance === false` is
+  reported by BOTH a host-advanced round game (Sketchy/Zinger - a manual Next IS pending) and a
+  live/turn game (Reversi/Checkers - there is no host Next at all). Keying on that proxy wrongly
+  opened the live games. The distinguishing fact - "is this a round-cycle game or a live game?" - the
+  engine already models (`runtime.live`, the module implements `tick`); the fix surfaces it as an
+  additive `live` field on the `state` frame and opens the accordion only for `!live && autoAdvance
+  !== true`. When two behaviours share a value, expose the real discriminator on the wire rather than
+  overloading the proxy. (Feedback `0037`, WS13.)
 
 ## Deployment and infra
 

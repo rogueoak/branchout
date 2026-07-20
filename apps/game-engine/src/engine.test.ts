@@ -1367,6 +1367,15 @@ describe('GameEngine live game (sim loop)', () => {
     };
   }
 
+  it('marks the state frame `live: true` so the client collapses the host controls (WS13)', async () => {
+    const h = liveHarness();
+    await h.engine.start(liveHandoff());
+    const joined = stateFrame(await h.engine.join('r1', LIVE_GAME_ID, 'p1', 'Ada'));
+    // A live/turn game advances itself on each move and has no host "Next"; the flag lets the client
+    // keep its host-controls accordion collapsed by default.
+    expect(joined.live).toBe(true);
+  });
+
   it('runs the sim loop on a timer, streaming sim frames and ending on tick.over', async () => {
     const h = liveHarness();
     const sims: unknown[] = [];
@@ -1623,6 +1632,8 @@ describe('GameEngine spec 0069 pacing on the state frame', () => {
     expect(joined.moveWindowMs).toBe(60_000);
     expect(joined.autoAdvance).toBe(true);
     expect(joined.answered).toBe(0);
+    // A round game the host drives is not live, so the client keeps its host controls reachable.
+    expect(joined.live).toBe(false);
   });
 
   it('drops the answered count once the round leaves collecting (gated on phase)', async () => {
