@@ -44,7 +44,7 @@ export function LoneLeafAdvancedConfigPanel({ value, onChange, disabled }: GameC
           aria-checked={config.autoAdvance}
           disabled={disabled}
           onClick={() => set({ autoAdvance: !config.autoAdvance })}
-          className={`shrink-0 rounded-full border px-4 py-1.5 text-body-sm font-medium transition-colors ${
+          className={`flex min-h-11 shrink-0 items-center rounded-full border px-4 py-1.5 text-body-sm font-medium transition-colors ${
             config.autoAdvance
               ? 'border-primary bg-primary/10 text-text'
               : 'border-border bg-surface-raised text-text-muted hover:border-border-strong'
@@ -75,6 +75,9 @@ export function LoneLeafAdvancedConfigPanel({ value, onChange, disabled }: GameC
             errorFor(errors, 'advanceAfter') ? 'lone-leaf-advance-after-error' : undefined
           }
         />
+        {!config.autoAdvance ? (
+          <p className="text-caption text-text-subtle">Turn on Auto advance to use this.</p>
+        ) : null}
         {errorFor(errors, 'advanceAfter') ? (
           <p id="lone-leaf-advance-after-error" role="alert" className="text-body-sm text-danger">
             {errorFor(errors, 'advanceAfter')}

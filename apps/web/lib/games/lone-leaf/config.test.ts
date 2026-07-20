@@ -76,4 +76,20 @@ describe('validateLoneLeafConfig', () => {
       expect(errors.some((e) => e.field === 'guess')).toBe(true);
     }
   });
+
+  it('accepts the inclusive boundary values', () => {
+    expect(
+      validateLoneLeafConfig(cfg({ advanceAfterSeconds: 1, clueSeconds: 15, guessSeconds: 180 })),
+    ).toEqual([]);
+    expect(
+      validateLoneLeafConfig(cfg({ advanceAfterSeconds: 60, clueSeconds: 180, guessSeconds: 15 })),
+    ).toEqual([]);
+  });
+
+  it('skips the advance-after check when auto-advance is off (the field is disabled)', () => {
+    const errors = validateLoneLeafConfig(
+      cfg({ autoAdvance: false, advanceAfterSeconds: Number.NaN }),
+    );
+    expect(errors.some((e) => e.field === 'advanceAfter')).toBe(false);
+  });
 });

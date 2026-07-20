@@ -112,7 +112,11 @@ export function validateLoneLeafConfig(config: LoneLeafHostConfig): ConfigError[
     }
   }
 
+  // The dwell only takes effect when auto-advance is on (the engine sends leaderboardWindowMs = 0
+  // otherwise), so only validate it then - a stale/blank value on the disabled field must never gate
+  // Start when it has no effect.
   if (
+    config.autoAdvance &&
     !isIntInRange(config.advanceAfterSeconds, MIN_ADVANCE_AFTER_SECONDS, MAX_ADVANCE_AFTER_SECONDS)
   ) {
     errors.push({

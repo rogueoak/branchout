@@ -91,4 +91,29 @@ describe('validateConfig', () => {
       /guessSeconds/,
     );
   });
+
+  it('accepts the inclusive boundary values', () => {
+    expect(
+      validateConfig({
+        categories: 'random',
+        advanceAfterSeconds: 1,
+        clueSeconds: 15,
+        guessSeconds: 180,
+      }),
+    ).toMatchObject({ advanceAfterMs: 1_000, clueMs: 15_000, guessMs: 180_000 });
+    expect(
+      validateConfig({
+        categories: 'random',
+        advanceAfterSeconds: 60,
+        clueSeconds: 180,
+        guessSeconds: 15,
+      }),
+    ).toMatchObject({ advanceAfterMs: 60_000, clueMs: 180_000, guessMs: 15_000 });
+  });
+
+  it('does not fail on a bad advanceAfterSeconds when auto-advance is off (it is unused)', () => {
+    expect(() =>
+      validateConfig({ categories: 'random', autoAdvance: false, advanceAfterSeconds: 999 }),
+    ).not.toThrow();
+  });
 });

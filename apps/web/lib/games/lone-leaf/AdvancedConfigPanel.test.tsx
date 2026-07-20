@@ -24,9 +24,15 @@ describe('LoneLeafAdvancedConfigPanel', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ autoAdvance: false }));
   });
 
-  it('disables the advance-after field when auto-advance is off', () => {
+  it('disables the advance-after field and explains why when auto-advance is off', () => {
     renderPanel({ autoAdvance: false });
     expect((screen.getByLabelText(/advance after/i) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByText(/turn on auto advance to use this/i)).toBeDefined();
+  });
+
+  it('does not flag the advance-after field while auto-advance is off, even if blank', () => {
+    renderPanel({ autoAdvance: false, advanceAfterSeconds: Number.NaN });
+    expect(screen.queryByText(/advance after must be/i)).toBeNull();
   });
 
   it('carries the min/max bounds on the number inputs', () => {

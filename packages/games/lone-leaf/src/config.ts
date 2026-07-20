@@ -124,13 +124,18 @@ export function validateConfig(config: unknown): ResolvedLoneLeafConfig {
     );
   }
 
-  const advanceAfterSeconds = resolveIntInRange(
-    cfg.advanceAfterSeconds,
-    DEFAULT_ADVANCE_AFTER_SECONDS,
-    MIN_ADVANCE_AFTER_SECONDS,
-    MAX_ADVANCE_AFTER_SECONDS,
-    'advanceAfterSeconds',
-  );
+  // The dwell only takes effect when auto-advance is on (configure sends leaderboardWindowMs = 0
+  // otherwise), so only validate/resolve it then; when off it is unused, so a bad value must not fail
+  // the start handoff. This keeps the engine in step with the web mirror's conditional check.
+  const advanceAfterSeconds = autoAdvance
+    ? resolveIntInRange(
+        cfg.advanceAfterSeconds,
+        DEFAULT_ADVANCE_AFTER_SECONDS,
+        MIN_ADVANCE_AFTER_SECONDS,
+        MAX_ADVANCE_AFTER_SECONDS,
+        'advanceAfterSeconds',
+      )
+    : DEFAULT_ADVANCE_AFTER_SECONDS;
   const clueSeconds = resolveIntInRange(
     cfg.clueSeconds,
     DEFAULT_CLUE_SECONDS,
