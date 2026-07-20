@@ -4,6 +4,7 @@
 import { sketchySvg } from '@branchout/brand/sketchy';
 import type { GameUiModule } from '../registry';
 import { SketchyConfigPanel } from './ConfigPanel';
+import { SketchyAdvancedConfigPanel } from './AdvancedConfigPanel';
 import { SketchyViewer } from './Viewer';
 import { SketchyRemote } from './Remote';
 import { defaultSketchyConfig, validateSketchyConfig, type SketchyHostConfig } from './config';
@@ -26,6 +27,7 @@ export const sketchyGameUi: GameUiModule = {
     return typeof rounds === 'number' ? rounds : defaultSketchyConfig().rounds;
   },
   ConfigPanel: SketchyConfigPanel,
+  AdvancedConfigPanel: SketchyAdvancedConfigPanel,
   Viewer: SketchyViewer,
   Remote: SketchyRemote,
 };

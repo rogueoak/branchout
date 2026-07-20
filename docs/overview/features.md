@@ -295,8 +295,12 @@ What the product does for users, grouped by area. Each capability maps to one or
       (finding the true seed = 100; a decoy fooling a player = 50 to its author). The Viewer replays
       every sketch read-only; the drawing surface is mobile-first at ~360px. A ~120-prompt sample seed
       bank ships under the package `data/` with a structural validator. Gated by surface like Teeter
-      (`visibility: 'insider'`). Heaviest UI in the wave; a real 3-player e2e drives draw -> decoy ->
-      guess -> score at a 360px viewport.
+      (`visibility: 'insider'`). The host picks a round-length preset (Fast=3, Standard=5 default,
+      Long=7, Marathon=15) or a Custom count (1-15), and Advanced settings mirror Trivia's pacing (spec
+      `0068`): auto-advance (default on, 5s dwell) drives the gallery/leaderboard hops via
+      `leaderboardWindowMs`, and turning it off collapses the host controls open for manual advance.
+      Heaviest UI in the wave; a real 3-player e2e drives draw -> decoy -> guess -> score at a 360px
+      viewport.
 - [~] Fourth game (insider-only) - Whispergrove: a two-team word-grid deduction game (spec `0062`).
       A 5x5 grove of 25 word leaves; a secret key marks 9 leaves for the starting grove, 8 for the
       other, 7 neutral saplings, and 1 instant-loss Deadwood. Each grove has one Whisperer who ALONE

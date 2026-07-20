@@ -18,7 +18,11 @@ for each player it fools.
 ## Outcome
 
 - An insider can create a room, pick **Sketchy** (visible only to insiders), start it with 3-8
-  players, and play across a configurable number of rounds.
+  players, and play across a configurable number of rounds. The host picks a round-length preset
+  (Fast=3, Standard=5 default, Long=7, Marathon=15) or a Custom count (1-15), and, under Advanced
+  settings, whether the gallery/leaderboard **auto-advances** and its per-hop dwell (mirroring Trivia,
+  spec 0068). Auto-advance defaults on at a 5s dwell; turning it off collapses the host controls open
+  so the host advances each screen by hand.
 - Each round has two stages:
   - **Stage A (draw):** every player is privately given a different **seed** (the prompt) and draws
     it freehand on a canvas within a timer. The drawing is captured as compact serialized vector
@@ -85,7 +89,11 @@ for each player it fools.
 Each round maps onto the generic lifecycle (spec 0020) the same way Liar Liar does, but the round
 runs in two stages tracked in scratch:
 
-- `configure` -> validate the config (rounds); `moveWindowMs` is the draw timer.
+- `configure` -> validate the config (rounds 1-15, plus the auto-advance pacing); `moveWindowMs` is
+  the draw timer. Pacing mirrors Trivia (spec 0068): `leaderboardWindowMs` is the advance-after delay
+  when auto-advance is on and `0` (host-advanced) when off, so the engine reports `autoAdvance` =
+  `leaderboardWindowMs > 0`. The draw round's `disputeWindowMs` stays a fixed positive bridge to the
+  gallery regardless of auto-advance - it is a mechanical transition, not the host-pause dwell.
 - `startRound` -> assign each player a distinct unused **seed** from the bank. The broadcast `prompt`
   carries only the round number and a "draw your seed" cue; each player's actual seed goes out in
   `private: { [playerId]: { seed } }` - never in the broadcast frame.

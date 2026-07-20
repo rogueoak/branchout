@@ -1,16 +1,61 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ROUNDS, MAX_ROUNDS, defaultSketchyConfig, validateSketchyConfig } from './config';
+import {
+  DEFAULT_ROUNDS,
+  MAX_ROUNDS,
+  ROUND_PRESETS,
+  defaultSketchyConfig,
+  validateSketchyConfig,
+  type SketchyHostConfig,
+} from './config';
+
+const base: SketchyHostConfig = defaultSketchyConfig();
+
+describe('defaultSketchyConfig', () => {
+  it('defaults to 5 rounds, auto-advance on at a 5s dwell', () => {
+    expect(defaultSketchyConfig()).toEqual({
+      rounds: 5,
+      autoAdvance: true,
+      advanceAfterSeconds: 5,
+    });
+    expect(DEFAULT_ROUNDS).toBe(5);
+    expect(validateSketchyConfig(base)).toEqual([]);
+  });
+});
 
 describe('validateSketchyConfig', () => {
-  it('accepts the default config', () => {
-    expect(validateSketchyConfig(defaultSketchyConfig())).toEqual([]);
-    expect(defaultSketchyConfig().rounds).toBe(DEFAULT_ROUNDS);
+  it('accepts an in-range round count including Marathon (15)', () => {
+    expect(validateSketchyConfig({ ...base, rounds: 1 })).toEqual([]);
+    expect(validateSketchyConfig({ ...base, rounds: MAX_ROUNDS })).toEqual([]);
   });
 
   it('rejects an out-of-range or non-integer round count', () => {
-    expect(validateSketchyConfig({ rounds: 0 })).toHaveLength(1);
-    expect(validateSketchyConfig({ rounds: MAX_ROUNDS + 1 })).toHaveLength(1);
-    expect(validateSketchyConfig({ rounds: 2.5 })).toHaveLength(1);
-    expect(validateSketchyConfig({ rounds: 2 })).toEqual([]);
+    for (const rounds of [0, MAX_ROUNDS + 1, 2.5, Number.NaN]) {
+      expect(validateSketchyConfig({ ...base, rounds })).toEqual([
+        expect.objectContaining({ field: 'rounds' }),
+      ]);
+    }
+  });
+
+  it('rejects an advance-after outside 1-60', () => {
+    for (const advanceAfterSeconds of [0, 61, 5.5]) {
+      expect(validateSketchyConfig({ ...base, advanceAfterSeconds })).toEqual([
+        expect.objectContaining({ field: 'advanceAfter' }),
+      ]);
+    }
+  });
+});
+
+describe('presets', () => {
+  it('exposes Fast/Standard/Long/Marathon round presets', () => {
+    expect(ROUND_PRESETS.map((preset) => [preset.label, preset.value])).toEqual([
+      ['Fast', 3],
+      ['Standard', 5],
+      ['Long', 7],
+      ['Marathon', 15],
+    ]);
+  });
+
+  it('keeps the default inside the Standard preset', () => {
+    expect(ROUND_PRESETS.find((preset) => preset.value === DEFAULT_ROUNDS)?.label).toBe('Standard');
   });
 });

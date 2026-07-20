@@ -212,9 +212,16 @@ export function createSketchyGame(
         moveWindowMs: DRAW_WINDOW_MS,
         // The draw round takes the no-decision dispute path; a positive window lets its empty dispute
         // stage auto-finalize to the gallery leaderboard instead of stranding the round in `disputing`
-        // (which no Sketchy client renders) until the host manually advances. Sketch rounds open a
-        // guess `decision` instead, so this window never applies to them.
+        // (which no Sketchy client renders) until the host manually advances. This bridge is a fixed
+        // mechanical beat, NOT the host-pause dwell, so it stays positive regardless of auto-advance -
+        // otherwise the draw round would hang. Sketch rounds open a guess `decision` instead, so this
+        // window never applies to them.
         disputeWindowMs: DRAW_DISPUTE_WINDOW_MS,
+        // Pacing (spec 0068, mirroring Trivia): the leaderboard dwell is the advance-after delay when
+        // the host left auto-advance on, and 0 (host-advanced) when off. The engine reports
+        // `autoAdvance` = (leaderboardWindowMs > 0), which drives the host-controls collapse and the
+        // client countdown, so no extra field is needed here.
+        leaderboardWindowMs: cfg.autoAdvance ? cfg.advanceAfterMs : 0,
       };
     },
 

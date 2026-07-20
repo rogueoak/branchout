@@ -96,7 +96,9 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
     const player3 = await joinInsiderAsGuest(p3Ctx, code, 'Player Three');
     const players = [host, player2, player3];
 
-    // One cycle keeps the run short.
+    // One cycle keeps the run short: rounds now default to a "Standard" preset, so pick Custom to
+    // reveal the number field and set a single round.
+    await host.getByRole('radio', { name: /set your own number of rounds/i }).click();
     await host.locator('#sketchy-rounds').fill('1');
     await host.getByRole('button', { name: /start game/i }).click();
 
