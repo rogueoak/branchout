@@ -758,3 +758,15 @@ Capture durable lessons as they emerge.
   lock, and document the residual gap (progressive delay / CAPTCHA) as a follow-up rather than
   overbuilding. Account-key stops distributed brute-force of one account; IP-key stops one source
   locking many accounts - complementary dimensions, not a either/or. (Spec `0072`.)
+- **Enforce a score/fairness rule in the engine (the source of truth), with the client as a mirror -
+  never client-only.** WS16's "submit once" and "give-up fails the question" were first enforced only
+  by local component state, while the trivia engine's `collectMove` overwrote the prior answer and
+  treated a blank as a normal (dispute-eligible) wrong answer. A player could give up, reload (which
+  remounts the form and drops the local lock), and resubmit to score after failing - and could dispute
+  a give-up for points. Any rule a player benefits from breaking - single submission, a give-up that
+  must not pay, a duplicate that must not count - has to be authoritative in the engine callback
+  (reject the second `collectMove`, exclude the blank from the dispute set), and the UI lock is just a
+  convenience that reflects it. When the authoritative state has no per-player signal to lock the UI
+  upfront (the broadcast frame here carries only an aggregate answered count), lean on the engine's
+  rejection to lock reactively and say so - the score is safe regardless of what the client shows.
+  (Feedback `0038`, spec `0069`.)

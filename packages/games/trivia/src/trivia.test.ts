@@ -246,26 +246,33 @@ describe('reveal scoring', () => {
     ]);
   });
 
-  it('marks a blank submission wrong and excludes a non-submitter entirely', () => {
+  it('marks a blank submission wrong-but-not-disputable and excludes a non-submitter entirely', () => {
     let scratch = game.configure({ category: 'Nature' }, players).scratch;
     const started = game.startRound(ctx(scratch));
     scratch = started.scratch;
     const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
 
     scratch = game.collectMove(ctx(scratch), 'p1', answer).scratch; // correct
-    scratch = game.collectMove(ctx(scratch), 'p2', '   ').scratch; // blank -> wrong
+    scratch = game.collectMove(ctx(scratch), 'p2', '   ').scratch; // blank -> wrong, not disputable
     // p3 never submits.
 
     const revealed = game.reveal(ctx(scratch));
-    const reveal = revealed.reveal as { correct: string[]; wrong: string[] };
+    const reveal = revealed.reveal as {
+      correct: string[];
+      wrong: string[];
+      submissions: { player: string; answer: string; correct: boolean }[];
+    };
     expect(reveal.correct).toEqual(['p1']);
-    expect(reveal.wrong).toEqual(['p2']); // blank is dispute-eligible; p3 is absent from both
+    // A blank is NOT dispute-eligible (WS16), so it is absent from `wrong`; p3 never submitted.
+    expect(reveal.wrong).toEqual([]);
+    // It still reads as wrong in the reveal table (a red row), just not disputable.
+    expect(reveal.submissions).toContainEqual({ player: 'p2', answer: '   ', correct: false });
     expect(revealed.scores.map((s) => s.player)).toEqual(['p1']);
   });
 
   // The "I don't know" give-up (WS16) submits the empty-string sentinel. It must always score wrong -
   // no points - and, being a real submission, keep the player in the reveal (locked out, not absent).
-  it('scores the empty-string give-up sentinel wrong with no points', () => {
+  it('scores the empty-string give-up sentinel wrong with no points and no dispute eligibility', () => {
     let scratch = game.configure({ category: 'Nature' }, players).scratch;
     const started = game.startRound(ctx(scratch));
     scratch = started.scratch;
@@ -280,11 +287,58 @@ describe('reveal scoring', () => {
       wrong: string[];
       submissions: { player: string; answer: string; correct: boolean }[];
     };
-    expect(reveal.wrong).toEqual(['p2']);
+    // A give-up is not dispute-eligible, so it never lands in `wrong`.
+    expect(reveal.wrong).toEqual([]);
     // The give-up earns nothing, so p2 is not among the scored players.
     expect(revealed.scores.map((s) => s.player)).toEqual(['p1']);
     // It is a real submission: p2 stays in the reveal table (a give-up, not an absence).
     expect(reveal.submissions).toContainEqual({ player: 'p2', answer: '', correct: false });
+  });
+
+  // Submit-once (WS16) is authoritative in the engine: a second submission for a player who already
+  // answered is REJECTED and the first answer stands - a reload cannot overwrite a give-up or a wrong
+  // answer with a scoring one.
+  it('rejects a second submission for the same player+round; the first answer stands', () => {
+    let scratch = game.configure({ category: 'Nature' }, players).scratch;
+    const started = game.startRound(ctx(scratch));
+    scratch = started.scratch;
+    const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
+
+    // p1 gives up (empty sentinel), then tries to resubmit the correct answer after a "reload".
+    const first = game.collectMove(ctx(scratch), 'p1', '');
+    expect(first.rejected).toBeUndefined();
+    scratch = first.scratch;
+
+    const second = game.collectMove(ctx(scratch), 'p1', answer);
+    expect(second.rejected).toBeDefined(); // the overwrite is refused
+    // The engine ignores a rejected submission's scratch, so the give-up remains the stored answer.
+    const revealed = game.reveal(ctx(scratch));
+    const reveal = revealed.reveal as {
+      submissions: { player: string; answer: string; correct: boolean }[];
+    };
+    expect(reveal.submissions).toContainEqual({ player: 'p1', answer: '', correct: false });
+    expect(revealed.scores).toEqual([]); // the give-up earned nothing; the resubmit never landed
+  });
+
+  // A give-up player cannot raise a dispute (they are not in the dispute-eligible `wrong` set), so
+  // their dispute vote is a no-op and can never be upheld for the 50-point award.
+  it('ignores a dispute raised by a give-up player', () => {
+    let scratch = game.configure({ category: 'Nature' }, players).scratch;
+    const started = game.startRound(ctx(scratch));
+    scratch = started.scratch;
+    const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
+
+    scratch = game.collectMove(ctx(scratch), 'p1', answer).scratch; // correct
+    scratch = game.collectMove(ctx(scratch), 'p2', '').scratch; // give-up
+    scratch = game.reveal(ctx(scratch)).scratch;
+
+    // p2 (the give-up) tries to dispute; it must not register as a disputer.
+    scratch = game.collectVote(ctx(scratch, { phase: 'disputing' }), {
+      player: 'p2',
+      target: 'p2',
+      agree: true,
+    }).scratch;
+    expect(game.disputeWindow(ctx(scratch)).disputes).toEqual([]);
   });
 });
 

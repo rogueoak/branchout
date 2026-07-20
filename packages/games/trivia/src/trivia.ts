@@ -377,8 +377,20 @@ export function createTriviaGame(
     },
 
     collectMove(ctx: RoundContext, player: string, answer: string): ScratchResult {
-      const scratch = clone(asScratch(ctx.scratch));
       const key = String(ctx.round);
+      // Submit-once (WS16): a player answers each round exactly ONCE. If they already have a
+      // submission this round, REJECT the second attempt instead of overwriting it. This makes both a
+      // real answer and an "I don't know" give-up authoritative and final across reloads/replays - a
+      // player cannot reload and overwrite a give-up (or a wrong answer) with a scoring answer. The
+      // guard is Trivia-specific; every other game's collectMove is untouched.
+      const already = asScratch(ctx.scratch).submitted[key] ?? {};
+      if (already[player] !== undefined) {
+        return {
+          scratch: ctx.scratch as Record<string, unknown>,
+          rejected: { reason: 'You already answered this round.' },
+        };
+      }
+      const scratch = clone(asScratch(ctx.scratch));
       const round = (scratch.submitted[key] ??= {});
       round[player] = answer;
       return { scratch: toRecord(scratch) };
@@ -416,8 +428,15 @@ export function createTriviaGame(
       const submissions: { player: string; answer: string; correct: boolean }[] = [];
       for (const [player, answer] of Object.entries(submitted)) {
         const isCorrect = question ? isCorrectAnswer(answer, question.answers) : false;
-        if (isCorrect) correct.push(player);
-        else wrong.push(player);
+        if (isCorrect) {
+          correct.push(player);
+        } else if (answer.trim() !== '') {
+          // A wrong answer is dispute-eligible. A blank give-up ("I don't know", WS16) is NOT: a blank
+          // cannot be disputed and must never earn the 50-point dispute award. It still shows red in
+          // the reveal table via its `correct: false` submission; it just never enters the
+          // dispute-eligible `wrong` set (so the player is not offered the dispute button either).
+          wrong.push(player);
+        }
         submissions.push({ player, answer, correct: isCorrect });
       }
       // Only `wrong` is persisted - it gates dispute eligibility. `correct` is streamed in the

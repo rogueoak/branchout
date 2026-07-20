@@ -133,10 +133,13 @@ What the product does for users, grouped by area. Each capability maps to one or
       blink under `prefers-reduced-motion`), plus a live "x of y answered" line; a reveal that makes the
       answer the focus (green when someone got it, red when nobody did) with every guess in a Player |
       Answer table with check / x verdicts (a give-up shows as "No answer"); a leaderboard glow-up
-      (podium emphasis, own-row call-out). A player answers each round exactly ONCE (WS16): after Submit
-      the form is replaced by a locked confirmation - no resubmit. Beneath Submit a red "I don't know"
-      give-up submits an empty-answer sentinel that the engine scores wrong (no points) and locks the
-      player out, just like any wrong answer. All three read the host's `0068` pacing: host controls
+      (podium emphasis, own-row call-out). A player answers each round exactly ONCE (WS16), enforced in
+      the engine (`collectMove` rejects a second submission, so a reload cannot overwrite a give-up or a
+      wrong answer with a scoring one); the client locks the form after Submit and on the engine
+      rejection after a reload. Beneath Submit, set apart with its "counts as wrong - no points" cost
+      shown up front, a red "I don't know" give-up submits an empty-answer sentinel that the engine
+      scores wrong (no points), locks the player out, and is NOT dispute-eligible (a blank can never win
+      the dispute award). All three read the host's `0068` pacing: host controls
       collapse into an accordion (open by default only when auto-advance is off), and the
       reveal/leaderboard show the auto-advance dwell countdown.
 - [~] Second game - Liar Liar: a Fibbage-style bluffing game on the generic guess/decision lifecycle

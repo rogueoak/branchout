@@ -170,6 +170,8 @@ describe('RemotePane answer countdown', () => {
     const giveUp = screen.getByRole('button', { name: "I don't know" });
     // Styled red (the destructive/danger variant paints bg-danger).
     expect(giveUp.className).toContain('bg-danger');
+    // The cost is stated UP FRONT, before the tap (fat-finger mitigation).
+    expect(screen.getByText(/counts as wrong - no points/i)).toBeDefined();
     fireEvent.click(giveUp);
     // A give-up submits the empty-answer sentinel: the engine scores it wrong (no points).
     expect(onMove).toHaveBeenCalledWith(1, '');
@@ -177,6 +179,18 @@ describe('RemotePane answer countdown', () => {
     expect(screen.queryByLabelText('Your answer')).toBeNull();
     expect(screen.queryByRole('button', { name: "I don't know" })).toBeNull();
     expect(screen.getByText(/passed on this question/i)).toBeDefined();
+  });
+
+  it('locks the form when the engine rejects a resubmit (reload/replay guard)', () => {
+    // A reloaded device lost its local submit flag, so it renders the form. Once it attempts a submit,
+    // the engine rejects it (already answered), which the reducer stores in `state.rejected`. The
+    // remote must lock to that authoritative truth instead of leaving the form open to overwrite.
+    const rejected = { ...collecting(30_000), rejected: 'You already answered this round.' };
+    render(<RemotePane state={rejected} me="p1" onMove={noop} onVote={noop} />);
+    expect(screen.queryByLabelText('Your answer')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+    expect(screen.queryByRole('button', { name: "I don't know" })).toBeNull();
+    expect(screen.getByText(/already answered this round/i)).toBeDefined();
   });
 
   it('does not auto-submit while paused at expiry (the engine would drop it)', () => {

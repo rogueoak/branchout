@@ -83,6 +83,20 @@ export function RemotePane({
   const submitted = submittedRound === round;
   const gaveUp = gaveUpRound === round;
 
+  // Authoritative lock on reload/replay (WS16). Submit-once is enforced in the ENGINE, which rejects a
+  // second answer from a player who already answered this round. Trivia only ever rejects a move for
+  // that one reason during collecting, so a rejection here means "you already answered" - lock the form
+  // to the engine's truth. A device that reloaded (losing its local submit flag) therefore cannot
+  // overwrite a give-up or a wrong answer with a scoring one, and this also stops the auto-submit
+  // effect below. `state.rejected` is cleared on the next prompt, so it never bleeds into a new round.
+  // Note: the broadcast state carries no per-player "you answered" flag, so a reloaded player still
+  // sees the form until their first (rejected) attempt; the engine guarantees the score regardless.
+  useEffect(() => {
+    if (phase === 'collecting' && state.rejected !== null && submittedRound !== round) {
+      setSubmittedRound(round);
+    }
+  }, [phase, state.rejected, round, submittedRound]);
+
   // When the countdown hits zero, auto-submit whatever the player has typed (spec 0017). The engine
   // force-closes the round at the same moment; sending here is what makes a typed-but-unsent answer
   // count. Blank drafts send nothing (a non-submitter is marked wrong, same as before). Skip while
@@ -137,6 +151,14 @@ export function RemotePane({
           You passed on this question - no points this round.
         </p>
       );
+    } else if (state.rejected !== null) {
+      // Locked because the engine refused a second submission (e.g. a resubmit after a reload). Surface
+      // the "already answered" state plainly rather than pretending a fresh submit went through.
+      lockedNote = (
+        <p role="status" className="text-body-sm font-medium text-text">
+          You already answered this round.
+        </p>
+      );
     }
     answerPanel = (
       <div className="flex flex-col gap-2">
@@ -181,18 +203,17 @@ export function RemotePane({
             Submit
           </Button>
         </div>
-        {/* The give-up sits UNDER the primary Submit, styled red (danger). Clicking it fails the round
-            for no points and locks the player out, same as any submission. */}
-        <Button
-          type="button"
-          variant="destructive"
-          className="w-full"
-          onClick={giveUp}
-          disabled={timeUp}
-        >
-          {"I don't know"}
-        </Button>
         {helper}
+        {/* The give-up sits UNDER the primary Submit but is deliberately set apart so it is not
+            fat-fingered for Submit: a divider + spacing above it, a smaller footprint (auto width, sm
+            size, not the full-width primary), and its cost stated UP FRONT before the tap. It fails the
+            round for no points and locks the player out, same as any submission (WS16 review). */}
+        <div className="mt-1 flex flex-col items-center gap-1 border-t border-border pt-3">
+          <Button type="button" variant="destructive" size="sm" onClick={giveUp} disabled={timeUp}>
+            {"I don't know"}
+          </Button>
+          <p className="text-caption text-text-subtle">Counts as wrong - no points.</p>
+        </div>
       </div>
     );
   }
