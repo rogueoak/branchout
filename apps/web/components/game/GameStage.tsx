@@ -216,11 +216,10 @@ export function GameStage({
               state={state}
               me={me}
               onMove={onMove}
-              // Interactive mode renders BOTH panes on one device; the Remote already shows the shared
-              // sketch, so tell the viewer to suppress its duplicate and keep a single canvas on screen
-              // (spec 0063 canvas-UX). Viewer-only mode has no Remote pane, so this is false and the
-              // viewer shows the sketch.
-              hideSketchCanvas={mode === 'interactive'}
+              // A generic layout fact: the viewer and the Remote are on the same device only when BOTH
+              // panes render together (interactive, multi-surface). A game whose Remote already shows a
+              // shared artifact reads this to avoid a duplicate canvas (Sketchy, spec 0063 canvas-UX).
+              sharesDeviceWithRemote={viewerVisible && remoteVisible}
             />
           </div>
         ) : null}

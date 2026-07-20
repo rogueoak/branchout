@@ -212,7 +212,7 @@ export function SketchyRemote({
       );
     }
     // Show the sketch on the guesser's OWN device in every mode (spec 0063 canvas-UX): the Viewer
-    // suppresses its copy in interactive mode (GameStage -> hideSketchCanvas), so this is the single
+    // suppresses its copy in interactive mode (GameStage -> sharesDeviceWithRemote), so this is the single
     // canvas a guesser sees. It no longer gates on showResults (which hid it in interactive mode).
     const guessSketch = guess?.sketch ? (
       <SketchReplay sketch={guess.sketch} label="The sketch to guess" gutter />

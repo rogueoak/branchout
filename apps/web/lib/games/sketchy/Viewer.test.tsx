@@ -52,7 +52,7 @@ describe('SketchyViewer', () => {
     expect(screen.getByText('a dog')).toBeDefined();
   });
 
-  it('renders the sketch on the shared viewer in viewer-only mode (hideSketchCanvas off)', () => {
+  it('renders the sketch on the shared viewer in viewer-only mode (not sharing a device)', () => {
     render(
       <SketchyViewer
         state={state({
@@ -91,7 +91,7 @@ describe('SketchyViewer', () => {
           ],
         })}
         me="p2"
-        hideSketchCanvas
+        sharesDeviceWithRemote
       />,
     );
     // The remote pane already shows this sketch in interactive mode, so the viewer must not duplicate
@@ -113,7 +113,7 @@ describe('SketchyViewer', () => {
     });
     const { rerender } = render(<SketchyViewer state={decoyState} me="p2" />);
     expect(screen.getByRole('img', { name: /the featured sketch/i })).toBeDefined();
-    rerender(<SketchyViewer state={decoyState} me="p2" hideSketchCanvas />);
+    rerender(<SketchyViewer state={decoyState} me="p2" sharesDeviceWithRemote />);
     expect(screen.queryByRole('img', { name: /the featured sketch/i })).toBeNull();
   });
 

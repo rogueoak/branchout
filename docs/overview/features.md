@@ -299,7 +299,8 @@ What the product does for users, grouped by area. Each capability maps to one or
       guess -> score at a 360px viewport. Canvas-UX pass (spec `0063`): an edge-swipe gutter +
       `overscroll-x` contain around the draw/replay surfaces; the featured player watches their own
       sketch on their remote while others guess; exactly one canvas per mode (interactive suppresses
-      the viewer's copy via `hideSketchCanvas` since the remote already shows it); the replay display
+      the viewer's copy via the generic `sharesDeviceWithRemote` flag since the remote already shows it);
+      the replay display
       background is a prop (default white, strokes carry none); and Undo (3) + Clear (1) are per-GAME
       allowances shown on the buttons, disabled when spent, Clear behind a confirm dialog.
 - [~] Fourth game (insider-only) - Whispergrove: a two-team word-grid deduction game (spec `0062`).

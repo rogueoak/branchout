@@ -231,7 +231,7 @@ export function DrawCanvas({
       </div>
       {/* The gutter (px on each side) keeps the touch surface off the viewport edge so an edge-start
           swipe is a draw, not a browser back/forward; overscroll-x-contain is defense-in-depth. */}
-      <div className="overscroll-x-contain px-3 sm:px-4" style={{ overscrollBehaviorX: 'contain' }}>
+      <div className="overscroll-x-contain px-3 sm:px-4">
         <canvas
           ref={canvasRef}
           aria-label="Draw your seed on the bark"

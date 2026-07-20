@@ -55,7 +55,11 @@ function optionAuthorLabel(
   return 'The real seed';
 }
 
-export function SketchyViewer({ state, me, hideSketchCanvas = false }: GameViewProps) {
+export function SketchyViewer({ state, me, sharesDeviceWithRemote = false }: GameViewProps) {
+  // In interactive mode the guesser's/featured player's Remote pane already shows the featured sketch,
+  // so the shared viewer suppresses its duplicate copy to keep exactly one canvas on screen (spec
+  // 0063 canvas-UX). In viewer-only mode the panes are on different devices, so the viewer shows it.
+  const hideSketchCanvas = sharesDeviceWithRemote;
   const { phase, standings, players } = state;
   const prompt = asSketchyPrompt(state.prompt);
   const options = pickOptions(state.reveals);

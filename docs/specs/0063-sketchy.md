@@ -150,7 +150,8 @@ scoring are unchanged):
 - **One canvas per mode.** The featured sketch during the decoy and guess stages renders on the
   participant's REMOTE (their own device). The shared VIEWER shows that sketch only in viewer-only
   mode; in interactive mode (one device rendering both panes) the viewer suppresses its copy
-  (`hideSketchCanvas`, threaded from the stage by mode) so exactly one canvas is on screen. The
+  (via the generic `sharesDeviceWithRemote` layout flag the stage threads) so exactly one canvas is
+  on screen. The
   non-featured guesser's remote sketch no longer gates on `showResults`, so it shows in interactive
   mode too. (Interpretation recorded for the owner to confirm.)
 - **Display background is a prop.** The read-only replay takes a `background` prop (default white);

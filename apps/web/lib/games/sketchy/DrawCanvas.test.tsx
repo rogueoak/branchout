@@ -24,6 +24,13 @@ beforeEach(() => {
 });
 
 const drawn: Sketch = { strokes: [{ color: '#0d0a15', points: [0, 0, 100, 100] }] };
+// Two strokes so an undo (drop the LAST stroke) is distinguishable from a clear (drop all).
+const twoStrokes: Sketch = {
+  strokes: [
+    { color: '#0d0a15', points: [0, 0, 100, 100] },
+    { color: '#d2a463', points: [200, 200, 300, 300] },
+  ],
+};
 function noop() {}
 
 function renderCanvas(props: Partial<React.ComponentProps<typeof DrawCanvas>> = {}) {
@@ -49,12 +56,13 @@ describe('DrawCanvas allowances', () => {
     expect(screen.getByText(/for the whole game/i)).toBeDefined();
   });
 
-  it('spends an undo: removes the last stroke and reports the spend to the parent', () => {
+  it('spends an undo: removes ONLY the last stroke (not a full clear) and reports the spend', () => {
     const onChange = vi.fn();
     const onUndo = vi.fn();
-    renderCanvas({ onChange, onUndo, undosRemaining: 2 });
+    renderCanvas({ sketch: twoStrokes, onChange, onUndo, undosRemaining: 2 });
     fireEvent.click(screen.getByRole('button', { name: 'Undo (2 left)' }));
-    expect(onChange).toHaveBeenCalledWith({ strokes: [] });
+    // Only the last stroke is dropped - the first survives, which distinguishes undo from clear.
+    expect(onChange).toHaveBeenCalledWith({ strokes: [twoStrokes.strokes[0]] });
     expect(onUndo).toHaveBeenCalledTimes(1);
   });
 
