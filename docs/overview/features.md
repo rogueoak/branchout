@@ -492,6 +492,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       back-and-forth. The control-plane endpoint (POST /v1/feedback) is cookie-authenticated and
       host-verified, validates the message, caps submissions per IP, and - until an operator provisions
       RESEND_API_KEY - returns a clear "not configured" response rather than crashing (spec 0048).
+      The note is delivered as a styled, mobile-first HTML email (brand dark card, with a plain-text
+      fallback), subject "Branch Out Games: Feedback on <Game>", naming the submitter by gamer tag +
+      account email (a "reach out" mailto block) so the team can follow up (spec 0048).
 - [x] Newsletter subscribe - a "More games coming soon" banner on `/games` with a "Subscribe for
       updates" button that reveals an on-theme, mobile-first subscribe form. Submitting posts the email
       to the control-plane's `POST /v1/subscribe`, which adds the visitor to the Constant Contact
