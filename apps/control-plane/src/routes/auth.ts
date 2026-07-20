@@ -1,5 +1,4 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { normalizeEmail } from '../accounts/email';
 import { AccountService, ConflictError, ValidationError } from '../accounts/service';
 import type { RateLimitConfig, SessionCookieConfig } from '../config';
 import type { RateLimiter } from '../ratelimit/limiter';
@@ -112,28 +111,47 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     }
   });
 
-  // Log in: verify credentials, then open an account session. A wrong email or password both
-  // return the same 401 so the response never reveals which field was wrong. Failed attempts lock
-  // per ACCOUNT (the submitted email), NOT per (account, IP). The account is the anchor on its own
-  // merit: an attacker brute-forcing one account can come from many source IPs (a botnet has real,
-  // distinct ones), so a per-IP or per-(account,IP) key just splits the attack into many buckets and
-  // never trips - the target account is the one dimension that stays constant. (This holds regardless
-  // of whether the IP itself is trustworthy; spec 0038 sanitizes the IP at the edge, but that helps
-  // the per-IP signup cap, not this.) A successful sign-in clears the counter so earlier typos never
-  // punish a legitimate user. Tradeoff: account-only lockout lets someone briefly (one window) lock a
-  // targeted account by failing logins - the standard account-lockout tradeoff, bounded by the short
-  // window; softening it (CAPTCHA / progressive delay) is a future enhancement.
+  // Log in: verify credentials, then open an account session. The identifier is an email OR a gamer
+  // tag (spec 0072); a wrong identifier or password both return the same 401 so the response never
+  // reveals which was wrong. Two lockout dimensions, both counting only FAILED attempts:
+  //
+  // 1. Per RESOLVED account. We resolve the identifier to the account FIRST (`beginLogin`) so the lock
+  //    key is the account id - an email attempt and a username attempt on the same account share one
+  //    bucket, so switching identifier form cannot dodge or double the lock. An unresolved identifier
+  //    gets its own normalized bucket. The account is the anchor on its own merit: an attacker
+  //    brute-forcing one account can come from many source IPs (a botnet has real, distinct ones), so a
+  //    per-IP-only key just splits that attack into buckets and never trips - the account is the one
+  //    dimension that stays constant. A successful sign-in clears THIS counter so earlier typos never
+  //    punish a legitimate user.
+  // 2. Per source IP (spec 0072). Username login means the lockout trigger is now a PUBLIC identifier:
+  //    anyone can lock a victim by failing logins against their public gamer tag (pre-username this
+  //    needed the semi-private email). The per-account lock alone does not bound how many DIFFERENT
+  //    victims one source can lock, so we also cap failed logins per IP - one origin cannot hammer
+  //    arbitrary handles. This is a SECONDARY signal: it is only meaningful where the IP is trustworthy
+  //    (Caddy replaces X-Forwarded-For with the true peer at the edge, spec 0038; a direct dev call to
+  //    the published port is unsanitized, but dev is not a trust boundary), and it is generous vs the
+  //    per-account cap so a shared NAT/CGNAT egress of legitimate users is not caught. It does NOT reset
+  //    on a success, so an attacker cannot clear their IP's failure history by logging into their own
+  //    account. It does not fully close the DoS (a determined attacker with many IPs still locks a few
+  //    handles per window); a stronger progressive-delay / CAPTCHA step is a tracked follow-up in spec
+  //    0072, deliberately not overbuilt here.
   app.post('/auth/login', async (request, reply) => {
-    const email = asString(request.body, 'email');
-    const limitKey = `login:${normalizeEmail(email)}`;
+    const ipKey = `login-ip:${request.ip}`;
+    const ipVerdict = await limiter.check(ipKey, rateLimit.loginMaxPerIp);
+    if (ipVerdict.blocked) {
+      return tooManyAttempts(reply, ipVerdict.retryAfterSeconds);
+    }
+    const attempt = await accounts.beginLogin(asString(request.body, 'identifier'));
+    const limitKey = `login:${attempt.lockKey}`;
     const verdict = await limiter.check(limitKey, rateLimit.loginMaxAttempts);
     if (verdict.blocked) {
       return tooManyAttempts(reply, verdict.retryAfterSeconds);
     }
-    const account = await accounts.login({ email, password: asString(request.body, 'password') });
+    const account = await attempt.verify(asString(request.body, 'password'));
     if (!account) {
       await limiter.record(limitKey, rateLimit.loginWindowSeconds);
-      return reply.code(401).send({ error: 'Invalid email or password.' });
+      await limiter.record(ipKey, rateLimit.loginIpWindowSeconds);
+      return reply.code(401).send({ error: 'Invalid login or password.' });
     }
     await limiter.reset(limitKey);
     const session = await sessions.create({

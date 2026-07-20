@@ -52,6 +52,9 @@ const adminCookieConfig: AdminCookieConfig = {
 const defaultRateLimit: RateLimitConfig = {
   loginMaxAttempts: 5,
   loginWindowSeconds: 900,
+  // Generous per-IP cap so the non-IP tests (which fire from the default test IP) never trip it.
+  loginMaxPerIp: 500,
+  loginIpWindowSeconds: 900,
   signupMaxPerIp: 50,
   signupWindowSeconds: 3600,
 };
@@ -236,42 +239,60 @@ describe('POST /auth/signup', () => {
 });
 
 describe('POST /auth/login', () => {
-  it('opens a session for correct credentials', async () => {
+  it('opens a session for a correct email + password', async () => {
     const { app } = makeApp();
     await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
     const res = await app.inject({
       method: 'POST',
       url: '/v1/auth/login',
-      payload: { email: 'player@example.com', password: 'supersecret' },
+      payload: { identifier: 'player@example.com', password: 'supersecret' },
     });
     expect(res.statusCode).toBe(200);
     expect(String(res.headers['set-cookie'])).toContain('branchout_session=');
     await app.close();
   });
 
-  it('returns 401 with a generic message for a wrong password', async () => {
+  it('opens a session for a correct gamer tag + password (spec 0072)', async () => {
     const { app } = makeApp();
     await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+    // validSignup.gamerTag is 'CoolCat'; log in by the username, resolved case-insensitively.
     const res = await app.inject({
       method: 'POST',
       url: '/v1/auth/login',
-      payload: { email: 'player@example.com', password: 'wrong' },
+      payload: { identifier: 'coolcat', password: 'supersecret' },
     });
-    expect(res.statusCode).toBe(401);
-    expect(res.json().error).toBe('Invalid email or password.');
-    expect(res.json().field).toBeUndefined();
+    expect(res.statusCode).toBe(200);
+    expect(String(res.headers['set-cookie'])).toContain('branchout_session=');
     await app.close();
   });
 
-  it('returns the same 401 for an unknown email (no field leak)', async () => {
+  it('returns 401 with a generic message for a wrong password (email or username)', async () => {
     const { app } = makeApp();
-    const res = await app.inject({
-      method: 'POST',
-      url: '/v1/auth/login',
-      payload: { email: 'ghost@example.com', password: 'supersecret' },
-    });
-    expect(res.statusCode).toBe(401);
-    expect(res.json().error).toBe('Invalid email or password.');
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+    for (const identifier of ['player@example.com', 'CoolCat']) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/auth/login',
+        payload: { identifier, password: 'wrong' },
+      });
+      expect(res.statusCode).toBe(401);
+      expect(res.json().error).toBe('Invalid login or password.');
+      expect(res.json().field).toBeUndefined();
+    }
+    await app.close();
+  });
+
+  it('returns the same 401 for an unknown identifier - email OR username (no field leak)', async () => {
+    const { app } = makeApp();
+    for (const identifier of ['ghost@example.com', 'nobody']) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/auth/login',
+        payload: { identifier, password: 'supersecret' },
+      });
+      expect(res.statusCode).toBe(401);
+      expect(res.json().error).toBe('Invalid login or password.');
+    }
     await app.close();
   });
 });
@@ -324,8 +345,8 @@ describe('DELETE /auth/account - self soft-delete (spec 0040)', () => {
 });
 
 describe('auth rate limiting (spec 0036)', () => {
-  const creds = { email: 'player@example.com', password: 'supersecret' };
-  const wrong = { email: 'player@example.com', password: 'nope' };
+  const creds = { identifier: 'player@example.com', password: 'supersecret' };
+  const wrong = { identifier: 'player@example.com', password: 'nope' };
 
   it('locks a sign-in out after the attempt limit, with a Retry-After and a uniform message', async () => {
     const { app } = makeApp();
@@ -413,9 +434,99 @@ describe('auth rate limiting (spec 0036)', () => {
     const otherAccount = await app.inject({
       method: 'POST',
       url: '/v1/auth/login',
-      payload: { email: 'other@example.com', password: 'nope' },
+      payload: { identifier: 'other@example.com', password: 'nope' },
     });
     expect(otherAccount.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('counts email AND gamer-tag attempts against the SAME account bucket (no bypass, spec 0072)', async () => {
+    const { app } = makeApp();
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+
+    // Exhaust the limit (5) using the EMAIL form - the fifth is still a 401.
+    for (let i = 0; i < 5; i++) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/auth/login',
+        payload: { identifier: 'player@example.com', password: 'nope' },
+      });
+      expect(res.statusCode).toBe(401);
+    }
+    // Switching to the USERNAME (gamer tag) form of the SAME account does NOT mint a fresh bucket:
+    // it is already locked (429), even with the CORRECT password (the check runs before the verify).
+    const byTag = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: { identifier: 'CoolCat', password: 'supersecret' },
+    });
+    expect(byTag.statusCode).toBe(429);
+    await app.close();
+  });
+
+  it('caps failed logins per source IP so one origin cannot lock arbitrary public handles (spec 0072)', async () => {
+    // Username login makes the lockout trigger a PUBLIC gamer tag, so the per-account lock alone lets
+    // one source lock many victims. The per-IP failed-login cap bounds that. Set it to 3 for the test.
+    const { app } = makeApp({ ...defaultRateLimit, loginMaxPerIp: 3 });
+    const ip = { 'x-forwarded-for': '198.51.100.7' };
+
+    // Fail against three DIFFERENT handles from one IP. No single account bucket trips (each unresolved
+    // identifier has its own bucket), but the per-IP failure counter climbs to its cap.
+    for (const identifier of ['alice', 'bob', 'carol']) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/auth/login',
+        payload: { identifier, password: 'nope' },
+        headers: ip,
+      });
+      expect(res.statusCode).toBe(401);
+    }
+    // A fourth attempt from the SAME IP - even against a brand-new handle - is capped (429).
+    const capped = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: { identifier: 'dave', password: 'nope' },
+      headers: ip,
+    });
+    expect(capped.statusCode).toBe(429);
+    // A different IP has its own bucket - it is not caught by another source's hammering.
+    const otherIp = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: { identifier: 'dave', password: 'nope' },
+      headers: { 'x-forwarded-for': '203.0.113.42' },
+    });
+    expect(otherIp.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('does not count a SUCCESSFUL login against the per-IP failed-login cap (spec 0072)', async () => {
+    // The per-IP cap counts only failures, so a legitimate user behind a busy NAT who logs in cleanly
+    // never contributes to it - and it is not reset by a success either (so an attacker cannot clear
+    // their IP history by signing into their own account). Here: cap of 2, then two clean logins, then
+    // two failures must still be allowed (the successes did not consume the budget).
+    const { app } = makeApp({ ...defaultRateLimit, loginMaxPerIp: 2 });
+    await app.inject({ method: 'POST', url: '/v1/auth/signup', payload: validSignup });
+    const ip = { 'x-forwarded-for': '198.51.100.9' };
+    for (let i = 0; i < 3; i++) {
+      const ok = await app.inject({
+        method: 'POST',
+        url: '/v1/auth/login',
+        payload: { identifier: 'player@example.com', password: 'supersecret' },
+        headers: ip,
+      });
+      expect(ok.statusCode).toBe(200);
+    }
+    // Two failures from the same IP are still under the cap (the three successes did not count).
+    for (let i = 0; i < 2; i++) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/auth/login',
+        payload: { identifier: 'nobody', password: 'nope' },
+        headers: ip,
+      });
+      expect(res.statusCode).toBe(401);
+    }
     await app.close();
   });
 
@@ -584,7 +695,7 @@ describe('POST /auth/anonymous', () => {
     expect(res.statusCode).toBe(201);
     expect(res.json()).toEqual({ kind: 'anonymous', displayName: 'Guest Gonzo' });
     // No account was created for an anonymous join.
-    expect(await accounts.login({ email: 'guest gonzo', password: 'x' })).toBeNull();
+    expect(await accounts.login({ identifier: 'guest gonzo', password: 'x' })).toBeNull();
     await app.close();
   });
 

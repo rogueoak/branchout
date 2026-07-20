@@ -18,14 +18,26 @@ export interface SessionCookieConfig {
 }
 
 /**
- * Auth rate-limiting / lockout thresholds (spec 0036). Sign-in locks per (account, IP) so brute
- * force is bounded even when the IP rotates; sign-up caps per IP to blunt mass account creation.
+ * Auth rate-limiting / lockout thresholds (spec 0036). Sign-in locks per RESOLVED account (an
+ * attacker rotating source IPs cannot split the counter), plus a secondary per-IP cap on FAILED
+ * sign-ins (spec 0072) so one source cannot lock arbitrary public gamer tags out; sign-up caps per
+ * IP to blunt mass account creation.
  */
 export interface RateLimitConfig {
-  /** Failed sign-ins per (account, IP) within the window before a 429 lockout. */
+  /** Failed sign-ins per resolved account within the window before a 429 lockout. */
   loginMaxAttempts: number;
-  /** Fixed-window length for the sign-in lockout, in seconds. */
+  /** Fixed-window length for the per-account sign-in lockout, in seconds. */
   loginWindowSeconds: number;
+  /**
+   * Failed sign-ins per client IP within the window before a 429 (spec 0072). A secondary signal on
+   * top of the per-account lock: it bounds how many victims one source can lock out by hammering
+   * public handles. Generous vs `loginMaxAttempts` so a shared NAT/CGNAT egress of legitimate users
+   * is not caught. Meaningful only where the IP is trustworthy (edge sanitizes X-Forwarded-For, spec
+   * 0038).
+   */
+  loginMaxPerIp: number;
+  /** Fixed-window length for the per-IP failed-sign-in cap, in seconds. */
+  loginIpWindowSeconds: number;
   /** Sign-ups per client IP within the window before a 429. */
   signupMaxPerIp: number;
   /** Fixed-window length for the sign-up cap, in seconds. */
@@ -124,9 +136,12 @@ const DEFAULT_MEMBERSHIP_TTL = 60 * 60 * 12;
 /** Eight hours - the default admin session lifetime (shorter than a player's week; operator sessions). */
 const DEFAULT_ADMIN_SESSION_TTL = 60 * 60 * 8;
 
-/** Auth rate-limit defaults: 5 sign-in tries / 15 min; 10 sign-ups / hour per IP. */
+/** Auth rate-limit defaults: 5 sign-in tries / 15 min per account; 30 failed sign-ins / 15 min per
+ * IP (spec 0072, generous so a shared NAT is not caught); 10 sign-ups / hour per IP. */
 const DEFAULT_LOGIN_MAX_ATTEMPTS = 5;
 const DEFAULT_LOGIN_WINDOW = 60 * 15;
+const DEFAULT_LOGIN_MAX_PER_IP = 30;
+const DEFAULT_LOGIN_IP_WINDOW = 60 * 15;
 const DEFAULT_SIGNUP_MAX_PER_IP = 10;
 const DEFAULT_SIGNUP_WINDOW = 60 * 60;
 
@@ -210,6 +225,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     rateLimit: {
       loginMaxAttempts: parsePositiveInt(env.LOGIN_MAX_ATTEMPTS, DEFAULT_LOGIN_MAX_ATTEMPTS),
       loginWindowSeconds: parsePositiveInt(env.LOGIN_WINDOW_SECONDS, DEFAULT_LOGIN_WINDOW),
+      loginMaxPerIp: parsePositiveInt(env.LOGIN_MAX_PER_IP, DEFAULT_LOGIN_MAX_PER_IP),
+      loginIpWindowSeconds: parsePositiveInt(env.LOGIN_IP_WINDOW_SECONDS, DEFAULT_LOGIN_IP_WINDOW),
       signupMaxPerIp: parsePositiveInt(env.SIGNUP_MAX_PER_IP, DEFAULT_SIGNUP_MAX_PER_IP),
       signupWindowSeconds: parsePositiveInt(env.SIGNUP_WINDOW_SECONDS, DEFAULT_SIGNUP_WINDOW),
     },

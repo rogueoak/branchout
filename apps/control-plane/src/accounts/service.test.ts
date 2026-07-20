@@ -124,17 +124,41 @@ describe('AccountService.login', () => {
     await service.signup({ email: 'player@example.com', password: 'supersecret', gamerTag: 'Cat' });
   });
 
-  it('returns the account for correct credentials', async () => {
-    const account = await service.login({ email: 'Player@Example.com', password: 'supersecret' });
+  it('returns the account for a correct email + password', async () => {
+    const account = await service.login({
+      identifier: 'Player@Example.com',
+      password: 'supersecret',
+    });
     expect(account?.gamerTag).toBe('Cat');
   });
 
-  it('returns null for a wrong password', async () => {
-    expect(await service.login({ email: 'player@example.com', password: 'wrong' })).toBeNull();
+  it('returns the account for a correct gamer tag + password (spec 0072)', async () => {
+    // The gamer tag resolves case-insensitively, just like the email.
+    const account = await service.login({ identifier: 'CAT', password: 'supersecret' });
+    expect(account?.gamerTag).toBe('Cat');
   });
 
-  it('returns null for an unknown email (no leak of which field was wrong)', async () => {
-    expect(await service.login({ email: 'ghost@example.com', password: 'supersecret' })).toBeNull();
+  it('returns null for a wrong password (by email or by gamer tag)', async () => {
+    expect(await service.login({ identifier: 'player@example.com', password: 'wrong' })).toBeNull();
+    expect(await service.login({ identifier: 'Cat', password: 'wrong' })).toBeNull();
+  });
+
+  it('returns null for an unknown identifier (no leak of which field was wrong)', async () => {
+    expect(
+      await service.login({ identifier: 'ghost@example.com', password: 'supersecret' }),
+    ).toBeNull();
+    expect(await service.login({ identifier: 'nobody', password: 'supersecret' })).toBeNull();
+  });
+
+  it('keys the lockout on the resolved account for both the email and the gamer tag (spec 0072)', async () => {
+    // The email form and the gamer-tag form of the same account must produce the same lock key, so an
+    // attacker cannot get two lockout buckets by alternating identifier form.
+    const byEmail = await service.beginLogin('player@example.com');
+    const byTag = await service.beginLogin('Cat');
+    expect(byEmail.lockKey).toBe(byTag.lockKey);
+    // An unresolved identifier gets its own (non-account) bucket.
+    const miss = await service.beginLogin('ghost@example.com');
+    expect(miss.lockKey).not.toBe(byEmail.lockKey);
   });
 });
 
@@ -241,11 +265,15 @@ describe('AccountService deletion (spec 0040)', () => {
     expect(fresh.id).not.toBe(accountId);
   });
 
-  it('a soft-deleted account cannot log in', async () => {
+  it('a soft-deleted account cannot log in with its original email or gamer tag', async () => {
     await service.softDeleteSelf(accountId);
+    // Both identifier forms that resolved this account before deletion are now refused. (Soft-delete
+    // tombstones the unique identity columns, so resolution no longer returns the row - the `verify`
+    // deletedAt guard is the belt-and-suspenders behind that; either way the login is null.)
     expect(
-      await service.login({ email: 'player@example.com', password: 'supersecret' }),
+      await service.login({ identifier: 'player@example.com', password: 'supersecret' }),
     ).toBeNull();
+    expect(await service.login({ identifier: 'Cat', password: 'supersecret' })).toBeNull();
   });
 
   it('getById hides a soft-deleted account, getByIdForAdmin still returns it (flagged)', async () => {

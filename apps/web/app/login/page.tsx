@@ -28,12 +28,13 @@ function readTrustedNext(): string | null {
 }
 
 /**
- * Log-in page. Verifies credentials through the control-plane and opens a session. A wrong
- * email or password returns the same generic error - the server never says which was wrong.
- * Styling stays minimal on purpose - the Confetti theme lands separately in spec 0002.
+ * Log-in page. Verifies credentials through the control-plane and opens a session. The identifier
+ * accepts an email OR a username (gamer tag) (spec 0072); a wrong identifier or password returns the
+ * same generic error - the server never says which was wrong. Styling stays minimal on purpose - the
+ * Confetti theme lands separately in spec 0002.
  */
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +58,7 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }),
       });
       if (res.ok) {
         setDone(true);
@@ -104,14 +105,20 @@ export default function LoginPage() {
 
       <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
         <label className="flex flex-col gap-1 text-sm font-medium">
-          Email
+          Email or username
+          {/* Accepts an email OR a gamer tag (spec 0072), so this is a plain text field, not
+              type=email (which would reject a username) and autoComplete=username so a browser
+              offers the saved handle. */}
           <input
-            type="email"
-            name="email"
-            autoComplete="email"
+            type="text"
+            name="identifier"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
             className="rounded-md border border-gray-300 px-3 py-2 font-normal"
           />
         </label>

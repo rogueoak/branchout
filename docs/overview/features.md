@@ -35,7 +35,10 @@ What the product does for users, grouped by area. Each capability maps to one or
       (spec `0004`). Email + password sign-up, log in / out, a `me` identity endpoint, editable
       nickname (defaults to the gamer tag), and a join-by-code path that mints an ephemeral
       anonymous session with no account row. Redis-backed sessions behind an httpOnly cookie;
-      `/signup` and `/login` pages in `apps/web`.
+      `/signup` and `/login` pages in `apps/web`. Log in accepts EITHER the email OR the username
+      (gamer tag) in one identifier field (spec `0072`): the server resolves it by shape (`@` -> email,
+      else gamer tag), keeps the generic-401 no-enumeration posture, and keys the lockout (spec `0036`)
+      on the resolved account so email and username attempts share one bucket.
 - [x] Public profile - gamer tag (always public), nickname, an avatar chosen from a fixed set of
       12 on-theme nature-party creatures - woodland critters, bugs, and plants (fox, frog, owl, bear,
       deer, hedgehog, bee, ladybug, mushroom, cactus, sunflower, acorn), each a bold flat character
