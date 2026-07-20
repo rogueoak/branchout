@@ -6,22 +6,58 @@
 // Mobile-first (CLAUDE.md rule 1): it is a square that fills its box and reads at ~360px, uses
 // pointer events + pointer capture so a finger that drifts off the small board keeps drawing,
 // `touch-action: none` so a drag never scrolls the page, and disables text selection / the iOS
-// callout so drawing never pops copy/paste. A small color palette and an Undo + Clear control sit
-// above it. The parent owns submission; this only builds the sketch.
+// callout so drawing never pops copy/paste. The canvas sits behind a symmetric horizontal gutter with
+// overscroll-x contained, so a finger starting at the screen edge can't trigger the browser's
+// back/forward swipe mid-stroke. A small color palette and an Undo + Clear control sit above it.
+//
+// Undo and Clear are LIMITED and their allowance is PER GAME, not per round: the parent (Remote) owns
+// the remaining counts and keeps them across rounds (the per-round reset clears the sketch, not the
+// counters). This component only reflects the counts, disables an exhausted control, gates Clear
+// behind a confirm dialog (it wipes the drawing and spends the single clear), and reports each spend
+// so the parent decrements. The parent owns submission; this only builds the sketch.
 
+import { Button } from '@rogueoak/canopy';
+import {
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@rogueoak/canopy/branches';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CANVAS_SIZE, STROKE_COLORS, type Sketch, type Stroke } from './strokes';
 import { drawSketch } from './SketchReplay';
+
+/** Undos a player gets for the WHOLE game (not per round). */
+export const UNDO_ALLOWANCE = 3;
+/** Clears a player gets for the WHOLE game (not per round). */
+export const CLEAR_ALLOWANCE = 1;
 
 export function DrawCanvas({
   sketch,
   onChange,
   disabled = false,
+  undosRemaining,
+  clearsRemaining,
+  onUndo,
+  onClear,
 }: {
   sketch: Sketch;
   onChange: (next: Sketch) => void;
   disabled?: boolean;
+  /** Undos still available this GAME. When 0 the Undo control is disabled. */
+  undosRemaining: number;
+  /** Clears still available this GAME. When 0 the Clear control is disabled. */
+  clearsRemaining: number;
+  /** Reports a spent undo so the parent decrements the per-game allowance. */
+  onUndo: () => void;
+  /** Reports a spent clear so the parent decrements the per-game allowance. */
+  onClear: () => void;
 }) {
+  const [clearOpen, setClearOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [color, setColor] = useState<string>(STROKE_COLORS[0]);
   // The stroke being drawn right now (null between strokes). Kept in a ref so the pointer handlers
@@ -115,14 +151,21 @@ export function DrawCanvas({
     onChange({ strokes: [...sketchRef.current.strokes, stroke] });
   }
 
+  const hasStrokes = sketch.strokes.length > 0;
+  const canUndo = !disabled && undosRemaining > 0 && hasStrokes;
+  const canClear = !disabled && clearsRemaining > 0 && hasStrokes;
+
   function undo() {
-    if (disabled || sketch.strokes.length === 0) return;
+    if (!canUndo) return;
     onChange({ strokes: sketch.strokes.slice(0, -1) });
+    onUndo();
   }
 
-  function clear() {
-    if (disabled || sketch.strokes.length === 0) return;
+  function confirmClear() {
+    if (!canClear) return;
     onChange({ strokes: [] });
+    onClear();
+    setClearOpen(false);
   }
 
   return (
@@ -149,37 +192,66 @@ export function DrawCanvas({
           <button
             type="button"
             onClick={undo}
-            disabled={disabled || sketch.strokes.length === 0}
+            disabled={!canUndo}
             className="min-h-8 rounded-md border border-border px-2 text-body-sm text-text disabled:opacity-40"
           >
-            Undo
+            Undo ({undosRemaining} left)
           </button>
-          <button
-            type="button"
-            onClick={clear}
-            disabled={disabled || sketch.strokes.length === 0}
-            className="min-h-8 rounded-md border border-border px-2 text-body-sm text-text disabled:opacity-40"
-          >
-            Clear
-          </button>
+          <ResponsiveDialog open={clearOpen} onOpenChange={setClearOpen}>
+            <ResponsiveDialogTrigger asChild>
+              <button
+                type="button"
+                disabled={!canClear}
+                className="min-h-8 rounded-md border border-border px-2 text-body-sm text-text disabled:opacity-40"
+              >
+                Clear ({clearsRemaining} left)
+              </button>
+            </ResponsiveDialogTrigger>
+            <ResponsiveDialogContent>
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>Clear your whole sketch?</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription>
+                  This wipes every twig stroke and spends your one clear for the whole game. You
+                  cannot get it back.
+                </ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
+              <ResponsiveDialogFooter>
+                <ResponsiveDialogClose asChild>
+                  <Button type="button" variant="ghost">
+                    Keep drawing
+                  </Button>
+                </ResponsiveDialogClose>
+                <Button type="button" variant="destructive" onClick={confirmClear}>
+                  Clear sketch
+                </Button>
+              </ResponsiveDialogFooter>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
         </div>
       </div>
-      <canvas
-        ref={canvasRef}
-        aria-label="Draw your seed on the bark"
-        className="aspect-square w-full touch-none select-none rounded-lg border border-border bg-white"
-        style={{
-          touchAction: 'none',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          WebkitTouchCallout: 'none',
-          WebkitTapHighlightColor: 'transparent',
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={endStroke}
-        onPointerCancel={endStroke}
-      />
+      {/* The gutter (px on each side) keeps the touch surface off the viewport edge so an edge-start
+          swipe is a draw, not a browser back/forward; overscroll-x-contain is defense-in-depth. */}
+      <div className="overscroll-x-contain px-3 sm:px-4">
+        <canvas
+          ref={canvasRef}
+          aria-label="Draw your seed on the bark"
+          className="aspect-square w-full touch-none select-none rounded-lg border border-border bg-white"
+          style={{
+            touchAction: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            WebkitTouchCallout: 'none',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endStroke}
+          onPointerCancel={endStroke}
+        />
+      </div>
+      <p className="text-caption text-text-subtle">
+        {UNDO_ALLOWANCE} undos and {CLEAR_ALLOWANCE} clear for the whole game - use them wisely.
+      </p>
     </div>
   );
 }

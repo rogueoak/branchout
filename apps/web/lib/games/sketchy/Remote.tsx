@@ -18,7 +18,7 @@ import type { GameRemoteProps } from '../registry';
 import { FinalResults } from '../../../components/game/FinalResults';
 import { Leaderboard } from '../../../components/game/Leaderboard';
 import { asSketchyPrompt, asSketchySeedSecret, pickOptions } from './protocol';
-import { DrawCanvas } from './DrawCanvas';
+import { CLEAR_ALLOWANCE, DrawCanvas, UNDO_ALLOWANCE } from './DrawCanvas';
 import { SketchReplay } from './SketchReplay';
 import { emptySketch, isDrawn, serializeSketch, type Sketch } from './strokes';
 
@@ -41,6 +41,10 @@ export function SketchyRemote({
   // Draw-stage local state: the in-progress sketch and whether it was submitted this round.
   const [sketch, setSketch] = useState<Sketch>(emptySketch());
   const [drawSubmittedRound, setDrawSubmittedRound] = useState<number | null>(null);
+  // Undo/Clear allowances are PER GAME, not per round: they live OUTSIDE the per-round reset below, so
+  // the sketch clears each round but the counters carry across the whole game.
+  const [undosLeft, setUndosLeft] = useState(UNDO_ALLOWANCE);
+  const [clearsLeft, setClearsLeft] = useState(CLEAR_ALLOWANCE);
   // Decoy-stage local state.
   const [draft, setDraft] = useState('');
   const [myDecoy, setMyDecoy] = useState('');
@@ -54,6 +58,7 @@ export function SketchyRemote({
     setMyDecoy('');
     setDecoyRound(null);
     setGuessedRound(null);
+    // NOTE: undosLeft/clearsLeft are deliberately NOT reset here - the allowance is per game.
   }, [round]);
 
   // ---- DRAW round ----
@@ -83,7 +88,15 @@ export function SketchyRemote({
           <span className="text-body-sm font-medium text-text">Your seed - draw it!</span>
           {seedBadge}
         </div>
-        <DrawCanvas sketch={sketch} onChange={setSketch} disabled={submitted} />
+        <DrawCanvas
+          sketch={sketch}
+          onChange={setSketch}
+          disabled={submitted}
+          undosRemaining={undosLeft}
+          clearsRemaining={clearsLeft}
+          onUndo={() => setUndosLeft((n) => Math.max(0, n - 1))}
+          onClear={() => setClearsLeft((n) => Math.max(0, n - 1))}
+        />
         <Button
           type="button"
           variant="primary"
@@ -106,7 +119,7 @@ export function SketchyRemote({
     const iAmFeatured = prompt.featured === me;
     if (iAmFeatured) {
       const ownSketch = prompt.sketch ? (
-        <SketchReplay sketch={prompt.sketch} label="Your sketch" />
+        <SketchReplay sketch={prompt.sketch} label="Your sketch" gutter />
       ) : null;
       return (
         <section aria-label="Your controller" className="flex flex-col gap-3">
@@ -128,7 +141,7 @@ export function SketchyRemote({
       setDecoyRound(round);
     };
     const sketchToGuess = prompt.sketch ? (
-      <SketchReplay sketch={prompt.sketch} label="The sketch to guess" />
+      <SketchReplay sketch={prompt.sketch} label="The sketch to guess" gutter />
     ) : null;
     const decoyButtonLabel = submitted && !rejected ? 'Resend' : 'Submit';
     let decoyFooter = (
@@ -186,16 +199,24 @@ export function SketchyRemote({
       : options;
     const guessed = guessedRound === round;
     if (iAmFeatured) {
+      // The featured player watches their OWN drawing while everyone else guesses it (they sit out the
+      // vote, but seeing their sketch on their own device is the whole fun).
+      const ownSketch = guess?.sketch ? (
+        <SketchReplay sketch={guess.sketch} label="Your sketch" gutter />
+      ) : null;
       return (
         <section aria-label="Your controller" className="flex flex-col gap-3">
           <p className="text-body text-text">Your sketch is up for guessing - sit this one out.</p>
+          {ownSketch}
         </section>
       );
     }
-    const guessSketch =
-      showResults && guess?.sketch ? (
-        <SketchReplay sketch={guess.sketch} label="The sketch to guess" />
-      ) : null;
+    // Show the sketch on the guesser's OWN device in every mode (spec 0063 canvas-UX): the Viewer
+    // suppresses its copy in interactive mode (GameStage -> sharesDeviceWithRemote), so this is the single
+    // canvas a guesser sees. It no longer gates on showResults (which hid it in interactive mode).
+    const guessSketch = guess?.sketch ? (
+      <SketchReplay sketch={guess.sketch} label="The sketch to guess" gutter />
+    ) : null;
     const guessBody = guessed ? (
       <p role="status" className="text-body-sm text-success">
         Locked in! Waiting for the others...
