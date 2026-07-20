@@ -16,12 +16,13 @@ import type { PlayerView } from '@branchout/protocol';
 import { Button, Input } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
 import type { GameState } from '../../game-state';
-import { asTriviaPrompt, pickTriviaRoundReveal } from './protocol';
+import { asTriviaPrompt, pickTriviaDisputeReveal, pickTriviaRoundReveal } from './protocol';
 import { useMoveCountdown } from '../../use-move-countdown';
 import { useDwellCountdown } from '../../use-dwell-countdown';
 import { FinalResults } from '../../../components/game/FinalResults';
 import { Leaderboard } from '../../../components/game/Leaderboard';
 import { TriviaQuestionCard } from './QuestionCard';
+import { AnswerReveal } from './AnswerReveal';
 
 interface RemotePaneProps {
   state: GameState;
@@ -56,6 +57,7 @@ export function RemotePane({
   // Decode the opaque prompt/reveal into Trivia shapes at the render boundary (spec 0023).
   const prompt = asTriviaPrompt(state.prompt);
   const reveal = pickTriviaRoundReveal(state.reveals);
+  const disputeResult = pickTriviaDisputeReveal(state.reveals);
   const [answer, setAnswer] = useState('');
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
   const [disputedRound, setDisputedRound] = useState<number | null>(null);
@@ -119,6 +121,21 @@ export function RemotePane({
     );
   }
 
+  // A remote-only player (no viewer pane beside them) reads the answer/reveal card here, so after
+  // each question they see the very same AnswerReveal the interactive player reads from the viewer
+  // (spec 0069, WS12): the answer as the focus with green/red correctness, plus the per-player
+  // answers table. An interactive remote (showResults false) skips it - the viewer pane carries it.
+  const revealCard =
+    showResults && reveal ? (
+      <AnswerReveal
+        reveal={reveal}
+        players={state.players}
+        phase={phase}
+        disputeResult={disputeResult}
+        dwellSecondsLeft={dwellSecondsLeft}
+      />
+    ) : null;
+
   return (
     <section aria-label="Your controller" className="flex flex-col gap-4">
       {phase === 'collecting' ? (
@@ -155,6 +172,7 @@ export function RemotePane({
         </div>
       ) : phase === 'disputing' ? (
         <div className="flex flex-col gap-3">
+          {revealCard}
           {canDispute ? (
             <>
               <p className="text-body text-text">
@@ -182,12 +200,15 @@ export function RemotePane({
             </p>
           ) : (
             <p className="text-body-sm text-text-muted">
-              The answer is on the viewer. A disputed round may go to a vote.
+              {showResults
+                ? 'A disputed round may go to a vote.'
+                : 'The answer is on the viewer. A disputed round may go to a vote.'}
             </p>
           )}
         </div>
       ) : phase === 'voting' ? (
         <div className="flex flex-col gap-3">
+          {revealCard}
           <p className="text-body text-text">Should a disputed answer count?</p>
           {disputes
             .filter((id) => id !== me)
