@@ -262,6 +262,30 @@ describe('reveal scoring', () => {
     expect(reveal.wrong).toEqual(['p2']); // blank is dispute-eligible; p3 is absent from both
     expect(revealed.scores.map((s) => s.player)).toEqual(['p1']);
   });
+
+  // The "I don't know" give-up (WS16) submits the empty-string sentinel. It must always score wrong -
+  // no points - and, being a real submission, keep the player in the reveal (locked out, not absent).
+  it('scores the empty-string give-up sentinel wrong with no points', () => {
+    let scratch = game.configure({ category: 'Nature' }, players).scratch;
+    const started = game.startRound(ctx(scratch));
+    scratch = started.scratch;
+    const answer = (started.prompt as { question: string }).question.replace('?', '-answer');
+
+    scratch = game.collectMove(ctx(scratch), 'p1', answer).scratch; // correct
+    scratch = game.collectMove(ctx(scratch), 'p2', '').scratch; // give-up sentinel -> wrong
+
+    const revealed = game.reveal(ctx(scratch));
+    const reveal = revealed.reveal as {
+      correct: string[];
+      wrong: string[];
+      submissions: { player: string; answer: string; correct: boolean }[];
+    };
+    expect(reveal.wrong).toEqual(['p2']);
+    // The give-up earns nothing, so p2 is not among the scored players.
+    expect(revealed.scores.map((s) => s.player)).toEqual(['p1']);
+    // It is a real submission: p2 stays in the reveal table (a give-up, not an absence).
+    expect(reveal.submissions).toContainEqual({ player: 'p2', answer: '', correct: false });
+  });
 });
 
 describe('dispute resolution', () => {

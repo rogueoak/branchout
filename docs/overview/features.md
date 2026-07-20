@@ -127,13 +127,18 @@ What the product does for users, grouped by area. Each capability maps to one or
       players awarding 50; between-round leaderboard, host-advance, and final standings for stars
       (spec `0008`). Registered in the engine registry alongside the lifecycle stub.
 - [x] Trivia gameplay screens - the three in-game screens as designed surfaces (spec `0069`): the
-      in-round question in a `Card` with a big central countdown that colours by percentage of the
-      configured time limit (neutral, warning at <=30% left, danger + blink at <=10%, no blink under
-      `prefers-reduced-motion`) and a live "x of y answered" line; a reveal that makes the answer the
-      focus (green when someone got it, red when nobody did) with every guess in a Player | Answer
-      table with check / x verdicts; a leaderboard glow-up (podium emphasis, own-row call-out). All
-      three read the host's `0068` pacing: host controls collapse into an accordion (open by default
-      only when auto-advance is off), and the reveal/leaderboard show the auto-advance dwell countdown.
+      in-round question in a `Card`, then a small SEPARATE countdown `Card` just below it whose number
+      is a step under the question size and colours by percentage of the configured time limit (neutral,
+      warning at <=30% left, danger at <=10% with a fast custom blink `animate-countdown-blink` ~0.5s, no
+      blink under `prefers-reduced-motion`), plus a live "x of y answered" line; a reveal that makes the
+      answer the focus (green when someone got it, red when nobody did) with every guess in a Player |
+      Answer table with check / x verdicts (a give-up shows as "No answer"); a leaderboard glow-up
+      (podium emphasis, own-row call-out). A player answers each round exactly ONCE (WS16): after Submit
+      the form is replaced by a locked confirmation - no resubmit. Beneath Submit a red "I don't know"
+      give-up submits an empty-answer sentinel that the engine scores wrong (no points) and locks the
+      player out, just like any wrong answer. All three read the host's `0068` pacing: host controls
+      collapse into an accordion (open by default only when auto-advance is off), and the
+      reveal/leaderboard show the auto-advance dwell countdown.
 - [~] Second game - Liar Liar: a Fibbage-style bluffing game on the generic guess/decision lifecycle
       (spec `0020`). The viewer shows an improbable-but-true clue; players invent a fake within 90s
       (a duplicate or the real answer is rejected privately), the reveal lists every fake plus the

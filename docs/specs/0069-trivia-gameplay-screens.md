@@ -16,11 +16,20 @@ Three cohesive gameplay screens, driven by authoritative engine state and the ho
 pacing config:
 
 - **In-round (question).** The question sits in a `Card` with the round + difficulty badges on
-  top (the top timer badge is gone). Below it, a large, centered countdown whose colour is a
-  percentage of the configured time limit: neutral to start, `warning` at <=30% remaining,
-  `danger` and blinking at <=10% (no blink under `prefers-reduced-motion`). An "x of y players
-  answered" line updates live as answers land. Host controls collapse into an accordion, closed by
-  default - but open by default when auto-advance is off, since the host must advance by hand.
+  top (the top timer badge is gone). Directly below it, a SMALL separate countdown `Card` whose
+  number is sized a step under the question (WS16 - big enough to read, not a headline) and whose
+  colour is a percentage of the configured time limit: neutral to start, `warning` at <=30%
+  remaining, `danger` at <=10% with a fast custom blink (`animate-countdown-blink`, ~0.5s - quicker
+  than `animate-pulse`; no blink under `prefers-reduced-motion`). An "x of y players answered" line
+  updates live as answers land. Host controls collapse into an accordion, closed by default - but
+  open by default when auto-advance is off, since the host must advance by hand.
+- **Answering (submit-once + give-up, WS16).** A player answers each round exactly ONCE. After they
+  Submit, the input and buttons are gone, replaced by a locked confirmation ("Answer locked in.")
+  with no resubmit and no "you can change it" copy. Beneath the primary Submit sits a red ("I don't
+  know") give-up: it submits the empty-answer sentinel, which the engine's matching scores wrong (no
+  points), and locks the player out for that round exactly like any other submission. A give-up is
+  just a wrong answer to the reveal / dispute flow; the answers table renders its blank as "No
+  answer".
 - **Reveal / answer.** The question shrinks; the answer is the focus, in strong colour. Nobody
   correct -> the answer is red; otherwise correct players read green and the rest red. Every
   player's guess is a Player | Answer table with a check / x per row. When auto-advance is on, a
@@ -93,8 +102,13 @@ canopy: `Card` (twigs), `Accordion` + `Table` (branches), `Badge`. A small
 ## Acceptance
 
 - [ ] In-round: question in a `Card`; round + difficulty badges on top; no top timer badge.
-- [ ] Countdown is large and centered; neutral, then `warning` at <=30% of the configured limit,
-      then `danger` + blink at <=10%; no blink under `prefers-reduced-motion`.
+- [ ] Countdown lives in its own small `Card` directly under the question, sized a step below the
+      question; neutral, then `warning` at <=30% of the configured limit, then `danger` + fast blink
+      (`animate-countdown-blink`) at <=10%; no blink under `prefers-reduced-motion`.
+- [ ] Submit-once (WS16): after Submit the form is gone (no resubmit, no "you can change it" copy),
+      replaced by a locked confirmation.
+- [ ] A red "I don't know" give-up under Submit submits an empty-answer sentinel that scores wrong
+      (no points) and locks the player out for the round; the reveal shows the blank as "No answer".
 - [ ] "x of y players answered" reflects `answered` / connected roster and updates as answers land.
 - [ ] Host controls sit in an accordion, collapsed by default, open by default when auto-advance
       is off.

@@ -112,18 +112,27 @@ export function AnswerReveal({
               const rowTone = submission.correct ? 'text-success' : 'text-danger';
               const icon = submission.correct ? <CheckIcon /> : <CrossIcon />;
               const verdict = submission.correct ? 'correct' : 'wrong';
+              // A blank submission is a give-up (WS16): the player passed, sending an empty answer that
+              // scores wrong. Show it as "No answer" so the row reads plainly instead of an empty cell.
+              const blank = submission.answer.trim() === '';
+              const shown = blank ? 'No answer' : submission.answer;
+              const answerNode = blank ? (
+                <span className="italic text-text-muted">{shown}</span>
+              ) : (
+                shown
+              );
               return (
                 <TableRow key={submission.player}>
                   <TableCell className="font-medium text-text">{name}</TableCell>
                   <TableCell>
                     <span
                       className={`flex items-center gap-2 ${rowTone}`}
-                      aria-label={`${name} answered ${submission.answer}, ${verdict}`}
+                      aria-label={`${name} answered ${shown}, ${verdict}`}
                     >
                       <span aria-hidden className="shrink-0">
                         {icon}
                       </span>
-                      <span className="min-w-0 break-words">{submission.answer}</span>
+                      <span className="min-w-0 break-words">{answerNode}</span>
                     </span>
                   </TableCell>
                 </TableRow>

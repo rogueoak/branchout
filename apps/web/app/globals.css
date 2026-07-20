@@ -73,11 +73,25 @@
     transform: translateY(0) scale(1);
   }
 }
+/* Trivia's danger-zone countdown blink (spec 0069, WS16): once <=10% of the answer window is left the
+   number blinks to press urgency. It is deliberately FASTER than Tailwind's `animate-pulse` (~2s) - a
+   ~0.5s cycle reads as a countdown alarm, not a gentle breathe. The component only applies this class
+   when motion is allowed, so prefers-reduced-motion never sees a blink. */
+@keyframes countdown-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
 @theme {
   --animate-sheet-right-in: sheet-right-in var(--duration-slow) var(--ease-decelerate);
   --animate-sheet-right-out: sheet-right-out var(--duration-base) var(--ease-standard);
   --animate-reversi-turn-notice: reversi-turn-notice 1800ms var(--ease-standard);
   --animate-board-turn-notice: board-turn-notice 1800ms var(--ease-standard);
+  --animate-countdown-blink: countdown-blink 0.5s var(--ease-standard) infinite;
 }
 
 /* App-wide base surface so every route is dark by default, even ones that do not set `bg-bg`
