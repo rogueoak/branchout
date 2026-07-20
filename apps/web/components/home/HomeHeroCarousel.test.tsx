@@ -33,7 +33,10 @@ describe('HomeHeroCarousel', () => {
     render(<HomeHeroCarousel slides={SLIDES} />);
     const track = screen.getByRole('link', { name: 'Trivia - game details' }).closest('div.flex');
     expect(track).not.toBeNull();
-    expect(track!.className).toMatch(/\bpy-\d/);
+    // Require a base-level, non-zero `py-*` (e.g. `py-3`): the leading `(^|\s)` boundary excludes a
+    // responsive-only `md:py-3` that would leave phones clipped, and `[1-9]` excludes `py-0` (zero
+    // clearance) - either would defeat the fix yet pass a looser `\bpy-\d`.
+    expect(track!.className).toMatch(/(^|\s)py-[1-9]/);
   });
 
   it('hides the decorative hero art from the accessibility tree (the link carries the name)', () => {
