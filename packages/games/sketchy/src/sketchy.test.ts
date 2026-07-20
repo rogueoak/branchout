@@ -98,6 +98,31 @@ describe('draw round', () => {
     expect(configured.disputeWindowMs).toBeGreaterThan(0);
   });
 
+  it('keeps the draw->gallery dispute bridge positive even with auto-advance off', () => {
+    // The dispute window is the mechanical draw->gallery bridge, NOT the host-pause leaderboard dwell,
+    // so it must stay positive regardless of auto-advance or the draw round would hang.
+    const game = createSketchyGame(BANK, mulberry32(1));
+    const off = game.configure({ rounds: 1, autoAdvance: false }, roster);
+    expect(off.disputeWindowMs).toBe(DRAW_DISPUTE_WINDOW_MS);
+    expect(off.disputeWindowMs).toBeGreaterThan(0);
+  });
+});
+
+describe('auto-advance pacing (spec 0068)', () => {
+  it('reports the leaderboard dwell as the advance-after delay when auto-advance is on', () => {
+    // The engine infers `autoAdvance` = leaderboardWindowMs > 0, which drives the host-controls
+    // collapse and the client countdown.
+    const game = createSketchyGame(BANK, mulberry32(1));
+    const on = game.configure({ rounds: 1, autoAdvance: true, advanceAfterSeconds: 8 }, roster);
+    expect(on.leaderboardWindowMs).toBe(8_000);
+  });
+
+  it('reports a 0 leaderboard dwell (host-advanced) when auto-advance is off', () => {
+    const game = createSketchyGame(BANK, mulberry32(1));
+    const off = game.configure({ rounds: 1, autoAdvance: false }, roster);
+    expect(off.leaderboardWindowMs).toBe(0);
+  });
+
   it('rejects a blank or malformed sketch and banks a real one', () => {
     const game = createSketchyGame(BANK, mulberry32(1));
     let scratch = game.configure({ rounds: 1 }, roster).scratch;
