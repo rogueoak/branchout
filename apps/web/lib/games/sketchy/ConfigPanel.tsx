@@ -84,7 +84,8 @@ export function SketchyConfigPanel({ value, onChange, disabled }: GameConfigPane
           </div>
         ) : null}
         <p className="text-caption text-text-subtle">
-          Each round, everyone draws a secret seed, then guesses the real one behind every sketch.
+          Each round, everyone draws their own secret seed, then guesses the true seed behind every
+          sketch.
         </p>
         {roundsError ? (
           <p id="sketchy-rounds-error" role="alert" className="text-body-sm text-danger">

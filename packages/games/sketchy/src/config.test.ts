@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ADVANCE_AFTER_SECONDS,
   DEFAULT_ROUNDS,
+  MAX_ADVANCE_AFTER_SECONDS,
   MAX_ROUNDS,
+  MIN_ADVANCE_AFTER_SECONDS,
+  MIN_ROUNDS,
   validateConfig,
 } from './config';
 
@@ -22,9 +25,10 @@ describe('validateConfig', () => {
     });
   });
 
-  it('accepts an in-range round count', () => {
+  it('accepts an in-range round count, including both boundaries', () => {
     expect(validateConfig({ rounds: 2 })).toMatchObject({ rounds: 2 });
-    // Marathon (15) is now in range.
+    // Both ends of the accept range: MIN (1) and Marathon (MAX = 15).
+    expect(validateConfig({ rounds: MIN_ROUNDS })).toMatchObject({ rounds: 1 });
     expect(validateConfig({ rounds: MAX_ROUNDS })).toMatchObject({ rounds: 15 });
   });
 
@@ -34,8 +38,15 @@ describe('validateConfig', () => {
     expect(() => validateConfig({ rounds: 1.5 })).toThrow(/rounds/);
   });
 
-  it('resolves the advance-after dwell to milliseconds', () => {
+  it('resolves the advance-after dwell to milliseconds, accepting both boundaries', () => {
     expect(validateConfig({ advanceAfterSeconds: 12 }).advanceAfterMs).toBe(12_000);
+    // Both ends of the accept range (1-60) must pass, so an off-by-one in the bound is caught.
+    expect(validateConfig({ advanceAfterSeconds: MIN_ADVANCE_AFTER_SECONDS }).advanceAfterMs).toBe(
+      1_000,
+    );
+    expect(validateConfig({ advanceAfterSeconds: MAX_ADVANCE_AFTER_SECONDS }).advanceAfterMs).toBe(
+      60_000,
+    );
   });
 
   it('rejects an out-of-range or non-integer advance-after dwell', () => {

@@ -116,8 +116,10 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
       await drawAndSubmit(page);
     }
 
-    // The draw round has no guess: the host advances through the gallery leaderboard, then the sketch
-    // rounds run (one per player). Drive the whole game to the final results, handling each decoy +
+    // The draw round has no guess: play proceeds through the gallery leaderboard, then the sketch
+    // rounds run (one per player). Auto-advance defaults on (spec 0068), so each leaderboard would
+    // hop on its own after the dwell; the host's "Next" press below just accelerates that so the
+    // sweep stays well inside budget. Drive the whole game to the final results, handling each decoy +
     // guess stage as it appears on the host (interactive) and the two remotes.
     await expect(async () => {
       // ADVANCE ONLY on a between-round leaderboard. The host's "Next" button (an `advance` control)

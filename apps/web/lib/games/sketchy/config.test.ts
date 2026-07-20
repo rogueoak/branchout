@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ROUNDS,
+  MAX_ADVANCE_AFTER_SECONDS,
   MAX_ROUNDS,
+  MIN_ADVANCE_AFTER_SECONDS,
   ROUND_PRESETS,
   defaultSketchyConfig,
   validateSketchyConfig,
@@ -34,6 +36,16 @@ describe('validateSketchyConfig', () => {
         expect.objectContaining({ field: 'rounds' }),
       ]);
     }
+  });
+
+  it('accepts an advance-after on both boundaries (1 and 60)', () => {
+    // Both ends of the accept range must pass, so an off-by-one in the bound is caught.
+    expect(
+      validateSketchyConfig({ ...base, advanceAfterSeconds: MIN_ADVANCE_AFTER_SECONDS }),
+    ).toEqual([]);
+    expect(
+      validateSketchyConfig({ ...base, advanceAfterSeconds: MAX_ADVANCE_AFTER_SECONDS }),
+    ).toEqual([]);
   });
 
   it('rejects an advance-after outside 1-60', () => {
