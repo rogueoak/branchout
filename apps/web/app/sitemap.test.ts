@@ -5,7 +5,15 @@ import sitemap from './sitemap';
 describe('sitemap', () => {
   it('lists the marketing surfaces (home, games index, every feature page, legal) as absolute URLs', () => {
     const urls = sitemap().map((entry) => entry.url);
-    for (const path of ['/', '/games', '/games/trivia', '/games/liar-liar', '/privacy', '/terms']) {
+    for (const path of [
+      '/',
+      '/games',
+      '/games/trivia',
+      '/games/liar-liar',
+      '/games/reversi',
+      '/privacy',
+      '/terms',
+    ]) {
       expect(urls).toContain(`${SITE_URL}${path === '/' ? '/' : path}`);
     }
     // Every URL is absolute (crawlers need absolute URLs).

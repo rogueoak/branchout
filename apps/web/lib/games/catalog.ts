@@ -338,10 +338,10 @@ const MARKETING: Record<string, GameMarketing> = {
       'Whispergrove is a phone-first two-team word-grid game in insider testing. A Whisperer who ' +
       'alone sees the secret key gives one-word whispers; your grove taps leaves to link them first.',
   },
-  // Reversi is insider-only (spec 0054): the entry exists so the build-time "every registered game
-  // needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so it never
-  // appears on the public /games index, the feature pages, or the sitemap. Its share card is a
-  // placeholder (no public raster is generated for an insider game); it satisfies the shape check.
+  // Reversi is PUBLIC (spec 0054, promoted in WS9 / spec 0070): it appears on the public /games index,
+  // its feature page, the sitemap, and the home hero carousel (PUBLIC_GAME_CATALOG now includes it). It
+  // still reuses the Trivia share card as a placeholder Open Graph raster (a dedicated /share-reversi.png
+  // is a separate follow-up); that satisfies the shareImage shape check.
   reversi: {
     description:
       'Reversi is the classic disc-flip strategy game for two, built for phones. Place a Violet or ' +

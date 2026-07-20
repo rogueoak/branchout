@@ -308,8 +308,8 @@ function standingsFor(ctx: RoundContext): Standing[] {
 
 /**
  * Reversi as a plugin the engine registers. `create` builds the module (no services needed - the game
- * is deterministic and stateless outside scratch). The manifest is `insider` so it stays off the
- * public catalog, and exactly 2 players.
+ * is deterministic and stateless outside scratch). The manifest is `public` (WS9: Reversi graduated
+ * from insider testing), mirroring the web module's `visibility`, and exactly 2 players.
  */
 export const reversiPlugin: GamePlugin<ReversiConfig, ReversiSim, unknown> = {
   manifest: {
@@ -318,7 +318,7 @@ export const reversiPlugin: GamePlugin<ReversiConfig, ReversiSim, unknown> = {
     version: '1.0.0',
     configSchema: validateConfig,
     capabilities: { minPlayers: 2, maxPlayers: 2 },
-    visibility: 'insider',
+    visibility: 'public',
   },
   // Reversi is deterministic and stateless outside scratch, so it needs none of the injected services.
   create: () => createReversiGame(),
