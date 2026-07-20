@@ -16,11 +16,27 @@ Three cohesive gameplay screens, driven by authoritative engine state and the ho
 pacing config:
 
 - **In-round (question).** The question sits in a `Card` with the round + difficulty badges on
-  top (the top timer badge is gone). Below it, a large, centered countdown whose colour is a
-  percentage of the configured time limit: neutral to start, `warning` at <=30% remaining,
-  `danger` and blinking at <=10% (no blink under `prefers-reduced-motion`). An "x of y players
-  answered" line updates live as answers land. Host controls collapse into an accordion, closed by
-  default - but open by default when auto-advance is off, since the host must advance by hand.
+  top (the top timer badge is gone). Directly below it, a SMALL separate countdown `Card` whose
+  number is sized a step under the question (WS16 - big enough to read, not a headline) and whose
+  colour is a percentage of the configured time limit: neutral to start, `warning` at <=30%
+  remaining, `danger` at <=10% with a fast custom blink (`animate-countdown-blink`, ~0.5s - quicker
+  than `animate-pulse`; no blink under `prefers-reduced-motion`). An "x of y players answered" line
+  updates live as answers land. Host controls collapse into an accordion, closed by default - but
+  open by default when auto-advance is off, since the host must advance by hand.
+- **Answering (submit-once + give-up, WS16).** A player answers each round exactly ONCE, enforced
+  AUTHORITATIVELY in the engine: Trivia's `collectMove` REJECTS a second submission from a player who
+  already answered this round (it no longer overwrites), so neither a reload nor a replay can turn a
+  give-up or a wrong answer into a scoring one. The client mirrors this: after Submit the input and
+  buttons are gone, replaced by a locked confirmation ("Answer locked in.") with no resubmit and no
+  "you can change it" copy; and a device that reloaded (losing its local submit flag) locks the form
+  as soon as the engine rejects its resubmit ("You already answered this round."). The broadcast state
+  carries no per-player "you answered" flag, so a reloaded player briefly sees the form until that
+  first rejected attempt - the engine guarantees the score regardless. Beneath the primary Submit,
+  set apart (a divider, smaller footprint, and its cost "Counts as wrong - no points" shown before the
+  tap so it is not fat-fingered for Submit), sits a red ("I don't know") give-up: it submits the
+  empty-answer sentinel, which the engine's matching scores wrong (no points) and locks the player
+  out. A give-up (a blank) is NOT dispute-eligible - it never enters the dispute `wrong` set, so it
+  cannot be disputed for the 50-point award - but still shows red in the reveal table ("No answer").
 - **Reveal / answer.** The question shrinks; the answer is the focus, in strong colour. Nobody
   correct -> the answer is red; otherwise correct players read green and the rest red. Every
   player's guess is a Player | Answer table with a check / x per row. When auto-advance is on, a
@@ -93,8 +109,17 @@ canopy: `Card` (twigs), `Accordion` + `Table` (branches), `Badge`. A small
 ## Acceptance
 
 - [ ] In-round: question in a `Card`; round + difficulty badges on top; no top timer badge.
-- [ ] Countdown is large and centered; neutral, then `warning` at <=30% of the configured limit,
-      then `danger` + blink at <=10%; no blink under `prefers-reduced-motion`.
+- [ ] Countdown lives in its own small `Card` directly under the question, sized a step below the
+      question; neutral, then `warning` at <=30% of the configured limit, then `danger` + fast blink
+      (`animate-countdown-blink`) at <=10%; no blink under `prefers-reduced-motion`.
+- [ ] Submit-once (WS16) is authoritative: the engine `collectMove` rejects a second submission for a
+      player+round (the first stands); the client shows the locked confirmation after Submit and locks
+      the form on the engine rejection after a reload ("You already answered this round.").
+- [ ] A red "I don't know" give-up under Submit - set apart with its "counts as wrong - no points"
+      cost shown before the tap - submits an empty-answer sentinel that scores wrong (no points) and
+      locks the player out; the reveal shows the blank as "No answer".
+- [ ] A give-up / blank is NOT dispute-eligible (never in the dispute `wrong` set) and can never win
+      the 50-point dispute award.
 - [ ] "x of y players answered" reflects `answered` / connected roster and updates as answers land.
 - [ ] Host controls sit in an accordion, collapsed by default, open by default when auto-advance
       is off.

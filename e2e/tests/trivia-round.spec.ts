@@ -30,12 +30,13 @@ test('a host and a second player play a full one-round Trivia game', async ({ br
     await expect(host.getByTestId('question-prompt')).toBeVisible();
     await expect(player.getByTestId('question-prompt')).toBeVisible();
 
-    // Both submit an answer through their controller.
+    // Both submit an answer through their controller. A player answers exactly once (WS16): after
+    // Submit the form is replaced by a locked confirmation.
     for (const p of [host, player]) {
       await p.locator('#answer-input').fill('branch out');
       await p.getByRole('button', { name: /^submit$/i }).click();
     }
-    await expect(host.getByText(/answer submitted/i)).toBeVisible();
+    await expect(host.getByText(/answer locked in/i)).toBeVisible();
 
     // The round reveals its answer to the shared viewer.
     await expect(host.getByTestId('reveal-answer')).toBeVisible({ timeout: 30_000 });

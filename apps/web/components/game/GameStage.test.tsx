@@ -121,17 +121,18 @@ describe('GameStage per-phase rendering', () => {
     expect(onMove).toHaveBeenCalledWith(1, 'water');
   });
 
-  it('lets a player resubmit their answer until the round closes', () => {
+  it('locks a player out after a single submit (no resubmit, WS16)', () => {
     const onMove = vi.fn();
     renderStage({ onMove });
     const input = screen.getByLabelText('Your answer') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'ice' } });
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    expect(screen.getByText(/Answer submitted/)).toBeDefined();
-    // The button now offers a resubmit and a second answer is sent.
-    fireEvent.change(input, { target: { value: 'water' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Resubmit' }));
-    expect(onMove).toHaveBeenLastCalledWith(1, 'water');
+    expect(onMove).toHaveBeenCalledWith(1, 'ice');
+    // The form is replaced by a locked confirmation: no input, no Submit, no Resubmit.
+    expect(screen.getByText('Answer locked in.')).toBeDefined();
+    expect(screen.queryByLabelText('Your answer')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Resubmit' })).toBeNull();
   });
 
   it('disputing offers the dispute button to a player marked wrong', () => {

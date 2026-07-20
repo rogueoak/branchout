@@ -45,6 +45,12 @@ function nicknameOf(players: PlayerView[], id: string): string {
   return players.find((player) => player.player === id)?.nickname ?? id;
 }
 
+// The give-up answer (WS16): "I don't know" sends an empty answer. An empty answer can never match an
+// accepted answer (see the engine's isCorrectAnswer, which rejects a blank outright), so it always
+// scores wrong - no points - and, like any submission, locks the player out of answering this round.
+// It is just a wrong answer to the reveal / dispute flow; nothing downstream treats it specially.
+const GIVE_UP_ANSWER = '';
+
 export function RemotePane({
   state,
   me,
@@ -60,6 +66,7 @@ export function RemotePane({
   const disputeResult = pickTriviaDisputeReveal(state.reveals);
   const [answer, setAnswer] = useState('');
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
+  const [gaveUpRound, setGaveUpRound] = useState<number | null>(null);
   const [disputedRound, setDisputedRound] = useState<number | null>(null);
   const secondsLeft = useMoveCountdown(state.moveMsRemaining, state.round, state.paused);
   const dwellSecondsLeft = useDwellCountdown(state.autoAdvanceMsRemaining, phase, state.paused);
@@ -68,11 +75,27 @@ export function RemotePane({
   useEffect(() => {
     setAnswer('');
     setSubmittedRound(null);
+    setGaveUpRound(null);
     setDisputedRound(null);
   }, [round]);
 
   const wasMarkedWrong = reveal?.wrong.includes(me) ?? false;
   const submitted = submittedRound === round;
+  const gaveUp = gaveUpRound === round;
+
+  // Authoritative lock on reload/replay (WS16). Submit-once is enforced in the ENGINE, which rejects a
+  // second answer from a player who already answered this round. Trivia only ever rejects a move for
+  // that one reason during collecting, so a rejection here means "you already answered" - lock the form
+  // to the engine's truth. A device that reloaded (losing its local submit flag) therefore cannot
+  // overwrite a give-up or a wrong answer with a scoring one, and this also stops the auto-submit
+  // effect below. `state.rejected` is cleared on the next prompt, so it never bleeds into a new round.
+  // Note: the broadcast state carries no per-player "you answered" flag, so a reloaded player still
+  // sees the form until their first (rejected) attempt; the engine guarantees the score regardless.
+  useEffect(() => {
+    if (phase === 'collecting' && state.rejected !== null && submittedRound !== round) {
+      setSubmittedRound(round);
+    }
+  }, [phase, state.rejected, round, submittedRound]);
 
   // When the countdown hits zero, auto-submit whatever the player has typed (spec 0017). The engine
   // force-closes the round at the same moment; sending here is what makes a typed-but-unsent answer
@@ -104,20 +127,94 @@ export function RemotePane({
     setSubmittedRound(round);
   }
 
-  let submitStatus = null;
+  // "I don't know": a give-up. Submit the reserved empty answer (scored wrong, no points) and lock in,
+  // exactly like a normal submit - no resubmit.
+  function giveUp() {
+    onMove(round, GIVE_UP_ANSWER);
+    setSubmittedRound(round);
+    setGaveUpRound(round);
+  }
+
+  // Submit-once (WS16): a player answers a round exactly once. Before submitting they see the input,
+  // the Submit button, and an "I don't know" give-up beneath it. Once they submit (or give up) the form
+  // is gone - replaced by a locked confirmation with no resubmit and no "you can change it" copy.
+  let answerPanel = null;
   if (submitted) {
-    submitStatus = (
-      <p role="status" className="text-body-sm text-success">
-        {timeUp
-          ? 'Answer locked in.'
-          : 'Answer submitted. You can change it until the round closes.'}
+    let lockedNote = (
+      <p role="status" className="text-body-sm font-medium text-success">
+        Answer locked in.
       </p>
     );
-  } else if (secondsLeft !== null && !state.paused) {
-    submitStatus = (
-      <p className="text-body-sm text-text-subtle">
-        Your answer sends automatically when the timer ends.
-      </p>
+    if (gaveUp) {
+      lockedNote = (
+        <p role="status" className="text-body-sm font-medium text-danger">
+          You passed on this question - no points this round.
+        </p>
+      );
+    } else if (state.rejected !== null) {
+      // Locked because the engine refused a second submission (e.g. a resubmit after a reload). Surface
+      // the "already answered" state plainly rather than pretending a fresh submit went through.
+      lockedNote = (
+        <p role="status" className="text-body-sm font-medium text-text">
+          You already answered this round.
+        </p>
+      );
+    }
+    answerPanel = (
+      <div className="flex flex-col gap-2">
+        {lockedNote}
+        <p className="text-body-sm text-text-subtle">
+          Waiting for the round to close - the answer is on its way.
+        </p>
+      </div>
+    );
+  } else {
+    let helper = null;
+    if (secondsLeft !== null && !state.paused) {
+      helper = (
+        <p className="text-body-sm text-text-subtle">
+          You answer once - your answer sends automatically when the timer ends.
+        </p>
+      );
+    }
+    answerPanel = (
+      <div className="flex flex-col gap-3">
+        <label htmlFor="answer-input" className="text-body-sm font-medium text-text">
+          Your answer
+        </label>
+        <div className="flex gap-2">
+          <Input
+            id="answer-input"
+            value={answer}
+            autoComplete="off"
+            placeholder="Type your answer"
+            disabled={timeUp}
+            onChange={(event) => setAnswer(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') submit();
+            }}
+          />
+          <Button
+            type="button"
+            variant="primary"
+            onClick={submit}
+            disabled={timeUp || !answer.trim()}
+          >
+            Submit
+          </Button>
+        </div>
+        {helper}
+        {/* The give-up sits UNDER the primary Submit but is deliberately set apart so it is not
+            fat-fingered for Submit: a divider + spacing above it, a smaller footprint (auto width, sm
+            size, not the full-width primary), and its cost stated UP FRONT before the tap. It fails the
+            round for no points and locks the player out, same as any submission (WS16 review). */}
+        <div className="mt-1 flex flex-col items-center gap-1 border-t border-border pt-3">
+          <Button type="button" variant="destructive" size="sm" onClick={giveUp} disabled={timeUp}>
+            {"I don't know"}
+          </Button>
+          <p className="text-caption text-text-subtle">Counts as wrong - no points.</p>
+        </div>
+      </div>
     );
   }
 
@@ -144,31 +241,7 @@ export function RemotePane({
               countdown and answered count) has to live here too or they answer blind. An interactive
               player reads it from the viewer instead. */}
           {showResults && prompt ? <TriviaQuestionCard state={state} prompt={prompt} /> : null}
-          <label htmlFor="answer-input" className="text-body-sm font-medium text-text">
-            Your answer
-          </label>
-          <div className="flex gap-2">
-            <Input
-              id="answer-input"
-              value={answer}
-              autoComplete="off"
-              placeholder="Type your answer"
-              disabled={timeUp}
-              onChange={(event) => setAnswer(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') submit();
-              }}
-            />
-            <Button
-              type="button"
-              variant="primary"
-              onClick={submit}
-              disabled={timeUp || !answer.trim()}
-            >
-              {submitted ? 'Resubmit' : 'Submit'}
-            </Button>
-          </div>
-          {submitStatus}
+          {answerPanel}
         </div>
       ) : phase === 'disputing' ? (
         <div className="flex flex-col gap-3">
