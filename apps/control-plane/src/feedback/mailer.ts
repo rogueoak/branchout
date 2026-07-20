@@ -1,9 +1,14 @@
 import { FEEDBACK_FROM, FEEDBACK_TO } from './addresses';
 
-/** One email to send: the composed subject + plain-text body. From/to are fixed (see addresses). */
+/**
+ * One email to send: the composed subject + plain-text body, plus an optional styled HTML body.
+ * `text` is always present as the fallback for clients that drop HTML; `html` is the rich version
+ * (spec 0048). From/to are fixed (see addresses).
+ */
 export interface FeedbackEmail {
   subject: string;
   text: string;
+  html?: string;
 }
 
 /**
@@ -53,6 +58,9 @@ export class ResendMailer implements FeedbackMailer {
           to: FEEDBACK_TO,
           subject: email.subject,
           text: email.text,
+          // Include the styled HTML when the route composed one; Resend uses it as the rich body and
+          // falls back to `text` for clients that strip HTML.
+          ...(email.html ? { html: email.html } : {}),
         }),
         // Bound the wait so a hung Resend aborts (and surfaces as a MailerError -> 502) rather than
         // holding the request open indefinitely.
