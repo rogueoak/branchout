@@ -201,7 +201,6 @@ export class GameEngine {
         decisionWindowMs: 0,
         moveWindowMs: cfg.moveWindowMs ?? 0,
         leaderboardWindowMs: cfg.leaderboardWindowMs ?? 0,
-        autoAdvance: cfg.autoAdvance,
         players,
         scores: Object.fromEntries(players.map((p) => [p.player, 0])),
         roundScores: [],
@@ -785,7 +784,6 @@ export class GameEngine {
     state.decisionWindowMs = 0;
     state.moveWindowMs = cfg.moveWindowMs ?? 0;
     state.leaderboardWindowMs = cfg.leaderboardWindowMs ?? 0;
-    state.autoAdvance = cfg.autoAdvance;
     state.paused = false;
     state.hostPaused = false;
     state.scratch = cfg.scratch;
@@ -1152,10 +1150,11 @@ export class GameEngine {
   }
 
   private stateMessage(state: SessionState): StateMessage {
-    // Tri-state from the game's configure (spec 0069): true = auto-advancing, false = supports it but
-    // off, undefined = no auto-advance concept. Passed through verbatim so the client can tell a
-    // supported-but-off round game (host must advance) from a game that never auto-advances.
-    const autoAdvance = state.autoAdvance;
+    // Whether the engine is auto-advancing this game's phases (spec 0069): true exactly when the
+    // leaderboard dwell is armed. `false`/absent means the host advances by hand (auto-advance off,
+    // OR a game that never auto-advances) - the client then keeps the manual host controls in reach,
+    // exactly as it did before this feature (graceful degradation for every non-Trivia round game).
+    const autoAdvance = state.leaderboardWindowMs > 0;
     return {
       v: PROTOCOL_VERSION,
       type: 'state',
@@ -1184,9 +1183,9 @@ export class GameEngine {
       // The TOTAL answer window (spec 0069), so the client colours the countdown as a percentage of
       // the whole. Constant across the game; absent when this game has no move timer.
       moveWindowMs: state.moveWindowMs > 0 ? state.moveWindowMs : undefined,
-      // The game's auto-advance tri-state (spec 0069): true = auto-advancing, false = supported but
-      // the host turned it off (so the client surfaces the manual host controls by default),
-      // undefined = no auto-advance concept (host controls stay collapsed).
+      // True exactly when the engine is auto-advancing phases (spec 0069). The client collapses the
+      // in-round host controls by default ONLY when this is true; when false (host-advanced - whether
+      // auto-advance is off or the game has no dwell at all) it keeps the manual Next in reach.
       autoAdvance,
       // Ms left in the current phase's auto-advance dwell - the reveal/leaderboard "continuing in x"
       // (spec 0069). Projected from `windowDeadline` the same skew-proof way as `moveMsRemaining`

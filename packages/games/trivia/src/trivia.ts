@@ -324,11 +324,10 @@ export function createTriviaGame(
         rounds: cfg.rounds,
         disputeWindowMs: dwellMs,
         moveWindowMs: cfg.timeLimitMs,
+        // The leaderboard dwell (and the matching dispute dwell) are the auto-advance windows: >0 when
+        // the host left auto-advance on, 0 when off. The engine reports `autoAdvance` = (this > 0), so
+        // no extra field is needed here (spec 0069).
         leaderboardWindowMs: dwellMs,
-        // Trivia HAS an auto-advance option (spec 0068/0069): report it as a real true/false so the
-        // client tells "host-advance because the host turned auto-advance off" from "a game that
-        // never auto-advances". Never undefined here.
-        autoAdvance: cfg.autoAdvance,
       };
     },
 

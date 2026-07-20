@@ -519,13 +519,15 @@ mapping and the engine verifies (spec `0064`, see "Engine-join authentication" b
 - **Gameplay pacing on the `state` frame** (spec `0069`). The client is a pure view over engine
   state, so the in-game screens read their pacing from four additive, optional `StateMessage` fields
   (same `PROTOCOL_VERSION`, absence = "unknown"): `moveWindowMs` (the total answer window, so the
-  countdown colours by percentage), `autoAdvance` (a tri-state from the game's `configure`: `true`
-  auto-advancing, `false` supported-but-off, `undefined` no concept - so the client opens the host
-  controls by default only for a supported-but-off round game, never a live/turn game), then
-  `autoAdvanceMsRemaining` (ms left in the current dwell, projected from the engine's `windowDeadline`
-  the same skew-proof way as `moveMsRemaining` and gated on `autoAdvance === true`, driving the reveal
-  / leaderboard "continuing in x"; the engine arms the dwell BEFORE publishing the entering frame so
-  it never ships a stale ~0 deadline), and `answered` (the live "x of y" numerator while collecting). The
+  countdown colours by percentage), `autoAdvance` (true exactly when the leaderboard dwell is armed;
+  the client collapses the in-round host controls by default ONLY when true, and keeps them open -
+  the pre-feature behaviour - when false/absent so a host-advanced round game like the insider games
+  keeps its Next reachable and can drive the last leaderboard to `final-results`; the finale is never
+  gated behind the accordion), then `autoAdvanceMsRemaining` (ms left in the current dwell, projected
+  from the engine's `windowDeadline` the same skew-proof way as `moveMsRemaining` and gated on
+  `autoAdvance === true`, driving the reveal / leaderboard "continuing in x"; the engine arms the
+  dwell BEFORE publishing the entering frame so it never ships a stale ~0 deadline), and `answered`
+  (the live "x of y" numerator while collecting). The
   numerator comes from a new **optional** `GameModule.answeredCount(ctx)` (a capability flag through
   the worker seam, like `allSubmitted`); only a game that implements it (Trivia) makes `submitMove`
   re-broadcast `state` on each accepted answer, so other games keep their quieter no-per-move-broadcast

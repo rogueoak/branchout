@@ -45,10 +45,10 @@ export interface GameState {
    */
   moveWindowMs: number | null;
   /**
-   * The game's auto-advance tri-state (spec 0069): `true` = auto-advancing, `false` = the game
-   * supports auto-advance but the host turned it off (the in-round host controls then open by
-   * default, since the host must tap Next), `null` = no auto-advance concept / a peer predating the
-   * field (controls stay collapsed).
+   * Whether the engine is auto-advancing this game's phases (spec 0069). `true` = auto-advancing (the
+   * in-round host controls collapse by default, since the host need not tap Next). `false` or `null`
+   * (a host-advanced game - auto-advance off, a game with no dwell, or a peer predating the field) =
+   * the host controls stay open by default, so the manual Next is always in reach.
    */
   autoAdvance: boolean | null;
   /**

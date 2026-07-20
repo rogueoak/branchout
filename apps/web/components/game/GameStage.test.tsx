@@ -457,17 +457,17 @@ describe('GameStage host controls emphasis', () => {
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
   });
 
-  it('keeps the accordion collapsed for a game with no auto-advance concept (e.g. Reversi)', () => {
-    // A live / turn game reports `autoAdvance` as null (undefined on the wire): the host does not tap
-    // Next to progress, so the controls must stay collapsed even though auto-advance is not "on".
+  it('keeps host controls open for a game that reports no auto-advance (degrades like pre-feature)', () => {
+    // A round game that does not send `autoAdvance` (null on the client - the insider games like
+    // Sketchy / Zinger) is host-advanced: the host MUST reach Next to drive the last leaderboard to
+    // the finale. So the accordion opens by default, exactly as the plain host bar behaved before.
     const state = build({
       phase: 'collecting',
       prompt: collecting.prompt,
       autoAdvance: null,
     });
     renderStage({ state, mode: 'remote', isHost: true });
-    expect(screen.getByText('Host controls')).toBeDefined();
-    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
   });
 
   it('renders the Feedback affordance only for the host (spec 0048)', () => {

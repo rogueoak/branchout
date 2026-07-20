@@ -1557,16 +1557,13 @@ describe('GameEngine live game (sim loop)', () => {
 });
 
 // A round game with Trivia-shaped pacing (spec 0069): timed answers, an auto-advance dwell for the
-// reveal + leaderboard, and a live answered count. Built by wrapping the stub so only the new seams
-// (autoAdvance from configure + answeredCount) are exercised here.
+// reveal + leaderboard (a positive `leaderboardWindowMs`, from which the engine reports
+// `autoAdvance: true`), and a live answered count. Built by wrapping the stub so only the new seam
+// (answeredCount) is exercised here.
 const PACED_GAME_ID = 'paced';
 const pacedGame: GameModule = {
   ...stubGame,
   id: PACED_GAME_ID,
-  configure: (config, players) => ({
-    ...stubGame.configure(config, players),
-    autoAdvance: true,
-  }),
   answeredCount: (ctx) => {
     const submitted =
       (ctx.scratch as { submitted?: Record<string, Record<string, string>> }).submitted ?? {};
