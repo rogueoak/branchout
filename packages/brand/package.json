@@ -54,6 +54,10 @@
       "types": "./dist/hero-portrait-liarliar.d.ts",
       "import": "./dist/hero-portrait-liarliar.js"
     },
+    "./hero-portrait-reversi": {
+      "types": "./dist/hero-portrait-reversi.d.ts",
+      "import": "./dist/hero-portrait-reversi.js"
+    },
     "./hero-teeter-tower": {
       "types": "./dist/hero-teeter-tower.d.ts",
       "import": "./dist/hero-teeter-tower.js"

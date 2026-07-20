@@ -13,6 +13,7 @@ export default defineConfig({
     'src/hero-liarliar.ts',
     'src/hero-portrait-trivia.ts',
     'src/hero-portrait-liarliar.ts',
+    'src/hero-portrait-reversi.ts',
     'src/hero-teeter-tower.ts',
     'src/hero-brambles.ts',
     'src/hero-nightleaf.ts',

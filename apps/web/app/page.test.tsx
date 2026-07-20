@@ -51,11 +51,13 @@ describe('home page - anonymous visitor', () => {
     expect(screen.queryByText(/USD|CAD|per month/i)).toBeNull();
   });
 
-  it('renders the games teaser with both Trivia and Liar Liar', () => {
+  it('renders the games teaser with Trivia, Liar Liar, and Reversi', () => {
     render(<LandingContent viewer={{ signedIn: false }} />);
     screen.getByRole('heading', { name: /what you can play/i });
     screen.getByRole('heading', { name: 'Trivia' });
     screen.getByRole('heading', { name: 'Liar Liar' });
+    // Reversi is public as of WS9 (spec 0070), so it now has its own teaser card heading.
+    screen.getByRole('heading', { name: 'Reversi' });
   });
 
   it('renders each game card with its inline SVG game mark', () => {

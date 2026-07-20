@@ -1,9 +1,10 @@
 // The Reversi browser UI module (spec 0054, spec 0023): the registration that plugs Reversi into the
 // generic game shell. Reversi is a SINGLE interactive surface (`singleSurface: true`) - one board the
 // player taps to place discs, streamed from the server; the shell renders only its Viewer and passes
-// `onMove` straight through, so the Remote is an unused null no-op. Marked `visibility: 'insider'` so
-// the gating helper keeps it off the public picker/pages/sitemap until it graduates. The browser is a
-// pure renderer - all rules are server-authoritative (@branchout/game-reversi).
+// `onMove` straight through, so the Remote is an unused null no-op. Reversi is `visibility: 'public'`
+// (WS9): it graduated from insider testing, so the gating helper surfaces it on the public picker,
+// the /games index, the home hero carousel, and the sitemap. The browser is a pure renderer - all
+// rules are server-authoritative (@branchout/game-reversi).
 
 import { reversiSvg } from '@branchout/brand/reversi';
 import { ReversiViewer } from './Viewer';
@@ -25,7 +26,7 @@ export const reversiGameUi: GameUiModule = {
     'The classic disc-flip strategy game for two. Place a disc to bracket a line of your ' +
     "opponent's discs and flip them all to your color. When neither side can move, the most discs " +
     'wins.',
-  visibility: 'insider',
+  visibility: 'public',
   singleSurface: true,
   defaultConfig: () => defaultReversiConfig(),
   // Any boolean choice is valid; the engine re-checks the config shape on the start handoff.
