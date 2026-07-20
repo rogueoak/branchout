@@ -58,8 +58,31 @@ export interface SignupInput {
 }
 
 export interface LoginInput {
-  email: string;
+  /** Email OR gamer tag (spec 0072). Resolved by shape: contains `@` -> email, else gamer tag. */
+  identifier: string;
   password: string;
+}
+
+/**
+ * A login identifier resolved to its lockout bucket, plus a password check (spec 0072). The route
+ * needs the lock key BEFORE it verifies the password (to honour a lock even for a correct password,
+ * spec 0036), so resolution and verification are split: `beginLogin` resolves, `verify` checks.
+ */
+export interface LoginAttempt {
+  /**
+   * The stable lockout key for this attempt: the resolved account id when the identifier matches an
+   * account (so an email attempt and a username attempt on the SAME account share one bucket - an
+   * attacker cannot dodge or double the lockout by switching identifier form), else a normalized form
+   * of the raw identifier (an unresolved identifier still gets its own bounded bucket). Server-side
+   * only - never echoed to the client, so it is no enumeration oracle.
+   */
+  lockKey: string;
+  /**
+   * Verify the password against the resolved account. Returns the public account on success, null on
+   * any failure - and never reveals whether the identifier matched: a miss still runs a hash verify
+   * against a throwaway hash, so latency does not enumerate accounts.
+   */
+  verify(password: string): Promise<PublicAccount | null>;
 }
 
 function toPublic(account: Account): PublicAccount {
@@ -139,22 +162,58 @@ export class AccountService {
   }
 
   /**
-   * Verify credentials. Returns the account on success, null on any failure. The caller must
-   * not reveal which field was wrong - an unknown email and a bad password both return null.
-   * An unknown email still runs a verify against a throwaway hash so login latency does not
-   * betray whether an email is registered (timing-based user enumeration).
+   * Resolve a login identifier (email OR gamer tag, spec 0072) to a lockout bucket and a password
+   * check. An identifier containing `@` is looked up as an email; otherwise as a gamer tag - the two
+   * charsets are disjoint (a gamer tag is `[a-z0-9_-]`, an email must contain `@`), so the branch is
+   * unambiguous. The lookup runs the same way whether or not it matches, and the returned `verify`
+   * runs a hash comparison even on a miss, so neither resolution nor verification reveals whether the
+   * identifier exists.
+   */
+  async beginLogin(rawIdentifier: string): Promise<LoginAttempt> {
+    const identifier = typeof rawIdentifier === 'string' ? rawIdentifier : '';
+    const account = await this.resolveByIdentifier(identifier);
+    // Anchor the lock on the account when we can (email + username hit one bucket); otherwise on the
+    // normalized raw identifier so an unresolved identifier is still bounded. Both email and gamer
+    // tag normalize by trim+lowercase, so this collapses the two forms of the same miss too.
+    const lockKey = account
+      ? `account:${account.id}`
+      : `identifier:${identifier.trim().toLowerCase()}`;
+    return {
+      lockKey,
+      verify: async (rawPassword: string): Promise<PublicAccount | null> => {
+        const password = typeof rawPassword === 'string' ? rawPassword : '';
+        const hash = account?.passwordHash ?? (await this.getDummyHash());
+        const ok = await this.hasher.verify(hash, password);
+        // A soft-deleted account cannot log in (spec 0040). In practice its email + gamer tag are
+        // tombstoned so resolution never returns it, but guard here too - and after the verify runs,
+        // so the deleted path costs the same as a live one (no timing signal). deletedAt is checked
+        // last so it does not short-circuit the hash verify.
+        return account && ok && !account.deletedAt ? toPublic(account) : null;
+      },
+    };
+  }
+
+  /**
+   * Verify credentials. Returns the account on success, null on any failure. The caller must not
+   * reveal which field was wrong - an unknown identifier and a bad password both return null. An
+   * unknown identifier still runs a verify against a throwaway hash so login latency does not betray
+   * whether an account exists (timing-based user enumeration). The route uses `beginLogin` directly so
+   * it can key the lockout on the resolved account between resolution and verification; this is the
+   * one-shot convenience for callers that do not need the lock key.
    */
   async login(input: LoginInput): Promise<PublicAccount | null> {
-    const password = typeof input.password === 'string' ? input.password : '';
-    const email = validateEmail(input.email);
-    const account = email.ok ? await this.repo.findByEmail(email.normalized!) : null;
-    const hash = account?.passwordHash ?? (await this.getDummyHash());
-    const ok = await this.hasher.verify(hash, password);
-    // A soft-deleted account cannot log in (spec 0040). In practice its email is tombstoned so
-    // findByEmail never returns it, but guard here too - and after the verify runs, so the deleted
-    // path costs the same as a live one (no timing signal). deletedAt is checked last so it does not
-    // short-circuit the hash verify.
-    return account && ok && !account.deletedAt ? toPublic(account) : null;
+    const attempt = await this.beginLogin(input.identifier);
+    return attempt.verify(input.password);
+  }
+
+  /** Resolve an identifier to its account by email (contains `@`) or gamer tag, or null. */
+  private async resolveByIdentifier(identifier: string): Promise<Account | null> {
+    if (identifier.includes('@')) {
+      const email = validateEmail(identifier);
+      return email.ok ? this.repo.findByEmail(email.normalized!) : null;
+    }
+    const tag = validateGamerTag(identifier);
+    return tag.ok ? this.repo.findByGamerTagNormalized(tag.normalized!) : null;
   }
 
   /**

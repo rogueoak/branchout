@@ -740,3 +740,21 @@ Capture durable lessons as they emerge.
   locked a real user (and `check` runs before `record`, so a blocked caller never re-arms it). Make
   `check` self-heal - a counter at/over the limit with `ttl < 0` is an anomaly to clear, not honor.
   (Feedback `0020`, spec `0036`.)
+- **When you add an alternate form of an identifier, re-key any per-account lockout on the RESOLVED
+  account, not the submitted string.** Adding username login beside email (spec `0072`) meant the old
+  lockout key `login:<normalizedEmail>` would give an email attempt and a username attempt on the SAME
+  account two different buckets - an attacker doubles the allowance (or dodges a lock) by alternating
+  form. The fix resolves the identifier to the account BEFORE checking the limiter and keys on
+  `account:<id>` (falling back to a normalized-identifier bucket only when nothing resolves), so both
+  forms collapse to one bucket. Any lock that anchors on an identity reachable by more than one input
+  must anchor on the resolved identity, and the resolve has to run before the check. Keep the direct
+  response enumeration-safe (same generic 401 and a hash-verify-on-miss whether or not the identifier
+  matched, lock key server-side only) - but do NOT claim "no oracle": a shared account bucket is a
+  low-severity cross-form correlation channel (lock via a known email, then a 429 on a guessed username
+  confirms they are the same account), inherent to the bypass-proof keying. And weigh the DoS surface:
+  when the alternate identifier is PUBLIC (a gamer tag), locking a victim no longer needs their
+  semi-private email, so anyone can lock a handle - add a secondary per-IP failed-attempt cap (the
+  limiter infra already keyed signup per IP, so it is cheap) to bound how many victims one source can
+  lock, and document the residual gap (progressive delay / CAPTCHA) as a follow-up rather than
+  overbuilding. Account-key stops distributed brute-force of one account; IP-key stops one source
+  locking many accounts - complementary dimensions, not a either/or. (Spec `0072`.)

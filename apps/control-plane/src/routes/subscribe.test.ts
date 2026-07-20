@@ -44,6 +44,8 @@ const adminCookieConfig: AdminCookieConfig = {
 const rateLimit: RateLimitConfig = {
   loginMaxAttempts: 5,
   loginWindowSeconds: 900,
+  loginMaxPerIp: 500,
+  loginIpWindowSeconds: 900,
   signupMaxPerIp: 50,
   signupWindowSeconds: 3600,
 };

@@ -45,6 +45,8 @@ describe('loadConfig rate limiting (spec 0036)', () => {
     expect(rateLimit).toEqual({
       loginMaxAttempts: 5,
       loginWindowSeconds: 900,
+      loginMaxPerIp: 30,
+      loginIpWindowSeconds: 900,
       signupMaxPerIp: 10,
       signupWindowSeconds: 3600,
     });
@@ -55,12 +57,16 @@ describe('loadConfig rate limiting (spec 0036)', () => {
       ...base,
       LOGIN_MAX_ATTEMPTS: '3',
       LOGIN_WINDOW_SECONDS: '60',
+      LOGIN_MAX_PER_IP: '25',
+      LOGIN_IP_WINDOW_SECONDS: '300',
       SIGNUP_MAX_PER_IP: '2',
       SIGNUP_WINDOW_SECONDS: '120',
     });
     expect(rateLimit).toEqual({
       loginMaxAttempts: 3,
       loginWindowSeconds: 60,
+      loginMaxPerIp: 25,
+      loginIpWindowSeconds: 300,
       signupMaxPerIp: 2,
       signupWindowSeconds: 120,
     });
