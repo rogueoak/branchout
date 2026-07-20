@@ -324,6 +324,9 @@ export function createTriviaGame(
         rounds: cfg.rounds,
         disputeWindowMs: dwellMs,
         moveWindowMs: cfg.timeLimitMs,
+        // The leaderboard dwell (and the matching dispute dwell) are the auto-advance windows: >0 when
+        // the host left auto-advance on, 0 when off. The engine reports `autoAdvance` = (this > 0), so
+        // no extra field is needed here (spec 0069).
         leaderboardWindowMs: dwellMs,
       };
     },
@@ -389,6 +392,15 @@ export function createTriviaGame(
       const round = scratch.submitted[String(ctx.round)] ?? {};
       const connected = ctx.players.filter((p) => p.connected);
       return connected.length > 0 && connected.every((p) => round[p.player] !== undefined);
+    },
+
+    // How many connected players have answered this round - the live "x of y answered" numerator
+    // (spec 0069). Mirrors allSubmitted's connected-only rule so the count never exceeds the
+    // connected roster the client uses as the denominator.
+    answeredCount(ctx: RoundContext): number {
+      const scratch = asScratch(ctx.scratch);
+      const round = scratch.submitted[String(ctx.round)] ?? {};
+      return ctx.players.filter((p) => p.connected && round[p.player] !== undefined).length;
     },
 
     reveal(ctx: RoundContext): RevealResult {

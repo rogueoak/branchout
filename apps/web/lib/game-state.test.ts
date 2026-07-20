@@ -67,6 +67,32 @@ describe('reduceGameState', () => {
     expect(next.phase).toBe('guessing');
   });
 
+  it('folds the spec 0069 pacing fields (window total, auto-advance, dwell, answered)', () => {
+    const next = reduceGameState(
+      initialGameState(),
+      state({
+        phase: 'collecting',
+        moveMsRemaining: 42_000,
+        moveWindowMs: 60_000,
+        autoAdvance: true,
+        autoAdvanceMsRemaining: 5_000,
+        answered: 1,
+      }),
+    );
+    expect(next.moveWindowMs).toBe(60_000);
+    expect(next.autoAdvance).toBe(true);
+    expect(next.autoAdvanceMsRemaining).toBe(5_000);
+    expect(next.answered).toBe(1);
+  });
+
+  it('defaults the spec 0069 pacing fields to null when a peer omits them (backward compatible)', () => {
+    const next = reduceGameState(initialGameState(), state({ phase: 'collecting' }));
+    expect(next.moveWindowMs).toBeNull();
+    expect(next.autoAdvance).toBeNull();
+    expect(next.autoAdvanceMsRemaining).toBeNull();
+    expect(next.answered).toBeNull();
+  });
+
   it('defaults disputers to empty when a peer omits the field (backward compatible)', () => {
     const legacy = state();
     delete (legacy as { disputes?: string[] }).disputes;

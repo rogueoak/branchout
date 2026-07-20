@@ -44,16 +44,14 @@ describe('ViewerPane answer display', () => {
       ],
     });
     render(<ViewerPane state={state} me="p1" />);
-    // The difficulty badge shows the plain-language band, not a raw number (rating 5 -> Medium).
-    expect(screen.getByText('Medium')).toBeDefined();
-    // The canonical answer is shown exactly as stored - Title Case lives in the data, not applied on
-    // the fly at display time.
-    expect(screen.getByText('Albert Einstein')).toBeDefined();
+    // The canonical answer is the focus of the reveal, shown exactly as stored (Title Case lives in
+    // the data, not applied on the fly).
+    expect(screen.getByTestId('reveal-answer').textContent).toBe('Albert Einstein');
     // Alternates are shown as stored too.
     expect(screen.getByText(/Also accepted: Einstein/)).toBeDefined();
   });
 
-  it("shows every player's submitted answer with a correct/wrong marker", () => {
+  it("shows every player's submitted answer in a table with a correct/wrong marker", () => {
     const state = build({
       phase: 'disputing',
       prompt: {
@@ -77,16 +75,18 @@ describe('ViewerPane answer display', () => {
       ],
     });
     render(<ViewerPane state={state} me="p1" />);
-    const list = screen.getByRole('list', { name: "Everyone's answers" });
-    // Bo's wrong answer is shown to the whole table exactly as they typed it (verbatim, not recased).
+    // The answers land in a table; Bo's wrong guess is shown verbatim with a "wrong" verdict.
+    expect(screen.getByRole('table')).toBeDefined();
     expect(screen.getByLabelText(/Bo answered isaac newton, wrong/)).toBeDefined();
-    expect(list.textContent).toContain('isaac newton');
+    expect(screen.getByLabelText(/Ada answered albert einstein, correct/)).toBeDefined();
   });
 
   it('shows the answer countdown while collecting', () => {
     const state = build({
       phase: 'collecting',
       moveMsRemaining: 42_000,
+      moveWindowMs: 60_000,
+      answered: 1,
       prompt: {
         round: 1,
         category: 'People',
@@ -95,7 +95,9 @@ describe('ViewerPane answer display', () => {
       },
     });
     render(<ViewerPane state={state} me="p1" />);
-    expect(screen.getByRole('timer')).toBeDefined();
-    expect(screen.getByText(/42s left/)).toBeDefined();
+    // The big central countdown carries the timer role; its accessible label spells the seconds out.
+    const timer = screen.getByRole('timer');
+    expect(timer.getAttribute('aria-label')).toBe('42 seconds left to answer');
+    expect(timer.textContent).toBe('42');
   });
 });

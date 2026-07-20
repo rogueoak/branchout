@@ -55,6 +55,13 @@ export interface SessionState {
   windowDeadline?: number;
   /** The window time left, frozen while paused so a resume continues rather than restarting it. */
   windowRemainingMs?: number;
+  /**
+   * How many connected players have answered the current `collecting` round (spec 0069), surfaced on
+   * the `state` frame as the live "x of y answered" numerator. Refreshed on each accepted move from
+   * the module's `answeredCount`, reset to 0 when a new round opens, and undefined for a game that
+   * does not report it. Only meaningful while `collecting`; the client ignores it elsewhere.
+   */
+  answered?: number;
   players: SessionPlayer[];
   scores: Record<string, number>;
   /** Scoring events accumulated for the in-flight round, reported when it finalizes. */

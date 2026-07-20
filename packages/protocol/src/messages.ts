@@ -194,6 +194,32 @@ export interface StateMessage {
    * `state` frame, and a reader treats its absence as "no move timer".
    */
   moveMsRemaining?: number;
+  /**
+   * The TOTAL configured move window in ms for this game (spec 0069), so a client can render the
+   * countdown colour as a percentage of the whole rather than a fixed second count. Constant across
+   * a game; absent when there is no move timer. Distinct from `moveMsRemaining`, which shrinks each
+   * frame. Optional/additive: a reader treats absence as "total unknown".
+   */
+  moveWindowMs?: number;
+  /**
+   * True when the engine auto-advances phases without waiting on the host (spec 0069, the leaderboard
+   * dwell window is armed). The client opens the in-round host-controls only by default when this is
+   * explicitly `false`. Optional/additive: absence means "unknown", treated as the on default.
+   */
+  autoAdvance?: boolean;
+  /**
+   * Ms left in the CURRENT phase's auto-advance dwell (spec 0069) - the reveal and leaderboard
+   * "continuing in x" countdowns - projected from the engine's `windowDeadline` the same skew-proof
+   * way as `moveMsRemaining` (sent as remaining, anchored client-side). Absent when the phase has no
+   * dwell (no auto-advance, or a phase that is not dwelling). Optional/additive.
+   */
+  autoAdvanceMsRemaining?: number;
+  /**
+   * During `collecting`, the number of connected players who have submitted an answer this round
+   * (spec 0069), paired with the connected roster to render "x of y answered". Absent outside
+   * `collecting` or when the game does not report it. Optional/additive.
+   */
+  answered?: number;
 }
 
 export type ServerMessage =

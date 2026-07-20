@@ -50,6 +50,9 @@ const collecting = build({
   phase: 'collecting',
   // difficulty is the question's numeric 1-10 rating (spec 0016).
   prompt: { round: 1, category: 'Science', difficulty: 3, question: 'What is H2O?' },
+  // A round game with auto-advance OFF: the host must tap Next, so the host-controls accordion is
+  // open by default and its buttons are directly reachable in these layout tests (spec 0069).
+  autoAdvance: false,
 });
 
 function noop() {}
@@ -280,7 +283,12 @@ describe('GameStage connection, paused, and error surfaces', () => {
   });
 
   it('shows a host-aware paused banner and flips the host Pause control to Resume', () => {
-    const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      paused: true,
+      autoAdvance: false,
+    });
     renderStage({ state, mode: 'interactive', isHost: true });
     // One banner at the stage level, host-aware (the viewer pane no longer carries its own).
     expect(screen.getByText(/resume when you are ready/i)).toBeDefined();
@@ -424,6 +432,42 @@ describe('GameStage host controls emphasis', () => {
     // The player's answer Submit stays the clear primary; the advance control is an outline button.
     const next = screen.getByRole('button', { name: 'Next' });
     expect(next.className).toMatch(/outline|border/);
+  });
+
+  it('opens the host-controls accordion by default when auto-advance is OFF (host must tap Next)', () => {
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      autoAdvance: false,
+    });
+    renderStage({ state, mode: 'remote', isHost: true });
+    // Auto-advance off: the manual Next control is expanded and reachable without opening anything.
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
+  });
+
+  it('collapses the host-controls accordion by default when auto-advance is ON', () => {
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      autoAdvance: true,
+    });
+    renderStage({ state, mode: 'remote', isHost: true });
+    // The disclosure trigger is present, but its controls (Next) stay collapsed out of the DOM.
+    expect(screen.getByText('Host controls')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+  });
+
+  it('keeps host controls open for a game that reports no auto-advance (degrades like pre-feature)', () => {
+    // A round game that does not send `autoAdvance` (null on the client - the insider games like
+    // Sketchy / Zinger) is host-advanced: the host MUST reach Next to drive the last leaderboard to
+    // the finale. So the accordion opens by default, exactly as the plain host bar behaved before.
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      autoAdvance: null,
+    });
+    renderStage({ state, mode: 'remote', isHost: true });
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
   });
 
   it('renders the Feedback affordance only for the host (spec 0048)', () => {

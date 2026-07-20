@@ -7,6 +7,12 @@
 // exit).
 
 import { Badge, Button } from '@rogueoak/canopy';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@rogueoak/canopy/branches';
 import { useEffect } from 'react';
 import type { Mode } from '../../lib/room-api';
 import type { ConnectionStatus, GameState } from '../../lib/game-state';
@@ -52,22 +58,51 @@ function HostControls({
   onControl: (action: HostControl) => void;
 }) {
   const done = isComplete(state);
+  const feedback = (
+    <div className="ml-auto">
+      <FeedbackDialog context={{ code, game, phase: state.phase, isHost: true }} />
+    </div>
+  );
+
+  // At the finale the one action is a clear terminal "Back to lobby" - keep it in plain sight, never
+  // tucked inside a disclosure.
+  if (done) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+        <Button type="button" variant="primary" onClick={() => onControl('exit')}>
+          Back to lobby
+        </Button>
+        {feedback}
+      </div>
+    );
+  }
+
   // While a question is answerable the player's own "Submit" is the clear primary action, so the
   // advance control is de-emphasized (outline) to avoid two competing primaries for a remote host
-  // mid-question. A labelled, bordered bar separates the host controls from the player's remote.
+  // mid-question.
   const answerable = state.phase === 'collecting';
+  // Host controls collapse into an accordion, closed by default so they do not clutter the play
+  // screen (spec 0069). They collapse by default ONLY when the engine is auto-advancing
+  // (`autoAdvance === true`) - the one case the host does not need the manual Next, because the round
+  // advances itself. In every OTHER case (auto-advance off, OR a game that reports no auto-advance at
+  // all - the insider round games, which are host-advanced and MUST expose Next to reach the finale)
+  // they stay open, exactly as the host bar behaved before this feature. `key` re-applies the default
+  // if `autoAdvance` resolves late.
+  const openByDefault = state.autoAdvance !== true;
   return (
-    <div className="flex flex-col gap-2 border-t border-border pt-4">
-      <p className="text-body-sm font-medium text-text-muted">Host controls</p>
-      {/* The controls stay left; the Feedback affordance sits at the right edge (ml-auto spacer).
-          The row still wraps at 360px - Feedback drops onto its own line rather than overflow. */}
-      <div className="flex flex-wrap items-center gap-2">
-        {done ? (
-          <Button type="button" variant="primary" onClick={() => onControl('exit')}>
-            Back to lobby
-          </Button>
-        ) : (
-          <>
+    <Accordion
+      type="single"
+      collapsible
+      key={openByDefault ? 'open' : 'closed'}
+      defaultValue={openByDefault ? 'host-controls' : undefined}
+      className="border-t border-border pt-2"
+    >
+      <AccordionItem value="host-controls">
+        <AccordionTrigger>Host controls</AccordionTrigger>
+        <AccordionContent>
+          {/* The controls stay left; the Feedback affordance sits at the right edge (ml-auto).
+              The row still wraps at 360px - Feedback drops onto its own line rather than overflow. */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             <Button
               type="button"
               variant={answerable ? 'outline' : 'primary'}
@@ -84,13 +119,11 @@ function HostControls({
             <Button type="button" variant="ghost" onClick={() => onControl('exit')}>
               Exit
             </Button>
-          </>
-        )}
-        <div className="ml-auto">
-          <FeedbackDialog context={{ code, game, phase: state.phase, isHost: true }} />
-        </div>
-      </div>
-    </div>
+            {feedback}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 

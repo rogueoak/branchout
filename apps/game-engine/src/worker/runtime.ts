@@ -46,6 +46,8 @@ export interface SessionRuntime {
   collectMove(ctx: RoundContext, player: string, move: string): Promise<ScratchResult>;
   /** False when the module has no `allSubmitted` (a game with no all-answered early close). */
   allSubmitted(ctx: RoundContext): Promise<boolean>;
+  /** The live answered count, or undefined when the module has no `answeredCount` (spec 0069). */
+  answeredCount(ctx: RoundContext): Promise<number | undefined>;
   reveal(ctx: RoundContext): Promise<RevealResult>;
   collectVote(ctx: RoundContext, vote: VoteInput): Promise<ScratchResult>;
   /** False when the module has no `allDecided`. */
@@ -91,6 +93,7 @@ class WorkerSessionRuntime implements SessionRuntime {
     private readonly seed: number,
     readonly live: boolean,
     readonly hasAllSubmitted: boolean,
+    readonly hasAnsweredCount: boolean,
     readonly hasAllDecided: boolean,
     readonly hasResolveDecision: boolean,
   ) {}
@@ -112,6 +115,10 @@ class WorkerSessionRuntime implements SessionRuntime {
   async allSubmitted(ctx: RoundContext): Promise<boolean> {
     if (!this.hasAllSubmitted) return false;
     return (await this.call<boolean | undefined>('allSubmitted', { ctx })) ?? false;
+  }
+  async answeredCount(ctx: RoundContext): Promise<number | undefined> {
+    if (!this.hasAnsweredCount) return undefined;
+    return this.call<number | undefined>('answeredCount', { ctx });
   }
   reveal(ctx: RoundContext): Promise<RevealResult> {
     return this.call('reveal', { ctx });
@@ -165,6 +172,7 @@ export class WorkerRuntimeProvider implements GameRuntimeProvider {
       seed,
       caps.live,
       caps.allSubmitted,
+      caps.answeredCount,
       caps.allDecided,
       caps.resolveDecision,
     );
@@ -185,12 +193,14 @@ export class WorkerRuntimeProvider implements GameRuntimeProvider {
 class InProcessSessionRuntime implements SessionRuntime {
   readonly live: boolean;
   readonly hasAllSubmitted: boolean;
+  readonly hasAnsweredCount: boolean;
   readonly hasAllDecided: boolean;
   readonly hasResolveDecision: boolean;
 
   constructor(private readonly module: GameModule) {
     this.live = typeof module.tick === 'function';
     this.hasAllSubmitted = typeof module.allSubmitted === 'function';
+    this.hasAnsweredCount = typeof module.answeredCount === 'function';
     this.hasAllDecided = typeof module.allDecided === 'function';
     this.hasResolveDecision = typeof module.resolveDecision === 'function';
   }
@@ -206,6 +216,9 @@ class InProcessSessionRuntime implements SessionRuntime {
   }
   async allSubmitted(ctx: RoundContext): Promise<boolean> {
     return this.module.allSubmitted?.(ctx) ?? false;
+  }
+  async answeredCount(ctx: RoundContext): Promise<number | undefined> {
+    return this.module.answeredCount?.(ctx);
   }
   async reveal(ctx: RoundContext): Promise<RevealResult> {
     return this.module.reveal(ctx);

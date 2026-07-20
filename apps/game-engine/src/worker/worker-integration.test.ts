@@ -52,6 +52,7 @@ describeRealWorker('game worker (real worker_thread)', () => {
     const caps = await manager.capabilities('room1:trivia', 'trivia', 1);
     expect(caps.live).toBe(false);
     expect(caps.allSubmitted).toBe(true); // Trivia auto-closes a round once everyone answered
+    expect(caps.answeredCount).toBe(true); // Trivia reports the live "x of y answered" count (spec 0069)
   }, 20_000);
 
   it('round-trips a real module call (configure) across the thread boundary', async () => {
