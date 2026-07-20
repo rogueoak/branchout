@@ -99,7 +99,7 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <span className="text-body-sm font-medium text-text">Seed themes</span>
+        <span className="text-body-sm font-medium text-text">Word themes</span>
         <div className="flex gap-2" role="group" aria-label="Category selection">
           <Button
             type="button"
@@ -140,7 +140,8 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
         />
         {roundsErrorLine}
         <p className="text-caption text-text-subtle">
-          One seed per round. The Seeker rotates each round, so everyone takes a turn guessing.
+          One hidden word per round. The Seeker rotates each round, so everyone takes a turn
+          guessing.
         </p>
       </div>
     </div>

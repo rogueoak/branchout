@@ -37,14 +37,36 @@ function state(overrides: Partial<GameState>): GameState {
 }
 
 describe('LoneLeafViewer', () => {
-  it('names the Seeker while collecting and never shows the seed', () => {
-    render(<LoneLeafViewer state={state({ phase: 'collecting', round: 1, prompt })} me="p2" />);
-    expect(screen.getByText(/Ada is the Seeker/i)).toBeDefined();
-    // The viewer is broadcast to everyone; the seed must never appear here.
+  it('names the Seeker in a prompt card with a countdown, never showing the word', () => {
+    render(
+      <LoneLeafViewer
+        state={state({
+          phase: 'collecting',
+          round: 1,
+          prompt,
+          moveMsRemaining: 20_000,
+          moveWindowMs: 30_000,
+        })}
+        me="p2"
+      />,
+    );
+    // The prompt (who the Seeker is) sits in the canopy prompt card.
+    expect(screen.getByTestId('lone-leaf-prompt').textContent).toMatch(/Ada is the Seeker/i);
+    // The improved countdown is present (this is a timed round game).
+    expect(screen.getByRole('timer')).toBeDefined();
+    // Plain terms, and the viewer is broadcast to everyone - the word must never appear here.
+    expect(screen.getByText(/matching clues cancel out/i)).toBeDefined();
     expect(screen.queryByText(/river/i)).toBeNull();
   });
 
-  it('shows the surviving leaves while guessing (no seed)', () => {
+  it('uses plain wording - no leaf/grove/wilt jargon while collecting', () => {
+    const { container } = render(
+      <LoneLeafViewer state={state({ phase: 'collecting', round: 1, prompt })} me="p2" />,
+    );
+    expect(container.textContent).not.toMatch(/\bleaf\b|\bleaves\b|grove|wilt/i);
+  });
+
+  it('shows the remaining clues while guessing (no word)', () => {
     render(
       <LoneLeafViewer
         state={state({ phase: 'guessing', round: 1, prompt, reveals: [survivorsReveal] })}
@@ -53,11 +75,12 @@ describe('LoneLeafViewer', () => {
     );
     expect(screen.getByText('flow')).toBeDefined();
     expect(screen.getByText('blue')).toBeDefined();
+    expect(screen.getByText(/only the unique ones are left/i)).toBeDefined();
     expect(screen.queryByText(/river/i)).toBeNull();
   });
 
-  it('reveals the seed, the guess, and the wilted leaves at the leaderboard', () => {
-    render(
+  it('reveals the word, the guess, and the removed clue at the leaderboard', () => {
+    const { container } = render(
       <LoneLeafViewer
         state={state({
           phase: 'leaderboard',
@@ -72,11 +95,14 @@ describe('LoneLeafViewer', () => {
         me="p2"
       />,
     );
-    // The seed appears (both named as the seed and echoed in the guess line).
-    expect(screen.getAllByText('river').length).toBeGreaterThan(0);
-    expect(screen.getByText(/the grove banked it/i)).toBeDefined();
-    // The wilted leaf is shown with its author and the wilted note.
+    // The hidden word is the focus of the reveal card, coloured green (the group got it).
+    const word = screen.getByTestId('reveal-word');
+    expect(word.textContent).toBe('river');
+    expect(word.className).toContain('text-success');
+    expect(screen.getByText(/your group guessed it/i)).toBeDefined();
+    // The removed clue is shown with its author and a plain "removed" cue (no wilt jargon).
     expect(screen.getByText('water')).toBeDefined();
-    expect(screen.getByText(/Cy - wilted/)).toBeDefined();
+    expect(screen.getByLabelText(/Cy's clue water, removed/i)).toBeDefined();
+    expect(container.textContent).not.toMatch(/grove|wilt/i);
   });
 });

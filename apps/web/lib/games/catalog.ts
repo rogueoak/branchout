@@ -121,21 +121,21 @@ const MARKETING: Record<string, GameMarketing> = {
   'lone-leaf': {
     description:
       'Lone Leaf is a cooperative single-clue word game for phones. One player is the Seeker and ' +
-      'must guess a hidden seed word they cannot see; everyone else writes a single one-word clue. ' +
-      'Matching clues wilt and vanish before the Seeker looks - so think alike, but not too alike. ' +
-      'The Seeker takes one guess, and the whole grove shares the result. Still in testing.',
+      'must guess a hidden word they cannot see; everyone else writes a single one-word clue. ' +
+      'Matching clues cancel out before the Seeker looks - so think alike, but not too alike. ' +
+      'The Seeker takes one guess, and the whole group shares the result. Still in testing.',
     howToPlay: [
       {
-        title: 'Deal the seed',
-        body: 'One player is the Seeker and never sees the seed; everyone else sees it on their phone.',
+        title: 'Deal the word',
+        body: 'One player is the Seeker and never sees the word; everyone else sees it on their phone.',
       },
       {
-        title: 'Write one leaf',
-        body: 'Each non-Seeker writes a single one-word clue for the seed. Matching clues wilt away.',
+        title: 'Write one clue',
+        body: 'Each non-Seeker writes a single one-word clue for the hidden word. Matching clues cancel out.',
       },
       {
         title: 'Guess together',
-        body: 'The Seeker guesses from the surviving unique clues; a correct guess scores for everyone.',
+        body: 'The Seeker guesses from the remaining unique clues; a correct guess scores for everyone.',
       },
     ],
     categories: ['Nature', 'Everyday', 'Places', 'Food', 'Animals', 'Feelings'],
@@ -145,7 +145,7 @@ const MARKETING: Record<string, GameMarketing> = {
     seoTitle: 'Lone Leaf - a cooperative single-clue word game | Branch Out Games',
     seoDescription:
       'Lone Leaf is a phone-first cooperative word game in insider testing. Give the Seeker a ' +
-      'single one-word clue - but matching clues wilt away - and guess the hidden seed together.',
+      'single one-word clue - but matching clues cancel out - and guess the hidden word together.',
   },
   // Teeter Tower is insider-only (spec 0043): the entry exists so the build-time "every registered
   // game needs marketing copy" check passes, but the PUBLIC_GAME_CATALOG below excludes it, so it
