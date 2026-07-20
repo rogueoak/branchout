@@ -325,6 +325,10 @@ export function createTriviaGame(
         disputeWindowMs: dwellMs,
         moveWindowMs: cfg.timeLimitMs,
         leaderboardWindowMs: dwellMs,
+        // Trivia HAS an auto-advance option (spec 0068/0069): report it as a real true/false so the
+        // client tells "host-advance because the host turned auto-advance off" from "a game that
+        // never auto-advances". Never undefined here.
+        autoAdvance: cfg.autoAdvance,
       };
     },
 

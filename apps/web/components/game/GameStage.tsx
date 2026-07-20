@@ -82,11 +82,13 @@ function HostControls({
   // mid-question.
   const answerable = state.phase === 'collecting';
   // Host controls collapse into an accordion, closed by default so they do not clutter the play
-  // screen (spec 0069). They open by default only when the engine is NOT auto-advancing - then the
-  // host must tap Next each round, so the manual control needs to be right there. `autoAdvance` is
-  // null on a peer predating the field / a game that never auto-advances; those open too, so a host
-  // is never stranded without controls. `key` re-applies the default if `autoAdvance` resolves late.
-  const openByDefault = state.autoAdvance !== true;
+  // screen (spec 0069). They open by default ONLY for a round game that supports auto-advance but
+  // has it turned OFF (`autoAdvance === false`) - then the host must tap Next each round or the game
+  // stalls, so the manual control needs to be right there. A game that is auto-advancing (`true`) or
+  // has no auto-advance concept at all (`null`/undefined - e.g. a live or turn game like Reversi,
+  // where the host does not tap Next to progress) keeps them collapsed. `key` re-applies the default
+  // if `autoAdvance` resolves late.
+  const openByDefault = state.autoAdvance === false;
   return (
     <Accordion
       type="single"

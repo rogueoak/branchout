@@ -1555,3 +1555,136 @@ describe('GameEngine live game (sim loop)', () => {
     expect(h.ticksSoFar()).toBe(MAX_SIM_TICK_FAILURES);
   });
 });
+
+// A round game with Trivia-shaped pacing (spec 0069): timed answers, an auto-advance dwell for the
+// reveal + leaderboard, and a live answered count. Built by wrapping the stub so only the new seams
+// (autoAdvance from configure + answeredCount) are exercised here.
+const PACED_GAME_ID = 'paced';
+const pacedGame: GameModule = {
+  ...stubGame,
+  id: PACED_GAME_ID,
+  configure: (config, players) => ({
+    ...stubGame.configure(config, players),
+    autoAdvance: true,
+  }),
+  answeredCount: (ctx) => {
+    const submitted =
+      (ctx.scratch as { submitted?: Record<string, Record<string, string>> }).submitted ?? {};
+    const round = submitted[String(ctx.round)] ?? {};
+    return ctx.players.filter((p) => p.connected && round[p.player] !== undefined).length;
+  },
+};
+
+describe('GameEngine spec 0069 pacing on the state frame', () => {
+  function pacedHarness(): Harness {
+    const store = new InMemorySessionStore();
+    const pubsub = new InMemoryPubSub();
+    const reporter = new CapturingReporter();
+    const scheduler = new ManualScheduler();
+    const clock = new ManualClock();
+    const engine = new GameEngine({
+      runtimeProvider: new InProcessRuntimeProvider([pacedGame]),
+      store,
+      pubsub,
+      reporter,
+      scheduler,
+      clock: clock.now,
+      logger: { error: () => {} },
+    });
+    return { engine, store, pubsub, reporter, scheduler, clock };
+  }
+
+  const pacedHandoff = (): StartHandoffRequest => ({
+    v: PROTOCOL_VERSION,
+    room: 'r1',
+    game: PACED_GAME_ID,
+    players: [
+      { player: 'p1', nickname: 'Ada' },
+      { player: 'p2', nickname: 'Bo' },
+    ],
+    // A 60s answer window and a 5s auto-advance dwell for both the reveal and the leaderboard.
+    config: {
+      rounds: 2,
+      secrets: ['blue', 'green'],
+      moveWindowMs: 60_000,
+      disputeWindowMs: 5_000,
+      leaderboardWindowMs: 5_000,
+    },
+  });
+
+  /** The last `state` frame seen on the room stream, or undefined if none. */
+  function lastState(frames: ServerMessage[]): StateMessage | undefined {
+    const states = frames.filter((f): f is StateMessage => f.type === 'state');
+    return states[states.length - 1];
+  }
+
+  it('projects the total move window, auto-advance, and answered while collecting', async () => {
+    const h = pacedHarness();
+    await h.engine.start(pacedHandoff());
+    const joined = stateFrame(await h.engine.join('r1', PACED_GAME_ID, 'p1', 'Ada'));
+    expect(joined.phase).toBe('collecting');
+    expect(joined.moveWindowMs).toBe(60_000);
+    expect(joined.autoAdvance).toBe(true);
+    expect(joined.answered).toBe(0);
+  });
+
+  it('drops the answered count once the round leaves collecting (gated on phase)', async () => {
+    const h = pacedHarness();
+    await h.engine.start(pacedHandoff());
+    await h.engine.control('r1', PACED_GAME_ID, 'advance'); // collecting -> disputing (reveal)
+    const revealSnap = stateFrame(await h.engine.join('r1', PACED_GAME_ID, 'p1', 'Ada'));
+    expect(revealSnap.phase).toBe('disputing');
+    expect(revealSnap.answered).toBeUndefined();
+    // The total window is constant across the game, so it is still present off the collecting phase.
+    expect(revealSnap.moveWindowMs).toBe(60_000);
+  });
+
+  it('arms the dwell BEFORE the entering frame so reveal + leaderboard carry a live countdown', async () => {
+    const h = pacedHarness();
+    const frames: ServerMessage[] = [];
+    await h.pubsub.subscribe(streamChannel('r1', PACED_GAME_ID), (f) => frames.push(f));
+    await h.engine.start(pacedHandoff());
+
+    // Entering the reveal (disputing): the dwell deadline was armed before the frame was published,
+    // so the countdown is the full 5s, not a stale ~0 (this guards the arm-before-publish reorder).
+    await h.engine.control('r1', PACED_GAME_ID, 'advance');
+    const reveal = lastState(frames);
+    expect(reveal?.phase).toBe('disputing');
+    expect(reveal?.autoAdvanceMsRemaining).toBe(5_000);
+
+    // Entering the leaderboard (no disputes): same guarantee for the "next round in x" dwell.
+    await h.engine.control('r1', PACED_GAME_ID, 'advance');
+    const leaderboard = lastState(frames);
+    expect(leaderboard?.phase).toBe('leaderboard');
+    expect(leaderboard?.autoAdvanceMsRemaining).toBe(5_000);
+  });
+
+  it('re-broadcasts state with a growing answered count on each accepted submit', async () => {
+    const h = pacedHarness();
+    await h.engine.start(pacedHandoff());
+    // Both players must be connected for the answered count to include them (it mirrors the
+    // connected-only rule of allSubmitted). Subscribe after joining so `frames` holds only the
+    // per-submit broadcasts.
+    await h.engine.join('r1', PACED_GAME_ID, 'p1', 'Ada');
+    await h.engine.join('r1', PACED_GAME_ID, 'p2', 'Bo');
+    const frames: ServerMessage[] = [];
+    await h.pubsub.subscribe(streamChannel('r1', PACED_GAME_ID), (f) => frames.push(f));
+
+    await h.engine.submitMove('r1', PACED_GAME_ID, 'p1', 1, 'blue');
+    expect(lastState(frames)?.answered).toBe(1);
+    await h.engine.submitMove('r1', PACED_GAME_ID, 'p2', 1, 'nope');
+    expect(lastState(frames)?.answered).toBe(2);
+  });
+
+  it('does NOT re-broadcast on submit for a game that reports no answered count (the stub)', async () => {
+    const h = harness(); // the plain stub: no answeredCount
+    await h.engine.start(handoff({ config: { rounds: 1, secrets: ['blue'] } }));
+    const states: ServerMessage[] = [];
+    await h.pubsub.subscribe(streamChannel('r1', STUB_GAME_ID), (f) => {
+      if (f.type === 'state') states.push(f);
+    });
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    // The stub omits answeredCount, so an accepted submit stays quiet - no per-move state broadcast.
+    expect(states).toHaveLength(0);
+  });
+});

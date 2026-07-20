@@ -57,6 +57,15 @@ export interface ConfigureResult {
    * phase it drives, like its `moveWindowMs`/`disputeWindowMs` siblings.
    */
   leaderboardWindowMs?: number;
+  /**
+   * Whether this game auto-advances its phases without a host tap (spec 0069). A tri-state on the
+   * wire: `true` = auto-advancing, `false` = the game HAS an auto-advance option but the host turned
+   * it OFF (so the host must advance by hand), and `undefined` (the default) = the game has no
+   * auto-advance concept at all. The client uses this to decide whether to surface the manual host
+   * controls by default: only a supported-but-off (`false`) round game does, never a game that never
+   * auto-advances. Set it in step with `leaderboardWindowMs` (true iff that dwell is armed).
+   */
+  autoAdvance?: boolean;
 }
 
 export interface StartRoundResult {

@@ -65,6 +65,8 @@ export function Leaderboard({
               className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 ${rowClass}`}
             >
               <span className="flex min-w-0 items-center gap-3">
+                {/* The medallion is decorative (aria-hidden); the rank is spoken via sr-only text so
+                    a screen-reader row reads "Rank N, <name> <score>" rather than losing the rank. */}
                 <span
                   aria-hidden
                   className={`flex size-7 shrink-0 items-center justify-center rounded-full text-body-sm font-semibold tabular-nums ${rankClass}`}
@@ -72,6 +74,7 @@ export function Leaderboard({
                   {standing.rank}
                 </span>
                 <span className="truncate">
+                  <span className="sr-only">Rank {standing.rank}, </span>
                   {standing.nickname}
                   {isMe ? ' (you)' : ''}
                 </span>

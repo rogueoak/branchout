@@ -20,6 +20,15 @@ describe('Leaderboard', () => {
     expect(within(list).getByText('100')).toBeDefined();
   });
 
+  it('speaks each row rank via sr-only text (medallion is decorative)', () => {
+    render(<Leaderboard standings={standings} me="p2" />);
+    const list = screen.getByRole('list', { name: 'Leaderboard' });
+    const items = within(list).getAllByRole('listitem');
+    // A screen reader reads the rank from the row, not just the name + score.
+    expect(items[0].textContent).toContain('Rank 1,');
+    expect(items[1].textContent).toContain('Rank 2,');
+  });
+
   it('shows the auto-advance countdown when a dwell is supplied', () => {
     render(<Leaderboard standings={standings} me="p1" autoAdvanceSecondsLeft={3} />);
     expect(screen.getByText('Next round in 3 seconds')).toBeDefined();

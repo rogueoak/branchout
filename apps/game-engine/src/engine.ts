@@ -201,6 +201,7 @@ export class GameEngine {
         decisionWindowMs: 0,
         moveWindowMs: cfg.moveWindowMs ?? 0,
         leaderboardWindowMs: cfg.leaderboardWindowMs ?? 0,
+        autoAdvance: cfg.autoAdvance,
         players,
         scores: Object.fromEntries(players.map((p) => [p.player, 0])),
         roundScores: [],
@@ -609,14 +610,18 @@ export class GameEngine {
           }
           state.phase = 'guessing';
           state.decisionWindowMs = result.decision.windowMs ?? 0;
+          // Arm before publishing so the entering frame carries the live window deadline, not a
+          // stale one (spec 0069) - mirrors the move-window path and finalizeRound.
+          this.armWindow(state, 'guessing');
           await this.publish(state, this.revealMessage(state, result.reveal));
           await this.publish(state, this.stateMessage(state));
-          this.armWindow(state, 'guessing');
         } else {
           state.phase = 'disputing';
+          // Arm before publishing so the entering reveal frame carries the live dwell deadline (the
+          // "continuing in x"), not the just-elapsed answer window's stale one (spec 0069).
+          this.armWindow(state, 'disputing');
           await this.publish(state, this.revealMessage(state, result.reveal));
           await this.publish(state, this.stateMessage(state));
-          this.armWindow(state, 'disputing');
         }
         // A reveal may disclose a secret differently per player (spec 0052); deliver it targeted
         // after the public reveal, on whichever post-reveal path the game took.
@@ -631,8 +636,9 @@ export class GameEngine {
           await this.finalizeRound(state, runtime);
         } else {
           state.phase = 'voting';
-          await this.publish(state, this.stateMessage(state));
+          // Arm before publishing so the entering frame carries the live window deadline (spec 0069).
           this.armWindow(state, 'voting');
+          await this.publish(state, this.stateMessage(state));
         }
         break;
       }
@@ -683,12 +689,15 @@ export class GameEngine {
     state.phase = 'leaderboard';
     const standings = await runtime.leaderboard(this.context(state));
     state.standings = standings;
+    // Arm the auto-advance dwell BEFORE publishing the entering `state` frame (spec 0069): the frame
+    // projects `autoAdvanceMsRemaining` from `windowDeadline`, so arming after would ship a stale
+    // (~0) deadline to every device present at the transition and the "next round in x" countdown
+    // would never render until a reconnect. A no-op when `leaderboardWindowMs` is 0 (auto-advance
+    // off / a game with no dwell), so the leaderboard then waits on the host exactly as before. The
+    // scheduled timer only fires after the dwell (>=1s), long after these awaited publishes.
+    this.armWindow(state, 'leaderboard');
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
-    // Auto-advance the leaderboard to the next round after the configured dwell (spec 0068). A no-op
-    // when `leaderboardWindowMs` is 0 (the default for every game and for auto-advance-off), so the
-    // leaderboard then waits on the host exactly as before.
-    this.armWindow(state, 'leaderboard');
 
     const roundId = `${state.room}:${state.game}:${state.runId}:${state.round}`;
     const known =
@@ -776,6 +785,7 @@ export class GameEngine {
     state.decisionWindowMs = 0;
     state.moveWindowMs = cfg.moveWindowMs ?? 0;
     state.leaderboardWindowMs = cfg.leaderboardWindowMs ?? 0;
+    state.autoAdvance = cfg.autoAdvance;
     state.paused = false;
     state.hostPaused = false;
     state.scratch = cfg.scratch;
@@ -1142,6 +1152,10 @@ export class GameEngine {
   }
 
   private stateMessage(state: SessionState): StateMessage {
+    // Tri-state from the game's configure (spec 0069): true = auto-advancing, false = supports it but
+    // off, undefined = no auto-advance concept. Passed through verbatim so the client can tell a
+    // supported-but-off round game (host must advance) from a game that never auto-advances.
+    const autoAdvance = state.autoAdvance;
     return {
       v: PROTOCOL_VERSION,
       type: 'state',
@@ -1170,16 +1184,22 @@ export class GameEngine {
       // The TOTAL answer window (spec 0069), so the client colours the countdown as a percentage of
       // the whole. Constant across the game; absent when this game has no move timer.
       moveWindowMs: state.moveWindowMs > 0 ? state.moveWindowMs : undefined,
-      // The engine auto-advances phases exactly when the leaderboard dwell is armed (spec 0068/0069).
-      // Sent as an explicit boolean so the client can open the host controls only when it is `false`.
-      autoAdvance: state.leaderboardWindowMs > 0,
+      // The game's auto-advance tri-state (spec 0069): true = auto-advancing, false = supported but
+      // the host turned it off (so the client surfaces the manual host controls by default),
+      // undefined = no auto-advance concept (host controls stay collapsed).
+      autoAdvance,
       // Ms left in the current phase's auto-advance dwell - the reveal/leaderboard "continuing in x"
       // (spec 0069). Projected from `windowDeadline` the same skew-proof way as `moveMsRemaining`
-      // (frozen remaining while paused); absent when no dwell window is open.
+      // (frozen remaining while paused). Gated on `autoAdvance === true` (currently auto-advancing):
+      // `windowDeadline` is shared with the non-auto-advance dispute/voting/guess windows, so without
+      // the gate a reconnect during one of those would wrongly show "Continuing in x". Absent when no
+      // dwell is running.
       autoAdvanceMsRemaining:
-        state.windowDeadline !== undefined
-          ? Math.max(0, state.windowDeadline - this.clock())
-          : state.windowRemainingMs,
+        autoAdvance === true
+          ? state.windowDeadline !== undefined
+            ? Math.max(0, state.windowDeadline - this.clock())
+            : state.windowRemainingMs
+          : undefined,
       // The live answered count, only while collecting (the client pairs it with the connected
       // roster for "x of y"); absent otherwise or when the game does not report it (spec 0069).
       answered: state.phase === 'collecting' ? state.answered : undefined,

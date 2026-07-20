@@ -39,6 +39,13 @@ export interface SessionState {
    */
   leaderboardWindowMs: number;
   /**
+   * Whether this game auto-advances its phases (spec 0069), from the module's `configure`. Tri-state:
+   * `true` (auto-advancing), `false` (supports auto-advance but the host turned it off), or undefined
+   * (no auto-advance concept). Surfaced verbatim on the `state` frame so the client can open the host
+   * controls by default only for a supported-but-off round game.
+   */
+  autoAdvance?: boolean;
+  /**
    * When the current move round auto-closes, as an epoch ms on the engine clock (spec 0017).
    * Set while `collecting` with a timer; cleared once the round closes or while paused (the frozen
    * remaining moves to `moveRemainingMs`).

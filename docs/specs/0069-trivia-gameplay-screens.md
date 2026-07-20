@@ -60,11 +60,17 @@ frame carries only `moveMsRemaining` (the answer window). Four additive, optiona
 
 - `moveWindowMs` - the total configured answer window, so the client computes the countdown colour
   as a percentage of the whole, not a fixed second count.
-- `autoAdvance` - whether the engine auto-advances phases (true iff the leaderboard dwell > 0). The
-  in-round host-controls accordion opens by default only when this is explicitly `false`.
+- `autoAdvance` - a **tri-state** from the game's `configure` (a new optional `ConfigureResult`
+  field): `true` = auto-advancing, `false` = the game supports auto-advance but the host turned it
+  off, `undefined` = the game has no auto-advance concept (a live / turn game like Reversi). The
+  in-round host-controls accordion opens by default **only when this is `false`** - a round game the
+  host must hand-advance - so a no-auto-advance game never wrongly pops the controls open.
 - `autoAdvanceMsRemaining` - ms left in the current phase's auto-advance dwell (the reveal and
   leaderboard "continuing in x"), projected from the engine's authoritative `windowDeadline` the
-  same skew-proof way as `moveMsRemaining`. Absent when there is no dwell.
+  same skew-proof way as `moveMsRemaining`, **gated on `autoAdvance === true`** so a reconnect during
+  a non-auto-advance dispute/voting/guess window never shows a bogus countdown. The engine **arms the
+  dwell before publishing the entering `state` frame** (both the reveal and leaderboard transitions),
+  so the frame that enters the phase carries the live deadline, not a stale ~0. Absent when no dwell.
 - `answered` - during `collecting`, the number of connected players who have submitted this round;
   paired with the connected roster it renders "x of y". The engine cannot see the module's opaque
   submissions, so a new **optional** `GameModule.answeredCount(ctx)` reports it; Trivia implements

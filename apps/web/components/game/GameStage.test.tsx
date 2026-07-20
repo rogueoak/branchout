@@ -50,6 +50,9 @@ const collecting = build({
   phase: 'collecting',
   // difficulty is the question's numeric 1-10 rating (spec 0016).
   prompt: { round: 1, category: 'Science', difficulty: 3, question: 'What is H2O?' },
+  // A round game with auto-advance OFF: the host must tap Next, so the host-controls accordion is
+  // open by default and its buttons are directly reachable in these layout tests (spec 0069).
+  autoAdvance: false,
 });
 
 function noop() {}
@@ -280,7 +283,12 @@ describe('GameStage connection, paused, and error surfaces', () => {
   });
 
   it('shows a host-aware paused banner and flips the host Pause control to Resume', () => {
-    const state = build({ phase: 'collecting', prompt: collecting.prompt, paused: true });
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      paused: true,
+      autoAdvance: false,
+    });
     renderStage({ state, mode: 'interactive', isHost: true });
     // One banner at the stage level, host-aware (the viewer pane no longer carries its own).
     expect(screen.getByText(/resume when you are ready/i)).toBeDefined();
@@ -445,6 +453,19 @@ describe('GameStage host controls emphasis', () => {
     });
     renderStage({ state, mode: 'remote', isHost: true });
     // The disclosure trigger is present, but its controls (Next) stay collapsed out of the DOM.
+    expect(screen.getByText('Host controls')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+  });
+
+  it('keeps the accordion collapsed for a game with no auto-advance concept (e.g. Reversi)', () => {
+    // A live / turn game reports `autoAdvance` as null (undefined on the wire): the host does not tap
+    // Next to progress, so the controls must stay collapsed even though auto-advance is not "on".
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      autoAdvance: null,
+    });
+    renderStage({ state, mode: 'remote', isHost: true });
     expect(screen.getByText('Host controls')).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
   });
