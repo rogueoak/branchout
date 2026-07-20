@@ -47,15 +47,26 @@ import type { CheckersMove, CheckersSim, Outcome, WireCell } from './types';
 
 export const CHECKERS_GAME_ID = 'checkers';
 
-/** Host-supplied configuration. Checkers is fixed 8x8 standard rules; there is nothing to tune. */
-export type CheckersConfig = Record<string, never>;
+/**
+ * Host-supplied configuration. Checkers is fixed 8x8 standard rules; the one host option is whether
+ * the board shows the legal-move hints (movable-source rings + destination dots). Default on; a host
+ * may turn it off for a tougher game where you spot your own moves.
+ */
+export interface CheckersConfig {
+  /** Paint the legal-move hints for the side to move. Default true. */
+  showAvailableMoves: boolean;
+}
 
-/** Validate + default the config. Checkers takes no options, so any object (or nothing) is accepted. */
+/**
+ * Validate + default the config. Any object (or nothing) is accepted; `showAvailableMoves` defaults to
+ * true and is only off when the host explicitly set it false, so an old or empty config keeps hints on.
+ */
 export function validateConfig(config: unknown): CheckersConfig {
   if (config != null && typeof config !== 'object') {
     throw new Error(`checkers config must be an object or empty, got ${typeof config}`);
   }
-  return {};
+  const raw = (config ?? {}) as Partial<CheckersConfig>;
+  return { showAvailableMoves: raw.showAvailableMoves !== false };
 }
 
 /**
@@ -72,6 +83,8 @@ interface CheckersScratch {
   turn: Seat;
   /** True once the side to move has no legal move - the game is over. */
   over: boolean;
+  /** Host setting: whether the board paints the legal-move hints. Default true. */
+  showAvailableMoves: boolean;
 }
 
 function asScratch(scratch: Readonly<Record<string, unknown>>): CheckersScratch {
@@ -88,6 +101,8 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): CheckersScratch 
     seats,
     turn: s.turn === 1 ? 1 : 0,
     over: s.over ?? false,
+    // Default ON: a scratch snapshot without the field (a pre-setting game) keeps hints on.
+    showAvailableMoves: s.showAvailableMoves !== false,
   };
 }
 
@@ -167,6 +182,7 @@ function toSim(scratch: CheckersScratch): CheckersSim {
     amber: score.amber,
     over: scratch.over,
     outcome: outcomeOf(scratch),
+    showAvailableMoves: scratch.showAvailableMoves,
   };
 }
 
@@ -192,13 +208,14 @@ export function createCheckersGame(): GameModule {
     id: CHECKERS_GAME_ID,
 
     configure(config: unknown, players: readonly SessionPlayer[]): ConfigureResult {
-      validateConfig(config);
+      const { showAvailableMoves } = validateConfig(config);
       const turns = assignSeats(players);
       const scratch: CheckersScratch = {
         cells: startingBoard().toCells(),
         seats: [turns.seats[0], turns.seats[1]],
         turn: 0, // Violet (seat 0) moves first from the standard opening.
         over: false,
+        showAvailableMoves,
       };
       // A live game ends via tick.over, not a round count, but the SDK requires rounds >= 1. There is
       // no move window: moves are accepted whenever it is the active player's turn.
@@ -258,6 +275,7 @@ export function createCheckersGame(): GameModule {
         seats: scratch.seats,
         turn: resolved.turn,
         over: resolved.over,
+        showAvailableMoves: scratch.showAvailableMoves,
       };
       return { scratch: toRecord(updated) };
     },
@@ -337,8 +355,8 @@ function standingsFor(ctx: RoundContext): Standing[] {
 
 /**
  * Checkers as a plugin the engine registers. `create` builds the module (no services needed - the game
- * is deterministic and stateless outside scratch). The manifest is `insider` so it stays off the
- * public catalog, and exactly 2 players.
+ * is deterministic and stateless outside scratch). The manifest is `public` (WS14: Checkers graduated
+ * from insider testing), mirroring the web module's `visibility`, and exactly 2 players.
  */
 export const checkersPlugin: GamePlugin<CheckersConfig, CheckersSim, unknown> = {
   manifest: {
@@ -347,7 +365,7 @@ export const checkersPlugin: GamePlugin<CheckersConfig, CheckersSim, unknown> = 
     version: '1.0.0',
     configSchema: validateConfig,
     capabilities: { minPlayers: 2, maxPlayers: 2 },
-    visibility: 'insider',
+    visibility: 'public',
   },
   // Checkers is deterministic and stateless outside scratch, so it needs none of the injected services.
   create: () => createCheckersGame(),

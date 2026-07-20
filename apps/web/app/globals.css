@@ -56,10 +56,28 @@
     transform: translateY(0) scale(1);
   }
 }
+/* The board-family turn-start popup fade (Checkers, spec 0071; shared with any future board game): pop
+   in, hold, then fade. Kept generic (not per-game) so a sibling board game reuses the one token. */
+@keyframes board-turn-notice {
+  0% {
+    opacity: 0;
+    transform: translateY(0.25rem) scale(0.96);
+  }
+  12%,
+  75% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+}
 @theme {
   --animate-sheet-right-in: sheet-right-in var(--duration-slow) var(--ease-decelerate);
   --animate-sheet-right-out: sheet-right-out var(--duration-base) var(--ease-standard);
   --animate-reversi-turn-notice: reversi-turn-notice 1800ms var(--ease-standard);
+  --animate-board-turn-notice: board-turn-notice 1800ms var(--ease-standard);
 }
 
 /* App-wide base surface so every route is dark by default, even ones that do not set `bg-bg`

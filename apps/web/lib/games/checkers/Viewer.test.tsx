@@ -1,7 +1,8 @@
 import { createEvent, fireEvent, render, screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
-import { CheckersViewer } from './Viewer';
+import { CheckersViewer, hintsVisibleFor } from './Viewer';
+import { asCheckersSim } from './protocol';
 
 // The board draws on a 2D canvas via rAF; jsdom leaves getContext unimplemented, and the draw loop
 // guards on a null context, so rendering is safe - stub it to keep the "Not implemented" noise out.
@@ -285,5 +286,163 @@ describe('CheckersViewer single interactive surface', () => {
       />,
     );
     expect(screen.getByRole('alert').textContent).toMatch(/if a jump is available/i);
+  });
+
+  describe('interactive copy drops "highlighted" when hints are off', () => {
+    it('turn line: says highlighted with hints on, plain-square with hints off', () => {
+      const { rerender } = render(
+        <CheckersViewer
+          state={state({ sim: checkersSim({ showAvailableMoves: true }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByRole('status').textContent).toMatch(/tap a piece, then a highlighted/i);
+
+      rerender(
+        <CheckersViewer
+          state={state({ sim: checkersSim({ showAvailableMoves: false }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      const text = screen.getByRole('status').textContent ?? '';
+      expect(text).toMatch(/tap a piece, then a square to move/i);
+      expect(text).not.toMatch(/highlighted/i);
+    });
+
+    it('board aria-label: highlighted with hints on, plain-square with hints off', () => {
+      const { rerender } = render(
+        <CheckersViewer
+          state={state({ sim: checkersSim({ showAvailableMoves: true }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(
+        screen.getByRole('img', { name: /tap a piece, then a highlighted square/i }),
+      ).toBeDefined();
+
+      rerender(
+        <CheckersViewer
+          state={state({ sim: checkersSim({ showAvailableMoves: false }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(
+        screen.getByRole('img', { name: /tap a piece, then a square to move/i }),
+      ).toBeDefined();
+      expect(screen.queryByRole('img', { name: /highlighted/i })).toBeNull();
+    });
+  });
+
+  describe('turn-start popup', () => {
+    it('pops "Your turn" on the board for the player who now holds the turn', () => {
+      render(<CheckersViewer state={state({ sim: checkersSim() })} me="p1" onMove={noop} />);
+      expect(screen.getByText('Your turn')).toBeDefined();
+    });
+
+    it('adds the forced-jump hint when a capture is available on the active turn', () => {
+      // A single legal move that is a jump (lands two rows away) - the forced-capture rule applies.
+      const legal = [{ from: { row: 5, col: 4 }, path: [{ row: 3, col: 2 }] }];
+      render(
+        <CheckersViewer state={state({ sim: checkersSim({ legal }) })} me="p1" onMove={noop} />,
+      );
+      expect(screen.getByText('Your turn - you must jump')).toBeDefined();
+    });
+
+    it('does not pop a turn notice for the plain waiting player', () => {
+      render(<CheckersViewer state={state({ sim: checkersSim() })} me="p2" onMove={noop} />);
+      expect(screen.queryByText('Your turn')).toBeNull();
+    });
+
+    it('does not pop a turn notice once the game is over', () => {
+      render(
+        <CheckersViewer
+          state={state({
+            sim: checkersSim({ over: true, toMove: null, outcome: 'violet', legal: [] }),
+          })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.queryByText('Your turn')).toBeNull();
+    });
+
+    it('re-fires "Your turn" on the next move when the board changes', () => {
+      const before = Array.from({ length: 64 }, () => 'empty');
+      const after = before.slice();
+      after[20] = 'violet';
+      const { rerender } = render(
+        <CheckersViewer
+          state={state({ sim: checkersSim({ cells: before, activePlayer: 'p1' }) })}
+          me="p2"
+          onMove={noop}
+        />,
+      );
+      // p2 is the waiting player on p1's turn: no popup yet.
+      expect(screen.queryByText('Your turn')).toBeNull();
+      // p1 moved -> a NEW board -> it is now p2's turn.
+      rerender(
+        <CheckersViewer
+          state={state({ sim: checkersSim({ cells: after, activePlayer: 'p2' }) })}
+          me="p2"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByText('Your turn')).toBeDefined();
+    });
+  });
+
+  describe('turn-start popup honors prefers-reduced-motion', () => {
+    const originalMatchMedia = window.matchMedia;
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    function stubReducedMotion(matches: boolean): void {
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+    }
+
+    it('applies the fade animation class when motion is allowed', () => {
+      stubReducedMotion(false);
+      render(<CheckersViewer state={state({ sim: checkersSim() })} me="p1" onMove={noop} />);
+      expect(screen.getByText('Your turn').className).toContain('animate-board-turn-notice');
+    });
+
+    it('drops the fade animation class under reduced motion', () => {
+      stubReducedMotion(true);
+      render(<CheckersViewer state={state({ sim: checkersSim() })} me="p1" onMove={noop} />);
+      expect(screen.getByText('Your turn').className).not.toContain('animate-board-turn-notice');
+    });
+  });
+});
+
+describe('hintsVisibleFor - the pure hint gating the canvas draw reads', () => {
+  const on = asCheckersSim(checkersSim())!;
+  const off = asCheckersSim(checkersSim({ showAvailableMoves: false }))!;
+
+  it('shows hints only for the active player when the setting is on', () => {
+    expect(hintsVisibleFor(on, true)).toBe(true);
+    expect(hintsVisibleFor(on, false)).toBe(false);
+  });
+
+  it('never shows hints when the host turned the setting off', () => {
+    expect(hintsVisibleFor(off, true)).toBe(false);
+    expect(hintsVisibleFor(off, false)).toBe(false);
+  });
+
+  it('shows no hints for a null sim', () => {
+    expect(hintsVisibleFor(null, true)).toBe(false);
   });
 });

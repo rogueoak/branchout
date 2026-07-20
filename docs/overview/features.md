@@ -217,7 +217,16 @@ What the product does for users, grouped by area. Each capability maps to one or
       multi-jump path, rejecting to that device only) and streams the whole board on `sim`. The web
       Viewer is a select-then-move two-tap surface (tap a piece, then a highlighted destination; a
       multi-jump submits whole). Standings rank the winner first even when the loser has more pieces
-      (`@branchout/game-checkers`). Insider-gated by SURFACE like Teeter (feedback `0029`).
+      (`@branchout/game-checkers`). The Viewer ANIMATES the authoritative board deltas (spec `0071`,
+      mirroring Reversi): a moved piece slides source->landing, captured pieces fade out, and a crowned
+      man grows its King ring - driven by a pure `diffMove` diff, honoring `prefers-reduced-motion`. A
+      brief turn-start popup pops ("Your turn" / "you must jump" on a forced capture), and a host "See
+      available moves" advanced toggle (default on) gates the legal-move hints. **PUBLIC as of WS14**
+      (spec `0071`): `visibility: 'public'` in BOTH the web module and the engine plugin manifest, so
+      Checkers appears on the public picker, the `/games` index, its `/games/checkers` feature page, the
+      sitemap, and the home hero carousel (the fourth public game after Trivia, Liar Liar, and Reversi).
+      It ships a 3:4 portrait hero (`assets/hero-checkers-portrait.svg`) wired through the brand package,
+      and `PLAYER_LIMITS.checkers = { min: 2, max: 2 }` now matches the plugin caps (cross-checked).
 - [x] Per-player private payloads - the hidden-information seam the next wave of games (spymaster
       key, hidden role, private hand) build on (spec `0052`). A lifecycle result may carry an optional
       `private` map (playerId -> opaque secret); the engine delivers each entry ONLY to that player's

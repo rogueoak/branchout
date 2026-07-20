@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { RoundContext, SessionPlayer } from '@branchout/game-sdk';
-import { createCheckersGame, CHECKERS_GAME_ID } from './checkers';
+import { createCheckersGame, CHECKERS_GAME_ID, validateConfig } from './checkers';
 import { BOARD_SIZE, type Cell, type Piece } from './rules';
 import type { CheckersSim } from './types';
 
@@ -78,6 +78,33 @@ describe('configure', () => {
     expect(() => game.configure({}, players('violet', 'amber'))).not.toThrow();
     expect(() => game.configure(undefined, players('violet', 'amber'))).not.toThrow();
     expect(() => game.configure(42, players('violet', 'amber'))).toThrow();
+  });
+});
+
+describe('showAvailableMoves (authoritative host setting)', () => {
+  it('defaults ON when the config omits it, and threads into the prompt + streamed sim', () => {
+    // The ENGINE is the source of truth for the hint default (the web mirror only follows it); a
+    // regression to default-off here would silently kill hints for the now-public game.
+    expect(validateConfig({}).showAvailableMoves).toBe(true);
+    expect(validateConfig(undefined).showAvailableMoves).toBe(true);
+    const game = createCheckersGame();
+    const scratch = game.configure({}, players('violet', 'amber')).scratch;
+    expect((scratch as { showAvailableMoves: boolean }).showAvailableMoves).toBe(true);
+    // It threads into the prompt the client first renders...
+    const started = game.startRound(ctx({ scratch }));
+    expect((started.prompt as CheckersSim).showAvailableMoves).toBe(true);
+    // ...and into the streamed tick sim the board renders from.
+    expect(tick(game, ctx({ scratch })).showAvailableMoves).toBe(true);
+  });
+
+  it('is OFF only when the host explicitly turns it off, and that threads through too', () => {
+    expect(validateConfig({ showAvailableMoves: false }).showAvailableMoves).toBe(false);
+    const game = createCheckersGame();
+    const scratch = game.configure(
+      { showAvailableMoves: false },
+      players('violet', 'amber'),
+    ).scratch;
+    expect(tick(game, ctx({ scratch })).showAvailableMoves).toBe(false);
   });
 });
 
