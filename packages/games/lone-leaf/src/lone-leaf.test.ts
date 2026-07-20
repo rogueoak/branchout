@@ -69,6 +69,19 @@ describe('wiltLeaves', () => {
     expect(results.find((r) => r.player === 'p2')?.survived).toBe(false);
     expect(results.find((r) => r.player === 'p3')?.survived).toBe(true);
   });
+
+  it('wilts a leaf matching any token of a MULTI-WORD seed (no partial answer leak)', () => {
+    // "einstein" alone would otherwise survive against "albert einstein" and reveal the answer.
+    const results = wiltLeaves({ p2: 'einstein', p3: 'Albert', p4: 'physics' }, 'albert einstein', [
+      'p2',
+      'p3',
+      'p4',
+    ]);
+    const byPlayer = Object.fromEntries(results.map((r) => [r.player, r.survived]));
+    expect(byPlayer.p2).toBe(false);
+    expect(byPlayer.p3).toBe(false);
+    expect(byPlayer.p4).toBe(true);
+  });
 });
 
 describe('Lone Leaf module', () => {

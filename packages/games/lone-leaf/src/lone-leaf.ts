@@ -44,7 +44,7 @@ import {
   validateConfig,
   type ResolvedLoneLeafConfig,
 } from './config';
-import { isSingleWord, leafKey, normalizeLeaf, sameLeaf } from './matching';
+import { isSingleWord, leafKey, leafRevealsSeed, normalizeLeaf, sameLeaf } from './matching';
 import { pickSeedInBand } from './selection';
 import { loadSeedBank, validateSeedBank, type LoneLeafSeed } from './seeds';
 
@@ -164,7 +164,9 @@ export function wiltLeaves(
     if (word === undefined) continue;
     const key = leafKey(word);
     const valid = isSingleWord(word);
-    const matchesSeed = sameLeaf(word, seedWord);
+    // A leaf wilts if it gives the seed away: the whole seed, or any single token of a multi-word
+    // seed (so "einstein" cannot survive against "albert einstein" and leak the answer).
+    const matchesSeed = leafRevealsSeed(word, seedWord);
     const collides = (keyCounts.get(key) ?? 0) > 1;
     results.push({ player, word, survived: valid && !matchesSeed && !collides });
   }

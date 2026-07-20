@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { isSingleWord, leafKey, normalizeLeaf, sameLeaf, stemLeaf } from './matching';
+import {
+  isSingleWord,
+  leafKey,
+  leafRevealsSeed,
+  normalizeLeaf,
+  sameLeaf,
+  stemLeaf,
+} from './matching';
 
 describe('normalizeLeaf', () => {
   it('lowercases, trims, and drops punctuation', () => {
@@ -47,6 +54,24 @@ describe('sameLeaf', () => {
 
   it('an empty stem never matches another empty stem', () => {
     expect(sameLeaf('!!!', '???')).toBe(false);
+  });
+});
+
+describe('leafRevealsSeed', () => {
+  it('wilts a leaf equal to a single-word seed (unchanged from sameLeaf)', () => {
+    expect(leafRevealsSeed('river', 'river')).toBe(true);
+    expect(leafRevealsSeed('Rivers', 'river')).toBe(true);
+    expect(leafRevealsSeed('lake', 'river')).toBe(false);
+  });
+
+  it('wilts a leaf matching ANY token of a multi-word seed, protecting the secret', () => {
+    // Neither token alone should survive to hand the Seeker a piece of "albert einstein".
+    expect(leafRevealsSeed('einstein', 'albert einstein')).toBe(true);
+    expect(leafRevealsSeed('Albert', 'albert einstein')).toBe(true);
+    // The whole answer, case/plural-folded, still wilts.
+    expect(leafRevealsSeed('albert einstein', 'albert einstein')).toBe(true);
+    // An unrelated single-word leaf survives.
+    expect(leafRevealsSeed('physicist', 'albert einstein')).toBe(false);
   });
 });
 

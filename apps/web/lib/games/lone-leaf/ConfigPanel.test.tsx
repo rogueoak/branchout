@@ -60,6 +60,12 @@ describe('LoneLeafConfigPanel difficulty', () => {
     renderPanel({ difficultyMin: 2, difficultyMax: 9 });
     expect(screen.getByRole('radio', { name: /a custom difficulty range/i })).toBeDefined();
   });
+
+  it('does not change the band when the read-only Custom option is clicked', () => {
+    const onChange = renderPanel({ difficultyMin: 2, difficultyMax: 9 });
+    fireEvent.click(screen.getByRole('radio', { name: /a custom difficulty range/i }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });
 
 describe('LoneLeafConfigPanel categories', () => {

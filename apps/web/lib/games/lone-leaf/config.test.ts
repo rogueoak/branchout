@@ -30,7 +30,9 @@ describe('validateLoneLeafConfig', () => {
 
   it('defaults difficulty to the Medium band (3-6)', () => {
     expect(difficultyPresetId(3, 6)).toBe('medium');
-    expect(difficultyPresetId(defaultLoneLeafConfig().difficultyMin, 6)).toBe('medium');
+    // Read BOTH default bounds back so a regression in either default fails here.
+    const d = defaultLoneLeafConfig();
+    expect(difficultyPresetId(d.difficultyMin, d.difficultyMax)).toBe('medium');
   });
 
   it('accepts a valid difficulty band and rejects an out-of-range or inverted one', () => {

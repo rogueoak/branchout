@@ -211,7 +211,7 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
           disabled={disabled}
         />
         <p className="text-caption text-text-subtle">
-          How obscure the hidden words get - from everyday to expert.
+          How well-known the hidden words are - from everyday to expert.
         </p>
         {difficultyError ? (
           <p role="alert" className="text-body-sm text-danger">

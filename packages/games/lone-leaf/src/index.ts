@@ -41,5 +41,12 @@ export {
   type LoneLeafSeed,
   type LoneLeafCategory,
 } from './seeds';
-export { normalizeLeaf, stemLeaf, leafKey, sameLeaf, isSingleWord } from './matching';
+export {
+  normalizeLeaf,
+  stemLeaf,
+  leafKey,
+  sameLeaf,
+  leafRevealsSeed,
+  isSingleWord,
+} from './matching';
 export { pickSeedInBand } from './selection';

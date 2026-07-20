@@ -106,7 +106,9 @@ Randomness is seeded via `services.rng`; the seed bank loads via the injected as
   are accepted (the original six stay single-word via the data). Matching (matching.ts) already
   lowercases and collapses internal whitespace, so a Seeker's guess "Albert Einstein" resolves
   against the seed "albert einstein". Leaves stay one word (the clue is one word); only the SEED may
-  be multi-word.
+  be multi-word. To keep the secret, the wilt for a multi-word seed also clears any leaf that matches
+  a SINGLE token of the seed (`leafRevealsSeed`), so a leaf like "einstein" cannot survive and hand
+  the Seeker part of "albert einstein"; single-word seeds are unaffected (one token = `sameLeaf`).
 - Web display labels come from a `CATEGORY_LABELS` map (title-case fallback) shared by the config
   panel and the in-round prompt badge, so the friendlier names ("Famous People", "Historical
   Figures") read consistently.

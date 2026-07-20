@@ -58,6 +58,22 @@ export function sameLeaf(a: string, b: string): boolean {
   return ka.length > 0 && ka === leafKey(b);
 }
 
+/**
+ * True when a (one-word) leaf would give the seed away and so must wilt: it matches the WHOLE seed,
+ * or - for a MULTI-WORD seed - any single token of it. Without the per-token check a leaf like
+ * "einstein" would survive against the seed "albert einstein" and hand the Seeker a chunk of the
+ * answer, defeating the secret. For a single-word seed this is exactly `sameLeaf`, so the original
+ * six themes are unaffected.
+ */
+export function leafRevealsSeed(leaf: string, seedWord: string): boolean {
+  if (sameLeaf(leaf, seedWord)) return true;
+  const tokens = normalizeLeaf(seedWord)
+    .split(' ')
+    .filter((token) => token.length > 0);
+  if (tokens.length <= 1) return false;
+  return tokens.some((token) => sameLeaf(leaf, token));
+}
+
 /** True when a leaf is a single word (no inner whitespace after normalization) with a non-empty stem. */
 export function isSingleWord(raw: string): boolean {
   const normalized = normalizeLeaf(raw);

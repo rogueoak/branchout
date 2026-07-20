@@ -25,6 +25,13 @@ describe('pickSeedInBand', () => {
     expect(pickSeedInBand(pool, 5, 6, () => 0)!.id).toBe('low');
   });
 
+  it('widens upward when nothing sits below the band (empty easier-side path)', () => {
+    // Only a harder seed remains, so the easier-side tie-break filter is empty and must be a no-op.
+    for (const r of [0, 0.99]) {
+      expect(pickSeedInBand([seed('only', 9)], 3, 6, () => r)!.id).toBe('only');
+    }
+  });
+
   it('breaks an equidistant widen tie toward the easier (lower) rating', () => {
     // Band [5, 5]; 3 is distance 2 below, 7 is distance 2 above -> the easier side wins.
     const pool = [seed('easier', 3), seed('harder', 7)];
