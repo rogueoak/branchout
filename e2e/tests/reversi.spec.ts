@@ -1,24 +1,26 @@
 import { expect, test } from '@playwright/test';
-import { signUp, spanSessionToInsider } from '../lib/helpers';
-import { INSIDER_URL, WEB_PORT, grantCredits, grantInsider } from '../lib/stack';
+import { joinRoom, signUp } from '../lib/helpers';
+import { grantCredits } from '../lib/stack';
 
-// End-to-end proof of Reversi (spec 0054): the insider-only, two-player, LIVE-model board game. It
-// exercises what the unit tests cannot - the real browser -> control-plane -> game-engine (board in
-// scratch, streamed) -> browser loop: two insiders join one room on the insider surface, start the
-// game, and then play a real ALTERNATING sequence of moves. Violet places, the engine flips + streams
-// so Amber's device sees the new board and takes the turn; Amber replies, the turn comes back to
-// Violet; and so on for several moves - proving the second player's move streams back and the disc
-// counts + turn state update on BOTH devices, not just the opening. It also proves the surface gate
-// (the game lives ONLY on the insider surface) and runs at a 360px phone viewport (CLAUDE.md rule 1).
-// It is written to run in CI; if docker cannot run in the sandbox it is still authored here and noted
-// as not-run.
+// End-to-end proof of Reversi (spec 0054, promoted to PUBLIC in WS9): the two-player, LIVE-model
+// board game, now on the main site. It exercises what the unit tests cannot - the real browser ->
+// control-plane -> game-engine (board in scratch, streamed) -> browser loop: two players join one
+// room on the PUBLIC surface, start the game, and play a real ALTERNATING sequence of moves. Violet
+// places, the engine flips + streams so Amber's device sees the new board and takes the turn; Amber
+// replies, the turn comes back to Violet; and so on for several moves - proving the second player's
+// move streams back and the disc counts + turn state update on BOTH devices, not just the opening. It
+// also proves Reversi is now PUBLIC (it appears in the apex picker for a normal account) and runs at a
+// 360px phone viewport (CLAUDE.md rule 1). It is written to run in CI; if docker cannot run in the
+// sandbox it is still authored here and noted as not-run.
 
-test('two insiders play an alternating Reversi sequence on the live board', async ({ browser }) => {
+test('two players play an alternating Reversi sequence on the public live board', async ({
+  browser,
+}) => {
   // The move streams back from the engine's live sim, so this needs more than the default budget.
   test.setTimeout(150_000);
 
-  // Two fresh accounts, both granted insider and spanned to the insider host (the game lives there),
-  // both at a 360px phone viewport. Fund them so the live game can reserve its budget to start.
+  // Two fresh accounts, both at a 360px phone viewport. Fund them so the live game can reserve its
+  // budget to start (Reversi is a live game; no insider grant is needed now that it is public).
   const hostCtx = await browser.newContext({ viewport: { width: 360, height: 780 } });
   const playerCtx = await browser.newContext({ viewport: { width: 360, height: 780 } });
   const host = await hostCtx.newPage();
@@ -26,31 +28,22 @@ test('two insiders play an alternating Reversi sequence on the live board', asyn
 
   try {
     const hostAccount = await signUp(host);
-    await spanSessionToInsider(hostCtx);
-    grantInsider(hostAccount.gamerTag);
     grantCredits(hostAccount.gamerTag);
 
     const playerAccount = await signUp(player);
-    await spanSessionToInsider(playerCtx);
-    grantInsider(playerAccount.gamerTag);
     grantCredits(playerAccount.gamerTag);
 
-    // Host creates a room on the insider surface and picks the insider-only game.
-    await host.goto(`${INSIDER_URL}/rooms`);
+    // Host creates a room on the PUBLIC surface and picks Reversi (now a public game).
+    await host.goto('/rooms');
     await host.getByRole('button', { name: /create a room/i }).click();
     await host.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=pick/);
-    // The whole flow stays on the insider host - it never bounced to the apex.
-    expect(new URL(host.url()).host).toBe(`insider.localhost:${WEB_PORT}`);
     const code = host.url().match(/\/rooms\/([A-Z2-9]{5})/)?.[1];
     if (!code) throw new Error(`could not read room code from ${host.url()}`);
     await host.getByRole('button', { name: /pick reversi/i }).click();
     await host.waitForURL(new RegExp(`/rooms/${code}(?![?/])`));
 
-    // The second insider joins the same room on the insider surface.
-    await player.goto(`${INSIDER_URL}/join?code=${code}`);
-    await player.getByLabel('Your name').fill('Amber Player');
-    await player.getByRole('button', { name: /join room/i }).click();
-    await player.waitForURL(new RegExp(`/rooms/${code}$`));
+    // The second player joins the same room by code (anonymous).
+    await joinRoom(player, code, 'Amber Player');
 
     // Start the two-player game.
     await host.getByRole('button', { name: /start game/i }).click();
@@ -128,29 +121,23 @@ test('two insiders play an alternating Reversi sequence on the live board', asyn
   }
 });
 
-test('a non-insider never sees Reversi in the game picker', async ({ page }) => {
-  // A normal account (no insider grant) walks the apex create flow; the insider-only game is filtered.
+test('a normal account sees Reversi in the public game picker (WS9)', async ({ page }) => {
+  // Reversi graduated from insider to public: a normal account (no insider grant) walking the apex
+  // create flow must now be offered Reversi alongside the other public games.
   await signUp(page);
   await page.goto('/rooms');
   await page.getByRole('button', { name: /create a room/i }).click();
   await page.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=pick/);
 
-  // The public games are offered, but the insider-only game is not.
   await expect(page.getByRole('button', { name: /pick trivia/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /pick reversi/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /pick reversi/i })).toBeVisible();
 });
 
-test('an INSIDER never sees Reversi in the APEX picker (surface, not entitlement)', async ({
-  page,
-}) => {
-  // Visibility follows the surface, not the entitlement: an insider on the main site must not see the
-  // insider-only game. It exists only on the insider surface.
-  const account = await signUp(page);
-  grantInsider(account.gamerTag);
-  await page.goto('/rooms');
-  await page.getByRole('button', { name: /create a room/i }).click();
-  await page.waitForURL(/\/rooms\/[A-Z2-9]{5}\?step=pick/);
-
-  await expect(page.getByRole('button', { name: /pick trivia/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /pick reversi/i })).toHaveCount(0);
+test('Reversi has a public feature page on the /games index (WS9)', async ({ page }) => {
+  // The public /games index enumerates PUBLIC_GAME_CATALOG, so Reversi now has a card there that
+  // links to its public feature page (which 404'd on the apex while it was insider-only).
+  await page.goto('/games');
+  await expect(page.getByRole('link', { name: /details about reversi/i })).toBeVisible();
+  await page.goto('/games/reversi');
+  await expect(page.getByRole('heading', { name: 'Reversi', level: 1 })).toBeVisible();
 });

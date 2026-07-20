@@ -19,6 +19,7 @@ import { heroTriviaSvg } from '../hero-trivia.js';
 import { heroLiarLiarSvg } from '../hero-liarliar.js';
 import { heroPortraitTriviaSvg } from '../hero-portrait-trivia.js';
 import { heroPortraitLiarLiarSvg } from '../hero-portrait-liarliar.js';
+import { heroPortraitReversiSvg } from '../hero-portrait-reversi.js';
 import { heroTeeterTowerSvg } from '../hero-teeter-tower.js';
 import { heroBramblesSvg } from '../hero-brambles.js';
 import { heroNightleafSvg } from '../hero-nightleaf.js';
@@ -102,6 +103,7 @@ describe('SVG exports', () => {
   it.each([
     ['heroPortraitTriviaSvg', heroPortraitTriviaSvg],
     ['heroPortraitLiarLiarSvg', heroPortraitLiarLiarSvg],
+    ['heroPortraitReversiSvg', heroPortraitReversiSvg],
   ])(
     '%s is a 600x800 portrait hero illustration that keeps the gold root (spec 0067)',
     (_name, svg) => {

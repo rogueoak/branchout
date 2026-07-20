@@ -180,7 +180,12 @@ What the product does for users, grouped by area. Each capability maps to one or
       "&lt;other&gt; has no moves, your turn" / "You have no moves, turn skipped"), both driven by the
       authoritative sim (board deltas + turn/pass state), not guessed (WS8a). It is a **strict 2-player**
       game: `PLAYER_LIMITS.reversi = { min: 2, max: 2 }` (protocol) plus the plugin capabilities are the
-      single source of truth, so the lobby/gate/picker all show exactly 2.
+      single source of truth, so the lobby/gate/picker all show exactly 2. **PUBLIC as of WS9** (spec
+      `0070`): Reversi graduated from insider to `visibility: 'public'`, so it now appears on the public
+      picker, the `/games` index, its `/games/reversi` feature page, the sitemap, and the home hero
+      carousel (spec `0067`) - the third public game after Trivia and Liar Liar. It ships a 3:4 portrait
+      hero (`assets/hero-reversi-portrait.svg`) for the carousel, wired through the brand package like
+      the other portrait heroes.
 - [~] Chess (insider-only) - classic two-player chess, the correctness-heaviest board game, reusing the
       `@branchout/game-board` harness (spec `0056`). Full standard rules: all six pieces, castling
       (both sides with the through/into/out-of-check conditions), en passant (the one-move window),

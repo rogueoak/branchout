@@ -364,11 +364,11 @@ const MARKETING: Record<string, GameMarketing> = {
     categories: ['Classic', 'Strategy', 'Two-player'],
     shareImage: '/share-trivia.png',
     shareAlt: 'Branch Out Reversi',
-    badge: { label: 'Insider', variant: 'primary' },
+    badge: { label: 'New', variant: 'success' },
     seoTitle: 'Reversi - the classic disc-flip strategy game | Branch Out Games',
     seoDescription:
-      'Reversi is a phone-first two-player disc-flip strategy game in insider testing. Bracket a ' +
-      "line of your opponent's discs to flip them; the most discs of your color wins.",
+      'Play Branch Out Reversi free in your browser: a phone-first two-player disc-flip strategy ' +
+      "game. Bracket a line of your opponent's discs to flip them; the most discs of your color wins.",
   },
   // Chess is insider-only (spec 0056): the entry exists so the build-time "every registered game needs
   // marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so it never appears on the
