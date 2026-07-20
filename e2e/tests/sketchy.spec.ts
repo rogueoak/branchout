@@ -100,6 +100,17 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
     // reveal the number field and set a single round.
     await host.getByRole('radio', { name: /set your own number of rounds/i }).click();
     await host.locator('#sketchy-rounds').fill('1');
+
+    // Auto-advance now defaults ON. This test drives a deterministic, HOST-advanced run (it gates the
+    // between-round "Next" on the leaderboard copy, and the finale is host-advanced), so turn
+    // auto-advance off in the lobby's Advanced settings first. The auto-advance-on behavior is covered
+    // by the engine/web unit tests; here we keep the classic host-advanced flow the loop is tuned for.
+    await host.getByRole('button', { name: /advanced settings/i }).click();
+    const autoAdvance = host.locator('#sketchy-auto-advance');
+    await expect(autoAdvance).toHaveAttribute('aria-checked', 'true');
+    await autoAdvance.click();
+    await expect(autoAdvance).toHaveAttribute('aria-checked', 'false');
+
     await host.getByRole('button', { name: /start game/i }).click();
 
     // ----- Draw round -----
