@@ -5,6 +5,7 @@
 import { loneLeafSvg } from '@branchout/brand/loneleaf';
 import type { GameUiModule } from '../registry';
 import { LoneLeafConfigPanel } from './ConfigPanel';
+import { LoneLeafAdvancedConfigPanel } from './AdvancedConfigPanel';
 import { LoneLeafViewer } from './Viewer';
 import { LoneLeafRemote } from './Remote';
 import { defaultLoneLeafConfig, validateLoneLeafConfig, type LoneLeafHostConfig } from './config';
@@ -28,6 +29,7 @@ export const loneLeafGameUi: GameUiModule = {
     return typeof rounds === 'number' ? rounds : defaultLoneLeafConfig().rounds;
   },
   ConfigPanel: LoneLeafConfigPanel,
+  AdvancedConfigPanel: LoneLeafAdvancedConfigPanel,
   Viewer: LoneLeafViewer,
   Remote: LoneLeafRemote,
 };

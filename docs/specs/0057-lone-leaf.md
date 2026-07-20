@@ -47,8 +47,14 @@ or team scoring; a timer other than the standard move/guess windows.
 
 ### Engine (round-based, spec 0020 + spec 0052)
 
-- `configure` - validate the host config (1-3 themes or `random`; 1-100 rounds, default 5); the leaf
-  window is 90s.
+- `configure` - validate the host config (1-3 themes or `random`; 1-100 rounds, default 10) and the
+  pacing settings (mirroring Trivia, spec 0068): `autoAdvance` (default on) with an `advanceAfterSeconds`
+  dwell (default 5, range 1-60) that drives the reveal/leaderboard hop, plus two round windows -
+  `clueSeconds` (the leaf-writing/move window, default 60, range 15-180) and `guessSeconds` (the
+  Seeker's guess window, default 60, range 15-180). `configure` returns `moveWindowMs = clueSeconds *
+  1000` and `leaderboardWindowMs = autoAdvance ? advanceAfterSeconds * 1000 : 0` (the generic engine
+  infers auto-advance from `leaderboardWindowMs > 0`); `guessSeconds` rides the scratch so `reveal`
+  can set the decision window.
 - `startRound` - draw an unused seed and pick the Seeker (`seekerForRound` = seat `(round - 1) mod
   n`). The broadcast `prompt` carries the round, the theme, and WHO the Seeker is - never the seed.
   The seed is placed in `private[playerId]` for every NON-Seeker; the Seeker is absent from the map
@@ -60,7 +66,7 @@ or team scoring; a timer other than the standard move/guess windows.
   seed, and no OTHER player wrote a leaf with the same canonical stem (both of a duplicate pair
   wilt). Matching folds case and a light stem (a trailing plural / -ing / -ed), so "cat"/"cats" wilt
   together. The reveal streams the survivors + which wilted to everyone - but NEVER the seed word. It
-  returns a `decision` (a 60s guess phase).
+  returns a `decision` whose window is the host-configured guess time (default 60s).
 - `collectVote` - the Seeker's guess rides the vote `target` (free text); anyone else's vote is
   ignored.
 - `allDecided` - true once the Seeker has guessed.
@@ -78,7 +84,9 @@ Randomness is seeded via `services.rng`; the seed bank loads via the injected as
 - The **remote** is the only surface the seed can appear on: a non-Seeker reads `state.private` to
   see their seed and writes a leaf; the Seeker has no private frame, so no seed, and only waits. In
   the guess phase the Seeker types one guess; everyone else waits.
-- Config panel mirrors the engine's validation.
+- Config panel mirrors the engine's validation. Rounds are chosen from presets (Fast 5 / Standard 10
+  / Long 20 / Marathon 40, default Standard) or a Custom number; the auto-advance toggle, advance-after
+  dwell, and the two round windows (clue time, guess time) live in a separate Advanced panel.
 
 ## Acceptance
 

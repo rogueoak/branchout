@@ -1,18 +1,22 @@
 'use client';
 
 // Lone Leaf's host config FORM for the game-pluggable lobby (spec 0057): a Random toggle, a capped
-// multi-select of up to three seed categories, and a round count. Form-only and controlled - the
-// parent (the lobby shell) owns the value and Start gating, matching the generic `GameConfigPanelProps`
-// every game uses. Validates against the engine's rules so the host cannot start an invalid game.
+// multi-select of up to three seed categories, and a round count chosen from presets (Fast / Standard
+// / Long / Marathon) or a Custom number. Form-only and controlled - the parent (the lobby shell) owns
+// the value and Start gating, matching the generic `GameConfigPanelProps` every game uses. The
+// auto-advance and round-window fields live in the separate AdvancedConfigPanel rendered into the
+// lobby's Advanced slot. Validates against the engine's rules so the host cannot start an invalid game.
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Badge, Button, Input, Label } from '@rogueoak/canopy';
+import { OptionSelector, type SelectorOption } from '../../../components/game/OptionSelector';
 import type { GameConfigPanelProps } from '../registry';
 import {
   CATEGORIES,
   MAX_CATEGORIES,
   MAX_ROUNDS,
   MIN_ROUNDS,
+  ROUND_PRESETS,
   isCategoryList,
   validateLoneLeafConfig,
   type ConfigError,
@@ -43,9 +47,30 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
     set({ categories: next });
   };
 
+  // Rounds: a preset selector plus a custom number field. A round count that matches no preset (or an
+  // explicit "Custom" choice) reveals the number field.
+  const roundsPreset = ROUND_PRESETS.find((preset) => preset.value === config.rounds);
+  const [customRounds, setCustomRounds] = useState(!roundsPreset);
+  const roundsValue = roundsPreset && !customRounds ? String(config.rounds) : 'custom';
+  const roundOptions: SelectorOption<string>[] = [
+    ...ROUND_PRESETS.map((preset) => ({
+      value: String(preset.value),
+      label: preset.label,
+      description: preset.description,
+    })),
+    { value: 'custom', label: 'Custom', description: 'Set your own number of rounds.' },
+  ];
+  const onRoundsSelect = (next: string) => {
+    if (next === 'custom') {
+      setCustomRounds(true);
+      return;
+    }
+    setCustomRounds(false);
+    set({ rounds: Number(next) });
+  };
+
   const categoriesError = errorFor(errors, 'categories');
   const roundsError = errorFor(errors, 'rounds');
-  const roundsValue = Number.isNaN(config.rounds) ? '' : config.rounds;
 
   const categoriesErrorLine = categoriesError ? (
     <p role="alert" className="text-body-sm text-danger">
@@ -125,19 +150,31 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="lone-leaf-rounds">Rounds</Label>
-        <Input
-          id="lone-leaf-rounds"
-          type="number"
-          inputMode="numeric"
-          min={MIN_ROUNDS}
-          max={MAX_ROUNDS}
-          disabled={disabled}
+        <Label>Rounds</Label>
+        <OptionSelector
+          ariaLabel="Number of rounds"
           value={roundsValue}
-          onChange={(event) => set({ rounds: event.target.valueAsNumber })}
-          aria-invalid={roundsError !== null}
-          aria-describedby={roundsError ? 'lone-leaf-rounds-error' : undefined}
+          options={roundOptions}
+          onChange={onRoundsSelect}
+          disabled={disabled}
         />
+        {roundsValue === 'custom' ? (
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="lone-leaf-rounds">Custom rounds</Label>
+            <Input
+              id="lone-leaf-rounds"
+              type="number"
+              inputMode="numeric"
+              min={MIN_ROUNDS}
+              max={MAX_ROUNDS}
+              disabled={disabled}
+              value={Number.isNaN(config.rounds) ? '' : config.rounds}
+              onChange={(event) => set({ rounds: event.target.valueAsNumber })}
+              aria-invalid={roundsError !== null}
+              aria-describedby={roundsError ? 'lone-leaf-rounds-error' : undefined}
+            />
+          </div>
+        ) : null}
         {roundsErrorLine}
         <p className="text-caption text-text-subtle">
           One hidden word per round. The Seeker rotates each round, so everyone takes a turn
