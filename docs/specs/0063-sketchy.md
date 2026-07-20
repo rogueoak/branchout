@@ -134,6 +134,34 @@ shows the current sketch (replayed read-only) and the shuffled options to pick f
 player's own decoy, which they cannot pick. The Viewer replays sketches on the shared screen and shows
 the round result and standings. Config, validation, and decoders mirror the engine.
 
+### Canvas UX refinements
+
+Refinements to the drawing/guessing surfaces (canvas/view components only; the engine, config, and
+scoring are unchanged):
+
+- **Edge-swipe gutter.** The draw canvas (and the interactive-adjacent read-only replays on the
+  remote) sit behind a symmetric horizontal gutter (~12px each side at 360px, responsive) with
+  `overscroll-behavior-x: contain`, so a finger starting at the screen edge draws instead of
+  triggering the browser's back/forward swipe. The canvas stays centred and as large as the gutter
+  allows.
+- **Featured player sees their own sketch while others guess.** During the guess stage the featured
+  player (who sits out the vote) now watches their own drawing on their remote via the read-only
+  replay, rather than a text-only "sit this out" screen.
+- **One canvas per mode.** The featured sketch during the decoy and guess stages renders on the
+  participant's REMOTE (their own device). The shared VIEWER shows that sketch only in viewer-only
+  mode; in interactive mode (one device rendering both panes) the viewer suppresses its copy
+  (`hideSketchCanvas`, threaded from the stage by mode) so exactly one canvas is on screen. The
+  non-featured guesser's remote sketch no longer gates on `showResults`, so it shows in interactive
+  mode too. (Interpretation recorded for the owner to confirm.)
+- **Display background is a prop.** The read-only replay takes a `background` prop (default white);
+  the captured sketch carries no background (strokes only - `drawSketch` clears to transparent), so a
+  later change can tint the remote's replay without touching the draw surface, the viewer, or the
+  serialized strokes.
+- **Undo/Clear allowances, per game.** Undo is limited to 3 and Clear to 1 for the WHOLE game (not per
+  round); the per-round reset clears the sketch but not the counters. Each button shows the remaining
+  count and disables when exhausted, and Clear requires a confirm dialog (it wipes the drawing and
+  spends the single clear).
+
 ## Acceptance
 
 - An insider host can configure and start Sketchy with 3-8 players; a non-insider cannot see or start
@@ -152,5 +180,11 @@ the round result and standings. Config, validation, and decoders mirror the engi
   through the asset loader (unit test).
 - A multiplayer end-to-end test at 360px drives a full round: draw, submit decoys, vote, and reach a
   scored leaderboard.
+- The draw canvas and interactive-adjacent replays are inset from the viewport edge at 360px (gutter +
+  overscroll-x contain), so an edge-start swipe draws rather than navigating.
+- The featured player sees their own sketch on their remote during the guess stage; in interactive
+  mode exactly one canvas shows during the decoy and guess stages (the remote's, viewer suppressed).
+- Undo (3) and Clear (1) are per-game allowances that persist across rounds, show remaining counts,
+  disable when exhausted, and Clear is gated by a confirm dialog (unit tests).
 - typecheck, lint, unit tests, and the web build pass; the brand mark carries the gold root #d2a463.
 </content>

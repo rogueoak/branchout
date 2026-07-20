@@ -212,7 +212,16 @@ export function GameStage({
             {/* onMove is game-agnostic: a single-surface game (Teeter Tower) is one interactive
                 canvas, so the shell passes the move action straight to its viewer and the player aims
                 + drops on it. Multi-surface game viewers ignore it (their moves come from the remote). */}
-            <ui.Viewer state={state} me={me} onMove={onMove} />
+            <ui.Viewer
+              state={state}
+              me={me}
+              onMove={onMove}
+              // Interactive mode renders BOTH panes on one device; the Remote already shows the shared
+              // sketch, so tell the viewer to suppress its duplicate and keep a single canvas on screen
+              // (spec 0063 canvas-UX). Viewer-only mode has no Remote pane, so this is false and the
+              // viewer shows the sketch.
+              hideSketchCanvas={mode === 'interactive'}
+            />
           </div>
         ) : null}
         {remoteVisible && ui ? (

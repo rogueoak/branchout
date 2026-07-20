@@ -5,6 +5,12 @@
 // (the shared screen) and by the Remote to re-show the featured sketch while a player writes a decoy
 // or guesses. It never captures input - `role="img"` with a label. Mobile-first: it fills its box and
 // keeps a square aspect so a doodle reads at ~360px.
+//
+// The DISPLAY background is a `background` prop (default white). The captured sketch itself carries NO
+// background - `drawSketch` clearRects the canvas to transparent and only ever paints stroke lines, so
+// the serialized strokes never bake in a color. That keeps this a pure DISPLAY knob: a later change can
+// tint the REMOTE's replay a different color while the draw surface and the shared viewer stay white,
+// with no effect on what is captured or scored.
 
 import { useEffect, useRef } from 'react';
 import { CANVAS_SIZE, type Sketch } from './strokes';
@@ -32,7 +38,23 @@ export function drawSketch(ctx: CanvasRenderingContext2D, sketch: Sketch, size: 
   }
 }
 
-export function SketchReplay({ sketch, label }: { sketch: Sketch; label: string }) {
+export function SketchReplay({
+  sketch,
+  label,
+  background = '#ffffff',
+  gutter = false,
+}: {
+  sketch: Sketch;
+  label: string;
+  /** The DISPLAY background behind the strokes (default white). The captured sketch carries NO
+   *  background (see the module note), so this only tints the replay surface - it readies a future
+   *  colored remote background without changing the serialized strokes. */
+  background?: string;
+  /** When true, inset the canvas behind a symmetric horizontal gutter with overscroll-x contained, so
+   *  a full-width, interactive-adjacent replay never reaches the viewport edge (where a finger would
+   *  trigger the browser's back/forward swipe). Off by default so grid/gallery thumbnails are unaffected. */
+  gutter?: boolean;
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -66,12 +88,15 @@ export function SketchReplay({ sketch, label }: { sketch: Sketch; label: string 
     return () => observer?.disconnect();
   }, [sketch]);
 
-  return (
+  const canvas = (
     <canvas
       ref={canvasRef}
       role="img"
       aria-label={label}
-      className="aspect-square w-full rounded-lg border border-border bg-white"
+      className="aspect-square w-full rounded-lg border border-border"
+      style={{ backgroundColor: background }}
     />
   );
+  if (!gutter) return canvas;
+  return <div className="overscroll-x-contain px-3 sm:px-4">{canvas}</div>;
 }

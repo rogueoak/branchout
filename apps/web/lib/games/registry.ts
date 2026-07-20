@@ -18,6 +18,12 @@ export interface GameViewProps {
    * games ignore it - their moves come from the separate Remote controller.
    */
   onMove?: (round: number, move: string) => void;
+  /**
+   * True when this viewer shares one device with its Remote pane (interactive mode), so a game whose
+   * Remote already shows a shared artifact (e.g. Sketchy's featured sketch) can suppress the viewer's
+   * duplicate copy and keep a single canvas on screen. Multi-surface games without such a duplicate
+   * ignore it. In viewer-only mode it is false (there is no Remote pane), so the viewer shows it. */
+  hideSketchCanvas?: boolean;
 }
 
 /** Props a game remote (the private controller) receives: state, identity, and the wire actions. */

@@ -52,6 +52,71 @@ describe('SketchyViewer', () => {
     expect(screen.getByText('a dog')).toBeDefined();
   });
 
+  it('renders the sketch on the shared viewer in viewer-only mode (hideSketchCanvas off)', () => {
+    render(
+      <SketchyViewer
+        state={state({
+          round: 2,
+          phase: 'guessing',
+          reveals: [
+            {
+              round: 2,
+              stage: 'sketch',
+              featured: 'p1',
+              sketch: { strokes: [{ color: '#0d0a15', points: [10, 10, 90, 90] }] },
+              options: [{ id: '0', text: 'a cat' }],
+            },
+          ],
+        })}
+        me="p2"
+      />,
+    );
+    expect(screen.getByRole('img', { name: /the sketch to guess/i })).toBeDefined();
+  });
+
+  it('suppresses the viewer sketch in interactive mode so the remote is the single canvas', () => {
+    render(
+      <SketchyViewer
+        state={state({
+          round: 2,
+          phase: 'guessing',
+          reveals: [
+            {
+              round: 2,
+              stage: 'sketch',
+              featured: 'p1',
+              sketch: { strokes: [{ color: '#0d0a15', points: [10, 10, 90, 90] }] },
+              options: [{ id: '0', text: 'a cat' }],
+            },
+          ],
+        })}
+        me="p2"
+        hideSketchCanvas
+      />,
+    );
+    // The remote pane already shows this sketch in interactive mode, so the viewer must not duplicate
+    // it - but the guessable option list still renders.
+    expect(screen.queryByRole('img', { name: /the sketch to guess/i })).toBeNull();
+    expect(screen.getByText('a cat')).toBeDefined();
+  });
+
+  it('suppresses the featured sketch during the decoy stage in interactive mode', () => {
+    const decoyState = state({
+      round: 2,
+      phase: 'collecting',
+      prompt: {
+        round: 2,
+        stage: 'sketch',
+        featured: 'p1',
+        sketch: { strokes: [{ color: '#0d0a15', points: [10, 10, 90, 90] }] },
+      },
+    });
+    const { rerender } = render(<SketchyViewer state={decoyState} me="p2" />);
+    expect(screen.getByRole('img', { name: /the featured sketch/i })).toBeDefined();
+    rerender(<SketchyViewer state={decoyState} me="p2" hideSketchCanvas />);
+    expect(screen.queryByRole('img', { name: /the featured sketch/i })).toBeNull();
+  });
+
   it('shows the true seed and who was fooled in the round result', () => {
     render(
       <SketchyViewer

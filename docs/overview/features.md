@@ -296,7 +296,12 @@ What the product does for users, grouped by area. Each capability maps to one or
       every sketch read-only; the drawing surface is mobile-first at ~360px. A ~120-prompt sample seed
       bank ships under the package `data/` with a structural validator. Gated by surface like Teeter
       (`visibility: 'insider'`). Heaviest UI in the wave; a real 3-player e2e drives draw -> decoy ->
-      guess -> score at a 360px viewport.
+      guess -> score at a 360px viewport. Canvas-UX pass (spec `0063`): an edge-swipe gutter +
+      `overscroll-x` contain around the draw/replay surfaces; the featured player watches their own
+      sketch on their remote while others guess; exactly one canvas per mode (interactive suppresses
+      the viewer's copy via `hideSketchCanvas` since the remote already shows it); the replay display
+      background is a prop (default white, strokes carry none); and Undo (3) + Clear (1) are per-GAME
+      allowances shown on the buttons, disabled when spent, Clear behind a confirm dialog.
 - [~] Fourth game (insider-only) - Whispergrove: a two-team word-grid deduction game (spec `0062`).
       A 5x5 grove of 25 word leaves; a secret key marks 9 leaves for the starting grove, 8 for the
       other, 7 neutral saplings, and 1 instant-loss Deadwood. Each grove has one Whisperer who ALONE

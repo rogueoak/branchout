@@ -55,7 +55,7 @@ function optionAuthorLabel(
   return 'The real seed';
 }
 
-export function SketchyViewer({ state, me }: GameViewProps) {
+export function SketchyViewer({ state, me, hideSketchCanvas = false }: GameViewProps) {
   const { phase, standings, players } = state;
   const prompt = asSketchyPrompt(state.prompt);
   const options = pickOptions(state.reveals);
@@ -164,8 +164,10 @@ export function SketchyViewer({ state, me }: GameViewProps) {
   }
 
   if (phase === 'guessing' && options) {
+    // In interactive mode the guesser's Remote pane already shows this sketch; suppress the viewer's
+    // copy so exactly one canvas is on screen (spec 0063 canvas-UX). Viewer-only mode still shows it.
     let sketchToGuess = null;
-    if (options.sketch) {
+    if (options.sketch && !hideSketchCanvas) {
       sketchToGuess = (
         <div className="mx-auto w-full max-w-sm">
           <SketchReplay sketch={options.sketch} label="The sketch to guess" />
@@ -199,8 +201,11 @@ export function SketchyViewer({ state, me }: GameViewProps) {
   }
 
   if (phase === 'collecting' && prompt?.stage === 'sketch') {
+    // Decoy stage: the non-featured writers see this sketch on their Remote and the featured player
+    // sees it on theirs, so in interactive mode suppress the viewer's duplicate (single canvas, spec
+    // 0063 canvas-UX). Viewer-only mode has no Remote pane, so it still shows the featured sketch.
     let featuredSketch = null;
-    if (prompt.sketch) {
+    if (prompt.sketch && !hideSketchCanvas) {
       featuredSketch = (
         <div className="mx-auto w-full max-w-sm">
           <SketchReplay sketch={prompt.sketch} label="The featured sketch" />
