@@ -1810,7 +1810,7 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
     await app.close();
   });
 
-  it('the mailer targets feedback@rogueoak.com from branchout@rogueoak.com', async () => {
+  it('the mailer targets branchout@rogueoak.com from branchout@rogueoak.com', async () => {
     // Assert the from/to at the Resend REST boundary, not just the interface, so the addresses are
     // pinned where they actually go on the wire.
     const calls: Array<{ from: string; to: string; subject: string; text: string }> = [];
@@ -1832,7 +1832,7 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
     const call = calls[0];
     if (!call) throw new Error('expected a Resend request');
     expect(call.from).toBe('branchout@rogueoak.com');
-    expect(call.to).toBe('feedback@rogueoak.com');
+    expect(call.to).toBe('branchout@rogueoak.com');
     expect(call.text).toContain('Nice game.');
     await app.close();
   });
