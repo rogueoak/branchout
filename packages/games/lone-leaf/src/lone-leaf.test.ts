@@ -238,6 +238,46 @@ describe('Lone Leaf module', () => {
     expect(g.collectMove(ctx(1, 'collecting', scratch), 'p2', '   ').rejected).toBeDefined();
   });
 
+  it('draws seeds from the host difficulty band, widening only when exhausted', () => {
+    // A bank spread across the scale; the band [4, 6] should only ever surface the mid seed.
+    const banded: LoneLeafSeed[] = [
+      { id: 'nature-001', category: 'nature', word: 'river', difficulty: 1 },
+      { id: 'nature-002', category: 'nature', word: 'meadow', difficulty: 5 },
+      { id: 'nature-003', category: 'nature', word: 'canyon', difficulty: 10 },
+    ];
+    const g = createLoneLeafGame(banded, mulberry32(11));
+    let scratch = g.configure(
+      { categories: ['nature'], rounds: 1, difficultyMin: 4, difficultyMax: 6 },
+      roster,
+    ).scratch;
+    scratch = g.startRound(ctx(1, 'collecting', scratch)).scratch;
+    expect((scratch as { seed: { word: string } }).seed.word).toBe('meadow');
+  });
+
+  it('accepts and matches a multi-word proper-noun seed end to end', () => {
+    const proper: LoneLeafSeed[] = [
+      { id: 'historical-001', category: 'historical', word: 'albert einstein', difficulty: 2 },
+    ];
+    const g = createLoneLeafGame(proper, mulberry32(4));
+    let scratch = g.configure(
+      { categories: ['historical'], rounds: 1, difficultyMin: 1, difficultyMax: 10 },
+      roster,
+    ).scratch;
+    scratch = g.startRound(ctx(1, 'collecting', scratch)).scratch;
+    scratch = g.collectMove(ctx(1, 'collecting', scratch), 'p2', 'physics').scratch;
+    scratch = g.collectMove(ctx(1, 'collecting', scratch), 'p3', 'relativity').scratch;
+    scratch = g.reveal(ctx(1, 'collecting', scratch)).scratch;
+    // The Seeker types the name with different casing/spacing - it still resolves as correct.
+    scratch = g.collectVote(ctx(1, 'guessing', scratch), {
+      player: 'p1',
+      target: 'Albert Einstein',
+      agree: true,
+    }).scratch;
+    const resolved = g.resolveDecision!(ctx(1, 'guessing', scratch));
+    expect((resolved.reveal as { correct: boolean }).correct).toBe(true);
+    expect(resolved.scores).toHaveLength(3);
+  });
+
   it('the plugin manifest is a 3-7 player insider game', () => {
     expect(loneLeafPlugin.manifest.visibility).toBe('insider');
     expect(loneLeafPlugin.manifest.capabilities?.minPlayers).toBe(3);

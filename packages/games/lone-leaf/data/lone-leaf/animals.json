@@ -1,12 +1,12 @@
 [
-  { "id": "animals-001", "word": "penguin", "category": "animals" },
-  { "id": "animals-002", "word": "dolphin", "category": "animals" },
-  { "id": "animals-003", "word": "hedgehog", "category": "animals" },
-  { "id": "animals-004", "word": "octopus", "category": "animals" },
-  { "id": "animals-005", "word": "squirrel", "category": "animals" },
-  { "id": "animals-006", "word": "flamingo", "category": "animals" },
-  { "id": "animals-007", "word": "tortoise", "category": "animals" },
-  { "id": "animals-008", "word": "raccoon", "category": "animals" },
-  { "id": "animals-009", "word": "beaver", "category": "animals" },
-  { "id": "animals-010", "word": "peacock", "category": "animals" }
+  { "id": "animals-001", "word": "penguin", "category": "animals", "difficulty": 1 },
+  { "id": "animals-002", "word": "dolphin", "category": "animals", "difficulty": 1 },
+  { "id": "animals-003", "word": "hedgehog", "category": "animals", "difficulty": 3 },
+  { "id": "animals-004", "word": "octopus", "category": "animals", "difficulty": 2 },
+  { "id": "animals-005", "word": "squirrel", "category": "animals", "difficulty": 2 },
+  { "id": "animals-006", "word": "flamingo", "category": "animals", "difficulty": 3 },
+  { "id": "animals-007", "word": "tortoise", "category": "animals", "difficulty": 3 },
+  { "id": "animals-008", "word": "raccoon", "category": "animals", "difficulty": 2 },
+  { "id": "animals-009", "word": "beaver", "category": "animals", "difficulty": 3 },
+  { "id": "animals-010", "word": "peacock", "category": "animals", "difficulty": 3 }
 ]

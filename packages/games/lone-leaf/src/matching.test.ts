@@ -37,6 +37,14 @@ describe('sameLeaf', () => {
     expect(sameLeaf('river', 'lake')).toBe(false);
   });
 
+  it('matches a multi-word seed regardless of case and internal whitespace', () => {
+    // Multi-word proper-noun seeds: a Seeker's guess resolves once case + spacing are normalized.
+    expect(sameLeaf('albert einstein', 'Albert Einstein')).toBe(true);
+    expect(sameLeaf('Albert   Einstein', 'albert einstein')).toBe(true);
+    expect(sameLeaf('The Lion King', 'the lion king')).toBe(true);
+    expect(sameLeaf('albert einstein', 'marie curie')).toBe(false);
+  });
+
   it('an empty stem never matches another empty stem', () => {
     expect(sameLeaf('!!!', '???')).toBe(false);
   });

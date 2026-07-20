@@ -330,11 +330,19 @@ What the product does for users, grouped by area. Each capability maps to one or
       standing. The seed rides the spec `0052` private channel to the non-Seekers ONLY and never the
       broadcast prompt/viewer/reveal, so the Seeker's device never receives it (a unit test proves the
       Seeker is absent from the private map, and the e2e proves the seed shows on a non-Seeker's device
-      but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled ~60-word
-      sample seed bank (`@branchout/game-lone-leaf`). Host pacing mirrors Trivia (spec `0068`): rounds
-      from presets (Fast 5 / Standard 10 / Long 20 / Marathon 40, default 10) or a custom number, an
-      auto-advance toggle with an advance-after dwell, and configurable clue and guess windows
-      (default 60s each) in an Advanced panel.
+      but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled sample
+      seed bank (`@branchout/game-lone-leaf`); the full bank lives in the private data repo. Nine
+      themes: the six single-word ones (nature, everyday, places, food, animals, feelings) plus three
+      proper-noun ones that allow MULTI-WORD seeds - `celebrities` ("Famous People"), `movies`, and
+      `historical` ("Historical Figures", e.g. "albert einstein"); a multi-word guess resolves
+      regardless of case/spacing. **Difficulty by word obscurity**: every seed carries an optional
+      obscurity rating 1-10 (missing treated as 5), and the host picks a difficulty band reusing
+      Trivia's scale and label-only presets (Easy 1-4 / Medium 3-6 default / Moderate 4-8 / Hard
+      6-10); each round draws an in-band seed, widening to the nearest rating only when the band is
+      exhausted. Host pacing mirrors Trivia (spec `0068`): rounds from presets (Fast 5 / Standard 10 /
+      Long 20 / Marathon 40, default 10) or a custom number, an auto-advance toggle with an
+      advance-after dwell, and configurable clue and guess windows (default 60s each) in an Advanced
+      panel.
 - [~] Fifth game (insider-only) - Same Branch: a spectrum-guessing party game (2-8 players) on the
       round-based lifecycle (`@branchout/game-same-branch`, spec `0058`). Each round shows a branch
       running between two opposites (the **branch**); a hidden target (the **bud**) sits on it. One

@@ -1,12 +1,12 @@
 [
-  { "id": "places-001", "word": "library", "category": "places" },
-  { "id": "places-002", "word": "harbor", "category": "places" },
-  { "id": "places-003", "word": "castle", "category": "places" },
-  { "id": "places-004", "word": "market", "category": "places" },
-  { "id": "places-005", "word": "airport", "category": "places" },
-  { "id": "places-006", "word": "bakery", "category": "places" },
-  { "id": "places-007", "word": "museum", "category": "places" },
-  { "id": "places-008", "word": "stadium", "category": "places" },
-  { "id": "places-009", "word": "lighthouse", "category": "places" },
-  { "id": "places-010", "word": "garden", "category": "places" }
+  { "id": "places-001", "word": "library", "category": "places", "difficulty": 1 },
+  { "id": "places-002", "word": "harbor", "category": "places", "difficulty": 3 },
+  { "id": "places-003", "word": "castle", "category": "places", "difficulty": 2 },
+  { "id": "places-004", "word": "market", "category": "places", "difficulty": 2 },
+  { "id": "places-005", "word": "airport", "category": "places", "difficulty": 1 },
+  { "id": "places-006", "word": "bakery", "category": "places", "difficulty": 2 },
+  { "id": "places-007", "word": "museum", "category": "places", "difficulty": 2 },
+  { "id": "places-008", "word": "stadium", "category": "places", "difficulty": 2 },
+  { "id": "places-009", "word": "lighthouse", "category": "places", "difficulty": 4 },
+  { "id": "places-010", "word": "garden", "category": "places", "difficulty": 1 }
 ]

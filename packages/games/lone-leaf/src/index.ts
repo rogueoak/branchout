@@ -16,6 +16,10 @@ export {
   DEFAULT_ROUNDS,
   MIN_CATEGORIES,
   MAX_CATEGORIES,
+  MIN_DIFFICULTY,
+  MAX_DIFFICULTY,
+  DEFAULT_DIFFICULTY_MIN,
+  DEFAULT_DIFFICULTY_MAX,
   DEFAULT_AUTO_ADVANCE,
   DEFAULT_ADVANCE_AFTER_SECONDS,
   MIN_ADVANCE_AFTER_SECONDS,
@@ -31,8 +35,11 @@ export {
 export {
   loadSeedBank,
   validateSeedBank,
+  seedDifficulty,
   CATEGORIES,
+  DEFAULT_DIFFICULTY,
   type LoneLeafSeed,
   type LoneLeafCategory,
 } from './seeds';
 export { normalizeLeaf, stemLeaf, leafKey, sameLeaf, isSingleWord } from './matching';
+export { pickSeedInBand } from './selection';

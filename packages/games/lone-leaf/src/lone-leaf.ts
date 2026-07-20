@@ -37,12 +37,15 @@ import type {
   VoteInput,
 } from '@branchout/game-sdk';
 import {
+  DEFAULT_DIFFICULTY_MAX,
+  DEFAULT_DIFFICULTY_MIN,
   DEFAULT_GUESS_SECONDS,
   DEFAULT_ROUNDS,
   validateConfig,
   type ResolvedLoneLeafConfig,
 } from './config';
 import { isSingleWord, leafKey, normalizeLeaf, sameLeaf } from './matching';
+import { pickSeedInBand } from './selection';
 import { loadSeedBank, validateSeedBank, type LoneLeafSeed } from './seeds';
 
 export const LONE_LEAF_GAME_ID = 'lone-leaf';
@@ -76,6 +79,9 @@ export interface LeafResult {
 interface LoneLeafScratch {
   categories: string[] | 'random';
   rounds: number;
+  /** The obscurity band the round draw stays within, widening to nearest when the band is exhausted. */
+  difficultyMin: number;
+  difficultyMax: number;
   /** The Seeker's guess window in ms, carried from configure so reveal can set the decision window. */
   guessMs: number;
   /** Seed ids drawn so far this game - the no-repeat guarantee. */
@@ -101,6 +107,8 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): LoneLeafScratch 
   return {
     categories: s.categories ?? 'random',
     rounds: s.rounds ?? DEFAULT_ROUNDS,
+    difficultyMin: s.difficultyMin ?? DEFAULT_DIFFICULTY_MIN,
+    difficultyMax: s.difficultyMax ?? DEFAULT_DIFFICULTY_MAX,
     guessMs: s.guessMs ?? DEFAULT_GUESS_SECONDS * 1000,
     usedIds: s.usedIds ?? [],
     round: s.round ?? 0,
@@ -167,14 +175,19 @@ export function createLoneLeafGame(
   bank: readonly LoneLeafSeed[],
   rng: () => number = Math.random,
 ): GameModule {
-  /** Draw one unused seed from the configured categories. */
+  /**
+   * Draw one unused seed from the configured categories, preferring the host's difficulty band and
+   * widening to the nearest rating when the band is exhausted (see selection.ts). The category filter
+   * is the hard boundary; the band only orders the draw within it.
+   */
   function pickSeed(scratch: LoneLeafScratch): LoneLeafSeed {
     const used = new Set(scratch.usedIds);
     const pool = bank.filter((s) => inCategories(s, scratch.categories) && !used.has(s.id));
-    if (pool.length === 0) {
+    const seed = pickSeedInBand(pool, scratch.difficultyMin, scratch.difficultyMax, rng);
+    if (!seed) {
       throw new Error('lone-leaf: ran out of unused seeds for the chosen categories');
     }
-    return pool[Math.floor(rng() * pool.length)]!;
+    return seed;
   }
 
   return {
@@ -192,6 +205,8 @@ export function createLoneLeafGame(
       const scratch: LoneLeafScratch = {
         categories: cfg.categories,
         rounds: cfg.rounds,
+        difficultyMin: cfg.difficultyMin,
+        difficultyMax: cfg.difficultyMax,
         guessMs: cfg.guessMs,
         usedIds: [],
         round: 0,
@@ -221,6 +236,8 @@ export function createLoneLeafGame(
       const scratch: LoneLeafScratch = {
         categories: prev.categories,
         rounds: prev.rounds,
+        difficultyMin: prev.difficultyMin,
+        difficultyMax: prev.difficultyMax,
         guessMs: prev.guessMs,
         usedIds: [...prev.usedIds, seed.id],
         round: ctx.round,

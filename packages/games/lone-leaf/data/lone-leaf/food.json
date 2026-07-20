@@ -1,12 +1,12 @@
 [
-  { "id": "food-001", "word": "pancake", "category": "food" },
-  { "id": "food-002", "word": "noodle", "category": "food" },
-  { "id": "food-003", "word": "pumpkin", "category": "food" },
-  { "id": "food-004", "word": "cinnamon", "category": "food" },
-  { "id": "food-005", "word": "chocolate", "category": "food" },
-  { "id": "food-006", "word": "avocado", "category": "food" },
-  { "id": "food-007", "word": "popcorn", "category": "food" },
-  { "id": "food-008", "word": "mustard", "category": "food" },
-  { "id": "food-009", "word": "waffle", "category": "food" },
-  { "id": "food-010", "word": "pretzel", "category": "food" }
+  { "id": "food-001", "word": "pancake", "category": "food", "difficulty": 1 },
+  { "id": "food-002", "word": "noodle", "category": "food", "difficulty": 2 },
+  { "id": "food-003", "word": "pumpkin", "category": "food", "difficulty": 2 },
+  { "id": "food-004", "word": "cinnamon", "category": "food", "difficulty": 4 },
+  { "id": "food-005", "word": "chocolate", "category": "food", "difficulty": 1 },
+  { "id": "food-006", "word": "avocado", "category": "food", "difficulty": 3 },
+  { "id": "food-007", "word": "popcorn", "category": "food", "difficulty": 2 },
+  { "id": "food-008", "word": "mustard", "category": "food", "difficulty": 3 },
+  { "id": "food-009", "word": "waffle", "category": "food", "difficulty": 2 },
+  { "id": "food-010", "word": "pretzel", "category": "food", "difficulty": 3 }
 ]

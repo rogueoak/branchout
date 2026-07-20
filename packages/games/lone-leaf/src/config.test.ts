@@ -2,15 +2,42 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUNDS, validateConfig } from './config';
 
 describe('validateConfig', () => {
-  it('defaults rounds and pacing, and accepts random', () => {
+  it('defaults rounds, difficulty band, and pacing, and accepts random', () => {
     expect(validateConfig({ categories: 'random' })).toEqual({
       categories: 'random',
       rounds: DEFAULT_ROUNDS,
+      difficultyMin: 3,
+      difficultyMax: 6,
       autoAdvance: true,
       advanceAfterMs: 5_000,
       clueMs: 60_000,
       guessMs: 60_000,
     });
+  });
+
+  it('accepts a valid difficulty band and defaults it to Medium (3-6)', () => {
+    expect(validateConfig({ categories: 'random' })).toMatchObject({
+      difficultyMin: 3,
+      difficultyMax: 6,
+    });
+    expect(
+      validateConfig({ categories: 'random', difficultyMin: 6, difficultyMax: 10 }),
+    ).toMatchObject({ difficultyMin: 6, difficultyMax: 10 });
+    expect(
+      validateConfig({ categories: 'random', difficultyMin: 4, difficultyMax: 4 }),
+    ).toMatchObject({ difficultyMin: 4, difficultyMax: 4 });
+  });
+
+  it('rejects an out-of-range or inverted difficulty band', () => {
+    expect(() => validateConfig({ categories: 'random', difficultyMin: 0 })).toThrow(
+      /difficultyMin/,
+    );
+    expect(() => validateConfig({ categories: 'random', difficultyMax: 11 })).toThrow(
+      /difficultyMax/,
+    );
+    expect(() =>
+      validateConfig({ categories: 'random', difficultyMin: 7, difficultyMax: 3 }),
+    ).toThrow(/must not exceed/);
   });
 
   it('defaults rounds to 10', () => {
