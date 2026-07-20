@@ -1,15 +1,15 @@
 [
-  { "id": "historical-001", "word": "albert einstein", "category": "historical", "difficulty": 2 },
-  { "id": "historical-002", "word": "cleopatra", "category": "historical", "difficulty": 3 },
+  { "id": "historical-001", "word": "Albert Einstein", "category": "historical", "difficulty": 2 },
+  { "id": "historical-002", "word": "Cleopatra", "category": "historical", "difficulty": 3 },
   {
     "id": "historical-003",
-    "word": "leonardo da vinci",
+    "word": "Leonardo da Vinci",
     "category": "historical",
     "difficulty": 3
   },
-  { "id": "historical-004", "word": "abraham lincoln", "category": "historical", "difficulty": 2 },
-  { "id": "historical-005", "word": "marie curie", "category": "historical", "difficulty": 4 },
-  { "id": "historical-006", "word": "genghis khan", "category": "historical", "difficulty": 4 },
-  { "id": "historical-007", "word": "nikola tesla", "category": "historical", "difficulty": 4 },
-  { "id": "historical-008", "word": "joan of arc", "category": "historical", "difficulty": 5 }
+  { "id": "historical-004", "word": "Abraham Lincoln", "category": "historical", "difficulty": 2 },
+  { "id": "historical-005", "word": "Marie Curie", "category": "historical", "difficulty": 4 },
+  { "id": "historical-006", "word": "Genghis Khan", "category": "historical", "difficulty": 4 },
+  { "id": "historical-007", "word": "Nikola Tesla", "category": "historical", "difficulty": 4 },
+  { "id": "historical-008", "word": "Joan of Arc", "category": "historical", "difficulty": 5 }
 ]

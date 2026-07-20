@@ -1,12 +1,12 @@
 [
-  { "id": "feelings-001", "word": "wonder", "category": "feelings", "difficulty": 3 },
-  { "id": "feelings-002", "word": "courage", "category": "feelings", "difficulty": 2 },
-  { "id": "feelings-003", "word": "nostalgia", "category": "feelings", "difficulty": 6 },
-  { "id": "feelings-004", "word": "gratitude", "category": "feelings", "difficulty": 4 },
-  { "id": "feelings-005", "word": "curiosity", "category": "feelings", "difficulty": 3 },
-  { "id": "feelings-006", "word": "relief", "category": "feelings", "difficulty": 3 },
-  { "id": "feelings-007", "word": "delight", "category": "feelings", "difficulty": 4 },
-  { "id": "feelings-008", "word": "patience", "category": "feelings", "difficulty": 3 },
-  { "id": "feelings-009", "word": "mischief", "category": "feelings", "difficulty": 6 },
-  { "id": "feelings-010", "word": "serenity", "category": "feelings", "difficulty": 6 }
+  { "id": "feelings-001", "word": "Wonder", "category": "feelings", "difficulty": 3 },
+  { "id": "feelings-002", "word": "Courage", "category": "feelings", "difficulty": 2 },
+  { "id": "feelings-003", "word": "Nostalgia", "category": "feelings", "difficulty": 6 },
+  { "id": "feelings-004", "word": "Gratitude", "category": "feelings", "difficulty": 4 },
+  { "id": "feelings-005", "word": "Curiosity", "category": "feelings", "difficulty": 3 },
+  { "id": "feelings-006", "word": "Relief", "category": "feelings", "difficulty": 3 },
+  { "id": "feelings-007", "word": "Delight", "category": "feelings", "difficulty": 4 },
+  { "id": "feelings-008", "word": "Patience", "category": "feelings", "difficulty": 3 },
+  { "id": "feelings-009", "word": "Mischief", "category": "feelings", "difficulty": 6 },
+  { "id": "feelings-010", "word": "Serenity", "category": "feelings", "difficulty": 6 }
 ]

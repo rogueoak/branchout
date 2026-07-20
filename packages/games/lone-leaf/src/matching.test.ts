@@ -52,6 +52,15 @@ describe('sameLeaf', () => {
     expect(sameLeaf('albert einstein', 'marie curie')).toBe(false);
   });
 
+  it('matches a Title Case seed against a lowercase guess (and vice versa)', () => {
+    // The bank now stores words in Title Case (e.g. "Taylor Swift"); normalizeLeaf lowercases both
+    // the seed and the guess before comparison, so a Seeker who types any case still resolves.
+    expect(sameLeaf('Taylor Swift', 'taylor swift')).toBe(true);
+    expect(sameLeaf('taylor swift', 'Taylor Swift')).toBe(true);
+    expect(sameLeaf('River', 'river')).toBe(true);
+    expect(sameLeaf('The Wizard of Oz', 'the wizard of oz')).toBe(true);
+  });
+
   it('an empty stem never matches another empty stem', () => {
     expect(sameLeaf('!!!', '???')).toBe(false);
   });

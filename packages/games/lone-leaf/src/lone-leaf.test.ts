@@ -226,6 +226,38 @@ describe('Lone Leaf module', () => {
     expect((resolved.reveal as { seed: string }).seed).toBe('river');
   });
 
+  it('displays a Title Case seed as stored to non-Seekers, yet a lowercase guess still counts', () => {
+    // The bank stores words in Title Case; non-Seekers must SEE the word exactly as stored, while the
+    // Seeker's guess resolves case-insensitively via sameLeaf (normalizeLeaf lowercases both sides).
+    const titleBank: LoneLeafSeed[] = [
+      { id: 'celebrities-001', category: 'celebrities', word: 'Taylor Swift' },
+    ];
+    const g = createLoneLeafGame(titleBank, mulberry32(3));
+    let scratch = g.configure({ categories: ['celebrities'], rounds: 1 }, roster).scratch;
+
+    // Non-Seekers (p2, p3) receive the seed verbatim in Title Case; the Seeker (p1) is absent.
+    const started = g.startRound(ctx(1, 'collecting', scratch));
+    scratch = started.scratch;
+    expect((started.private!.p2 as { seed: string }).seed).toBe('Taylor Swift');
+    expect((started.private!.p3 as { seed: string }).seed).toBe('Taylor Swift');
+
+    scratch = g.collectMove(ctx(1, 'collecting', scratch), 'p2', 'singer').scratch;
+    scratch = g.collectMove(ctx(1, 'collecting', scratch), 'p3', 'pop').scratch;
+    scratch = g.reveal(ctx(1, 'collecting', scratch)).scratch;
+
+    // The Seeker guesses in lowercase; the case-insensitive match still banks the co-op point.
+    scratch = g.collectVote(ctx(1, 'guessing', scratch), {
+      player: 'p1',
+      target: 'taylor swift',
+      agree: true,
+    }).scratch;
+    const resolved = g.resolveDecision!(ctx(1, 'guessing', scratch));
+    expect((resolved.reveal as { correct: boolean }).correct).toBe(true);
+    expect(resolved.scores.every((s) => s.points === BANK_POINTS)).toBe(true);
+    // The resolved reveal names the seed exactly as stored (Title Case).
+    expect((resolved.reveal as { seed: string }).seed).toBe('Taylor Swift');
+  });
+
   it('a wrong guess banks nothing for anyone (shared miss)', () => {
     const g = game();
     let scratch = g.configure({ categories: ['nature'], rounds: 1 }, roster).scratch;

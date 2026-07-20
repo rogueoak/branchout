@@ -1,10 +1,10 @@
 [
-  { "id": "movies-001", "word": "titanic", "category": "movies", "difficulty": 1 },
-  { "id": "movies-002", "word": "jurassic park", "category": "movies", "difficulty": 2 },
-  { "id": "movies-003", "word": "the lion king", "category": "movies", "difficulty": 2 },
-  { "id": "movies-004", "word": "inception", "category": "movies", "difficulty": 3 },
-  { "id": "movies-005", "word": "forrest gump", "category": "movies", "difficulty": 3 },
-  { "id": "movies-006", "word": "spirited away", "category": "movies", "difficulty": 5 },
-  { "id": "movies-007", "word": "the matrix", "category": "movies", "difficulty": 2 },
-  { "id": "movies-008", "word": "parasite", "category": "movies", "difficulty": 4 }
+  { "id": "movies-001", "word": "Titanic", "category": "movies", "difficulty": 1 },
+  { "id": "movies-002", "word": "Jurassic Park", "category": "movies", "difficulty": 2 },
+  { "id": "movies-003", "word": "The Lion King", "category": "movies", "difficulty": 2 },
+  { "id": "movies-004", "word": "Inception", "category": "movies", "difficulty": 3 },
+  { "id": "movies-005", "word": "Forrest Gump", "category": "movies", "difficulty": 3 },
+  { "id": "movies-006", "word": "Spirited Away", "category": "movies", "difficulty": 5 },
+  { "id": "movies-007", "word": "The Matrix", "category": "movies", "difficulty": 2 },
+  { "id": "movies-008", "word": "Parasite", "category": "movies", "difficulty": 4 }
 ]
