@@ -2,6 +2,12 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { FeedbackRateLimitConfig, SessionCookieConfig } from '../config';
 import type { FeedbackMailer } from '../feedback/mailer';
 import { MailerError } from '../feedback/mailer';
+import {
+  type FeedbackSubmitter,
+  humanizeGameId,
+  renderFeedbackHtml,
+  renderFeedbackText,
+} from '../feedback/render';
 import type { RateLimiter } from '../ratelimit/limiter';
 import { RoomError, type RoomService } from '../rooms/service';
 import type { Session } from '../sessions/session';
@@ -32,12 +38,26 @@ export interface FeedbackContext {
   at?: string;
 }
 
+/**
+ * The narrow account read the feedback route needs to name the submitter (spec 0048): their gamer
+ * tag + email, so the recipient can reach back out. `AccountService` satisfies this structurally.
+ * Optional in the deps so an anonymous session (no account) still sends, just without an email.
+ */
+export interface FeedbackAccountLookup {
+  contactById(id: string): Promise<{ gamerTag: string; email: string } | null>;
+}
+
 export interface FeedbackDeps {
   /**
    * Sends the composed email. `undefined` when `RESEND_API_KEY` is unset - the "wire the secret
    * later" state: the route replies "not configured" (503) and logs a warning instead of crashing.
    */
   mailer?: FeedbackMailer;
+  /**
+   * Looks up the submitter's contact details (gamer tag + email) for the "reach out" block. Optional:
+   * without it (or for an anonymous session) the note still sends, named by the session display name.
+   */
+  accounts?: FeedbackAccountLookup;
   /** Rate limiter backing the per-IP cap (reuses the spec 0036 limiter). */
   limiter: RateLimiter;
   /** Per-IP feedback thresholds. */
@@ -87,19 +107,28 @@ function readContext(body: unknown): FeedbackContext {
   return {};
 }
 
-/** Compose the plain-text email body: the message, then the context the recipient needs to act. */
-function composeBody(message: string, context: FeedbackContext, receivedAt: string): string {
-  const lines = [
-    message.trim(),
-    '',
-    '--- context ---',
-    `room code: ${context.code ?? '(none)'}`,
-    `game: ${context.game ?? '(none)'}`,
-    `phase: ${context.phase ?? '(none)'}`,
-    `host: ${context.isHost === true ? 'yes' : context.isHost === false ? 'no' : '(unknown)'}`,
-    `submitted at: ${context.at ?? receivedAt}`,
-  ];
-  return lines.join('\n');
+/**
+ * Resolve who sent the note so the email can name them and offer a way to reply. Prefers the account's
+ * canonical gamer tag + email (when signed in and the lookup is wired); falls back to the session
+ * display name with no email. A failed lookup degrades to the display name rather than dropping the
+ * whole feedback send - the note matters more than the contact block.
+ */
+async function resolveSubmitter(
+  session: Session,
+  accounts: FeedbackAccountLookup | undefined,
+  request: FastifyRequest,
+): Promise<FeedbackSubmitter> {
+  if (session.accountId && accounts) {
+    try {
+      const contact = await accounts.contactById(session.accountId);
+      if (contact) {
+        return { gamerTag: contact.gamerTag, email: contact.email };
+      }
+    } catch (error) {
+      request.log.warn({ err: error }, '[feedback] submitter contact lookup failed');
+    }
+  }
+  return { gamerTag: session.displayName };
 }
 
 /** A uniform 429, mirroring the auth routes (no wording that leaks anything). */
@@ -121,7 +150,7 @@ function tooManyRequests(reply: FastifyReply, retryAfterSeconds: number): Fastif
  * never crashes, so the code ships before the secret does.
  */
 export function registerFeedbackRoutes(app: FastifyInstance, deps: FeedbackDeps): void {
-  const { mailer, limiter, rateLimit, sessions, cookie, rooms } = deps;
+  const { mailer, accounts, limiter, rateLimit, sessions, cookie, rooms } = deps;
 
   const currentSession = async (request: FastifyRequest): Promise<Session | null> => {
     const id = request.cookies[cookie.name];
@@ -189,10 +218,21 @@ export function registerFeedbackRoutes(app: FastifyInstance, deps: FeedbackDeps)
     }
 
     const receivedAt = new Date().toISOString();
-    const gameLabel = context.game ? ` (${context.game})` : '';
+    const submitter = await resolveSubmitter(session, accounts, request);
+    const gameTitle = humanizeGameId(context.game);
+    const renderInput = {
+      message,
+      context,
+      receivedAt,
+      submitter,
+      ...(gameTitle ? { gameTitle } : {}),
+    };
     const email = {
-      subject: `Branch Out feedback${gameLabel}`,
-      text: composeBody(message, context, receivedAt),
+      subject: gameTitle
+        ? `Branch Out Games: Feedback on ${gameTitle}`
+        : 'Branch Out Games: Feedback',
+      text: renderFeedbackText(renderInput),
+      html: renderFeedbackHtml(renderInput),
     };
 
     try {

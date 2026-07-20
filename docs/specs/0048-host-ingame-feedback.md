@@ -15,9 +15,15 @@ For: the host of a live game (the tester surface especially, but every host).
 - While a game runs, the host sees a "Feedback" affordance right-aligned in the host-controls row.
 - Tapping it opens a dialog (a centred modal on desktop, a bottom sheet on a phone) with a short
   intro and a required message field.
-- Submitting sends an email to `feedback@rogueoak.com` from `branchout@rogueoak.com` via Resend,
-  carrying the message plus auto-captured context (room code, selected game id, current phase,
-  that the sender is the host, and a timestamp). The host never types the context.
+- Submitting sends an email to `branchout@rogueoak.com` from `branchout@rogueoak.com` (a
+  self-notification) via Resend, carrying the message plus auto-captured context (room code, selected
+  game id, current phase, that the sender is the host, and a timestamp). The host never types the
+  context.
+- The email is a styled, mobile-first HTML body (the brand dark card, modelled on the welcome email)
+  with a plain-text fallback. Its subject is `Branch Out Games: Feedback on <Game Name>` (the game id
+  humanised to a friendly title), and it names the submitter with their gamer tag and account email
+  in a "reach out" block - including a `mailto:` link - so the recipient can follow up directly. An
+  anonymous sender (no account) is named by their session display name with no email.
 - The dialog shows submitting / success / error states; on success it thanks the host and closes.
 - With `RESEND_API_KEY` unset the endpoint returns a clear "not configured" response (503), logs a
   warning, and does not crash - so the code ships now and the secret is wired later.
@@ -70,10 +76,13 @@ cookie-authenticated like the room routes. It:
   path is unlimited;
 - if `RESEND_API_KEY` is unset, returns `503 { ok:false, error:'Feedback email is not configured
   yet.' }` and logs a warning - never a crash (the "wire the secret later" behavior);
-- otherwise composes a plain-text body (message + context lines) and sends via Resend. The send is a
+- otherwise composes both a plain-text body and a styled HTML body (`feedback/render.ts`: message +
+  submitter contact + context; every untrusted value HTML-escaped) and sends via Resend. The send is a
   direct `fetch` to `https://api.resend.com/emails` (no new dependency, with a ~10s abort timeout so a
   hung Resend cannot hang the request), injected as a `FeedbackMailer` so tests mock it and assert the
-  `from`/`to` and that the body includes the message + context.
+  `from`/`to` and that the body includes the message + context. The submitter's gamer tag + email come
+  from a narrow `AccountService.contactById` lookup (server-side only; never returned to a browser),
+  falling back to the session display name when there is no account.
 
 The from/to addresses live in one small const module (`feedback/addresses.ts`) so they are not
 scattered literals. Success is `{ ok: true }`.
@@ -97,8 +106,9 @@ Key decisions / trade-offs:
 - [ ] The dialog requires a message, disables Submit while empty/submitting, shows success then
       closes, and shows an error on failure.
 - [ ] `POST /v1/feedback` as the host with a valid message and the key set sends via Resend (mocked):
-      asserts `from: branchout@rogueoak.com`, `to: feedback@rogueoak.com`, and a body containing the
-      message and the context (room code, game id, phase, host, timestamp).
+      asserts `from: branchout@rogueoak.com`, `to: branchout@rogueoak.com`, the subject
+      `Branch Out Games: Feedback on <Game>`, and both a text and an HTML body containing the message,
+      the submitter's gamer tag + email, and the context (room code, game id, phase, host, timestamp).
 - [ ] No session -> 401 (and no send).
 - [ ] A signed-in non-host of the named room -> 403 (and no send), even if the body claims
       `isHost: true`.

@@ -1911,20 +1911,31 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
     // The recipient is fixed and the body carries the message + every context field it needs to act.
     const sent = mailer.sent[0];
     if (!sent) throw new Error('expected a sent email');
-    const { text } = sent;
+    const { subject, text, html } = sent;
+    // Subject names the friendly game title (spec 0048 restyle).
+    expect(subject).toBe('Branch Out Games: Feedback on Teeter Tower');
     expect(text).toContain('The drop button is hard to reach on a phone.');
+    // The submitter is named with their gamer tag + email so the recipient can reach out.
+    expect(text).toContain('from: CoolCat <player@example.com>');
     expect(text).toContain(`room code: ${code}`);
     expect(text).toContain('game: teeter-tower');
     expect(text).toContain('phase: collecting');
     expect(text).toContain('host: yes');
     expect(text).toContain('submitted at: 2026-07-14T12:00:00.000Z');
+    // A styled HTML body is attached, carrying the message, heading, and a mailto for the player.
+    if (!html) throw new Error('expected an HTML body');
+    expect(html).toContain('The drop button is hard to reach on a phone.');
+    expect(html).toContain('Feedback on Teeter Tower');
+    expect(html).toContain('CoolCat');
+    expect(html).toContain('mailto:player@example.com');
     await app.close();
   });
 
   it('the mailer targets branchout@rogueoak.com from the Branch Out Games display name', async () => {
     // Assert the from/to at the Resend REST boundary, not just the interface, so the addresses are
     // pinned where they actually go on the wire.
-    const calls: Array<{ from: string; to: string; subject: string; text: string }> = [];
+    const calls: Array<{ from: string; to: string; subject: string; text: string; html?: string }> =
+      [];
     const fakeFetch = (async (_url: string | URL, init?: RequestInit) => {
       calls.push(JSON.parse(String(init?.body)));
       return new Response('{}', { status: 200 });
@@ -1945,6 +1956,9 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
     expect(call.from).toBe('Branch Out Games <branchout@rogueoak.com>');
     expect(call.to).toBe('branchout@rogueoak.com');
     expect(call.text).toContain('Nice game.');
+    // The HTML body goes on the wire too, so the inbox renders the styled version.
+    expect(call.html).toBeTruthy();
+    expect(call.html).toContain('Nice game.');
     await app.close();
   });
 

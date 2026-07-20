@@ -153,6 +153,8 @@ export function createApp(deps: AppDeps): FastifyInstance {
       // "not configured" 503.
       registerFeedbackRoutes(v1, {
         ...(deps.feedbackMailer ? { mailer: deps.feedbackMailer } : {}),
+        // The account read that names the submitter (gamer tag + email) in the note (spec 0048).
+        accounts: deps.accounts,
         limiter: deps.limiter,
         rateLimit: deps.feedbackRateLimit,
         sessions: deps.sessions,

@@ -235,6 +235,17 @@ export class AccountService {
     return account ? toPublic(account) : null;
   }
 
+  /**
+   * Contact details for reaching a player out-of-band - the host in-game feedback email (spec 0048):
+   * the canonical gamer tag + email. Unlike `getById`/`PublicAccount`, this intentionally exposes the
+   * email, so it is used ONLY server-side to build the internal feedback notification and is never
+   * returned to a browser. Null when the account is unknown or soft-deleted (findById filters deleted).
+   */
+  async contactById(id: string): Promise<{ gamerTag: string; email: string } | null> {
+    const account = await this.repo.findById(id);
+    return account ? { gamerTag: account.gamerTag, email: account.email } : null;
+  }
+
   /** Like getById, but includes soft-deleted accounts - for the admin console, which must still show
    * a deleted player (spec 0040). */
   async getByIdForAdmin(id: string): Promise<PublicAccount | null> {
