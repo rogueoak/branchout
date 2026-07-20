@@ -73,7 +73,12 @@ export function HomeHeroCarousel({ slides }: HomeHeroCarouselProps) {
         {/* The viewport is wrapped so the edge fades can sit over exactly the card strip (not the
             dots below). The overlays are decorative and let taps through to the peeking cards. */}
         <div className="relative">
-          <CarouselContent>
+          {/* `py-3` pads the flex track *inside* canopy's `overflow-hidden` viewport so a card that
+              grows on hover (`scale-[1.02]`) or shows its focus ring (`ring-2` + `ring-offset-2`)
+              keeps ~12px of vertical clearance and its top/bottom border stays visible instead of
+              being clipped by the viewport edge. The horizontal peek already has room via the
+              narrower `basis`, so only the vertical axis needed the breathing space. */}
+          <CarouselContent className="py-3">
             {slides.map((slide) => (
               // Each slide is narrower than the viewport so the prev/next cards peek at the edges:
               // a clear sliver of a neighbor on phones (basis-3/4), a smaller sliver for the wider
