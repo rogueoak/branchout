@@ -35,6 +35,11 @@ export interface ReversiSim {
   passed: boolean;
   over: boolean;
   outcome: Outcome;
+  /**
+   * Whether the board paints the legal-move hint dots for the side to move (host setting, default
+   * true). The pure renderer reads it off the streamed sim like every other field.
+   */
+  showAvailableMoves: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -118,6 +123,8 @@ export function asReversiSim(value: unknown): ReversiSim | null {
       passed: value.passed,
       over: value.over,
       outcome: asOutcome(value.outcome),
+      // Default ON: a sim without the field (an older engine frame) keeps the hints on.
+      showAvailableMoves: value.showAvailableMoves !== false,
     };
   }
   return null;

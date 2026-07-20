@@ -47,6 +47,15 @@ function fromColor(to: Exclude<Cell, 'empty'>): Exclude<Cell, 'empty'> {
 /** The color name shown to players for each side. */
 const SIDE_LABEL: Record<'violet' | 'amber', string> = { violet: 'Violet', amber: 'Amber' };
 
+/**
+ * Whether to paint the legal-move hint dots this frame: only for the active player (hints are their
+ * affordance, not the opponent's), and only when the host left the "see available moves" setting on.
+ * Pure and exported so the gating is unit-tested without driving the canvas draw loop.
+ */
+export function hintsVisibleFor(sim: ReversiSim | null, isActive: boolean): boolean {
+  return isActive && sim != null && sim.showAvailableMoves;
+}
+
 function nicknameOf(state: GameViewProps['state'], id: string): string {
   return state.players.find((player) => player.player === id)?.nickname ?? id;
 }
@@ -64,20 +73,36 @@ function turnLineFor(
     return 'Game over.';
   }
   const side = toMove ? SIDE_LABEL[toMove] : '';
-  if (isActive) return `Your turn (${side}) - tap a highlighted square.`;
+  if (isActive) {
+    // With hints off there is nothing highlighted, so the prompt must not tell the player to tap a
+    // "highlighted" square that is not shown.
+    const showHints = sim?.showAvailableMoves !== false;
+    return showHints
+      ? `Your turn (${side}) - tap a highlighted square.`
+      : `Your turn (${side}) - tap an empty square to place.`;
+  }
   if (activeName) return `Waiting for ${activeName} (${side}).`;
   return 'Waiting for the next move.';
 }
 
-/** Map an engine rejection reason to player-clear copy. */
-function rejectionMessage(reason: string): string {
+/**
+ * Map an engine rejection reason to player-clear copy. `showHints` drops any reference to a highlight
+ * when the host turned the legal-move hints off (nothing is highlighted to point the player at).
+ */
+function rejectionMessage(reason: string, showHints: boolean): string {
+  const illegal = showHints
+    ? 'That square does not flip anything - pick a highlighted one.'
+    : 'That square does not flip anything - pick an empty square that captures.';
+  const fallback = showHints
+    ? 'That move did not land - tap a highlighted square.'
+    : 'That move did not land - tap an empty square to place.';
   const map: Record<string, string> = {
     'not your turn': 'Hold tight - it is not your turn yet.',
-    'illegal move': 'That square does not flip anything - pick a highlighted one.',
+    'illegal move': illegal,
     'malformed move': 'That did not send cleanly - tap a square again.',
     'game over': 'The game is finished - no more moves.',
   };
-  return map[reason] ?? 'That move did not land - tap a highlighted square.';
+  return map[reason] ?? fallback;
 }
 
 /**
@@ -277,7 +302,15 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
           ctx.clearRect(0, 0, rect.width, rect.height);
           const layout = layoutBoard(rect.width, rect.height, live.size);
           const chrome = resolveBoardChrome(canvas);
-          drawBoard(ctx, live, layout, chrome, isActiveRef.current, flipsRef.current, now);
+          drawBoard(
+            ctx,
+            live,
+            layout,
+            chrome,
+            hintsVisibleFor(live, isActiveRef.current),
+            flipsRef.current,
+            now,
+          );
         }
       }
       raf = requestAnimationFrame(render);
@@ -316,7 +349,16 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
   const highlightAmber = sim?.over ? sim.outcome === 'amber' : toMove === 'amber';
   const violetTone = highlightViolet ? 'text-primary' : 'text-text';
   const amberTone = highlightAmber ? 'text-accent-strong' : 'text-text';
-  const boardLabel = isActive ? 'Tap a highlighted square to place your disc' : 'Reversi board';
+  // The legal-move hints are only shown when the host left them on; the interactive copy (this label,
+  // the turn line, and the illegal-move message) drops the word "highlighted" when they are off so it
+  // never points a player - or a screen reader - at a highlight that is not on the board.
+  const showHints = sim?.showAvailableMoves !== false;
+  let boardLabel = 'Reversi board';
+  if (isActive) {
+    boardLabel = showHints
+      ? 'Tap a highlighted square to place your disc'
+      : 'Tap an empty square to place your disc';
+  }
 
   const turnLine = turnLineFor(sim, isActive, toMove, activeName);
 
@@ -347,7 +389,7 @@ export function ReversiViewer({ state, me, onMove }: GameViewProps) {
         role="alert"
         className="absolute inset-x-0 top-2 mx-2 rounded-md bg-danger/90 px-3 py-1.5 text-center text-body-sm text-white"
       >
-        {rejectionMessage(state.rejected)}
+        {rejectionMessage(state.rejected, showHints)}
       </p>
     );
   }

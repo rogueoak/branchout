@@ -51,4 +51,10 @@ export interface ReversiSim {
   over: boolean;
   /** The result once over ('violet' | 'amber' | 'draw'), else null. */
   outcome: Outcome;
+  /**
+   * Whether the board should paint the legal-move hint dots for the side to move. Host-configured
+   * (default true); a host may turn it off for a tougher game. Streamed in the sim so the pure
+   * renderer reads it off state like everything else - no separate config channel to the client.
+   */
+  showAvailableMoves: boolean;
 }

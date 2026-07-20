@@ -9,6 +9,8 @@ import { reversiSvg } from '@branchout/brand/reversi';
 import { ReversiViewer } from './Viewer';
 import { ReversiRemote } from './Remote';
 import { ReversiConfigPanel } from './ConfigPanel';
+import { ReversiAdvancedConfigPanel } from './AdvancedConfigPanel';
+import { defaultReversiConfig } from './config';
 import type { GameUiModule } from '../registry';
 
 /** Reversi is a single, open-ended game (no round count); a live game ends via the engine's over. */
@@ -25,10 +27,12 @@ export const reversiGameUi: GameUiModule = {
     'wins.',
   visibility: 'insider',
   singleSurface: true,
-  defaultConfig: () => ({}),
+  defaultConfig: () => defaultReversiConfig(),
+  // Any boolean choice is valid; the engine re-checks the config shape on the start handoff.
   validateConfig: () => ({ ok: true }),
   roundsOf: () => REVERSI_ROUNDS,
   ConfigPanel: ReversiConfigPanel,
+  AdvancedConfigPanel: ReversiAdvancedConfigPanel,
   Viewer: ReversiViewer,
   Remote: ReversiRemote,
 };

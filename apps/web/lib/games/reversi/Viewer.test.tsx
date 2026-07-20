@@ -1,7 +1,8 @@
 import { act, createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialGameState, type GameState } from '../../game-state';
-import { ReversiViewer } from './Viewer';
+import { ReversiViewer, hintsVisibleFor } from './Viewer';
+import { asReversiSim } from './protocol';
 
 // The board draws on a 2D canvas via rAF; jsdom leaves getContext unimplemented, and the draw loop
 // guards on a null context, so rendering is safe - stub it to keep the "Not implemented" noise out.
@@ -186,6 +187,94 @@ describe('ReversiViewer single interactive surface', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/does not flip/i);
   });
 
+  it('still lets the active player tap and place when hints are turned off', () => {
+    // With showAvailableMoves off the hint dots are hidden, but the square is still legal, so a tap on
+    // it must still submit - the toggle is a display setting, not a rules change.
+    const onMove = vi.fn();
+    render(
+      <ReversiViewer
+        state={state({ sim: reversiSim({ showAvailableMoves: false }) })}
+        me="p1"
+        onMove={onMove}
+      />,
+    );
+    // With hints off the board label no longer says "highlighted" (nothing is), so query the new copy.
+    const board = screen.getByRole('img', { name: /tap an empty square to place/i }).parentElement!;
+    const c = cellCenter(2, 3);
+    firePointerDown(board, c.x, c.y);
+    expect(onMove).toHaveBeenCalledWith(1, JSON.stringify({ row: 2, col: 3 }));
+  });
+
+  describe('interactive copy drops "highlighted" when hints are off', () => {
+    it('turn line: says highlighted with hints on, empty-square with hints off', () => {
+      const { rerender } = render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ showAvailableMoves: true }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByRole('status').textContent).toMatch(/tap a highlighted square/i);
+
+      rerender(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ showAvailableMoves: false }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      const text = screen.getByRole('status').textContent ?? '';
+      expect(text).toMatch(/tap an empty square/i);
+      expect(text).not.toMatch(/highlighted/i);
+    });
+
+    it('board aria-label: highlighted with hints on, empty-square with hints off', () => {
+      const { rerender } = render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ showAvailableMoves: true }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByRole('img', { name: /tap a highlighted square to place/i })).toBeDefined();
+
+      rerender(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ showAvailableMoves: false }) })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByRole('img', { name: /tap an empty square to place/i })).toBeDefined();
+      expect(screen.queryByRole('img', { name: /highlighted/i })).toBeNull();
+    });
+
+    it('illegal-move rejection: references a highlight only when hints are on', () => {
+      const { rerender } = render(
+        <ReversiViewer
+          state={state({ sim: reversiSim({ showAvailableMoves: true }), rejected: 'illegal move' })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      expect(screen.getByRole('alert').textContent).toMatch(/highlighted/i);
+
+      rerender(
+        <ReversiViewer
+          state={state({
+            sim: reversiSim({ showAvailableMoves: false }),
+            rejected: 'illegal move',
+          })}
+          me="p1"
+          onMove={noop}
+        />,
+      );
+      const alert = screen.getByRole('alert').textContent ?? '';
+      expect(alert).toMatch(/does not flip anything/i);
+      expect(alert).not.toMatch(/highlighted/i);
+    });
+  });
+
   describe('turn-start popup', () => {
     it('pops "Your turn" on the board for the player who now holds the turn', () => {
       render(<ReversiViewer state={state({ sim: reversiSim() })} me="p1" onMove={noop} />);
@@ -352,5 +441,24 @@ describe('ReversiViewer single interactive surface', () => {
       render(<ReversiViewer state={state({ sim: reversiSim() })} me="p1" onMove={noop} />);
       expect(screen.getByText('Your turn').className).not.toContain('animate-reversi-turn-notice');
     });
+  });
+});
+
+describe('hintsVisibleFor - the pure hint gating the canvas draw reads', () => {
+  const on = asReversiSim(reversiSim())!;
+  const off = asReversiSim(reversiSim({ showAvailableMoves: false }))!;
+
+  it('shows hints only for the active player when the setting is on', () => {
+    expect(hintsVisibleFor(on, true)).toBe(true);
+    expect(hintsVisibleFor(on, false)).toBe(false);
+  });
+
+  it('never shows hints when the host turned the setting off', () => {
+    expect(hintsVisibleFor(off, true)).toBe(false);
+    expect(hintsVisibleFor(off, false)).toBe(false);
+  });
+
+  it('shows no hints for a null sim', () => {
+    expect(hintsVisibleFor(null, true)).toBe(false);
   });
 });
