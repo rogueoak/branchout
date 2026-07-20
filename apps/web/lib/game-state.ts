@@ -62,6 +62,14 @@ export interface GameState {
    * with the connected roster to show "x of y answered". Null outside collecting or when unreported.
    */
   answered: number | null;
+  /**
+   * Whether this is a continuous / turn-based "live" game (spec 0044): one that advances itself on
+   * each move (Reversi, Checkers, Teeter Tower) and never uses a host "Next". False for a round game
+   * the host drives (Trivia, Sketchy, Zinger), and the default when a peer predates the field. The
+   * host-controls accordion keys its default-open state on this: a live game has no pending host
+   * advance, so its controls stay collapsed (spec 0069, WS13).
+   */
+  live: boolean;
   /** The current round's opaque prompt payload, or null before the first prompt / between rounds. */
   prompt: unknown;
   /**
@@ -114,6 +122,7 @@ export function initialGameState(player: string | null = null): GameState {
     autoAdvance: null,
     autoAdvanceMsRemaining: null,
     answered: null,
+    live: false,
     prompt: null,
     reveals: [],
     standings: [],
@@ -162,6 +171,9 @@ export function reduceGameState(
         autoAdvance: frame.autoAdvance ?? null,
         autoAdvanceMsRemaining: frame.autoAdvanceMsRemaining ?? null,
         answered: frame.answered ?? null,
+        // Absent from a peer predating the field (spec 0044/0069): default false (not-live), so a
+        // round game keeps its host controls in reach exactly as before.
+        live: frame.live ?? false,
         error: null,
       };
 

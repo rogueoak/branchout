@@ -82,13 +82,20 @@ function HostControls({
   // mid-question.
   const answerable = state.phase === 'collecting';
   // Host controls collapse into an accordion, closed by default so they do not clutter the play
-  // screen (spec 0069). They collapse by default ONLY when the engine is auto-advancing
-  // (`autoAdvance === true`) - the one case the host does not need the manual Next, because the round
-  // advances itself. In every OTHER case (auto-advance off, OR a game that reports no auto-advance at
-  // all - the insider round games, which are host-advanced and MUST expose Next to reach the finale)
-  // they stay open, exactly as the host bar behaved before this feature. `key` re-applies the default
-  // if `autoAdvance` resolves late.
-  const openByDefault = state.autoAdvance !== true;
+  // screen (spec 0069). The accordion opens by default ONLY when a required host "Next" advance is
+  // pending - a round-based game the host drives that is NOT currently auto-advancing. Two signals
+  // gate it (WS13):
+  //   - `live`: a continuous / turn-based game (Reversi, Checkers, Teeter Tower) advances itself on
+  //     each move and has no host "Next" at all, so its controls MUST stay collapsed. Keying only on
+  //     `autoAdvance` wrongly opened these, because a live game reports `autoAdvance === false`.
+  //   - `autoAdvance === true`: the engine is auto-advancing the leaderboard dwell, so the host need
+  //     not tap Next - collapse (auto-advancing Trivia).
+  // So a round game with auto-advance off (Trivia with the timer off, and the host-advanced insider
+  // games Sketchy / Zinger) keeps the accordion open, so the required Next is always in reach to drive
+  // the leaderboard to the finale - exactly as the host bar behaved before this feature. `key`
+  // re-applies the default if these fields resolve late.
+  const hostAdvancePending = !state.live && state.autoAdvance !== true;
+  const openByDefault = hostAdvancePending;
   return (
     <Accordion
       type="single"

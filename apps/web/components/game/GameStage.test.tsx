@@ -470,6 +470,37 @@ describe('GameStage host controls emphasis', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
   });
 
+  it('collapses the host-controls accordion for a turn/live game with no host advance (Reversi/Checkers)', () => {
+    // A live/turn game (Reversi, Checkers) advances itself on each move and has NO host "Next"
+    // control. It reports `autoAdvance === false` (no leaderboard dwell), which alone would wrongly
+    // open the accordion; the `live` flag (WS13) is the signal that keeps its controls collapsed.
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      live: true,
+      autoAdvance: false,
+    });
+    renderStage({ state, mode: 'remote', isHost: true });
+    expect(screen.getByText('Host controls')).toBeDefined();
+    // Collapsed: the Next control is not in the DOM until the host opens the disclosure.
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+  });
+
+  it('opens the host controls at the leaderboard for a host-advanced round game so Next is reachable (Sketchy/Zinger)', () => {
+    // Sketchy / Zinger are round games (not live) the host drives: at the between-round leaderboard
+    // the host MUST tap Next to reach the finale. auto-advance is off and the game is not live, so a
+    // host advance is pending and the accordion opens by default - the exact state the sketchy/zinger
+    // e2e depends on (it clicks a visible "Next" at the leaderboard).
+    const state = build({
+      phase: 'leaderboard',
+      live: false,
+      autoAdvance: false,
+      standings: [{ player: 'p1', nickname: 'Ada', score: 100, rank: 1 }],
+    });
+    renderStage({ state, mode: 'remote', isHost: true });
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
+  });
+
   it('renders the Feedback affordance only for the host (spec 0048)', () => {
     const { rerender } = render(
       <GameStage

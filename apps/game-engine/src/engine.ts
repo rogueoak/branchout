@@ -201,6 +201,10 @@ export class GameEngine {
         decisionWindowMs: 0,
         moveWindowMs: cfg.moveWindowMs ?? 0,
         leaderboardWindowMs: cfg.leaderboardWindowMs ?? 0,
+        // A live/turn game (implements `tick`) advances itself on each move and never uses a host
+        // "Next"; a round game the host drives does. Fixed here so the `state` frame can tell the
+        // client which kind this is (it keeps a live game's host controls collapsed - spec 0069).
+        live: runtime.live,
         players,
         scores: Object.fromEntries(players.map((p) => [p.player, 0])),
         roundScores: [],
@@ -1202,6 +1206,10 @@ export class GameEngine {
       // The live answered count, only while collecting (the client pairs it with the connected
       // roster for "x of y"); absent otherwise or when the game does not report it (spec 0069).
       answered: state.phase === 'collecting' ? state.answered : undefined,
+      // Whether this is a live/turn game (spec 0044). Surfaced so the client keeps a live game's
+      // host controls collapsed by default - it has no pending host "Next" (spec 0069, WS13). A blob
+      // persisted before this field reads as undefined -> not-live, the safe default for round games.
+      live: state.live ?? false,
     };
   }
 

@@ -220,6 +220,15 @@ export interface StateMessage {
    * `collecting` or when the game does not report it. Optional/additive.
    */
   answered?: number;
+  /**
+   * True when this is a continuous / turn-based "live" game (spec 0044) - one that advances itself on
+   * each move (Reversi, Checkers, Teeter Tower) and never uses a host "Next" advance control. False
+   * for a round-based game whose phases the host drives (Trivia, Sketchy, Zinger). Mirrors the
+   * engine's `runtime.live`. The client keys the default-open host-controls accordion on this (a live
+   * game has no pending host advance, so its controls stay collapsed). Optional/additive: absence
+   * means "unknown", safely treated as not-live so a round game keeps its host controls in reach.
+   */
+  live?: boolean;
 }
 
 export type ServerMessage =

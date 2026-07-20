@@ -517,13 +517,18 @@ mapping and the engine verifies (spec `0064`, see "Engine-join authentication" b
   the connection to its player, so a device cannot join as another player and subscribe to their
   private channel. Feedback `0033`'s contingency is resolved.
 - **Gameplay pacing on the `state` frame** (spec `0069`). The client is a pure view over engine
-  state, so the in-game screens read their pacing from four additive, optional `StateMessage` fields
-  (same `PROTOCOL_VERSION`, absence = "unknown"): `moveWindowMs` (the total answer window, so the
-  countdown colours by percentage), `autoAdvance` (true exactly when the leaderboard dwell is armed;
-  the client collapses the in-round host controls by default ONLY when true, and keeps them open -
-  the pre-feature behaviour - when false/absent so a host-advanced round game like the insider games
-  keeps its Next reachable and can drive the last leaderboard to `final-results`; the finale is never
-  gated behind the accordion), then `autoAdvanceMsRemaining` (ms left in the current dwell, projected
+  state, so the in-game screens read their pacing from a handful of additive, optional `StateMessage`
+  fields (same `PROTOCOL_VERSION`, absence = "unknown"): `moveWindowMs` (the total answer window, so the
+  countdown colours by percentage), `autoAdvance` (true exactly when the leaderboard dwell is armed),
+  and `live` (feedback `0037` / WS13: true for a continuous / turn-based game - Reversi, Checkers,
+  Teeter - mirroring the engine's `runtime.live`). The in-round host-controls accordion opens by
+  default ONLY when a host advance is genuinely pending - `!live && autoAdvance !== true` - so a
+  host-advanced round game (Trivia with the timer off, and the insider games Sketchy / Zinger) keeps
+  its Next reachable to drive the last leaderboard to `final-results` (the finale is never gated
+  behind the accordion), while an auto-advancing game (`autoAdvance === true`) and a live/turn game
+  (which has no host Next at all, yet reports `autoAdvance === false`) both stay collapsed. Keying on
+  `autoAdvance` alone wrongly opened the live games, because `autoAdvance === false` conflates "host
+  advances by hand" with "advances itself on each move". Then `autoAdvanceMsRemaining` (ms left in the current dwell, projected
   from the engine's `windowDeadline` the same skew-proof way as `moveMsRemaining` and gated on
   `autoAdvance === true`, driving the reveal / leaderboard "continuing in x"; the engine arms the
   dwell BEFORE publishing the entering frame so it never ships a stale ~0 deadline), and `answered`

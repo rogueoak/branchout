@@ -93,6 +93,16 @@ describe('reduceGameState', () => {
     expect(next.answered).toBeNull();
   });
 
+  it('folds the live flag (a turn/continuous game marks itself live - WS13)', () => {
+    const next = reduceGameState(initialGameState(), state({ live: true }));
+    expect(next.live).toBe(true);
+  });
+
+  it('defaults live to false when a peer omits it (a round game keeps its host controls in reach)', () => {
+    const next = reduceGameState(initialGameState(), state({ phase: 'collecting' }));
+    expect(next.live).toBe(false);
+  });
+
   it('defaults disputers to empty when a peer omits the field (backward compatible)', () => {
     const legacy = state();
     delete (legacy as { disputes?: string[] }).disputes;

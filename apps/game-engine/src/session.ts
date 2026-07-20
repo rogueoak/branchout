@@ -39,6 +39,15 @@ export interface SessionState {
    */
   leaderboardWindowMs: number;
   /**
+   * True when the module is a continuous / turn-based "live" game (spec 0044): it implements `tick`,
+   * sits in one live phase, advances itself on each move, and never uses a host "Next". Fixed at
+   * configure from the runtime (`runtime.live`) and surfaced on the `state` frame so the client keeps
+   * the host-controls accordion collapsed for a live game (no pending host advance) while leaving it
+   * open for a round-based game the host drives. Optional so a session blob persisted before this
+   * field loads as `undefined`, read as not-live - the safe default for the round games it predates.
+   */
+  live?: boolean;
+  /**
    * When the current move round auto-closes, as an epoch ms on the engine clock (spec 0017).
    * Set while `collecting` with a timer; cleared once the round closes or while paused (the frozen
    * remaining moves to `moveRemainingMs`).
