@@ -426,6 +426,29 @@ describe('GameStage host controls emphasis', () => {
     expect(next.className).toMatch(/outline|border/);
   });
 
+  it('opens the host-controls accordion by default when auto-advance is OFF (host must tap Next)', () => {
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      autoAdvance: false,
+    });
+    renderStage({ state, mode: 'remote', isHost: true });
+    // Auto-advance off: the manual Next control is expanded and reachable without opening anything.
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
+  });
+
+  it('collapses the host-controls accordion by default when auto-advance is ON', () => {
+    const state = build({
+      phase: 'collecting',
+      prompt: collecting.prompt,
+      autoAdvance: true,
+    });
+    renderStage({ state, mode: 'remote', isHost: true });
+    // The disclosure trigger is present, but its controls (Next) stay collapsed out of the DOM.
+    expect(screen.getByText('Host controls')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+  });
+
   it('renders the Feedback affordance only for the host (spec 0048)', () => {
     const { rerender } = render(
       <GameStage

@@ -16,6 +16,7 @@ export type WorkerMethod =
   | 'startRound'
   | 'collectMove'
   | 'allSubmitted'
+  | 'answeredCount'
   | 'reveal'
   | 'collectVote'
   | 'allDecided'
@@ -33,6 +34,7 @@ export interface WorkerCapabilities {
   /** Implements `tick` - a continuous "live" game the engine runs a sim loop for (spec 0044). */
   live: boolean;
   allSubmitted: boolean;
+  answeredCount: boolean;
   allDecided: boolean;
   resolveDecision: boolean;
   disposeLive: boolean;

@@ -391,12 +391,22 @@ export class GameEngine {
         return { reject: this.moveRejectedMessage(state, result.rejected.reason) };
       }
       state.scratch = result.scratch;
+      // Refresh the live "x of y answered" count from the module so the broadcast below carries the
+      // new numerator (spec 0069). Undefined for a game that does not report it - the field then
+      // stays absent on the wire.
+      state.answered = await runtime.answeredCount(this.context(state));
       await this.store.save(state);
       // Self-heal the answer-window timer: it lives in memory, so an engine restart mid-round leaves
       // the persisted deadline with nothing to fire it. Re-arming on a submit (a duplicate the
       // deadline self-correction neutralizes) makes a live round close on time again after a restart.
       if (state.moveDeadline !== undefined) {
         this.armMoveWindow(state, state.moveDeadline - this.clock());
+      }
+      // Push the refreshed count to every device so the answered indicator updates live as answers
+      // land (spec 0069). Only for a game that reports a count (Trivia) - others keep their prior,
+      // quieter behaviour (no per-move broadcast) since the field would be absent anyway.
+      if (state.answered !== undefined) {
+        await this.publish(state, this.stateMessage(state));
       }
       if (await runtime.allSubmitted(this.context(state))) this.armAutoAdvance(state);
       return {};
@@ -549,6 +559,9 @@ export class GameEngine {
     state.windowDeadline = undefined;
     state.windowRemainingMs = undefined;
     state.moveRemainingMs = undefined;
+    // A fresh round starts with nobody answered yet (spec 0069); the live count grows on each move.
+    // Undefined for a game that does not report a count, which keeps the field off its `state` frame.
+    state.answered = await runtime.answeredCount(this.context(state));
     state.moveDeadline =
       !live && state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
@@ -1154,6 +1167,22 @@ export class GameEngine {
         state.moveDeadline !== undefined
           ? Math.max(0, state.moveDeadline - this.clock())
           : state.moveRemainingMs,
+      // The TOTAL answer window (spec 0069), so the client colours the countdown as a percentage of
+      // the whole. Constant across the game; absent when this game has no move timer.
+      moveWindowMs: state.moveWindowMs > 0 ? state.moveWindowMs : undefined,
+      // The engine auto-advances phases exactly when the leaderboard dwell is armed (spec 0068/0069).
+      // Sent as an explicit boolean so the client can open the host controls only when it is `false`.
+      autoAdvance: state.leaderboardWindowMs > 0,
+      // Ms left in the current phase's auto-advance dwell - the reveal/leaderboard "continuing in x"
+      // (spec 0069). Projected from `windowDeadline` the same skew-proof way as `moveMsRemaining`
+      // (frozen remaining while paused); absent when no dwell window is open.
+      autoAdvanceMsRemaining:
+        state.windowDeadline !== undefined
+          ? Math.max(0, state.windowDeadline - this.clock())
+          : state.windowRemainingMs,
+      // The live answered count, only while collecting (the client pairs it with the connected
+      // roster for "x of y"); absent otherwise or when the game does not report it (spec 0069).
+      answered: state.phase === 'collecting' ? state.answered : undefined,
     };
   }
 

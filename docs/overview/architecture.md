@@ -516,6 +516,18 @@ mapping and the engine verifies (spec `0064`, see "Engine-join authentication" b
   it now is. When `ENGINE_AUTH_SECRET` is set the join REQUIRES a control-plane-minted token binding
   the connection to its player, so a device cannot join as another player and subscribe to their
   private channel. Feedback `0033`'s contingency is resolved.
+- **Gameplay pacing on the `state` frame** (spec `0069`). The client is a pure view over engine
+  state, so the in-game screens read their pacing from four additive, optional `StateMessage` fields
+  (same `PROTOCOL_VERSION`, absence = "unknown"): `moveWindowMs` (the total answer window, so the
+  countdown colours by percentage), `autoAdvance` (whether the engine auto-advances phases = the
+  leaderboard dwell is armed), `autoAdvanceMsRemaining` (ms left in the current dwell, projected from
+  the engine's `windowDeadline` the same skew-proof way as `moveMsRemaining`, driving the reveal /
+  leaderboard "continuing in x"), and `answered` (the live "x of y" numerator while collecting). The
+  numerator comes from a new **optional** `GameModule.answeredCount(ctx)` (a capability flag through
+  the worker seam, like `allSubmitted`); only a game that implements it (Trivia) makes `submitMove`
+  re-broadcast `state` on each accepted answer, so other games keep their quieter no-per-move-broadcast
+  behaviour. Countdowns stay engine-authoritative: the client anchors the engine's remaining-ms to its
+  local clock, never a local guess that drifts.
 - **Engine-join authentication** (spec `0064`). The player WebSocket `join` carries a self-asserted,
   PUBLIC `player` id; without a proof of identity a device could join as another player and read their
   private payloads (spec `0052`) or spoof their moves/votes. The fix is a stateless, short-lived HMAC

@@ -181,6 +181,14 @@ export interface GameModule {
    */
   allSubmitted?(ctx: RoundContext): boolean;
 
+  /**
+   * How many connected players have submitted an answer this round (spec 0069), so the engine can
+   * surface a live "x of y answered" count on the `state` frame while `collecting`. Optional: a game
+   * that omits it reports no count (the field is absent on the wire). Distinct from
+   * {@link allSubmitted}, which is only the all-in boolean.
+   */
+  answeredCount?(ctx: RoundContext): number;
+
   /** Score the round and produce the reveal payload. */
   reveal(ctx: RoundContext): RevealResult;
 

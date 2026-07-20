@@ -40,6 +40,24 @@ export function CheckIcon() {
   );
 }
 
+/** An "x" cross, the wrong-answer counterpart to {@link CheckIcon} in the reveal table (spec 0069). */
+export function CrossIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="size-4"
+    >
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 /** A "?" help glyph in a circle: the always-present rules affordance (spec 0051). */
 export function HelpIcon() {
   return (

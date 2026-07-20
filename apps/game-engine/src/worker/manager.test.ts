@@ -10,6 +10,7 @@ import type { CallPayload, EngineToWorker, WorkerCapabilities, WorkerToEngine } 
 const CAPS: WorkerCapabilities = {
   live: false,
   allSubmitted: false,
+  answeredCount: false,
   allDecided: false,
   resolveDecision: false,
   disposeLive: false,

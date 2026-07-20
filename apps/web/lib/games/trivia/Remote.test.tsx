@@ -73,13 +73,18 @@ describe('RemotePane answer countdown', () => {
       phase: 'collecting',
       players: [{ player: 'p1', nickname: 'Ada', connected: true }],
       moveMsRemaining,
+      moveWindowMs: 60_000,
       prompt: { round: 1, category: 'People', difficulty: 5, question: 'Q?' },
     });
 
-  it('shows the seconds left to answer', () => {
-    renderRemote(collecting(30_000));
-    expect(screen.getByRole('timer')).toBeDefined();
-    expect(screen.getByText(/30s left to answer/)).toBeDefined();
+  it('shows the seconds left to answer on the question card for a remote-only player', () => {
+    // A remote-only player (showResults) renders the shared question card, which carries the timer.
+    render(
+      <RemotePane state={collecting(30_000)} me="p1" showResults onMove={noop} onVote={noop} />,
+    );
+    const timer = screen.getByRole('timer');
+    expect(timer.getAttribute('aria-label')).toBe('30 seconds left to answer');
+    expect(timer.textContent).toBe('30');
   });
 
   it('auto-submits the typed draft when the countdown reaches zero', () => {
@@ -108,9 +113,11 @@ describe('RemotePane answer countdown', () => {
       paused: true,
       players: [{ player: 'p1', nickname: 'Ada', connected: true }],
       moveMsRemaining: 0,
+      moveWindowMs: 60_000,
       prompt: { round: 1, category: 'People', difficulty: 5, question: 'Q?' },
     });
-    render(<RemotePane state={state} me="p1" onMove={onMove} onVote={noop} />);
+    // Remote-only so the question card (with the paused countdown) renders here.
+    render(<RemotePane state={state} me="p1" showResults onMove={onMove} onVote={noop} />);
     fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'water' } });
     expect(onMove).not.toHaveBeenCalled();
     expect(screen.getByText('Paused')).toBeDefined();

@@ -572,3 +572,31 @@ describe('no-repeat selection over a full game', () => {
     expect((started.prompt as { difficulty: number }).difficulty).toBe(9);
   });
 });
+
+describe('answeredCount (spec 0069)', () => {
+  const game = createTriviaGame(makeBank(4), mulberry32(3));
+
+  it('counts connected players who have answered this round, growing as answers land', () => {
+    let scratch = game.configure({ category: 'Nature' }, players).scratch;
+    scratch = game.startRound(ctx(scratch)).scratch;
+    // Nobody has answered yet.
+    expect(game.answeredCount?.(ctx(scratch))).toBe(0);
+    scratch = game.collectMove(ctx(scratch), 'p1', 'anything').scratch;
+    expect(game.answeredCount?.(ctx(scratch))).toBe(1);
+    scratch = game.collectMove(ctx(scratch), 'p2', 'anything').scratch;
+    expect(game.answeredCount?.(ctx(scratch))).toBe(2);
+  });
+
+  it('never counts a disconnected player, so it stays <= the connected roster', () => {
+    let scratch = game.configure({ category: 'Nature' }, players).scratch;
+    scratch = game.startRound(ctx(scratch)).scratch;
+    scratch = game.collectMove(ctx(scratch), 'p1', 'anything').scratch;
+    // p1 answered then dropped: the count excludes them, matching allSubmitted's connected-only rule.
+    const dropped = [
+      { player: 'p1', nickname: 'Ada', connected: false },
+      { player: 'p2', nickname: 'Bo', connected: true },
+      { player: 'p3', nickname: 'Cy', connected: true },
+    ];
+    expect(game.answeredCount?.(ctx(scratch, { players: dropped }))).toBe(0);
+  });
+});

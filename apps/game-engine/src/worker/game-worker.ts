@@ -75,6 +75,7 @@ function capabilitiesOf(module: GameModule): WorkerCapabilities {
   return {
     live: typeof module.tick === 'function',
     allSubmitted: typeof module.allSubmitted === 'function',
+    answeredCount: typeof module.answeredCount === 'function',
     allDecided: typeof module.allDecided === 'function',
     resolveDecision: typeof module.resolveDecision === 'function',
     disposeLive: typeof module.disposeLive === 'function',
@@ -128,6 +129,8 @@ function invoke(module: GameModule, message: CallMessage): unknown {
       return module.collectMove(ctx, payload.player ?? '', payload.move ?? '');
     case 'allSubmitted':
       return module.allSubmitted?.(ctx);
+    case 'answeredCount':
+      return module.answeredCount?.(ctx);
     case 'reveal':
       return module.reveal(ctx);
     case 'collectVote':

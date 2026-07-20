@@ -38,6 +38,28 @@ export interface GameState {
    * frozen remaining.
    */
   moveMsRemaining: number | null;
+  /**
+   * The TOTAL configured move window in ms (spec 0069), so the in-round countdown colours as a
+   * percentage of the whole rather than a fixed second count. Null when there is no move timer or a
+   * peer predating the field.
+   */
+  moveWindowMs: number | null;
+  /**
+   * Whether the engine auto-advances phases without the host (spec 0069). Null when unknown (a peer
+   * predating the field); the in-round host controls open by default only when this is `false`.
+   */
+  autoAdvance: boolean | null;
+  /**
+   * Ms left in the current phase's auto-advance dwell (spec 0069) - the reveal and leaderboard
+   * "continuing in x" countdowns - or null when no dwell is running. Anchored to the local clock
+   * exactly like `moveMsRemaining`.
+   */
+  autoAdvanceMsRemaining: number | null;
+  /**
+   * During `collecting`, how many connected players have answered this round (spec 0069), paired
+   * with the connected roster to show "x of y answered". Null outside collecting or when unreported.
+   */
+  answered: number | null;
   /** The current round's opaque prompt payload, or null before the first prompt / between rounds. */
   prompt: unknown;
   /**
@@ -86,6 +108,10 @@ export function initialGameState(player: string | null = null): GameState {
     scores: {},
     disputes: [],
     moveMsRemaining: null,
+    moveWindowMs: null,
+    autoAdvance: null,
+    autoAdvanceMsRemaining: null,
+    answered: null,
     prompt: null,
     reveals: [],
     standings: [],
@@ -127,6 +153,13 @@ export function reduceGameState(
         disputes: frame.disputes ?? [],
         // Absent when there is no move timer (or a pre-0017 peer); null means "no countdown".
         moveMsRemaining: frame.moveMsRemaining ?? null,
+        // Spec 0069 pacing fields, all additive: absence means "unknown" (null), and each reader
+        // (the countdown colour, the host-controls default, the dwell countdowns, the answered line)
+        // treats null as the safe default.
+        moveWindowMs: frame.moveWindowMs ?? null,
+        autoAdvance: frame.autoAdvance ?? null,
+        autoAdvanceMsRemaining: frame.autoAdvanceMsRemaining ?? null,
+        answered: frame.answered ?? null,
         error: null,
       };
 

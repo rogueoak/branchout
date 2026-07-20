@@ -1,30 +1,35 @@
 'use client';
 
 // The remote: the private controller a player acts on. It takes the free-text answer while the
-// round collects, offers the dispute button to a player marked wrong during the engine's 10s
+// round collects, offers the dispute button to a player marked wrong during the engine's dispute
 // window, and shows the ballot to the other players while a dispute is voted on. It never runs the
 // timer or tallies - it sends frames and reflects the phase the engine reports.
+//
+// A remote-only player (no viewer pane beside them) also renders the shared in-round question card
+// (spec 0069), the between-round leaderboard, and the final results, which an interactive player
+// instead reads from the viewer pane beside it.
 //
 // The `state` frame carries `disputes` (the playerIds who actually raised a dispute this round -
 // spec 0012), so the ballot is offered over exactly those players, minus the voter themselves.
 
 import type { PlayerView } from '@branchout/protocol';
-import { Badge, Button, Input } from '@rogueoak/canopy';
+import { Button, Input } from '@rogueoak/canopy';
 import { useEffect, useState } from 'react';
 import type { GameState } from '../../game-state';
 import { asTriviaPrompt, pickTriviaRoundReveal } from './protocol';
-import { difficultyBand } from './config';
 import { useMoveCountdown } from '../../use-move-countdown';
+import { useDwellCountdown } from '../../use-dwell-countdown';
 import { FinalResults } from '../../../components/game/FinalResults';
 import { Leaderboard } from '../../../components/game/Leaderboard';
+import { TriviaQuestionCard } from './QuestionCard';
 
 interface RemotePaneProps {
   state: GameState;
   me: string;
   /**
    * True when the controller is the only pane on screen (a remote-only player). Then it must also
-   * render the between-round leaderboard and the final results, which an interactive player instead
-   * reads from the viewer pane beside it.
+   * render the in-round question card, the between-round leaderboard, and the final results, which an
+   * interactive player instead reads from the viewer pane beside it.
    */
   showResults?: boolean;
   /** True when the controller belongs to the host, who advances rounds itself (spec 0013). Used to
@@ -55,6 +60,7 @@ export function RemotePane({
   const [submittedRound, setSubmittedRound] = useState<number | null>(null);
   const [disputedRound, setDisputedRound] = useState<number | null>(null);
   const secondsLeft = useMoveCountdown(state.moveMsRemaining, state.round, state.paused);
+  const dwellSecondsLeft = useDwellCountdown(state.autoAdvanceMsRemaining, phase, state.paused);
 
   // A new round clears the draft and the per-round submission flags.
   useEffect(() => {
@@ -96,33 +102,31 @@ export function RemotePane({
     setSubmittedRound(round);
   }
 
+  let submitStatus = null;
+  if (submitted) {
+    submitStatus = (
+      <p role="status" className="text-body-sm text-success">
+        {timeUp
+          ? 'Answer locked in.'
+          : 'Answer submitted. You can change it until the round closes.'}
+      </p>
+    );
+  } else if (secondsLeft !== null && !state.paused) {
+    submitStatus = (
+      <p className="text-body-sm text-text-subtle">
+        Your answer sends automatically when the timer ends.
+      </p>
+    );
+  }
+
   return (
     <section aria-label="Your controller" className="flex flex-col gap-4">
       {phase === 'collecting' ? (
         <div className="flex flex-col gap-3">
-          {/* A remote-only player has no viewer pane beside them, so the question has to live here
-              too or they answer blind. An interactive player reads it from the viewer instead. */}
-          {showResults && prompt ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="info">Round {prompt.round}</Badge>
-                <Badge variant="neutral">{prompt.category}</Badge>
-                <Badge variant="neutral">{difficultyBand(prompt.difficulty)}</Badge>
-              </div>
-              <h2 className="text-h3 text-text">{prompt.question}</h2>
-            </div>
-          ) : null}
-          {secondsLeft !== null ? (
-            <p
-              role="timer"
-              aria-label={`${secondsLeft} seconds left to answer`}
-              className={`text-body-sm font-medium ${
-                timeUp || secondsLeft <= 10 ? 'text-warning' : 'text-text-muted'
-              }`}
-            >
-              {state.paused ? 'Paused' : timeUp ? "Time's up" : `${secondsLeft}s left to answer`}
-            </p>
-          ) : null}
+          {/* A remote-only player has no viewer pane beside them, so the question card (with the
+              countdown and answered count) has to live here too or they answer blind. An interactive
+              player reads it from the viewer instead. */}
+          {showResults && prompt ? <TriviaQuestionCard state={state} prompt={prompt} /> : null}
           <label htmlFor="answer-input" className="text-body-sm font-medium text-text">
             Your answer
           </label>
@@ -147,17 +151,7 @@ export function RemotePane({
               {submitted ? 'Resubmit' : 'Submit'}
             </Button>
           </div>
-          {submitted ? (
-            <p role="status" className="text-body-sm text-success">
-              {timeUp
-                ? 'Answer locked in.'
-                : 'Answer submitted. You can change it until the round closes.'}
-            </p>
-          ) : secondsLeft !== null && !state.paused ? (
-            <p className="text-body-sm text-text-subtle">
-              Your answer sends automatically when the timer ends.
-            </p>
-          ) : null}
+          {submitStatus}
         </div>
       ) : phase === 'disputing' ? (
         <div className="flex flex-col gap-3">
@@ -233,12 +227,20 @@ export function RemotePane({
         <FinalResults standings={state.standings} me={me} />
       ) : showResults && phase === 'leaderboard' ? (
         <div className="flex flex-col gap-3">
-          <Leaderboard standings={state.standings} me={me} />
-          <p className="text-body-sm text-text-muted">
-            {isHost
-              ? 'Tap Next when you are ready for the next round.'
-              : 'Waiting for the host to start the next round.'}
-          </p>
+          <Leaderboard
+            standings={state.standings}
+            me={me}
+            autoAdvanceSecondsLeft={dwellSecondsLeft}
+          />
+          {/* With auto-advance on, the Leaderboard's "next round in x" is the message; only a
+              host-advanced game (no dwell) needs the tap-Next / waiting copy. */}
+          {dwellSecondsLeft === null ? (
+            <p className="text-body-sm text-text-muted">
+              {isHost
+                ? 'Tap Next when you are ready for the next round.'
+                : 'Waiting for the host to start the next round.'}
+            </p>
+          ) : null}
         </div>
       ) : (
         <p className="text-body-sm text-text-muted">

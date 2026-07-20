@@ -391,6 +391,15 @@ export function createTriviaGame(
       return connected.length > 0 && connected.every((p) => round[p.player] !== undefined);
     },
 
+    // How many connected players have answered this round - the live "x of y answered" numerator
+    // (spec 0069). Mirrors allSubmitted's connected-only rule so the count never exceeds the
+    // connected roster the client uses as the denominator.
+    answeredCount(ctx: RoundContext): number {
+      const scratch = asScratch(ctx.scratch);
+      const round = scratch.submitted[String(ctx.round)] ?? {};
+      return ctx.players.filter((p) => p.connected && round[p.player] !== undefined).length;
+    },
+
     reveal(ctx: RoundContext): RevealResult {
       const scratch = clone(asScratch(ctx.scratch));
       const key = String(ctx.round);
