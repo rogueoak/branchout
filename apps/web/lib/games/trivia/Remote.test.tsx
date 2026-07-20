@@ -65,6 +65,49 @@ describe('RemotePane dispute button', () => {
   });
 });
 
+describe('RemotePane answer reveal (WS12)', () => {
+  // A remote-only player has no viewer pane, so after each question the controller must show the
+  // same AnswerReveal card the interactive player reads from the viewer.
+  const revealState = (correct: string[]): GameState =>
+    build({
+      phase: 'disputing',
+      players: [
+        { player: 'p1', nickname: 'Ada', connected: true },
+        { player: 'p2', nickname: 'Bo', connected: true },
+      ],
+      reveals: [
+        {
+          round: 1,
+          question: 'Capital of France?',
+          answers: ['Paris'],
+          correct,
+          wrong: correct.includes('p1') ? [] : ['p1'],
+          submissions: [
+            { player: 'p1', answer: 'Paris', correct: correct.includes('p1') },
+            { player: 'p2', answer: 'Lyon', correct: correct.includes('p2') },
+          ],
+        },
+      ],
+    });
+
+  it('renders the AnswerReveal card during the reveal phase for a remote-only player', () => {
+    render(
+      <RemotePane state={revealState(['p1'])} me="p1" showResults onMove={noop} onVote={noop} />,
+    );
+    // The canonical answer is the focus of the shared reveal card.
+    expect(screen.getByTestId('reveal-answer').textContent).toBe('Paris');
+    // Per-player correctness reads off the answers table.
+    expect(screen.getByLabelText('Ada answered Paris, correct')).toBeDefined();
+    expect(screen.getByLabelText('Bo answered Lyon, wrong')).toBeDefined();
+  });
+
+  it('does NOT render the reveal card for an interactive remote (the viewer pane carries it)', () => {
+    // No showResults: this player has a viewer beside them showing the reveal.
+    render(<RemotePane state={revealState(['p1'])} me="p1" onMove={noop} onVote={noop} />);
+    expect(screen.queryByTestId('reveal-answer')).toBeNull();
+  });
+});
+
 describe('RemotePane answer countdown', () => {
   afterEach(() => vi.useRealTimers());
 

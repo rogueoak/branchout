@@ -69,6 +69,20 @@ describe('TriviaConfigPanel rounds', () => {
     renderPanel({ rounds: 13 });
     expect(screen.getByLabelText(/custom rounds/i)).toBeDefined();
   });
+
+  it('names presets cleanly (no bracketed count) and keeps the count in the description (WS12)', () => {
+    renderPanel({ rounds: 10 });
+    // The name is the clean word only - no "Fast (10)" bracket in the label.
+    expect(screen.queryByText('Fast (10)')).toBeNull();
+    expect(screen.queryByText('Medium (20)')).toBeNull();
+    expect(screen.queryByText('Long (40)')).toBeNull();
+    expect(screen.getByText('Fast')).toBeDefined();
+    expect(screen.getByText('Long')).toBeDefined();
+    // The round count still reads on the description line under each name.
+    expect(screen.getByText(/10 rounds/i)).toBeDefined();
+    expect(screen.getByText(/20 rounds/i)).toBeDefined();
+    expect(screen.getByText(/40 rounds/i)).toBeDefined();
+  });
 });
 
 describe('TriviaConfigPanel difficulty', () => {
@@ -77,7 +91,7 @@ describe('TriviaConfigPanel difficulty', () => {
       <TriviaConfigPanel value={defaultTriviaConfig()} onChange={vi.fn()} disabled={false} />,
     );
     // The default band (3-6) selects the Medium preset (matched by its description to avoid the
-    // "Medium (20)" rounds preset).
+    // "Medium" rounds preset, which shares the label).
     const medium = screen.getByRole('radio', { name: /a balanced mix/i });
     expect(medium.getAttribute('aria-checked')).toBe('true');
     // No slider and no raw range text like "3-6" leaks into the difficulty UI.

@@ -50,7 +50,9 @@ export function TriviaConfigPanel({ value, onChange, disabled }: GameConfigPanel
   const roundOptions: SelectorOption<string>[] = [
     ...ROUND_PRESETS.map((preset) => ({
       value: String(preset.value),
-      label: `${preset.label} (${preset.value})`,
+      // Name reads cleanly (Fast / Medium / Long); the round count lives in the description line
+      // below, never bracketed into the name (WS12).
+      label: preset.label,
       description: preset.description,
     })),
     { value: 'custom', label: 'Custom', description: 'Set your own number of rounds.' },
