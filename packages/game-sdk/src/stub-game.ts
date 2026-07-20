@@ -28,6 +28,7 @@ export interface StubConfig {
   rounds?: number;
   disputeWindowMs?: number;
   moveWindowMs?: number;
+  leaderboardWindowMs?: number;
   /** The correct answer for each round; the last entry repeats if there are more rounds. */
   secrets?: string[];
   /**
@@ -97,6 +98,7 @@ export const stubGame: GameModule = {
       rounds,
       disputeWindowMs: cfg.disputeWindowMs ?? 0,
       moveWindowMs: cfg.moveWindowMs ?? 0,
+      leaderboardWindowMs: cfg.leaderboardWindowMs ?? 0,
     };
   },
 

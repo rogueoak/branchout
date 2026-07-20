@@ -1,7 +1,8 @@
-// Per-round question selection (spec 0008, difficulty range spec 0016). Given the host's difficulty
-// range [min, max], the chosen category (or all categories for `Random`), and the ids already used
-// this game, pick one unused question whose rating falls in the range. If the range is exhausted for
-// the category, widen to the nearest rating outside it; never repeat a question within a game.
+// Per-round question selection (spec 0008, difficulty range spec 0016, category subset spec 0068).
+// Given the host's difficulty range [min, max], the chosen categories (an empty list draws across
+// ALL categories - "Random"), and the ids already used this game, pick one unused question whose
+// rating falls in the range. If the range is exhausted for the pool, widen to the nearest rating
+// outside it; never repeat a question within a game.
 
 import type { TriviaQuestion } from './question-bank';
 
@@ -12,6 +13,25 @@ export const RANDOM_CATEGORY = 'Random';
 export interface QuestionIndex {
   /** category -> its questions; `RANDOM_CATEGORY` holds the cross-category pool. */
   readonly byCategory: ReadonlyMap<string, readonly TriviaQuestion[]>;
+}
+
+/**
+ * The draw pool for a category selection. An empty list means "Random" - the pre-indexed
+ * cross-category pool. A non-empty list unions the named categories' buckets (each question carries a
+ * single category, so the union never double-counts). An unknown category simply contributes nothing.
+ */
+export function poolFor(
+  index: QuestionIndex,
+  categories: readonly string[],
+): readonly TriviaQuestion[] {
+  if (categories.length === 0) return index.byCategory.get(RANDOM_CATEGORY) ?? [];
+  if (categories.length === 1) return index.byCategory.get(categories[0]!) ?? [];
+  const pool: TriviaQuestion[] = [];
+  for (const category of categories) {
+    const bucket = index.byCategory.get(category);
+    if (bucket) pool.push(...bucket);
+  }
+  return pool;
 }
 
 /** Build the per-category index once, including the cross-category `Random` pool. */
@@ -40,23 +60,23 @@ function distanceToRange(rating: number, min: number, max: number): number {
 }
 
 /**
- * Pick an unused question for `category` whose rating is in [min, max]. When the range holds no
- * unused question, widen to the nearest rating outside it (a smaller surprise than jumping to an
- * extreme); a below/above tie breaks toward the easier (lower) rating. Returns `null` only when
- * every question in the category is used - in practice unreachable: a game runs at most 100 rounds
- * against 200 questions per category. `rng` selects within the candidate pool so ordering is
+ * Pick an unused question for `categories` (empty = Random) whose rating is in [min, max]. When the
+ * range holds no unused question, widen to the nearest rating outside it (a smaller surprise than
+ * jumping to an extreme); a below/above tie breaks toward the easier (lower) rating. Returns `null`
+ * only when every question in the pool is used - in practice unreachable: a game runs at most 100
+ * rounds against 200 questions per category. `rng` selects within the candidate pool so ordering is
  * uniform and deterministic under a seeded rng.
  */
 export function pickQuestion(
   index: QuestionIndex,
-  category: string,
+  categories: readonly string[],
   min: number,
   max: number,
   usedIds: ReadonlySet<string>,
   rng: () => number,
 ): TriviaQuestion | null {
-  const pool = index.byCategory.get(category);
-  if (!pool) return null;
+  const pool = poolFor(index, categories);
+  if (pool.length === 0) return null;
 
   const available = pool.filter((q) => !usedIds.has(q.id));
   if (available.length === 0) return null;

@@ -50,6 +50,13 @@ export interface ConfigureResult {
    * expires (spec 0017). 0 (default) means no timer - the round waits on all-submitted or the host.
    */
   moveWindowMs?: number;
+  /**
+   * Leaderboard-window duration in ms (spec 0068): after this delay the engine advances the
+   * `leaderboard` phase to the next round (or ends the game). 0 (default) means the host advances the
+   * leaderboard manually, so a game that never sets it keeps today's host-driven pacing. Named for the
+   * phase it drives, like its `moveWindowMs`/`disputeWindowMs` siblings.
+   */
+  leaderboardWindowMs?: number;
 }
 
 export interface StartRoundResult {

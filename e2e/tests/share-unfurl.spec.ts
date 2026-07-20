@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createRoom, metaContent, signUpHost } from '../lib/helpers';
+import { createRoom, metaContent, setTriviaRounds, signUpHost } from '../lib/helpers';
 
 // Open Graph share cards (spec 0025), proven end to end against the real stack: the meta tags a
 // link crawler would read are served by the real web app, which resolves the room's game from the
@@ -24,7 +24,7 @@ test.describe('Open Graph share unfurls', () => {
     // Host a room and start Trivia so the room's selectedGame is 'trivia'.
     await signUpHost(page);
     const code = await createRoom(page);
-    await page.locator('#trivia-rounds').fill('1');
+    await setTriviaRounds(page, 1);
     await page.getByRole('button', { name: /start game/i }).click();
     // Once running, the shared viewer shows the first question - the game has truly started.
     await expect(page.getByTestId('question-prompt')).toBeVisible();

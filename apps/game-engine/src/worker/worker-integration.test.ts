@@ -67,11 +67,11 @@ describeRealWorker('game worker (real worker_thread)', () => {
   it('rejects a bad config from inside the worker (the real module validates)', async () => {
     const provider = new WorkerRuntimeProvider(makeManager());
     const runtime = await provider.runtime('room1:trivia', 'trivia', 1);
-    // Trivia requires a known category; an unknown one is refused by the module in the worker, which
+    // Trivia requires known categories; an unknown one is refused by the module in the worker, which
     // surfaces as a rejected call - not a crash.
-    await expect(runtime.configure({ rounds: 1, category: 'Nonsense' }, [player])).rejects.toThrow(
-      /category/i,
-    );
+    await expect(
+      runtime.configure({ rounds: 1, categories: ['Nonsense'] }, [player]),
+    ).rejects.toThrow(/categor/i);
   }, 20_000);
 
   it('respawns and rebuilds the same procedural content after the worker is torn down', async () => {

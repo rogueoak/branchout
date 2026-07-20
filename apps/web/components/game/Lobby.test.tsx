@@ -204,10 +204,21 @@ describe('Lobby', () => {
   });
 
   it('omits the Advanced settings accordion when the game supplies no advanced content', () => {
-    // Every game today supplies no advanced content, so the disclosure must not render (no empty
-    // drawer). The prop is left unset here to model that default.
-    renderLobby({});
+    // A game whose UI module has no AdvancedConfigPanel (Liar Liar) shows no disclosure - no empty
+    // drawer. (Trivia now DOES supply one, spec 0068, so the default game would render it.)
+    renderLobby({ game: 'liar-liar', config: defaultLiarLiarConfig() });
     expect(screen.queryByRole('button', { name: /advanced settings/i })).toBeNull();
+  });
+
+  it('renders a game-supplied Advanced settings accordion resolved from its module (spec 0068)', () => {
+    // Trivia (the default game) supplies an AdvancedConfigPanel; the lobby resolves it from the same
+    // module as the standard panel and shows the collapsed accordion with no `advanced` prop passed.
+    renderLobby({});
+    const advanced = screen.getByRole('button', { name: /advanced settings/i });
+    expect(advanced.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(advanced);
+    // Opening it reveals Trivia's advanced knobs (the auto-advance switch).
+    expect(screen.getByRole('switch', { name: /auto advance/i })).toBeDefined();
   });
 
   it('renders the Advanced settings accordion (collapsed) when advanced content is provided', () => {

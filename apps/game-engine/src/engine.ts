@@ -96,6 +96,12 @@ export class GameEngine {
   private readonly simFailures = new Map<string, number>();
   /** The most recent `sim` payload per session, so a joiner catches up to the live world at once. */
   private readonly lastSim = new Map<string, unknown>();
+  /**
+   * Cancel handle for each session's current dispute/voting/guess/leaderboard window timer (spec
+   * 0068). A superseding arm - a phase transition, a resume, a re-base - cancels the prior one, so a
+   * stale timer from an earlier phase/round/run can never fire against a later one.
+   */
+  private readonly windowTimers = new Map<string, () => void>();
 
   constructor(deps: EngineDeps) {
     this.runtimeProvider = deps.runtimeProvider;
@@ -194,6 +200,7 @@ export class GameEngine {
         disputeWindowMs: cfg.disputeWindowMs ?? 0,
         decisionWindowMs: 0,
         moveWindowMs: cfg.moveWindowMs ?? 0,
+        leaderboardWindowMs: cfg.leaderboardWindowMs ?? 0,
         players,
         scores: Object.fromEntries(players.map((p) => [p.player, 0])),
         roundScores: [],
@@ -254,8 +261,14 @@ export class GameEngine {
         const runtime = await this.runtimeFor(state);
         if (state.phase === 'guessing') {
           await this.resumeDecisionWindow(state, runtime);
-        } else if (state.phase === 'disputing' || state.phase === 'voting') {
-          this.armWindow(state, state.phase);
+        } else if (
+          state.phase === 'disputing' ||
+          state.phase === 'voting' ||
+          state.phase === 'leaderboard'
+        ) {
+          // Continue the window from where the host's drop froze it (spec 0068); `leaderboard`
+          // re-arms its dwell on host reconnect too.
+          this.resumeWindow(state, state.phase);
         } else {
           // Continue the answer countdown from where the host's drop froze it (spec 0017).
           await this.resumeMoveWindow(state, runtime);
@@ -332,8 +345,10 @@ export class GameEngine {
         state.paused = true;
         state.hostPaused = true;
         // The auto-pause must also hold the answer countdown, or it keeps ticking (and could
-        // force-close the round) while the host is away (spec 0017).
+        // force-close the round) while the host is away (spec 0017), and freeze any dispute/voting/
+        // guess/leaderboard window the same way (spec 0068) so it does not force-advance while away.
         this.freezeMoveWindow(state);
+        this.freezeWindow(state);
         // A live game's world freezes while the host is away, mirroring the host pause (spec 0044).
         this.stopSimLoop(sessionKey(state.room, state.game));
       }
@@ -429,18 +444,27 @@ export class GameEngine {
           // and a resume continues from the time left, not a fresh window (spec 0017).
           if (state.paused) this.freezeMoveWindow(state);
           else await this.resumeMoveWindow(state, runtime);
+          // Freeze the dispute/voting/guess/leaderboard window the same way (spec 0068): cancel it on
+          // pause so a stale timer cannot fire on resume, and stash the time left. Re-armed below.
+          if (state.paused) this.freezeWindow(state);
           // A live game's world freezes on pause and resumes on unpause (spec 0044): stop/start the
           // sim loop in the exact spots the move window is frozen/resumed.
           if (state.paused) this.stopSimLoop(sessionKey(state.room, state.game));
           else this.startSimLoop(state, runtime);
           await this.store.save(state);
           await this.publish(state, this.stateMessage(state));
-          // Resuming inside a timed dispute/vote/guess window re-arms it, so a paused window does not
-          // strand the round waiting for a manual advance.
+          // Resuming inside a timed dispute/vote/guess/leaderboard window re-arms it from the time
+          // left, so a paused window does not strand the round waiting for a manual advance.
           if (!state.paused && state.phase === 'guessing') {
             await this.resumeDecisionWindow(state, runtime);
-          } else if (!state.paused && (state.phase === 'disputing' || state.phase === 'voting')) {
-            this.armWindow(state, state.phase);
+          } else if (
+            !state.paused &&
+            (state.phase === 'disputing' ||
+              state.phase === 'voting' ||
+              state.phase === 'leaderboard')
+          ) {
+            // `leaderboard` re-arms its dwell too (spec 0068); a no-op when the window is 0.
+            this.resumeWindow(state, state.phase);
           }
           return;
         case 'advance':
@@ -518,6 +542,12 @@ export class GameEngine {
     // A live game (spec 0044) sits in `collecting` and never opens a move window or auto-advances -
     // the sim loop drives streaming and game end. A turn-based game opens its answer window as usual.
     const live = runtime.live;
+    // The prior round's leaderboard window (if any) is done; clear its deadline so the fresh round
+    // never inherits a stale one, and drop any lingering timer handle.
+    this.windowTimers.get(sessionKey(state.room, state.game))?.();
+    this.windowTimers.delete(sessionKey(state.room, state.game));
+    state.windowDeadline = undefined;
+    state.windowRemainingMs = undefined;
     state.moveRemainingMs = undefined;
     state.moveDeadline =
       !live && state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
@@ -642,6 +672,10 @@ export class GameEngine {
     state.standings = standings;
     await this.publish(state, this.leaderboardMessage(state, standings));
     await this.publish(state, this.stateMessage(state));
+    // Auto-advance the leaderboard to the next round after the configured dwell (spec 0068). A no-op
+    // when `leaderboardWindowMs` is 0 (the default for every game and for auto-advance-off), so the
+    // leaderboard then waits on the host exactly as before.
+    this.armWindow(state, 'leaderboard');
 
     const roundId = `${state.room}:${state.game}:${state.runId}:${state.round}`;
     const known =
@@ -728,6 +762,7 @@ export class GameEngine {
     state.disputeWindowMs = cfg.disputeWindowMs ?? 0;
     state.decisionWindowMs = 0;
     state.moveWindowMs = cfg.moveWindowMs ?? 0;
+    state.leaderboardWindowMs = cfg.leaderboardWindowMs ?? 0;
     state.paused = false;
     state.hostPaused = false;
     state.scratch = cfg.scratch;
@@ -940,29 +975,86 @@ export class GameEngine {
    */
   private async resumeDecisionWindow(state: SessionState, runtime: SessionRuntime): Promise<void> {
     if (state.phase !== 'guessing' || state.paused) return;
-    this.armWindow(state, 'guessing');
+    this.resumeWindow(state, 'guessing');
     if (await runtime.allDecided(this.context(state))) this.armAutoAdvance(state, 'guessing');
   }
 
-  /** The timed-window duration for a phase: the guess window for `guessing`, else the dispute window. */
+  /**
+   * The timed-window duration for a phase: the guess window for `guessing`, the leaderboard
+   * auto-advance dwell for `leaderboard` (spec 0068), else the dispute window. A 0 means the phase is
+   * host-advanced (no timer).
+   */
   private windowMsFor(state: SessionState, phase: SessionState['phase']): number {
-    return phase === 'guessing' ? state.decisionWindowMs : state.disputeWindowMs;
+    if (phase === 'guessing') return state.decisionWindowMs;
+    if (phase === 'leaderboard') return state.leaderboardWindowMs;
+    return state.disputeWindowMs;
   }
 
-  /** Arm the dispute/guess-window timer; a no-op when the window is manual (0) or paused. */
-  private armWindow(state: SessionState, phase: SessionState['phase']): void {
-    const ms = this.windowMsFor(state, phase);
-    if (ms <= 0 || state.paused) return;
-    const room = state.room;
-    const game = state.game;
-    this.scheduler.schedule(ms, () => {
-      void this.run(sessionKey(room, game), async () => {
+  /**
+   * Arm the dispute/voting/guess/leaderboard window timer; a no-op when the window is manual (0) or
+   * paused. `delayMs` overrides the phase's full duration so a resume can re-arm for the time LEFT
+   * (see {@link resumeWindow}). The prior window timer for this session is cancelled first, so a
+   * superseding arm - a phase transition, a resume, a re-base - never leaves a stale timer to fire.
+   * On fire, the guard re-checks phase, round, runId, and pause - like {@link armAutoAdvance}/
+   * {@link armMoveWindow} - so a stale timer from an earlier round or a pre-restart run no-ops rather
+   * than advancing a later one. `windowDeadline` records when the window would close so a pause can
+   * compute the time left ({@link freezeWindow}); it is not re-checked on fire because pause always
+   * cancels + re-arms, so a timer only ever fires for the deadline it was armed with.
+   */
+  private armWindow(state: SessionState, phase: SessionState['phase'], delayMs?: number): void {
+    const key = sessionKey(state.room, state.game);
+    // Cancel any prior window timer so a phase change, resume, or re-base never leaves one pending.
+    this.windowTimers.get(key)?.();
+    this.windowTimers.delete(key);
+    const ms = delayMs ?? this.windowMsFor(state, phase);
+    if (ms <= 0 || state.paused) {
+      state.windowDeadline = undefined;
+      return;
+    }
+    state.windowDeadline = this.clock() + ms;
+    const { room, game, round, runId } = state;
+    const cancel = this.scheduler.schedule(Math.max(0, ms), () => {
+      this.windowTimers.delete(key);
+      void this.run(key, async () => {
         const current = await this.store.load(room, game);
-        // Only fire if the window is still open on the same phase and not paused.
-        if (!current || current.paused || current.phase !== phase) return;
+        // Fire only for the same run's same round still in the phase we armed for and unpaused. The
+        // round/runId guard stops a stale timer from an earlier round or a pre-restart run from
+        // advancing a later one.
+        if (
+          !current ||
+          current.paused ||
+          current.phase !== phase ||
+          current.round !== round ||
+          current.runId !== runId
+        ) {
+          return;
+        }
         await this.advanceLocked(current, await this.runtimeFor(current));
       });
     });
+    this.windowTimers.set(key, cancel);
+  }
+
+  /**
+   * Freeze the dispute/voting/guess/leaderboard window when the game pauses (spec 0068): cancel the
+   * pending timer and stash the time left (from `windowDeadline`), so a resume continues from there
+   * rather than starting a fresh full window - and so the stale pre-pause timer never fires. A no-op
+   * when no timed window is open.
+   */
+  private freezeWindow(state: SessionState): void {
+    const key = sessionKey(state.room, state.game);
+    this.windowTimers.get(key)?.();
+    this.windowTimers.delete(key);
+    if (state.windowDeadline === undefined) return;
+    state.windowRemainingMs = Math.max(0, state.windowDeadline - this.clock());
+    state.windowDeadline = undefined;
+  }
+
+  /** Continue a frozen window from the time left (spec 0068); a fresh full window if none was frozen. */
+  private resumeWindow(state: SessionState, phase: SessionState['phase']): void {
+    const remaining = state.windowRemainingMs;
+    state.windowRemainingMs = undefined;
+    this.armWindow(state, phase, remaining);
   }
 
   private async tryReport(send: () => Promise<void>): Promise<boolean> {

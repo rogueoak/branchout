@@ -148,6 +148,121 @@ describe('GameEngine lifecycle', () => {
     ]);
   });
 
+  it('auto-advances the leaderboard to the next round after the configured dwell (spec 0068)', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 2, secrets: ['blue', 'green'], leaderboardWindowMs: 5_000 } }),
+    );
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'wrong');
+    await playRoundNoDispute(h.engine, 'r1');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    // No host tap: the leaderboard dwell fires and opens round 2 on its own.
+    h.scheduler.advance(5_000);
+    const state = await h.engine.getState('r1', STUB_GAME_ID);
+    expect(state?.round).toBe(2);
+    expect(state?.phase).toBe('collecting');
+  });
+
+  it('auto-advances the FINAL round leaderboard to game end + one completion report (spec 0068)', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 1, secrets: ['blue'], leaderboardWindowMs: 5_000 } }),
+    );
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    // The last round's dwell ends the game with no host tap, and reports completion exactly once.
+    h.scheduler.advance(5_000);
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('complete');
+    expect(h.reporter.completes).toHaveLength(1);
+    expect(h.reporter.rounds.map((r) => r.round)).toEqual([1]);
+    // No further timer fires a second completion.
+    h.scheduler.flush();
+    expect(h.reporter.completes).toHaveLength(1);
+  });
+
+  it('re-arms the leaderboard auto-advance across a pause and resume (spec 0068)', async () => {
+    await h.engine.start(
+      handoff({ config: { rounds: 2, secrets: ['blue', 'green'], leaderboardWindowMs: 5_000 } }),
+    );
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    await h.engine.control('r1', STUB_GAME_ID, 'pause');
+    h.scheduler.flush(); // the pre-pause dwell timer is cancelled, so nothing advances while paused
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    await h.engine.control('r1', STUB_GAME_ID, 'pause'); // resume re-arms the dwell from the time left
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.round).toBe(2);
+  });
+
+  it('re-arms the leaderboard auto-advance when the host reconnects (spec 0068)', async () => {
+    await h.engine.start(
+      handoff({
+        players: [
+          { player: 'p1', nickname: 'Ada', isHost: true },
+          { player: 'p2', nickname: 'Bo' },
+        ],
+        config: { rounds: 2, secrets: ['blue', 'green'], leaderboardWindowMs: 5_000 },
+      }),
+    );
+    for (const p of ['p1', 'p2']) await h.engine.join('r1', STUB_GAME_ID, p, p);
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    await h.engine.disconnect('r1', STUB_GAME_ID, 'p1'); // host drops -> auto-pause freezes the dwell
+    h.scheduler.flush(); // the frozen dwell does not advance while the host is away
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+
+    await h.engine.join('r1', STUB_GAME_ID, 'p1', 'Ada'); // host returns -> resume + re-arm the dwell
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.round).toBe(2);
+  });
+
+  it('does not let a stale leaderboard timer advance a later round or a post-restart run (spec 0068)', async () => {
+    await h.engine.start(
+      handoff({
+        config: { rounds: 3, secrets: ['blue', 'green', 'red'], leaderboardWindowMs: 5_000 },
+      }),
+    );
+    // Round 1 -> leaderboard (a dwell timer is armed for round 1).
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+    // The host taps to round 2 before the round-1 dwell fires; the round-1 timer must not survive to
+    // advance a later round's leaderboard. (A restart would likewise start a fresh run.)
+    await h.engine.control('r1', STUB_GAME_ID, 'advance'); // -> round 2 collecting
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.round).toBe(2);
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 2, 'green');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 2, 'green');
+    await playRoundNoDispute(h.engine, 'r1'); // round 2 -> leaderboard (round-2 dwell armed)
+
+    // Firing every pending timer must advance ONLY once (the round-2 dwell), landing on round 3 -
+    // not skip a round or end the game from a stale round-1 timer.
+    h.scheduler.flush();
+    const state = await h.engine.getState('r1', STUB_GAME_ID);
+    expect(state?.round).toBe(3);
+    expect(state?.phase).toBe('collecting');
+  });
+
+  it('leaves the leaderboard host-advanced when no dwell is configured', async () => {
+    await h.engine.start(handoff({ config: { rounds: 2, secrets: ['blue', 'green'] } }));
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+
+    // With leaderboardWindowMs unset (0), firing every timer never leaves the leaderboard.
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('leaderboard');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.round).toBe(1);
+  });
+
   it('awards 50 to a disputer upheld by a majority of the other players', async () => {
     await h.engine.start(
       handoff({
@@ -991,8 +1106,9 @@ describe('decision/guess phase (spec 0020)', () => {
     const state = await h.engine.getState('r1', DECIDER_GAME_ID);
     expect(state?.phase).toBe('leaderboard');
     expect(state?.scores).toEqual({ p1: 150, p2: 50, p3: 0 });
-    // The 30s guess window is still scheduled (it now no-ops), so the round closed on the grace timer.
-    expect(h.scheduler.pending).toBe(1);
+    // The round closed on the 2s grace timer; advancing out of `guessing` cancels the still-pending
+    // 30s guess window (spec 0068: a superseding arm cancels the prior window timer), so nothing lingers.
+    expect(h.scheduler.pending).toBe(0);
   });
 
   it('closes the guess round when the window timer fires', async () => {

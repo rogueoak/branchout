@@ -27,7 +27,13 @@ import {
   isValidDifficultyRange,
 } from './difficulty';
 import { isCorrectAnswer } from './matching';
-import { RANDOM_CATEGORY, indexQuestions, pickQuestion, type QuestionIndex } from './selection';
+import {
+  RANDOM_CATEGORY,
+  indexQuestions,
+  pickQuestion,
+  poolFor,
+  type QuestionIndex,
+} from './selection';
 
 export const TRIVIA_GAME_ID = 'trivia';
 
@@ -35,36 +41,61 @@ export const MIN_ROUNDS = 1;
 export const MAX_ROUNDS = 100;
 export const DEFAULT_ROUNDS = 10;
 
-/** The 10-second dispute window the spec mandates, in milliseconds. */
-export const DISPUTE_WINDOW_MS = 10_000;
+/** Auto-advance defaults (spec 0068): on, with a 5s dwell for each hop. */
+export const DEFAULT_AUTO_ADVANCE = true;
+export const DEFAULT_ADVANCE_AFTER_SECONDS = 5;
+export const MIN_ADVANCE_AFTER_SECONDS = 1;
+export const MAX_ADVANCE_AFTER_SECONDS = 60;
 
-/** The 60-second answer window: a round auto-closes to reveal when it expires (spec 0017). */
-export const ANSWER_WINDOW_MS = 60_000;
+/** Answer-window (time-limit) defaults and bounds in seconds (spec 0068). */
+export const DEFAULT_TIME_LIMIT_SECONDS = 60;
+export const MIN_TIME_LIMIT_SECONDS = 10;
+export const MAX_TIME_LIMIT_SECONDS = 180;
 
 const CORRECT_POINTS = 100;
 const DISPUTE_POINTS = 50;
 
-/** The categories a host may configure: the eight question categories plus `Random`. */
+/**
+ * The categories a host may configure: the eight question categories plus `Random`. `Random` is a
+ * UI convenience meaning "all categories" - on the wire it is the empty `categories` list.
+ */
 export const CONFIGURABLE_CATEGORIES: readonly string[] = [...CATEGORIES, RANDOM_CATEGORY];
 
-/** Host-supplied configuration, validated by {@link validateConfig}. */
+/** Host-supplied configuration, validated by {@link validateConfig}. All fields optional (spec 0068). */
 export interface TriviaConfig {
-  /** One of the eight categories or `Random`. */
-  category: string;
+  /** A subset of the eight categories to draw from. Omitted or empty = Random (all categories). */
+  categories?: string[];
+  /**
+   * Legacy single-category field (pre-0068). Still accepted for backward compatibility: `Random`
+   * resolves to all categories (empty list), any other value to that one category.
+   */
+  category?: string;
   /** 1-100, default 10. */
   rounds?: number;
-  /** Difficulty range floor, integer 1-10, default 4. Must be <= `difficultyMax`. */
+  /** Difficulty range floor, integer 1-10, default 3. Must be <= `difficultyMax`. */
   difficultyMin?: number;
   /** Difficulty range ceiling, integer 1-10, default 6. Must be >= `difficultyMin`. */
   difficultyMax?: number;
+  /** Auto-advance the answer screen -> leaderboard -> next round. Default true. */
+  autoAdvance?: boolean;
+  /** Dwell before each auto-advance hop, in seconds. Default 5, range 1-60. */
+  advanceAfterSeconds?: number;
+  /** Answer window, in seconds. Default 60, range 10-180. Maps to the engine move window. */
+  timeLimitSeconds?: number;
 }
 
-/** A validated, defaulted configuration. */
+/** A validated, defaulted configuration. Durations are resolved to milliseconds for the engine. */
 export interface ResolvedTriviaConfig {
-  category: string;
+  /** The resolved category subset; an EMPTY list means Random (all categories). */
+  categories: string[];
   rounds: number;
   difficultyMin: number;
   difficultyMax: number;
+  autoAdvance: boolean;
+  /** Resolved dwell in ms (`advanceAfterSeconds * 1000`). */
+  advanceAfterMs: number;
+  /** Resolved answer window in ms (`timeLimitSeconds * 1000`). */
+  timeLimitMs: number;
 }
 
 /** A question snapshot persisted per round so reveal can score without re-drawing. */
@@ -77,7 +108,8 @@ interface StoredQuestion {
 }
 
 interface TriviaScratch {
-  category: string;
+  /** The category subset to draw from; an empty list means Random (all categories). */
+  categories: string[];
   difficultyMin: number;
   difficultyMax: number;
   rounds: number;
@@ -95,7 +127,7 @@ interface TriviaScratch {
 
 function emptyScratch(cfg: ResolvedTriviaConfig): TriviaScratch {
   return {
-    category: cfg.category,
+    categories: [...cfg.categories],
     difficultyMin: cfg.difficultyMin,
     difficultyMax: cfg.difficultyMax,
     rounds: cfg.rounds,
@@ -108,14 +140,27 @@ function emptyScratch(cfg: ResolvedTriviaConfig): TriviaScratch {
   };
 }
 
+/**
+ * Read a category subset from a persisted scratch, tolerating the pre-0068 single-`category` shape so
+ * an in-progress game survives an engine deploy: `Random` (or absent) -> all categories (empty list),
+ * any named category -> that one.
+ */
+function scratchCategories(s: Partial<TriviaScratch> & { category?: unknown }): string[] {
+  if (Array.isArray(s.categories))
+    return s.categories.filter((c): c is string => typeof c === 'string');
+  const legacy = s.category;
+  if (typeof legacy === 'string' && legacy !== RANDOM_CATEGORY) return [legacy];
+  return [];
+}
+
 function asScratch(scratch: Readonly<Record<string, unknown>>): TriviaScratch {
-  const s = scratch as Partial<TriviaScratch>;
+  const s = scratch as Partial<TriviaScratch> & { category?: unknown };
   // Degrade a pre-0016 scratch (a single numeric `difficulty`) to a single-rating band rather than
   // silently resetting a game-in-progress to the default range across an engine deploy (spec 0016).
   const legacy = (scratch as { difficulty?: unknown }).difficulty;
   const legacyBand = typeof legacy === 'number' ? legacy : undefined;
   return {
-    category: s.category ?? RANDOM_CATEGORY,
+    categories: scratchCategories(s),
     difficultyMin: s.difficultyMin ?? legacyBand ?? DEFAULT_DIFFICULTY_MIN,
     difficultyMax: s.difficultyMax ?? legacyBand ?? DEFAULT_DIFFICULTY_MAX,
     rounds: s.rounds ?? DEFAULT_ROUNDS,
@@ -137,9 +182,58 @@ function toRecord(scratch: TriviaScratch): Record<string, unknown> {
   return scratch as unknown as Record<string, unknown>;
 }
 
-/** Total questions available for a category (the `Random` pool spans all categories). */
-function poolSize(index: QuestionIndex, category: string): number {
-  return index.byCategory.get(category)?.length ?? 0;
+/** Total questions available for a category subset (an empty list spans all categories). */
+function poolSize(index: QuestionIndex, categories: readonly string[]): number {
+  return poolFor(index, categories).length;
+}
+
+/**
+ * Resolve a host's category selection to a validated subset, tolerating the legacy single-`category`
+ * field. An empty result means Random (all categories). Throws on any unknown category.
+ */
+function resolveCategories(cfg: Partial<TriviaConfig>): string[] {
+  const raw = Array.isArray(cfg.categories)
+    ? cfg.categories
+    : typeof cfg.category === 'string'
+      ? cfg.category === RANDOM_CATEGORY
+        ? []
+        : [cfg.category]
+      : [];
+  // Drop a stray `Random` sentinel and de-duplicate, preserving order.
+  const seen = new Set<string>();
+  const resolved: string[] = [];
+  for (const category of raw) {
+    if (category === RANDOM_CATEGORY || seen.has(category)) continue;
+    if (!CATEGORIES.includes(category)) {
+      throw new Error(
+        `trivia categories must each be one of ${CATEGORIES.join(', ')}, got ${JSON.stringify(category)}`,
+      );
+    }
+    seen.add(category);
+    resolved.push(category);
+  }
+  return resolved;
+}
+
+function resolveIntInRange(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+  label: string,
+): number {
+  const resolved = value ?? fallback;
+  if (
+    typeof resolved !== 'number' ||
+    !Number.isInteger(resolved) ||
+    resolved < min ||
+    resolved > max
+  ) {
+    throw new Error(
+      `trivia ${label} must be an integer ${min}-${max}, got ${JSON.stringify(value)}`,
+    );
+  }
+  return resolved;
 }
 
 /**
@@ -149,17 +243,9 @@ function poolSize(index: QuestionIndex, category: string): number {
 export function validateConfig(config: unknown): ResolvedTriviaConfig {
   const cfg = (config ?? {}) as Partial<TriviaConfig>;
 
-  if (typeof cfg.category !== 'string' || !CONFIGURABLE_CATEGORIES.includes(cfg.category)) {
-    throw new Error(
-      `trivia category must be one of ${CONFIGURABLE_CATEGORIES.join(', ')}, got ` +
-        `${JSON.stringify(cfg.category)}`,
-    );
-  }
+  const categories = resolveCategories(cfg);
 
-  const rounds = cfg.rounds ?? DEFAULT_ROUNDS;
-  if (!Number.isInteger(rounds) || rounds < MIN_ROUNDS || rounds > MAX_ROUNDS) {
-    throw new Error(`trivia rounds must be an integer ${MIN_ROUNDS}-${MAX_ROUNDS}, got ${rounds}`);
-  }
+  const rounds = resolveIntInRange(cfg.rounds, DEFAULT_ROUNDS, MIN_ROUNDS, MAX_ROUNDS, 'rounds');
 
   const difficultyMin = cfg.difficultyMin ?? DEFAULT_DIFFICULTY_MIN;
   const difficultyMax = cfg.difficultyMax ?? DEFAULT_DIFFICULTY_MAX;
@@ -170,7 +256,35 @@ export function validateConfig(config: unknown): ResolvedTriviaConfig {
     );
   }
 
-  return { category: cfg.category, rounds, difficultyMin, difficultyMax };
+  const autoAdvance = cfg.autoAdvance ?? DEFAULT_AUTO_ADVANCE;
+  if (typeof autoAdvance !== 'boolean') {
+    throw new Error(`trivia autoAdvance must be a boolean, got ${JSON.stringify(cfg.autoAdvance)}`);
+  }
+
+  const advanceAfterSeconds = resolveIntInRange(
+    cfg.advanceAfterSeconds,
+    DEFAULT_ADVANCE_AFTER_SECONDS,
+    MIN_ADVANCE_AFTER_SECONDS,
+    MAX_ADVANCE_AFTER_SECONDS,
+    'advanceAfterSeconds',
+  );
+  const timeLimitSeconds = resolveIntInRange(
+    cfg.timeLimitSeconds,
+    DEFAULT_TIME_LIMIT_SECONDS,
+    MIN_TIME_LIMIT_SECONDS,
+    MAX_TIME_LIMIT_SECONDS,
+    'timeLimitSeconds',
+  );
+
+  return {
+    categories,
+    rounds,
+    difficultyMin,
+    difficultyMax,
+    autoAdvance,
+    advanceAfterMs: advanceAfterSeconds * 1000,
+    timeLimitMs: timeLimitSeconds * 1000,
+  };
 }
 
 /**
@@ -193,18 +307,24 @@ export function createTriviaGame(
       // The draw never repeats a question, so the chosen pool must hold at least `rounds`
       // questions. Reject up front here rather than let `startRound` throw partway through a live
       // game, after players have already invested rounds.
-      const available = poolSize(index, cfg.category);
+      const available = poolSize(index, cfg.categories);
       if (available < cfg.rounds) {
+        const label = cfg.categories.length === 0 ? RANDOM_CATEGORY : cfg.categories.join(', ');
         throw new Error(
-          `trivia category "${cfg.category}" has only ${available} question(s), fewer than the ` +
+          `trivia categories "${label}" have only ${available} question(s), fewer than the ` +
             `configured ${cfg.rounds} round(s)`,
         );
       }
+      // Pacing (spec 0068): the answer window is always the time limit; the dispute/answer-screen
+      // dwell and the leaderboard auto-advance dwell are the advance-after delay when auto-advance is
+      // on, and 0 (host-advanced) when it is off.
+      const dwellMs = cfg.autoAdvance ? cfg.advanceAfterMs : 0;
       return {
         scratch: toRecord(emptyScratch(cfg)),
         rounds: cfg.rounds,
-        disputeWindowMs: DISPUTE_WINDOW_MS,
-        moveWindowMs: ANSWER_WINDOW_MS,
+        disputeWindowMs: dwellMs,
+        moveWindowMs: cfg.timeLimitMs,
+        leaderboardWindowMs: dwellMs,
       };
     },
 
@@ -214,14 +334,16 @@ export function createTriviaGame(
       const used = new Set(scratch.usedIds);
       const question = pickQuestion(
         index,
-        scratch.category,
+        scratch.categories,
         scratch.difficultyMin,
         scratch.difficultyMax,
         used,
         rng,
       );
       if (!question) {
-        throw new Error(`trivia ran out of questions for category "${scratch.category}"`);
+        const label =
+          scratch.categories.length === 0 ? RANDOM_CATEGORY : scratch.categories.join(', ');
+        throw new Error(`trivia ran out of questions for categories "${label}"`);
       }
       scratch.usedIds.push(question.id);
       // Prior rounds are finalized (their scores already applied on the engine); only the current

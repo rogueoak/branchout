@@ -8,6 +8,7 @@ import { RemotePane } from './Remote';
 import { defaultTriviaConfig, validateTriviaConfig, type TriviaHostConfig } from './config';
 import type { GameUiModule } from '../registry';
 import { TriviaConfigPanel } from './ConfigPanel';
+import { TriviaAdvancedConfigPanel } from './AdvancedConfigPanel';
 
 export const triviaGameUi: GameUiModule = {
   id: 'trivia',
@@ -26,6 +27,7 @@ export const triviaGameUi: GameUiModule = {
     return typeof rounds === 'number' ? rounds : defaultTriviaConfig().rounds;
   },
   ConfigPanel: TriviaConfigPanel,
+  AdvancedConfigPanel: TriviaAdvancedConfigPanel,
   Viewer: ViewerPane,
   Remote: RemotePane,
 };

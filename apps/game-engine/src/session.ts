@@ -33,6 +33,12 @@ export interface SessionState {
   /** Move-window duration in ms (0 = no timer). The per-round deadline derives from it. */
   moveWindowMs: number;
   /**
+   * Leaderboard-window duration in ms (spec 0068, 0 = host advances manually). When positive, the
+   * engine advances the `leaderboard` phase to the next round after this delay; re-armed across
+   * pause/resume like the dispute window, and re-based on the remaining deadline.
+   */
+  leaderboardWindowMs: number;
+  /**
    * When the current move round auto-closes, as an epoch ms on the engine clock (spec 0017).
    * Set while `collecting` with a timer; cleared once the round closes or while paused (the frozen
    * remaining moves to `moveRemainingMs`).
@@ -40,6 +46,15 @@ export interface SessionState {
   moveDeadline?: number;
   /** The move time left, frozen while paused so a resume continues rather than restarting 60s. */
   moveRemainingMs?: number;
+  /**
+   * When the current dispute/voting/guess/leaderboard window auto-advances, as an epoch ms on the
+   * engine clock (spec 0068). Set while a timed window is open; cleared once it advances or while
+   * paused (the frozen remaining moves to `windowRemainingMs`). Mirrors `moveDeadline` for the
+   * re-armable phase windows so a pause/resume re-bases the deadline rather than restarting it.
+   */
+  windowDeadline?: number;
+  /** The window time left, frozen while paused so a resume continues rather than restarting it. */
+  windowRemainingMs?: number;
   players: SessionPlayer[];
   scores: Record<string, number>;
   /** Scoring events accumulated for the in-flight round, reported when it finalizes. */
