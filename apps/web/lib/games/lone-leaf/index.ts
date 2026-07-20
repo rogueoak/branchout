@@ -13,11 +13,11 @@ export const loneLeafGameUi: GameUiModule = {
   id: 'lone-leaf',
   visibility: 'insider',
   name: 'Lone Leaf',
-  tagline: 'One word each helps the Seeker - but matching words wilt away.',
+  tagline: 'One word each helps the Seeker - but matching clues cancel out.',
   icon: loneLeafSvg,
   summary:
     'A cooperative word game: everyone gives the Seeker a single one-word clue, but matching clues ' +
-    'wilt and vanish - so think alike, but not too alike, and guess the hidden seed together.',
+    'cancel out - so think alike, but not too alike, and guess the hidden word together.',
   defaultConfig: () => defaultLoneLeafConfig(),
   validateConfig: (config) => {
     const errors = validateLoneLeafConfig(config as LoneLeafHostConfig);

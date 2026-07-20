@@ -149,36 +149,38 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
     tags: ['wordplay', 'small-group', 'turn-based'],
     rules: {
       objective:
-        'Work together to help the Seeker guess the hidden seed from your surviving one-word clues.',
+        'Work together to help the Seeker guess the hidden word from the one-word clues that are ' +
+        'left.',
       sections: [
         {
           heading: 'Setup',
           body: [
-            'The host picks the seed themes and how many rounds to play, then shares the join code. ' +
+            'The host picks the word themes and how many rounds to play, then shares the join code. ' +
               'Everyone plays on their own phone. Lone Leaf needs 3 to 7 players.',
           ],
         },
         {
-          heading: 'The Seeker and the seed',
+          heading: 'The Seeker and the hidden word',
           body: [
             'Each round one player is the Seeker (the role rotates so everyone takes a turn). The ' +
-              'Seeker never sees the seed - the hidden word - but every other player does, privately ' +
-              'on their own phone.',
+              'Seeker never sees the hidden word, but every other player does, privately on their ' +
+              'own phone.',
           ],
         },
         {
-          heading: 'Write one leaf',
+          heading: 'Write one clue',
           body: [
-            'Every non-Seeker secretly writes a single one-word clue - a leaf - for the seed. Before ' +
-              'the Seeker looks, any two leaves that match wilt and vanish (a plural or a case change ' +
-              'still counts as a match), so only the clues nobody else thought of survive.',
+            'Every non-Seeker secretly writes a single one-word clue for the hidden word. Before ' +
+              'the Seeker looks, any two clues that match cancel out and disappear (a plural or a ' +
+              'case change still counts as a match), so only the clues nobody else thought of are ' +
+              'left.',
           ],
         },
         {
           heading: 'Guess and score',
           body: [
-            'The Seeker sees only the surviving leaves and takes one guess. Lone Leaf is cooperative: ' +
-              'a correct guess banks a point for the whole grove, and everyone shares the same ' +
+            'The Seeker sees only the remaining clues and takes one guess. Lone Leaf is cooperative: ' +
+              'a correct guess scores a point for the whole group, and everyone shares the same ' +
               'standing. Aim for the highest shared score across the rounds.',
           ],
         },

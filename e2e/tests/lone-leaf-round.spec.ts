@@ -72,11 +72,11 @@ test('an insider grove plays a full one-round Lone Leaf game, seed hidden from t
     await p2.getByRole('button', { name: /^submit$/i }).click();
     await p3.locator('#leaf-input').fill('bank');
     await p3.getByRole('button', { name: /^submit$/i }).click();
-    await expect(p2.getByText(/Leaf sent/i)).toBeVisible();
+    await expect(p2.getByText(/Clue sent/i)).toBeVisible();
 
     // Guessing: the Seeker types the seed (learned out of band here to force a banked co-op point).
-    await expect(host.getByLabel(/your one guess/i)).toBeVisible({ timeout: 30_000 });
-    await host.getByLabel(/your one guess/i).fill(seed);
+    await expect(host.getByLabel(/your guess/i)).toBeVisible({ timeout: 30_000 });
+    await host.getByLabel(/your guess/i).fill(seed);
     await host.getByRole('button', { name: /^guess$/i }).click();
     await expect(host.getByText(/Guess locked in/i)).toBeVisible();
 
