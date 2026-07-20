@@ -1956,6 +1956,8 @@ describe('control-plane POST /v1/feedback (spec 0048)', () => {
     expect(call.from).toBe('Branch Out Games <branchout@rogueoak.com>');
     expect(call.to).toBe('branchout@rogueoak.com');
     expect(call.text).toContain('Nice game.');
+    // With no game in the context, the subject drops the "on <Game>" suffix.
+    expect(call.subject).toBe('Branch Out Games: Feedback');
     // The HTML body goes on the wire too, so the inbox renders the styled version.
     expect(call.html).toBeTruthy();
     expect(call.html).toContain('Nice game.');

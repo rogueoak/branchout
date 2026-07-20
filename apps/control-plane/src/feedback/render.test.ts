@@ -54,6 +54,14 @@ describe('renderFeedbackText', () => {
     // Falls back to the server receive time when the browser stamped none.
     expect(text).toContain('submitted at: 2026-07-14T12:00:01.000Z');
   });
+
+  it('falls back to the receive time when the browser stamped a blank at', () => {
+    // `context.at` is a capped string, so an empty string reaches here; it must not render blank.
+    const text = renderFeedbackText({ ...base, context: { ...base.context, at: '' } });
+    expect(text).toContain('submitted at: 2026-07-14T12:00:01.000Z');
+    expect(text).not.toContain('submitted at: \n');
+    expect(text.endsWith('submitted at: 2026-07-14T12:00:01.000Z')).toBe(true);
+  });
 });
 
 describe('renderFeedbackHtml', () => {
@@ -88,5 +96,17 @@ describe('renderFeedbackHtml', () => {
     expect(html).toContain('GuestFox');
     expect(html).not.toContain('mailto:');
     expect(html).toContain('anonymous player');
+  });
+
+  it('uses the generic heading when there is no game title', () => {
+    const html = renderFeedbackHtml({
+      message: base.message,
+      context: base.context,
+      receivedAt: base.receivedAt,
+      submitter: base.submitter,
+    });
+    expect(html).not.toContain('Feedback on');
+    // The heading and eyebrow both read as the generic label without a game.
+    expect(html).toContain('New player feedback');
   });
 });

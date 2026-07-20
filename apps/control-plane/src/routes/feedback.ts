@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { AccountContact } from '../accounts/service';
 import type { FeedbackRateLimitConfig, SessionCookieConfig } from '../config';
 import type { FeedbackMailer } from '../feedback/mailer';
 import { MailerError } from '../feedback/mailer';
@@ -8,10 +9,13 @@ import {
   renderFeedbackHtml,
   renderFeedbackText,
 } from '../feedback/render';
+import type { FeedbackContext } from '../feedback/types';
 import type { RateLimiter } from '../ratelimit/limiter';
 import { RoomError, type RoomService } from '../rooms/service';
 import type { Session } from '../sessions/session';
 import type { SessionStore } from '../sessions/store';
+
+export type { FeedbackContext } from '../feedback/types';
 
 /** The most a feedback message can be, so a runaway/hostile body cannot balloon the email. */
 const MAX_MESSAGE_LENGTH = 5000;
@@ -20,31 +24,12 @@ const MAX_MESSAGE_LENGTH = 5000;
 const MAX_CONTEXT_FIELD_LENGTH = 200;
 
 /**
- * Auto-captured context the web dialog attaches to a feedback note (spec 0048). Every field is
- * optional and untrusted - it comes from the browser - so the route treats it as best-effort
- * annotation, never as anything it authorizes on. No PII and no session token: just enough for the
- * recipient to act (which room, which game, where in the game, that the sender was the host).
- */
-export interface FeedbackContext {
-  /** The room join code. */
-  code?: string;
-  /** The selected game id (the engine/registry plugin id). */
-  game?: string;
-  /** The current game phase/status. */
-  phase?: string;
-  /** Whether the sender is the host (the button is host-only, so this is normally true). */
-  isHost?: boolean;
-  /** ISO timestamp the browser stamped when the host submitted. */
-  at?: string;
-}
-
-/**
  * The narrow account read the feedback route needs to name the submitter (spec 0048): their gamer
  * tag + email, so the recipient can reach back out. `AccountService` satisfies this structurally.
  * Optional in the deps so an anonymous session (no account) still sends, just without an email.
  */
 export interface FeedbackAccountLookup {
-  contactById(id: string): Promise<{ gamerTag: string; email: string } | null>;
+  contactById(id: string): Promise<AccountContact | null>;
 }
 
 export interface FeedbackDeps {
@@ -113,10 +98,10 @@ function readContext(body: unknown): FeedbackContext {
  * display name with no email. A failed lookup degrades to the display name rather than dropping the
  * whole feedback send - the note matters more than the contact block.
  */
-async function resolveSubmitter(
+export async function resolveSubmitter(
   session: Session,
   accounts: FeedbackAccountLookup | undefined,
-  request: FastifyRequest,
+  request: Pick<FastifyRequest, 'log'>,
 ): Promise<FeedbackSubmitter> {
   if (session.accountId && accounts) {
     try {

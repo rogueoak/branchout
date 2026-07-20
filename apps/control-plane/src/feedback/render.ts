@@ -1,4 +1,4 @@
-import type { FeedbackContext } from '../routes/feedback';
+import type { FeedbackContext } from './types';
 
 /**
  * Feedback email rendering (spec 0048). Pure functions that turn a submitted note + its context into
@@ -65,6 +65,11 @@ function hostLabel(isHost?: boolean): string {
   return isHost === true ? 'yes' : isHost === false ? 'no' : '(unknown)';
 }
 
+/** The browser-stamped submit time, or the server receive time when the browser sent none/blank. */
+function submittedAt(context: FeedbackContext, receivedAt: string): string {
+  return context.at && context.at.length > 0 ? context.at : receivedAt;
+}
+
 /**
  * The plain-text body: the message, who sent it (gamer tag + email so the recipient can reply), then
  * the context needed to act. This is the always-delivered fallback for clients that drop the HTML.
@@ -81,7 +86,7 @@ export function renderFeedbackText(input: FeedbackRenderInput): string {
     `game: ${orNone(context.game)}`,
     `phase: ${orNone(context.phase)}`,
     `host: ${hostLabel(context.isHost)}`,
-    `submitted at: ${context.at ?? receivedAt}`,
+    `submitted at: ${submittedAt(context, receivedAt)}`,
   ];
   return lines.join('\n');
 }
@@ -252,7 +257,7 @@ export function renderFeedbackHtml(input: FeedbackRenderInput): string {
                       orNone(context.phase),
                     )}${contextRow('Host', hostLabel(context.isHost))}${contextRow(
                       'Submitted at',
-                      context.at ?? receivedAt,
+                      submittedAt(context, receivedAt),
                     )}
                     </table>
                   </td>

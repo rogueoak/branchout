@@ -32,6 +32,17 @@ export interface PublicAccount {
   deletedAt: Date | null;
 }
 
+/**
+ * Contact details for reaching a player out-of-band. Unlike `PublicAccount`, this DELIBERATELY
+ * carries the email - it is the one shape that does - so it is used only server-side (the host
+ * feedback email, spec 0048) and never returned to a browser. Named (not an inline literal) so the
+ * "intentionally exposes email" exception is explicit and greppable.
+ */
+export interface AccountContact {
+  gamerTag: string;
+  email: string;
+}
+
 /** A validation failure with a stable code and a user-safe message. */
 export class ValidationError extends Error {
   constructor(
@@ -241,7 +252,7 @@ export class AccountService {
    * email, so it is used ONLY server-side to build the internal feedback notification and is never
    * returned to a browser. Null when the account is unknown or soft-deleted (findById filters deleted).
    */
-  async contactById(id: string): Promise<{ gamerTag: string; email: string } | null> {
+  async contactById(id: string): Promise<AccountContact | null> {
     const account = await this.repo.findById(id);
     return account ? { gamerTag: account.gamerTag, email: account.email } : null;
   }
