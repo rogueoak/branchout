@@ -323,6 +323,15 @@ Capture durable lessons as they emerge.
   plugin entirely under `prefers-reduced-motion`; and add a persistent tap affordance (a "View game"
   cue) because the hover scale never fires on touch. Reach for canopy's `Carousel` + `CarouselDots`
   rather than hand-rolling, but own the autoplay config. (Feedback `0036`, spec `0067`.)
+- **A carousel viewport is `overflow-hidden`, so any per-item effect that grows the item's box is
+  clipped on the axis where the item sits flush.** The home hero card scales on hover
+  (`scale-[1.02]`) and draws a focus ring (`ring-2` + `ring-offset-2`); its top/bottom border got cut
+  off because the card filled the slide's full height and canopy's embla viewport clips the overshoot.
+  The horizontal axis was fine - each slide is narrower than the viewport (`basis-3/4`), leaving peek
+  room. Fix: pad the flex track *inside* the viewport (`CarouselContent className="py-3"`), sized to
+  cover the largest overshoot (scale delta + ring offset), not the item (which only shrinks the art).
+  Same rule for any `scale` / `ring` / `box-shadow` / outline inside an `overflow-hidden` clip.
+  (Feedback `0039`.)
 - **Consuming an unpublished first-party package version: build it, `pnpm pack`, and point a
   `pnpm-workspace.yaml` `overrides` at the tarball for local dev - then swap to the registry version
   once published.** The carousel needed a `CarouselDots` part that only existed on an unmerged canopy

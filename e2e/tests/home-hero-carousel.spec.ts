@@ -54,6 +54,37 @@ test.describe('home hero carousel (spec 0067) at 360px', () => {
       'landing page should not scroll horizontally on a phone',
     ).toBeLessThanOrEqual(clientWidth + 1);
   });
+
+  test('an expanded card keeps its top and bottom border inside the clip region (feedback 0039)', async ({
+    page,
+  }) => {
+    // The card grows on hover (`scale-[1.02]`); canopy's viewport is `overflow-hidden`, so without
+    // vertical padding on the track the scaled card's top/bottom border is clipped. jsdom has no
+    // layout, so this real-browser geometry check is the true guard: with the card expanded, its
+    // (scaled) box must stay within the clipping viewport's top/bottom edges.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    const card = page.getByRole('link', { name: 'Trivia - game details' });
+    await expect(card).toBeVisible();
+
+    // The clip region is the nearest `overflow-hidden` ancestor (canopy's embla viewport).
+    const clip = await card.evaluate((el) => {
+      let vp = el.parentElement as HTMLElement | null;
+      while (vp && getComputedStyle(vp).overflow !== 'hidden') vp = vp.parentElement;
+      const r = vp!.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom };
+    });
+
+    // Drive the hover and let the transform transition settle so we measure the card at full scale.
+    await card.hover();
+    await page.waitForTimeout(300);
+    const box = await card.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y, 'expanded card top must not be clipped').toBeGreaterThanOrEqual(clip.top - 0.5);
+    expect(box!.y + box!.height, 'expanded card bottom must not be clipped').toBeLessThanOrEqual(
+      clip.bottom + 0.5,
+    );
+  });
 });
 
 // From md up the carousel swaps each portrait card for the wide (16:9) hero, so it reads as a
