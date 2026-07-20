@@ -73,6 +73,20 @@ export async function createRoom(page: Page): Promise<string> {
   return code;
 }
 
+/**
+ * Set an exact Trivia round count in the host lobby (spec 0068). Rounds are chosen by preset
+ * (Fast/Medium/Long) or Custom; the specs that need a specific count (e.g. a single-round fast game)
+ * pick Custom, which reveals the number field, then fill it. Scoped to the "Number of rounds"
+ * radiogroup so it never collides with the difficulty selector's own Custom option.
+ */
+export async function setTriviaRounds(page: Page, count: number): Promise<void> {
+  await page
+    .getByRole('radiogroup', { name: 'Number of rounds' })
+    .getByRole('radio', { name: /custom/i })
+    .click();
+  await page.locator('#trivia-rounds').fill(String(count));
+}
+
 /** A second player joins a room by code through the /join UI (anonymous session is minted). */
 export async function joinRoom(page: Page, code: string, nickname: string): Promise<void> {
   await page.goto(`/join?code=${code}`);

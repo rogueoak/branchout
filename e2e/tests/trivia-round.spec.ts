@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createRoom, joinRoom, signUpHost } from '../lib/helpers';
+import { createRoom, joinRoom, setTriviaRounds, signUpHost } from '../lib/helpers';
 
 // The flagship happy-path e2e (spec 0026): a host and a second player play a full one-round Trivia
 // game in two real browser contexts against the real stack (control-plane + game-engine + Redis +
@@ -23,7 +23,7 @@ test('a host and a second player play a full one-round Trivia game', async ({ br
 
     // Host configures a single round and starts. A solo interactive host is already a viewer, and
     // the joiner is interactive too, so the start gate is satisfied.
-    await host.locator('#trivia-rounds').fill('1');
+    await setTriviaRounds(host, 1);
     await host.getByRole('button', { name: /start game/i }).click();
 
     // Both devices transition into the running game and see the first question.
