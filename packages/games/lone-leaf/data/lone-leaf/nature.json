@@ -1,12 +1,12 @@
 [
-  { "id": "nature-001", "word": "river", "category": "nature" },
-  { "id": "nature-002", "word": "mountain", "category": "nature" },
-  { "id": "nature-003", "word": "forest", "category": "nature" },
-  { "id": "nature-004", "word": "thunder", "category": "nature" },
-  { "id": "nature-005", "word": "rainbow", "category": "nature" },
-  { "id": "nature-006", "word": "glacier", "category": "nature" },
-  { "id": "nature-007", "word": "meadow", "category": "nature" },
-  { "id": "nature-008", "word": "volcano", "category": "nature" },
-  { "id": "nature-009", "word": "sunrise", "category": "nature" },
-  { "id": "nature-010", "word": "canyon", "category": "nature" }
+  { "id": "nature-001", "word": "River", "category": "nature", "difficulty": 1 },
+  { "id": "nature-002", "word": "Mountain", "category": "nature", "difficulty": 1 },
+  { "id": "nature-003", "word": "Forest", "category": "nature", "difficulty": 2 },
+  { "id": "nature-004", "word": "Thunder", "category": "nature", "difficulty": 3 },
+  { "id": "nature-005", "word": "Rainbow", "category": "nature", "difficulty": 2 },
+  { "id": "nature-006", "word": "Glacier", "category": "nature", "difficulty": 5 },
+  { "id": "nature-007", "word": "Meadow", "category": "nature", "difficulty": 5 },
+  { "id": "nature-008", "word": "Volcano", "category": "nature", "difficulty": 3 },
+  { "id": "nature-009", "word": "Sunrise", "category": "nature", "difficulty": 2 },
+  { "id": "nature-010", "word": "Canyon", "category": "nature", "difficulty": 4 }
 ]

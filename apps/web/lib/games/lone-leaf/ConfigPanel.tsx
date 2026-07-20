@@ -13,10 +13,13 @@ import { OptionSelector, type SelectorOption } from '../../../components/game/Op
 import type { GameConfigPanelProps } from '../registry';
 import {
   CATEGORIES,
+  DIFFICULTY_PRESETS,
   MAX_CATEGORIES,
   MAX_ROUNDS,
   MIN_ROUNDS,
   ROUND_PRESETS,
+  categoryLabel,
+  difficultyPresetId,
   isCategoryList,
   validateLoneLeafConfig,
   type ConfigError,
@@ -25,11 +28,6 @@ import {
 
 function errorFor(errors: ConfigError[], field: ConfigError['field']): string | null {
   return errors.find((error) => error.field === field)?.message ?? null;
-}
-
-/** Title-case a category slug for display ("food" -> "Food"). */
-function label(category: string): string {
-  return category.charAt(0).toUpperCase() + category.slice(1);
 }
 
 export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPanelProps) {
@@ -69,8 +67,29 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
     set({ rounds: Number(next) });
   };
 
+  // Difficulty: label-only presets (mirrors Trivia). A band matching no preset (e.g. a legacy room)
+  // shows a read-only "Custom" option so the selection reads coherently without exposing the numbers.
+  const activeDifficulty = difficultyPresetId(config.difficultyMin, config.difficultyMax);
+  const difficultyOptions: SelectorOption<string>[] = DIFFICULTY_PRESETS.map((preset) => ({
+    value: preset.id,
+    label: preset.label,
+    description: preset.description,
+  }));
+  if (activeDifficulty === 'custom') {
+    difficultyOptions.push({
+      value: 'custom',
+      label: 'Custom',
+      description: 'A custom difficulty range.',
+    });
+  }
+  const onDifficultySelect = (id: string) => {
+    const preset = DIFFICULTY_PRESETS.find((p) => p.id === id);
+    if (preset) set({ difficultyMin: preset.min, difficultyMax: preset.max });
+  };
+
   const categoriesError = errorFor(errors, 'categories');
   const roundsError = errorFor(errors, 'rounds');
+  const difficultyError = errorFor(errors, 'difficulty');
 
   const categoriesErrorLine = categoriesError ? (
     <p role="alert" className="text-body-sm text-danger">
@@ -102,7 +121,7 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
                 disabled={disabled || (!on && atCap)}
                 onClick={() => toggleCategory(category)}
               >
-                {label(category)}
+                {categoryLabel(category)}
               </Button>
             );
           })}
@@ -180,6 +199,25 @@ export function LoneLeafConfigPanel({ value, onChange, disabled }: GameConfigPan
           One hidden word per round. The Seeker rotates each round, so everyone takes a turn
           guessing.
         </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label>Difficulty</Label>
+        <OptionSelector
+          ariaLabel="Difficulty"
+          value={activeDifficulty}
+          options={difficultyOptions}
+          onChange={onDifficultySelect}
+          disabled={disabled}
+        />
+        <p className="text-caption text-text-subtle">
+          How well-known the hidden words are - from everyday to expert.
+        </p>
+        {difficultyError ? (
+          <p role="alert" className="text-body-sm text-danger">
+            {difficultyError}
+          </p>
+        ) : null}
       </div>
     </div>
   );

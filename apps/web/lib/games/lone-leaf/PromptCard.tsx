@@ -13,6 +13,7 @@ import { Badge } from '@rogueoak/canopy';
 import { Card, CardContent, CardHeader } from '@rogueoak/canopy/twigs';
 import type { GameState } from '../../game-state';
 import { countdownTone } from '../trivia/countdown';
+import { categoryLabel } from './config';
 import { useMoveCountdown } from '../../use-move-countdown';
 import { usePrefersReducedMotion } from '../../use-prefers-reduced-motion';
 
@@ -21,11 +22,6 @@ const TONE_CLASS: Record<string, string> = {
   warning: 'text-warning',
   danger: 'text-danger',
 };
-
-/** Title-case a theme slug for display ("food" -> "Food"). */
-function themeLabel(category: string): string {
-  return category.charAt(0).toUpperCase() + category.slice(1);
-}
 
 export function LoneLeafPromptCard({
   state,
@@ -80,7 +76,7 @@ export function LoneLeafPromptCard({
       <Card className="w-full">
         <CardHeader className="flex flex-row flex-wrap items-center gap-2 pb-2">
           <Badge variant="info">Round {round}</Badge>
-          <Badge variant="neutral">{themeLabel(category)}</Badge>
+          <Badge variant="neutral">{categoryLabel(category)}</Badge>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <h2 className="text-h2 text-text" data-testid="lone-leaf-prompt">

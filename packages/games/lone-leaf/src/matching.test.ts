@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { isSingleWord, leafKey, normalizeLeaf, sameLeaf, stemLeaf } from './matching';
+import {
+  isSingleWord,
+  leafKey,
+  leafRevealsSeed,
+  normalizeLeaf,
+  sameLeaf,
+  stemLeaf,
+} from './matching';
 
 describe('normalizeLeaf', () => {
   it('lowercases, trims, and drops punctuation', () => {
@@ -37,8 +44,43 @@ describe('sameLeaf', () => {
     expect(sameLeaf('river', 'lake')).toBe(false);
   });
 
+  it('matches a multi-word seed regardless of case and internal whitespace', () => {
+    // Multi-word proper-noun seeds: a Seeker's guess resolves once case + spacing are normalized.
+    expect(sameLeaf('albert einstein', 'Albert Einstein')).toBe(true);
+    expect(sameLeaf('Albert   Einstein', 'albert einstein')).toBe(true);
+    expect(sameLeaf('The Lion King', 'the lion king')).toBe(true);
+    expect(sameLeaf('albert einstein', 'marie curie')).toBe(false);
+  });
+
+  it('matches a Title Case seed against a lowercase guess (and vice versa)', () => {
+    // The bank now stores words in Title Case (e.g. "Taylor Swift"); normalizeLeaf lowercases both
+    // the seed and the guess before comparison, so a Seeker who types any case still resolves.
+    expect(sameLeaf('Taylor Swift', 'taylor swift')).toBe(true);
+    expect(sameLeaf('taylor swift', 'Taylor Swift')).toBe(true);
+    expect(sameLeaf('River', 'river')).toBe(true);
+    expect(sameLeaf('The Wizard of Oz', 'the wizard of oz')).toBe(true);
+  });
+
   it('an empty stem never matches another empty stem', () => {
     expect(sameLeaf('!!!', '???')).toBe(false);
+  });
+});
+
+describe('leafRevealsSeed', () => {
+  it('wilts a leaf equal to a single-word seed (unchanged from sameLeaf)', () => {
+    expect(leafRevealsSeed('river', 'river')).toBe(true);
+    expect(leafRevealsSeed('Rivers', 'river')).toBe(true);
+    expect(leafRevealsSeed('lake', 'river')).toBe(false);
+  });
+
+  it('wilts a leaf matching ANY token of a multi-word seed, protecting the secret', () => {
+    // Neither token alone should survive to hand the Seeker a piece of "albert einstein".
+    expect(leafRevealsSeed('einstein', 'albert einstein')).toBe(true);
+    expect(leafRevealsSeed('Albert', 'albert einstein')).toBe(true);
+    // The whole answer, case/plural-folded, still wilts.
+    expect(leafRevealsSeed('albert einstein', 'albert einstein')).toBe(true);
+    // An unrelated single-word leaf survives.
+    expect(leafRevealsSeed('physicist', 'albert einstein')).toBe(false);
   });
 });
 

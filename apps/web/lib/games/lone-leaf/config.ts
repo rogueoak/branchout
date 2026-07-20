@@ -3,16 +3,81 @@
 // /sessions boundary. The config is the opaque blob the control-plane passes through to the engine.
 // Keep the ranges, defaults, and pacing fields in step with packages/games/lone-leaf/src/config.ts.
 
-/** The seed categories a host may choose from (1-3, or `random` across all). */
-export const CATEGORIES = ['nature', 'everyday', 'places', 'food', 'animals', 'feelings'] as const;
+/** The seed categories a host may choose from (1-3, or `random` across all). Mirrors the engine. */
+export const CATEGORIES = [
+  'nature',
+  'everyday',
+  'places',
+  'food',
+  'animals',
+  'feelings',
+  'celebrities',
+  'movies',
+  'historical',
+] as const;
 
 export type LoneLeafCategory = (typeof CATEGORIES)[number];
+
+/**
+ * Display labels for the lobby + in-round badges. Most slugs title-case cleanly, so only the ones
+ * whose friendly name differs from the capitalized slug are listed; {@link categoryLabel} falls back
+ * to title-case for the rest. Keep the keys in step with {@link CATEGORIES}.
+ */
+export const CATEGORY_LABELS: Partial<Record<string, string>> = {
+  celebrities: 'Famous People',
+  historical: 'Historical Figures',
+};
+
+/** The display label for a category slug: an explicit {@link CATEGORY_LABELS} entry, or title-case. */
+export function categoryLabel(category: string): string {
+  return CATEGORY_LABELS[category] ?? category.charAt(0).toUpperCase() + category.slice(1);
+}
 
 export const MIN_ROUNDS = 1;
 export const MAX_ROUNDS = 100;
 export const DEFAULT_ROUNDS = 10;
 /** At most three categories may be chosen (or `random` for all). */
 export const MAX_CATEGORIES = 3;
+
+/** Difficulty (obscurity) band, reusing Trivia's 1-10 scale and its default `Medium` band (3-6). */
+export const MIN_DIFFICULTY = 1;
+export const MAX_DIFFICULTY = 10;
+export const DEFAULT_DIFFICULTY_MIN = 3;
+export const DEFAULT_DIFFICULTY_MAX = 6;
+
+/** One difficulty preset: a label + a plain description mapping to a hidden 1-10 obscurity band. */
+export interface DifficultyPreset {
+  id: string;
+  label: string;
+  description: string;
+  min: number;
+  max: number;
+}
+
+/**
+ * Difficulty presets, mirroring Trivia's (spec 0068). The label + description are shown; the numeric
+ * 1-10 band is NEVER exposed in the UI. `Medium` (3-6) is the default. A band matching no preset shows
+ * as `Custom`.
+ */
+export const DIFFICULTY_PRESETS: readonly DifficultyPreset[] = [
+  { id: 'easy', label: 'Easy', description: 'Everyday words - a gentle warm-up.', min: 1, max: 4 },
+  { id: 'medium', label: 'Medium', description: 'A balanced mix - the default.', min: 3, max: 6 },
+  {
+    id: 'moderate',
+    label: 'Moderate',
+    description: 'Trickier words for a real test.',
+    min: 4,
+    max: 8,
+  },
+  { id: 'hard', label: 'Hard', description: 'Obscure words - for word buffs.', min: 6, max: 10 },
+];
+
+/** The preset id a difficulty band maps to, or `custom` when it matches none. */
+export function difficultyPresetId(min: number, max: number): string {
+  return (
+    DIFFICULTY_PRESETS.find((preset) => preset.min === min && preset.max === max)?.id ?? 'custom'
+  );
+}
 
 /** Auto-advance pacing (spec 0057), in seconds where noted. */
 export const DEFAULT_AUTO_ADVANCE = true;
@@ -45,6 +110,10 @@ export const ROUND_PRESETS: readonly RoundPreset[] = [
 export interface LoneLeafHostConfig {
   categories: string[] | 'random';
   rounds: number;
+  /** Difficulty band floor, 1-10. Seeds rated in [difficultyMin, difficultyMax] are drawn. */
+  difficultyMin: number;
+  /** Difficulty band ceiling, 1-10. Must be >= difficultyMin. */
+  difficultyMax: number;
   /** Auto-advance the reveal/leaderboard on to the next round. */
   autoAdvance: boolean;
   /** Dwell before each auto-advance hop, in seconds (1-60). */
@@ -59,6 +128,8 @@ export function defaultLoneLeafConfig(): LoneLeafHostConfig {
   return {
     categories: 'random',
     rounds: DEFAULT_ROUNDS,
+    difficultyMin: DEFAULT_DIFFICULTY_MIN,
+    difficultyMax: DEFAULT_DIFFICULTY_MAX,
     autoAdvance: DEFAULT_AUTO_ADVANCE,
     advanceAfterSeconds: DEFAULT_ADVANCE_AFTER_SECONDS,
     clueSeconds: DEFAULT_CLUE_SECONDS,
@@ -67,7 +138,7 @@ export function defaultLoneLeafConfig(): LoneLeafHostConfig {
 }
 
 export interface ConfigError {
-  field: 'categories' | 'rounds' | 'advanceAfter' | 'clue' | 'guess';
+  field: 'categories' | 'rounds' | 'difficulty' | 'advanceAfter' | 'clue' | 'guess';
   message: string;
 }
 
@@ -93,6 +164,22 @@ export function validateLoneLeafConfig(config: LoneLeafHostConfig): ConfigError[
     errors.push({
       field: 'rounds',
       message: `Rounds must be a whole number ${MIN_ROUNDS}-${MAX_ROUNDS}.`,
+    });
+  }
+
+  // Mirror the engine authority exactly: both bounds inside [MIN, MAX] and min <= max.
+  const difficultyBoundsOk =
+    isIntInRange(config.difficultyMin, MIN_DIFFICULTY, MAX_DIFFICULTY) &&
+    isIntInRange(config.difficultyMax, MIN_DIFFICULTY, MAX_DIFFICULTY);
+  if (!difficultyBoundsOk) {
+    errors.push({
+      field: 'difficulty',
+      message: `Difficulty must be whole numbers from ${MIN_DIFFICULTY} to ${MAX_DIFFICULTY}.`,
+    });
+  } else if (config.difficultyMin > config.difficultyMax) {
+    errors.push({
+      field: 'difficulty',
+      message: 'Difficulty minimum cannot be above the maximum.',
     });
   }
 
