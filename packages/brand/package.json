@@ -58,6 +58,10 @@
       "types": "./dist/hero-portrait-reversi.d.ts",
       "import": "./dist/hero-portrait-reversi.js"
     },
+    "./hero-portrait-checkers": {
+      "types": "./dist/hero-portrait-checkers.d.ts",
+      "import": "./dist/hero-portrait-checkers.js"
+    },
     "./hero-teeter-tower": {
       "types": "./dist/hero-teeter-tower.d.ts",
       "import": "./dist/hero-teeter-tower.js"

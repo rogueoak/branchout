@@ -43,6 +43,12 @@ export interface CheckersSim {
   amber: number;
   over: boolean;
   outcome: Outcome;
+  /**
+   * Whether the board paints the legal-move hints (movable-source rings + destination dots) for the
+   * side to move (host setting, default true). The pure renderer reads it off the streamed sim like
+   * every other field.
+   */
+  showAvailableMoves: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -143,6 +149,8 @@ export function asCheckersSim(value: unknown): CheckersSim | null {
       amber: value.amber,
       over: value.over,
       outcome: asOutcome(value.outcome),
+      // Default ON: a sim without the field (an older engine frame) keeps the hints on.
+      showAvailableMoves: value.showAvailableMoves !== false,
     };
   }
   return null;

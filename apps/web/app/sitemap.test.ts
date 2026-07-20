@@ -11,6 +11,7 @@ describe('sitemap', () => {
       '/games/trivia',
       '/games/liar-liar',
       '/games/reversi',
+      '/games/checkers',
       '/privacy',
       '/terms',
     ]) {

@@ -432,10 +432,10 @@ const MARKETING: Record<string, GameMarketing> = {
       'a secret roost and role except one odd bird - ask questions, flush them out, and keep the ' +
       'roost hidden.',
   },
-  // Checkers is insider-only (spec 0055): like Reversi, the entry exists so the build-time "every
-  // registered game needs marketing copy" check passes, but PUBLIC_GAME_CATALOG below excludes it, so
-  // it never appears on the public /games index, the feature pages, or the sitemap. Its share card is
-  // a placeholder (no public raster is generated for an insider game); it satisfies the shape check.
+  // Checkers is PUBLIC (spec 0055, promoted in WS14 / spec 0071): it appears on the public /games index,
+  // its feature page, the sitemap, and the home hero carousel (PUBLIC_GAME_CATALOG now includes it). It
+  // still reuses the Trivia share card as a placeholder Open Graph raster (a dedicated /share-checkers.png
+  // is a separate follow-up); that satisfies the shareImage shape check.
   checkers: {
     description:
       'Checkers (English draughts) is the classic strategy game for two, built for phones. Move your ' +
@@ -459,11 +459,11 @@ const MARKETING: Record<string, GameMarketing> = {
     categories: ['Classic', 'Strategy', 'Two-player'],
     shareImage: '/share-trivia.png',
     shareAlt: 'Branch Out Checkers',
-    badge: { label: 'Insider', variant: 'primary' },
+    badge: { label: 'New', variant: 'success' },
     seoTitle: 'Checkers - the classic draughts strategy game | Branch Out Games',
     seoDescription:
-      'Checkers (English draughts) is a phone-first two-player strategy game in insider testing. Jump ' +
-      'to capture, chain multi-jumps, and crown a King; capture every piece to win.',
+      'Play Branch Out Checkers (English draughts) free in your browser: a phone-first two-player ' +
+      'strategy game. Jump to capture, chain multi-jumps, and crown a King; capture every piece to win.',
   },
   // Same Branch is insider-only (spec 0058): the entry exists so the build-time "every registered
   // game needs marketing copy" check passes, but PUBLIC_GAME_CATALOG excludes it. Its share card is a

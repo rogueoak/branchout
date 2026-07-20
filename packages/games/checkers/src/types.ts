@@ -50,4 +50,9 @@ export interface CheckersSim {
   over: boolean;
   /** The result once over ('violet' | 'amber'), else null. There is no draw. */
   outcome: Outcome;
+  /**
+   * Whether the board paints the legal-move hints (movable-source rings + destination dots) for the
+   * side to move (host setting, default true). The pure renderer reads it off the streamed sim.
+   */
+  showAvailableMoves: boolean;
 }

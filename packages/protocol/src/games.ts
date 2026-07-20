@@ -18,6 +18,8 @@ export const PLAYER_LIMITS: Readonly<Record<string, PlayerLimits>> = {
   'teeter-tower': { min: 1, max: 4 },
   // Reversi is a strict 2-player board game (spec 0054): exactly two seats, no viewers-as-players.
   reversi: { min: 2, max: 2 },
+  // Checkers is a strict 2-player board game (spec 0055): exactly two seats, matching its plugin caps.
+  checkers: { min: 2, max: 2 },
 };
 
 /** Permissive fallback (1-8) for an unknown or unregistered game id. */

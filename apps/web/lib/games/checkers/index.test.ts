@@ -5,10 +5,10 @@ import { GAME_CATEGORIES, GAME_TAGS, getLibraryEntry } from '../library';
 import { GAME_CATALOG, PUBLIC_GAME_CATALOG } from '../catalog';
 
 describe('checkersGameUi module', () => {
-  it('is registered and insider-only', () => {
+  it('is registered and public (WS14: graduated from insider)', () => {
     expect(getGameUi('checkers')).toBe(checkersGameUi);
-    expect(checkersGameUi.visibility).toBe('insider');
-    expect(isPublicGame(checkersGameUi)).toBe(false);
+    expect(checkersGameUi.visibility).toBe('public');
+    expect(isPublicGame(checkersGameUi)).toBe(true);
   });
 
   it('is a single-surface game (the board viewer is the whole interactive surface)', () => {
@@ -24,21 +24,28 @@ describe('checkersGameUi module', () => {
     expect(checkersGameUi.summary.length).toBeGreaterThan(40);
   });
 
-  it('defaults an empty config, always validates, and runs one open-ended game', () => {
-    expect(checkersGameUi.defaultConfig()).toEqual({});
+  it('defaults hints on, always validates, and runs one open-ended game', () => {
+    expect(checkersGameUi.defaultConfig()).toEqual({ showAvailableMoves: true });
     expect(checkersGameUi.validateConfig({})).toEqual({ ok: true });
     expect(checkersGameUi.roundsOf({})).toBe(CHECKERS_ROUNDS);
+  });
+
+  it('exposes an AdvancedConfigPanel for the lobby advanced-settings slot', () => {
+    // Registered on the module so the shared Lobby renders it in the collapsed "Advanced settings"
+    // accordion (spec 0068) - the "See available moves" toggle lives there, not in the standard panel.
+    expect(typeof checkersGameUi.AdvancedConfigPanel).toBe('function');
   });
 });
 
 describe('checkers catalog + library entries', () => {
-  it('has a marketing catalog entry (satisfies the fail-loud completeness check)', () => {
+  it('has a marketing catalog entry that is also in the PUBLIC catalog (WS14)', () => {
     // The entry is in the full catalog (so the registry<->catalog completeness check holds)...
     const entry = GAME_CATALOG.find((e) => e.slug === 'checkers');
-    expect(entry?.badge.label).toBe('Insider');
+    expect(entry?.badge.label).toBe('New');
     expect(entry?.howToPlay).toHaveLength(3);
-    // ...but excluded from the PUBLIC catalog (it is insider-only).
-    expect(PUBLIC_GAME_CATALOG.some((e) => e.slug === 'checkers')).toBe(false);
+    // ...and now that Checkers is public it is also carried on the PUBLIC catalog (the /games index,
+    // the feature pages, the home carousel, and the sitemap enumerate this list).
+    expect(PUBLIC_GAME_CATALOG.some((e) => e.slug === 'checkers')).toBe(true);
   });
 
   it('has a library entry with valid taxonomy keys and real rules', () => {
@@ -54,10 +61,10 @@ describe('checkers catalog + library entries', () => {
   });
 });
 
-describe('insider visibility filtering', () => {
-  it('gamesForViewer(true) includes Checkers; (false) excludes it', () => {
+describe('public visibility filtering (WS14)', () => {
+  it('gamesForViewer includes Checkers for both public and insider viewers', () => {
     expect(gamesForViewer(true).map((m) => m.id)).toContain('checkers');
-    expect(gamesForViewer(false).map((m) => m.id)).not.toContain('checkers');
+    expect(gamesForViewer(false).map((m) => m.id)).toContain('checkers');
   });
 
   it('checkers is one of the registered games', () => {
