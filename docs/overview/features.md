@@ -331,7 +331,10 @@ What the product does for users, grouped by area. Each capability maps to one or
       broadcast prompt/viewer/reveal, so the Seeker's device never receives it (a unit test proves the
       Seeker is absent from the private map, and the e2e proves the seed shows on a non-Seeker's device
       but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled ~60-word
-      sample seed bank (`@branchout/game-lone-leaf`).
+      sample seed bank (`@branchout/game-lone-leaf`). Host pacing mirrors Trivia (spec `0068`): rounds
+      from presets (Fast 5 / Standard 10 / Long 20 / Marathon 40, default 10) or a custom number, an
+      auto-advance toggle with an advance-after dwell, and configurable clue and guess windows
+      (default 60s each) in an Advanced panel.
 - [~] Fifth game (insider-only) - Same Branch: a spectrum-guessing party game (2-8 players) on the
       round-based lifecycle (`@branchout/game-same-branch`, spec `0058`). Each round shows a branch
       running between two opposites (the **branch**); a hidden target (the **bud**) sits on it. One

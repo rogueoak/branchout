@@ -47,6 +47,8 @@ test('an insider grove plays a full one-round Lone Leaf game, seed hidden from t
     await joinRoom(p3, code, 'Player Three');
 
     // One round, then start. Round 1 Seeker is the first seat (the host).
+    // Rounds default to the Standard preset; pick Custom to reveal the number field, then set 1.
+    await host.getByRole('radio', { name: /custom/i }).click();
     await host.locator('#lone-leaf-rounds').fill('1');
     await host.getByRole('button', { name: /start game/i }).click();
 
@@ -127,6 +129,8 @@ test('the Lone Leaf controller fits a 360px phone', async ({ browser }) => {
     await joinRoom(p2, code, 'Player Two');
     await joinRoom(p3, code, 'Player Three');
 
+    // Rounds default to the Standard preset; pick Custom to reveal the number field, then set 1.
+    await host.getByRole('radio', { name: /custom/i }).click();
     await host.locator('#lone-leaf-rounds').fill('1');
     await host.getByRole('button', { name: /start game/i }).click();
 
