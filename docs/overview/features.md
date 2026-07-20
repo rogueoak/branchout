@@ -452,8 +452,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       badge (feedback `0030`, spec `0065`).
 - [x] Host in-game feedback - a "Feedback" button, right-aligned in the host-controls row, opens a
       ResponsiveDialog (a modal on desktop, a bottom sheet on a phone) where the host types a note at
-      any point during a game. Submitting emails it to feedback@rogueoak.com (from
-      branchout@rogueoak.com) via Resend, with auto-captured context attached (room code, game id,
+      any point during a game. Submitting emails it to branchout@rogueoak.com (from
+      branchout@rogueoak.com, a self-notification to the verified Resend sender) via Resend, with
+      auto-captured context attached (room code, game id,
       current phase, that the sender is the host, a timestamp) so the note is actionable without a
       back-and-forth. The control-plane endpoint (POST /v1/feedback) is cookie-authenticated and
       host-verified, validates the message, caps submissions per IP, and - until an operator provisions
