@@ -45,15 +45,25 @@ import type { Outcome, ReversiMove, ReversiSim } from './types';
 
 export const REVERSI_GAME_ID = 'reversi';
 
-/** Host-supplied configuration. Reversi is fixed 8x8 standard rules; there is nothing to tune. */
-export type ReversiConfig = Record<string, never>;
+/**
+ * Host-supplied configuration. Reversi is fixed 8x8 standard rules; the one host option is whether the
+ * board shows the legal-move hint dots (default on; a host may turn it off for a tougher game).
+ */
+export interface ReversiConfig {
+  /** Paint the legal-move hint dots for the side to move. Default true. */
+  showAvailableMoves: boolean;
+}
 
-/** Validate + default the config. Reversi takes no options, so any object (or nothing) is accepted. */
+/**
+ * Validate + default the config. Any object (or nothing) is accepted; `showAvailableMoves` defaults to
+ * true and is only off when the host explicitly set it false, so an old or empty config keeps hints on.
+ */
 export function validateConfig(config: unknown): ReversiConfig {
   if (config != null && typeof config !== 'object') {
     throw new Error(`reversi config must be an object or empty, got ${typeof config}`);
   }
-  return {};
+  const raw = (config ?? {}) as Partial<ReversiConfig>;
+  return { showAvailableMoves: raw.showAvailableMoves !== false };
 }
 
 /**
@@ -72,6 +82,8 @@ interface ReversiScratch {
   passed: boolean;
   /** True once neither side can move - the game is over. */
   over: boolean;
+  /** Host setting: whether the board paints the legal-move hint dots. Default true. */
+  showAvailableMoves: boolean;
 }
 
 function asScratch(scratch: Readonly<Record<string, unknown>>): ReversiScratch {
@@ -89,6 +101,8 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): ReversiScratch {
     turn: s.turn === 1 ? 1 : 0,
     passed: s.passed ?? false,
     over: s.over ?? false,
+    // Default ON: a scratch snapshot without the field (a pre-setting game) keeps hints on.
+    showAvailableMoves: s.showAvailableMoves !== false,
   };
 }
 
@@ -147,6 +161,7 @@ function toSim(scratch: ReversiScratch): ReversiSim {
     passed: scratch.passed,
     over: scratch.over,
     outcome: outcomeOf(scratch),
+    showAvailableMoves: scratch.showAvailableMoves,
   };
 }
 
@@ -177,7 +192,7 @@ export function createReversiGame(): GameModule {
     id: REVERSI_GAME_ID,
 
     configure(config: unknown, players: readonly SessionPlayer[]): ConfigureResult {
-      validateConfig(config);
+      const { showAvailableMoves } = validateConfig(config);
       const turns = assignSeats(players);
       const scratch: ReversiScratch = {
         cells: startingBoard().toCells(),
@@ -185,6 +200,7 @@ export function createReversiGame(): GameModule {
         turn: 0, // Violet (seat 0) moves first from the standard opening.
         passed: false,
         over: false,
+        showAvailableMoves,
       };
       // A live game ends via tick.over, not a round count, but the SDK requires rounds >= 1. There is
       // no move window: placements are accepted whenever it is the active player's turn.
@@ -226,6 +242,7 @@ export function createReversiGame(): GameModule {
         turn: resolved.turn,
         passed: resolved.passed,
         over: resolved.over,
+        showAvailableMoves: scratch.showAvailableMoves,
       };
       return { scratch: toRecord(updated) };
     },

@@ -24,10 +24,16 @@ describe('reversiGameUi module', () => {
     expect(reversiGameUi.summary.length).toBeGreaterThan(40);
   });
 
-  it('defaults an empty config, always validates, and runs one open-ended game', () => {
-    expect(reversiGameUi.defaultConfig()).toEqual({});
+  it('defaults hints on, always validates, and runs one open-ended game', () => {
+    expect(reversiGameUi.defaultConfig()).toEqual({ showAvailableMoves: true });
     expect(reversiGameUi.validateConfig({})).toEqual({ ok: true });
     expect(reversiGameUi.roundsOf({})).toBe(REVERSI_ROUNDS);
+  });
+
+  it('exposes an AdvancedConfigPanel for the lobby advanced-settings slot', () => {
+    // Registered on the module so the shared Lobby renders it in the collapsed "Advanced settings"
+    // accordion (spec 0068) - the "See available moves" toggle lives there, not in the standard panel.
+    expect(typeof reversiGameUi.AdvancedConfigPanel).toBe('function');
   });
 });
 

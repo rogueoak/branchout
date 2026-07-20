@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { RoundContext, SessionPlayer } from '@branchout/game-sdk';
-import { createReversiGame, REVERSI_GAME_ID } from './reversi';
+import { createReversiGame, REVERSI_GAME_ID, validateConfig } from './reversi';
 import { BOARD_SIZE, type Cell } from './rules';
 import type { ReversiSim } from './types';
 
@@ -60,6 +60,52 @@ describe('configure', () => {
     expect(() => game.configure({}, players('violet', 'amber'))).not.toThrow();
     expect(() => game.configure(undefined, players('violet', 'amber'))).not.toThrow();
     expect(() => game.configure(42, players('violet', 'amber'))).toThrow();
+  });
+
+  it('defaults showAvailableMoves on, and carries a host false through to scratch and the sim', () => {
+    const game = createReversiGame();
+    // Default (empty config): hints on.
+    const on = game.configure({}, players('violet', 'amber')).scratch as {
+      showAvailableMoves: boolean;
+    };
+    expect(on.showAvailableMoves).toBe(true);
+    expect(
+      tick(game, ctx({ scratch: on as unknown as Record<string, unknown> })).showAvailableMoves,
+    ).toBe(true);
+
+    // Host turned it off: it flows configure -> scratch -> the streamed sim.
+    const off = game.configure({ showAvailableMoves: false }, players('violet', 'amber'))
+      .scratch as {
+      showAvailableMoves: boolean;
+    };
+    expect(off.showAvailableMoves).toBe(false);
+    const sim = tick(game, ctx({ scratch: off as unknown as Record<string, unknown> }));
+    expect(sim.showAvailableMoves).toBe(false);
+  });
+
+  it('keeps the showAvailableMoves setting across a move', () => {
+    const game = createReversiGame();
+    const scratch = game.configure(
+      { showAvailableMoves: false },
+      players('violet', 'amber'),
+    ).scratch;
+    const res = game.collectMove(ctx({ scratch }), 'violet', mv(2, 3));
+    const s = res.scratch as { showAvailableMoves: boolean };
+    expect(s.showAvailableMoves).toBe(false);
+  });
+});
+
+describe('validateConfig', () => {
+  it('defaults showAvailableMoves true (empty/undefined/null), only false when explicit', () => {
+    expect(validateConfig({}).showAvailableMoves).toBe(true);
+    expect(validateConfig(undefined).showAvailableMoves).toBe(true);
+    expect(validateConfig(null).showAvailableMoves).toBe(true);
+    expect(validateConfig({ showAvailableMoves: false }).showAvailableMoves).toBe(false);
+    expect(validateConfig({ showAvailableMoves: true }).showAvailableMoves).toBe(true);
+  });
+
+  it('rejects a non-object config', () => {
+    expect(() => validateConfig(42)).toThrow();
   });
 });
 

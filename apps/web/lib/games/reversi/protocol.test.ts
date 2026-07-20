@@ -68,4 +68,15 @@ describe('asReversiSim', () => {
     const sim = asReversiSim({ ...goodSim(), outcome: 'weird' });
     expect(sim?.outcome).toBeNull();
   });
+
+  it('defaults showAvailableMoves on when the field is absent (older engine frame)', () => {
+    expect(asReversiSim(goodSim())?.showAvailableMoves).toBe(true);
+  });
+
+  it('decodes showAvailableMoves false when the host turned it off', () => {
+    expect(asReversiSim({ ...goodSim(), showAvailableMoves: false })?.showAvailableMoves).toBe(
+      false,
+    );
+    expect(asReversiSim({ ...goodSim(), showAvailableMoves: true })?.showAvailableMoves).toBe(true);
+  });
 });
