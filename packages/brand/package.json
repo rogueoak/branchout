@@ -62,6 +62,10 @@
       "types": "./dist/hero-portrait-checkers.d.ts",
       "import": "./dist/hero-portrait-checkers.js"
     },
+    "./hero-portrait-loneleaf": {
+      "types": "./dist/hero-portrait-loneleaf.d.ts",
+      "import": "./dist/hero-portrait-loneleaf.js"
+    },
     "./hero-teeter-tower": {
       "types": "./dist/hero-teeter-tower.d.ts",
       "import": "./dist/hero-teeter-tower.js"

@@ -323,8 +323,8 @@ describe('Lone Leaf module', () => {
     expect(resolved.scores).toHaveLength(3);
   });
 
-  it('the plugin manifest is a 3-7 player insider game', () => {
-    expect(loneLeafPlugin.manifest.visibility).toBe('insider');
+  it('the plugin manifest is a 3-7 player public game (promoted from insider, spec 0073)', () => {
+    expect(loneLeafPlugin.manifest.visibility).toBe('public');
     expect(loneLeafPlugin.manifest.capabilities?.minPlayers).toBe(3);
     expect(loneLeafPlugin.manifest.capabilities?.maxPlayers).toBe(7);
   });

@@ -15,6 +15,7 @@ export default defineConfig({
     'src/hero-portrait-liarliar.ts',
     'src/hero-portrait-reversi.ts',
     'src/hero-portrait-checkers.ts',
+    'src/hero-portrait-loneleaf.ts',
     'src/hero-teeter-tower.ts',
     'src/hero-brambles.ts',
     'src/hero-nightleaf.ts',

@@ -100,13 +100,13 @@ describe('game feature page surface-aware insider gating (spec 0030)', () => {
   });
 
   it('404s an insider game on the apex (it must not exist on the public site)', async () => {
-    await expect(renderPage('lone-leaf', APEX)).rejects.toBeInstanceOf(NotFoundError);
+    await expect(renderPage('teeter-tower', APEX)).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('renders an insider game on the insider surface, with the Insiders badge and no JSON-LD', async () => {
     viewerHolder.value = { signedIn: true, insider: true };
-    const { container } = await renderPage('lone-leaf', INSIDER);
-    expect(screen.getByRole('heading', { level: 1, name: 'Lone Leaf' }).tagName).toBe('H1');
+    const { container } = await renderPage('teeter-tower', INSIDER);
+    expect(screen.getByRole('heading', { level: 1, name: 'Teeter Tower' }).tagName).toBe('H1');
     // Hero art present; the "Insiders" badge marks it; the rules section renders.
     expect(container.innerHTML).toContain('viewBox="0 0 800 450"');
     expect(screen.getByText('Insiders')).toBeTruthy();
@@ -135,14 +135,14 @@ describe('game feature page metadata (spec 0030)', () => {
   });
 
   it('marks an insider page noindex with no canonical (SEO only where public)', async () => {
-    const meta = await metadataFor('lone-leaf', INSIDER);
-    expect(String(meta.title)).toContain('Lone Leaf');
+    const meta = await metadataFor('teeter-tower', INSIDER);
+    expect(String(meta.title)).toContain('Teeter Tower');
     expect(meta.robots).toEqual({ index: false, follow: false });
     expect(meta.alternates?.canonical).toBeUndefined();
   });
 
   it('returns a not-found title for an insider slug on the apex and for an unknown slug', async () => {
-    expect(String((await metadataFor('lone-leaf', APEX)).title)).toContain('not found');
+    expect(String((await metadataFor('teeter-tower', APEX)).title)).toContain('not found');
     expect(String((await metadataFor('nope', APEX)).title)).toContain('not found');
   });
 });

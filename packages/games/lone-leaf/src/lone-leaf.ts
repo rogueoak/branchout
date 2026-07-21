@@ -420,7 +420,7 @@ export const loneLeafPlugin: GamePlugin<ResolvedLoneLeafConfig> = {
     version: '1.0.0',
     configSchema: validateConfig,
     capabilities: { minPlayers: 3, maxPlayers: 7 },
-    visibility: 'insider',
+    visibility: 'public',
   },
   create: async (services) => {
     const bank = await loadSeedBank(services.assets.forModule(import.meta.url));
