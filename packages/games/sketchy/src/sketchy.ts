@@ -18,7 +18,7 @@
 // SECRECY (spec 0052). A player's seed is dealt ONLY to that player via `startRound.private`; the
 // broadcast `prompt` never carries any seed. A non-recipient never receives another player's seed.
 
-import { rankStandings, type ScoreEvent, type Standing } from '@branchout/protocol';
+import { paletteColors, rankStandings, type ScoreEvent, type Standing } from '@branchout/protocol';
 import type {
   AdvanceResult,
   ConfigureResult,
@@ -82,6 +82,13 @@ interface SketchyScratch {
   rounds: number;
   /** Players (ids) in the fixed draw/feature order, set at configure from the roster seat order. */
   order: string[];
+  /**
+   * player -> their reserved palette id (spec 0063), snapshotted from the roster at configure. The
+   * engine validates each player's strokes against ONLY this palette's colors at draw time, so a
+   * client sending an off-palette color has that stroke dropped. A player with no palette (absent
+   * from the roster claim) is not in this map and falls back to the full palette-color union.
+   */
+  palettes: Record<string, string>;
   /** Seed ids used across the whole game, so a redraw never repeats a prompt. */
   usedSeedIds: string[];
   /** The current engine round number. */
@@ -113,6 +120,7 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): SketchyScratch {
   return {
     rounds: s.rounds ?? DEFAULT_ROUNDS,
     order: s.order ?? [],
+    palettes: s.palettes ?? {},
     usedSeedIds: s.usedSeedIds ?? [],
     round: s.round ?? 0,
     stage: s.stage ?? 'draw',
@@ -192,9 +200,18 @@ export function createSketchyGame(
         );
       }
       const engineRounds = cfg.rounds * (1 + n);
+      // Snapshot each player's reserved palette id from the roster (spec 0063). This is the ONLY
+      // point palettes enter the game: fixed at configure, so a mid-game roster change can never
+      // swap a player onto another's colors. A player without a claimed palette is simply omitted
+      // (collectMove falls back to the full palette-color union for them).
+      const palettes: Record<string, string> = {};
+      for (const p of players) {
+        if (p.paletteId) palettes[p.player] = p.paletteId;
+      }
       const scratch: SketchyScratch = {
         rounds: engineRounds,
         order: players.map((p) => p.player),
+        palettes,
         usedSeedIds: [],
         round: 0,
         stage: 'draw',
@@ -250,7 +267,12 @@ export function createSketchyGame(
           const seed = pickSeed(used);
           used.add(seed.id);
           assignments[player] = seed;
-          priv[player] = { seed: seed.text };
+          // Deliver the player's own palette colors alongside their secret seed (spec 0063), so the
+          // remote's draw toolbar shows ONLY their three colors. This rides the same targeted
+          // `private` channel (spec 0052) as the seed - it is that player's own claim, not a secret,
+          // but bundling it keeps the palette on the authoritative frame the engine already replays
+          // on reconnect, so a re-joining player recovers their palette without a lobby round-trip.
+          priv[player] = { seed: seed.text, palette: paletteColors(scratch.palettes[player]) };
         }
         scratch.usedSeedIds = [...used];
         scratch.assignments = assignments;
@@ -282,8 +304,18 @@ export function createSketchyGame(
       const unchanged = ctx.scratch as Record<string, unknown>;
 
       if (current.stage === 'draw') {
-        // The move is a serialized sketch. Reject a malformed or blank drawing.
-        const sketch = parseSketch(move);
+        // The move is a serialized sketch. Validate every stroke against THIS player's own claimed
+        // palette (spec 0063): parseSketch drops any stroke whose color is not one of their three,
+        // so a client sending an off-palette color cannot smuggle it in. A player without a claimed
+        // palette falls back to the full palette-color union (the parseSketch default). Reject a
+        // malformed or blank drawing (nothing left after dropping off-palette strokes).
+        // Resolve the player's own palette colors. An unknown/empty palette (an unrecognized id, or a
+        // player with no claim) yields no colors: fall back to `undefined` so parseSketch uses the
+        // lenient all-palette union - NOT an empty allowed-set, which would drop every stroke and
+        // soft-lock the player out of ever submitting.
+        const colors = paletteColors(current.palettes[player]);
+        const allowed = colors.length > 0 ? new Set(colors) : undefined;
+        const sketch = parseSketch(move, allowed);
         if (!sketch || !isDrawn(sketch)) {
           return { scratch: unchanged, rejected: { reason: 'draw something first' } };
         }

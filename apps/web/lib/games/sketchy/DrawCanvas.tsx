@@ -27,9 +27,14 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from '@rogueoak/canopy/branches';
+import { PLAYER_PALETTES } from '@branchout/protocol';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CANVAS_SIZE, STROKE_COLORS, type Sketch, type Stroke } from './strokes';
+import { CANVAS_SIZE, type Sketch, type Stroke } from './strokes';
 import { drawSketch } from './SketchReplay';
+
+/** A safe on-palette default twig when a palette somehow arrives empty (never in normal play - the
+ * Remote always passes a non-empty palette). Uses a real palette color, never an off-palette hex. */
+const DEFAULT_TWIG = PLAYER_PALETTES[0]!.colors[0];
 
 /** Undos a player gets for the WHOLE game (not per round). */
 export const UNDO_ALLOWANCE = 3;
@@ -39,6 +44,7 @@ export const CLEAR_ALLOWANCE = 1;
 export function DrawCanvas({
   sketch,
   onChange,
+  palette,
   disabled = false,
   undosRemaining,
   clearsRemaining,
@@ -47,6 +53,12 @@ export function DrawCanvas({
 }: {
   sketch: Sketch;
   onChange: (next: Sketch) => void;
+  /**
+   * The player's OWN claimed palette (spec 0063): the exact set of colors this player may draw with,
+   * delivered from the engine per-player. The toolbar shows one swatch per color and nothing else, so
+   * a player can only ever draw in their three colors. The first color is the default twig.
+   */
+  palette: readonly string[];
   disabled?: boolean;
   /** Undos still available this GAME. When 0 the Undo control is disabled. */
   undosRemaining: number;
@@ -59,7 +71,12 @@ export function DrawCanvas({
 }) {
   const [clearOpen, setClearOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [color, setColor] = useState<string>(STROKE_COLORS[0]);
+  const [color, setColor] = useState<string>(palette[0] ?? DEFAULT_TWIG);
+  // Keep the selected twig on-palette: if the palette changes (a late-arriving claim) and the current
+  // color is no longer offered, fall back to the first color.
+  useEffect(() => {
+    if (!palette.includes(color)) setColor(palette[0] ?? DEFAULT_TWIG);
+  }, [palette, color]);
   // The stroke being drawn right now (null between strokes). Kept in a ref so the pointer handlers
   // read the latest without re-subscribing.
   const drawingRef = useRef<Stroke | null>(null);
@@ -172,7 +189,7 @@ export function DrawCanvas({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-1.5" role="group" aria-label="Twig color">
-          {STROKE_COLORS.map((c) => {
+          {palette.map((c) => {
             const selectedBorder = color === c ? 'border-text' : 'border-border';
             return (
               <button
@@ -182,7 +199,7 @@ export function DrawCanvas({
                 aria-pressed={color === c}
                 disabled={disabled}
                 onClick={() => setColor(c)}
-                className={`h-8 w-8 rounded-full border-2 ${selectedBorder}`}
+                className={`h-11 w-11 rounded-full border-2 ${selectedBorder}`}
                 style={{ backgroundColor: c }}
               />
             );

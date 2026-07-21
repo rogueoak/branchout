@@ -4,7 +4,12 @@ import type {
   RoundReport,
   StartHandoffRequest,
 } from '@branchout/protocol';
-import { PROTOCOL_VERSION, playerLimits } from '@branchout/protocol';
+import {
+  PROTOCOL_VERSION,
+  isPaletteId,
+  pickAvailablePalette,
+  playerLimits,
+} from '@branchout/protocol';
 import { CreditLedger } from '../credits/ledger';
 import { standingsToStars } from '../credits/stars';
 import type { Session } from '../sessions/session';
@@ -49,6 +54,7 @@ export class RoomError extends Error {
       | 'no_viewer'
       | 'too_few_players'
       | 'room_full'
+      | 'palette_taken'
       | 'insufficient_credits'
       | 'invalid'
       | 'engine',
@@ -158,6 +164,29 @@ function hostMember(session: Session): RoomMember {
   };
 }
 
+/** Palette ids currently reserved by members OTHER than `exceptSessionId`. */
+function takenPaletteIds(members: readonly RoomMember[], exceptSessionId?: string): string[] {
+  return members
+    .filter((m) => m.sessionId !== exceptSessionId && typeof m.paletteId === 'string')
+    .map((m) => m.paletteId!);
+}
+
+/**
+ * Choose the palette a (re)joining member should hold (spec 0063). A rejoining member keeps its
+ * existing palette when it is still free (so a reconnect is stable); otherwise it is assigned a
+ * random still-available one. `undefined` only when every palette is already taken by other members
+ * (needs >24 members, so realistically never among the <=8 who play).
+ */
+function assignPaletteId(
+  members: readonly RoomMember[],
+  sessionId: string,
+  existing: RoomMember | null,
+): string | undefined {
+  const taken = takenPaletteIds(members, sessionId);
+  if (existing?.paletteId && !taken.includes(existing.paletteId)) return existing.paletteId;
+  return pickAvailablePalette(taken);
+}
+
 /**
  * Rooms orchestration: create/join/kick, game selection, the start handoff to the engine, host
  * controls, and the engine's round/complete report intake. The system-of-record split lives here:
@@ -205,6 +234,9 @@ export class RoomService {
     }
     const room = await this.createWithUniqueCode(session.accountId);
     const host = hostMember(session);
+    // Give the host a random palette (spec 0063). A fresh room has no other members, so every palette
+    // is free; the host can change it in the lobby like anyone else.
+    host.paletteId = pickAvailablePalette([]);
     await this.membership.put(room.id, host);
     // Echo the host's public playerId (like `join` does) so the browser has its engine identity
     // immediately, without waiting on the members list - a host reloading mid-game must not be
@@ -254,6 +286,9 @@ export class RoomService {
       ? (existing?.mode ?? normalizeMode(input.mode))
       : normalizeMode(input.mode);
     const mode = clampToMax(desired, room, members, session.id);
+    // Assign a random still-available palette on join, or keep the one a rejoining device already
+    // held when it is still free (spec 0063). Reserved against the other members' claims.
+    const paletteId = assignPaletteId(members, session.id, existing);
     const member: RoomMember = {
       sessionId: session.id,
       playerId: existing?.playerId ?? newPlayerId(),
@@ -262,6 +297,7 @@ export class RoomService {
       mode,
       nickname: name.value!,
       connected: true,
+      ...(paletteId ? { paletteId } : {}),
     };
     await this.membership.put(room.id, member);
     return { room: toView(room), playerId: member.playerId };
@@ -292,6 +328,35 @@ export class RoomService {
       }
     }
     member.mode = next;
+    await this.membership.put(room.id, member);
+  }
+
+  /**
+   * Claim a drawing palette (spec 0063, Sketchy palettes). Best-effort server-side RESERVATION: a
+   * palette already held by ANOTHER member is refused (`palette_taken`), so a player racing a
+   * moment behind sees the winner's claim and is rejected, and its client falls back to another free
+   * one. The check is a read-then-write over the (non-transactional) membership store, so two truly
+   * simultaneous claims could both pass and briefly share a palette; the blast radius is only a
+   * duplicate drawing color (no auth or data-integrity impact), and the next member poll re-syncs
+   * every device - the same posture as `setMode`. An unknown palette id is rejected as `invalid`.
+   * Any member (host or not) may claim, mirroring `setMode`.
+   */
+  async setPalette(code: string, session: Session, paletteId: string): Promise<void> {
+    const room = await this.requireRoom(code);
+    const member = await this.membership.get(room.id, session.id);
+    if (!member) {
+      throw new RoomError('not_member', 'Join the room to choose a palette.');
+    }
+    if (!isPaletteId(paletteId)) {
+      throw new RoomError('invalid', 'That is not a valid palette.');
+    }
+    // Idempotent: re-claiming the palette I already hold is a no-op (no needless write, no self-collision).
+    if (member.paletteId === paletteId) return;
+    const members = await this.membership.list(room.id);
+    if (takenPaletteIds(members, session.id).includes(paletteId)) {
+      throw new RoomError('palette_taken', 'Someone just took that palette. Pick another.');
+    }
+    member.paletteId = paletteId;
     await this.membership.put(room.id, member);
   }
 
@@ -671,5 +736,8 @@ function toHandoffPlayers(members: readonly RoomMember[]): HandoffPlayer[] {
     nickname: member.nickname,
     // Carry host identity so the engine can auto-pause while the host is disconnected (0014).
     isHost: member.isHost,
+    // Carry the reserved palette so the engine can validate this player's strokes against only their
+    // claimed colors (spec 0063). Absent when the player never got one (e.g. every palette taken).
+    ...(member.paletteId ? { paletteId: member.paletteId } : {}),
   }));
 }

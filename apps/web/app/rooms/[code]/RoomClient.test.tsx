@@ -13,6 +13,7 @@ const hoisted = vi.hoisted(() => ({
   listMembers: vi.fn(),
   selectGame: vi.fn(),
   resumeRoom: vi.fn(),
+  setPalette: vi.fn(),
   replace: vi.fn(),
   recalled: null as Membership | null,
   // The engine state the mocked useGameClient returns - mutable so a test can drive a phase change.
@@ -39,6 +40,7 @@ vi.mock('../../../lib/room-api', async (importOriginal) => {
     listMembers: (code: string) => hoisted.listMembers(code),
     selectGame: (...args: unknown[]) => hoisted.selectGame(...args),
     resumeRoom: (code: string) => hoisted.resumeRoom(code),
+    setPalette: (...args: unknown[]) => hoisted.setPalette(...args),
   };
 });
 
@@ -74,12 +76,24 @@ vi.mock('../../../lib/analytics', () => ({
 // The lobby is mocked to a marker, but it exposes the "Change game" trigger so a test can drive the
 // in-room change-game flow through RoomClient (the real Lobby owns that button).
 vi.mock('../../../components/game/Lobby', () => ({
-  Lobby: ({ onChangeGame }: { onChangeGame: () => void }) => (
+  Lobby: ({
+    onChangeGame,
+    onClaimPalette,
+    paletteError,
+  }: {
+    onChangeGame: () => void;
+    onClaimPalette?: (id: string) => void;
+    paletteError?: string | null;
+  }) => (
     <div>
       LOBBY_VIEW
       <button type="button" onClick={onChangeGame}>
         Change game
       </button>
+      <button type="button" onClick={() => onClaimPalette?.('grape')}>
+        Claim grape
+      </button>
+      {paletteError ? <p>PALETTE_ERROR: {paletteError}</p> : null}
     </div>
   ),
 }));
@@ -126,6 +140,8 @@ beforeEach(() => {
   hoisted.selectGame.mockReset();
   hoisted.selectGame.mockResolvedValue(roomAt('lobby'));
   hoisted.resumeRoom.mockReset();
+  hoisted.setPalette.mockReset();
+  hoisted.setPalette.mockResolvedValue(undefined);
   // Default: the tab has no live seat to resume, so an absent recall falls through to the join
   // prompt. Tests that exercise resume override this.
   hoisted.resumeRoom.mockRejectedValue(new RoomApiError(404, 'not_member', 'Join the room.'));
@@ -391,5 +407,38 @@ describe('RoomClient pick-step selectGame failure', () => {
     expect(await screen.findByText(/could not select/i)).toBeDefined();
     expect(screen.getByRole('heading', { name: /pick a game/i })).toBeDefined();
     expect(screen.queryByRole('heading', { name: /invite your friends/i })).toBeNull();
+  });
+});
+
+describe('RoomClient palette claim (spec 0063)', () => {
+  it('surfaces a lost-race claim error inline and re-syncs the roster', async () => {
+    hoisted.recalled = hostMembership('lobby');
+    getRoom.mockResolvedValue(roomAt('lobby'));
+    listMembers.mockResolvedValue([
+      {
+        playerId: 'p1',
+        isHost: true,
+        mode: 'interactive',
+        nickname: 'Ada',
+        connected: true,
+        paletteId: 'ember',
+      },
+    ]);
+    // The server refuses the claim (another member won the race).
+    hoisted.setPalette.mockRejectedValueOnce(
+      new RoomApiError(409, 'palette_taken', 'Someone just took that palette. Pick another.'),
+    );
+
+    render(<RoomClient code="ABC12" viewer={{ signedIn: false }} />);
+    // Let the initial roster poll settle, then claim.
+    await waitFor(() => expect(listMembers).toHaveBeenCalled());
+    const callsBefore = listMembers.mock.calls.length;
+    fireEvent.click(await screen.findByRole('button', { name: /claim grape/i }));
+
+    // The error surfaces inline in the picker (not the top-of-page loadError)...
+    expect(await screen.findByText(/palette_error: someone just took that palette/i)).toBeDefined();
+    expect(hoisted.setPalette).toHaveBeenCalledWith('ABC12', 'grape');
+    // ...and the roster is re-fetched from the authority so the optimistic claim is corrected.
+    await waitFor(() => expect(listMembers.mock.calls.length).toBeGreaterThan(callsBefore));
   });
 });

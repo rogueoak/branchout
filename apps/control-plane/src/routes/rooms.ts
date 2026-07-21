@@ -53,6 +53,7 @@ function statusFor(code: RoomError['code']): number {
     case 'no_viewer':
     case 'too_few_players':
     case 'room_full':
+    case 'palette_taken':
     case 'invalid':
       return 409;
     case 'engine':
@@ -142,6 +143,17 @@ export function registerRoomRoutes(app: FastifyInstance, deps: RoomRoutesDeps): 
         return reply.code(409).send({ error: 'Choose a valid mode.' });
       }
       await rooms.setMode(code, session, mode);
+      return reply.code(200).send({ ok: true });
+    }),
+  );
+
+  // A member claims a drawing palette (spec 0063). The service reserves it server-side: a palette
+  // held by another member is refused (409 palette_taken), so racing claims resolve authoritatively.
+  app.patch('/rooms/:code/palette', async (request, reply) =>
+    withSession(request, reply, async (session) => {
+      const { code } = request.params as { code: string };
+      const paletteId = asString(request.body, 'paletteId');
+      await rooms.setPalette(code, session, paletteId);
       return reply.code(200).send({ ok: true });
     }),
   );

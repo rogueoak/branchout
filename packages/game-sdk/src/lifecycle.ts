@@ -15,10 +15,14 @@ import type { Phase, PlayerView, ScoreEvent, Standing } from '@branchout/protoco
 
 /**
  * A player in a session: identity, display name, and live connection state, plus whether they are
- * the room host (the engine auto-pauses while the host is disconnected - spec 0014). `isHost` is
- * engine-internal; it is not projected onto the wire `state` frame's `players`.
+ * the room host (the engine auto-pauses while the host is disconnected - spec 0014), and their
+ * claimed drawing palette id (spec 0063, Sketchy palettes). `isHost` and `paletteId` are
+ * engine-internal; neither is projected onto the wire `state` frame's `players`. `paletteId` is the
+ * palette a player reserved in the lobby, threaded through the start handoff so a game (Sketchy) can
+ * validate that player's strokes against only their claimed colors; it is absent for games that do
+ * not use palettes.
  */
-export type SessionPlayer = PlayerView & { isHost?: boolean };
+export type SessionPlayer = PlayerView & { isHost?: boolean; paletteId?: string };
 
 /** What a module reads for a round. `scratch` is the module's own persisted state. */
 export interface RoundContext {

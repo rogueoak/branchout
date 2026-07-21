@@ -20,6 +20,7 @@ import {
   type ScoreEvent,
   type Standing,
 } from './envelope';
+import { isPaletteId } from './palettes';
 
 /** A player handed to the engine at start: identity + display name. */
 export interface HandoffPlayer {
@@ -31,6 +32,13 @@ export interface HandoffPlayer {
    * game while the host is disconnected (spec 0014).
    */
   isHost?: boolean;
+  /**
+   * The palette id this player reserved in the lobby (spec 0063, Sketchy palettes). Optional and
+   * defaulted-absent (additive under the same protocol version): a game that does not use palettes
+   * (and an older control-plane) simply omits it, and the engine treats it as "no palette". Sketchy
+   * uses it to validate a player's strokes against only their three claimed colors.
+   */
+  paletteId?: string;
 }
 
 /**
@@ -99,6 +107,12 @@ function requirePlayers(data: Record<string, unknown>): HandoffPlayer[] {
       // predating the field is unchanged (spec 0014). Dropping it here would silently un-host the
       // roster no matter what the sender set.
       ...(typeof entry.isHost === 'boolean' ? { isHost: entry.isHost } : {}),
+      // Carry the optional palette id through the same way (spec 0063): absent stays absent so a
+      // palette-less game / an older sender is unchanged. Validate it against the known palettes at
+      // this trust boundary, so a stale/garbage id degrades to the documented no-palette path (the
+      // engine's lenient union) rather than entering the engine and dropping every one of that
+      // player's strokes.
+      ...(isPaletteId(entry.paletteId) ? { paletteId: entry.paletteId } : {}),
     };
   });
 }

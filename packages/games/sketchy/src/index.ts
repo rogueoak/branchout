@@ -38,12 +38,10 @@ export {
   MAX_STROKES,
   MAX_POINTS_PER_STROKE,
   MAX_TOTAL_POINTS,
-  STROKE_COLORS,
   emptySketch,
   isDrawn,
   serializeSketch,
   parseSketch,
   type Stroke,
-  type StrokeColor,
 } from './strokes';
 export { normalizeAnswer, sameAnswer } from './matching';

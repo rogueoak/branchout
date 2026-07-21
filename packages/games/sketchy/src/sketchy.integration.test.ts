@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { createTestServices, mulberry32 } from '@branchout/game-sdk/testing';
 import type { GameModule, RoundContext, SessionPlayer } from '@branchout/game-sdk';
-import type { ScoreEvent, Standing } from '@branchout/protocol';
+import { PLAYER_PALETTES, type ScoreEvent, type Standing } from '@branchout/protocol';
 import { CATEGORIES } from './seeds';
 import { sketchyPlugin, CORRECT_POINTS, FOOL_POINTS } from './sketchy';
 import { serializeSketch, type Sketch } from './strokes';
@@ -31,7 +31,11 @@ const roster: SessionPlayer[] = [
   { player: 'p3', nickname: 'Cy', connected: true },
 ];
 
-const sketch: Sketch = { strokes: [{ color: '#0d0a15', points: [0, 0, 500, 500, 1000, 0] }] };
+// A real palette color, so it survives collectMove's per-player validation (this roster claims no
+// palette, so the lenient union - which includes every palette color - applies).
+const sketch: Sketch = {
+  strokes: [{ color: PLAYER_PALETTES[0]!.colors[0], points: [0, 0, 500, 500, 1000, 0] }],
+};
 
 describe('Sketchy full cycle', () => {
   it('runs a draw round + a sketch round per player and ranks a winner', async () => {

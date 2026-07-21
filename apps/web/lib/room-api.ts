@@ -48,6 +48,12 @@ export interface RoomMember {
   mode: Mode;
   nickname: string;
   connected: boolean;
+  /**
+   * This member's reserved drawing palette id (spec 0063, Sketchy palettes): assigned a random free
+   * palette on join and changeable to any other unclaimed one. Reserved, so no two members share it.
+   * Absent only in the rare case that every palette was already taken by other members.
+   */
+  paletteId?: string;
 }
 
 /** A control-plane error with the stable code the UI branches on (e.g. gate reasons). */
@@ -159,6 +165,15 @@ export async function setMode(code: string, mode: Mode): Promise<void> {
   await request(`/rooms/${encodeURIComponent(code)}/mode`, {
     method: 'PATCH',
     body: JSON.stringify({ mode }),
+  });
+}
+
+/** A player claims a drawing palette (spec 0063). The server reserves it; a taken palette 409s
+ * (`palette_taken`), which the caller handles by trying another. */
+export async function setPalette(code: string, paletteId: string): Promise<void> {
+  await request(`/rooms/${encodeURIComponent(code)}/palette`, {
+    method: 'PATCH',
+    body: JSON.stringify({ paletteId }),
   });
 }
 

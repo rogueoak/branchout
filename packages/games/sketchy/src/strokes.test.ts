@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
+import { PLAYER_PALETTES } from '@branchout/protocol';
 import {
   CANVAS_SIZE,
   MAX_POINTS_PER_STROKE,
   MAX_STROKES,
   MAX_TOTAL_POINTS,
-  STROKE_COLORS,
   emptySketch,
   isDrawn,
   parseSketch,
   serializeSketch,
   type Sketch,
 } from './strokes';
+
+// A concrete palette's three colors stand in for the old fixed STROKE_COLORS: a sketch is drawn with
+// one player's palette, so the tests use a real palette's trio (all three in the default allowed set).
+const STROKE_COLORS = PLAYER_PALETTES[0]!.colors;
 
 describe('stroke serialize/replay round-trip', () => {
   it('round-trips a multi-stroke sketch unchanged', () => {
@@ -86,5 +90,50 @@ describe('parseSketch bounding + validation', () => {
     const parsed = parseSketch(JSON.stringify({ strokes }));
     const total = parsed!.strokes.reduce((sum, s) => sum + s.points.length, 0);
     expect(total).toBeLessThanOrEqual(MAX_TOTAL_POINTS);
+  });
+});
+
+describe('per-player palette enforcement (spec 0063)', () => {
+  const mine = PLAYER_PALETTES[0]!.colors; // my three claimed colors
+  const theirs = PLAYER_PALETTES[5]!.colors; // a different palette's colors
+
+  it('keeps strokes drawn in my palette when validated against it', () => {
+    const raw = JSON.stringify({
+      strokes: [
+        { color: mine[0], points: [1, 2, 3, 4] },
+        { color: mine[2], points: [5, 6, 7, 8] },
+      ],
+    });
+    const parsed = parseSketch(raw, new Set(mine));
+    expect(parsed?.strokes).toHaveLength(2);
+  });
+
+  it('drops a stroke whose color is not in my palette (an off-palette client)', () => {
+    const raw = JSON.stringify({
+      strokes: [
+        { color: mine[0], points: [1, 2, 3, 4] },
+        { color: theirs[0], points: [5, 6, 7, 8] }, // another palette's color -> dropped
+      ],
+    });
+    const parsed = parseSketch(raw, new Set(mine));
+    expect(parsed).toEqual({ strokes: [{ color: mine[0], points: [1, 2, 3, 4] }] });
+  });
+
+  it('drops every stroke when the whole sketch is off my palette', () => {
+    const raw = JSON.stringify({ strokes: [{ color: theirs[1], points: [1, 2, 3, 4] }] });
+    const parsed = parseSketch(raw, new Set(mine));
+    expect(parsed).toEqual({ strokes: [] });
+    expect(isDrawn(parsed!)).toBe(false);
+  });
+
+  it('accepts any palette color under the lenient default (replay of any player sketch)', () => {
+    const raw = JSON.stringify({
+      strokes: [
+        { color: mine[0], points: [1, 2, 3, 4] },
+        { color: theirs[0], points: [5, 6, 7, 8] },
+      ],
+    });
+    const parsed = parseSketch(raw); // no allowed set -> ALL_PALETTE_COLORS
+    expect(parsed?.strokes).toHaveLength(2);
   });
 });

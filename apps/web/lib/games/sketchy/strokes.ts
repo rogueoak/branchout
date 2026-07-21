@@ -5,14 +5,11 @@
 // pointer moves into this shape and serializes it onto the move channel; the Viewer/Remote scale the
 // logical coordinates to the rendered size and replay each stroke read-only.
 
+import { ALL_PALETTE_COLORS } from '@branchout/protocol';
+
 export const CANVAS_SIZE = 1000;
 export const MAX_STROKES = 400;
 export const MAX_POINTS_PER_STROKE = 1000;
-
-/** The small fixed palette a player draws with. The first entry is the default twig color. */
-export const STROKE_COLORS = ['#0d0a15', '#d2a463', '#7c3aed', '#ec4899', '#22c55e'] as const;
-
-export type StrokeColor = (typeof STROKE_COLORS)[number];
 
 export interface Stroke {
   color: string;
@@ -39,8 +36,12 @@ export function serializeSketch(sketch: Sketch): string {
   });
 }
 
+// Replay accepts any palette's colors: a sketch on screen may have been drawn by any player, each
+// with their own palette (spec 0063), so the browser's read-only replay validates against the union
+// of every palette color, not one player's three. The strict per-player check is the engine's, at
+// collection time.
 function isColor(value: unknown): value is string {
-  return typeof value === 'string' && (STROKE_COLORS as readonly string[]).includes(value);
+  return typeof value === 'string' && ALL_PALETTE_COLORS.has(value);
 }
 
 /** Parse a serialized sketch back to strokes for read-only replay, or null when malformed. */

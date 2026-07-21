@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import {
-  STROKE_COLORS,
-  emptySketch,
-  isDrawn,
-  parseSketch,
-  serializeSketch,
-  type Sketch,
-} from './strokes';
+import { PLAYER_PALETTES } from '@branchout/protocol';
+import { emptySketch, isDrawn, parseSketch, serializeSketch, type Sketch } from './strokes';
+
+// A real palette's colors stand in for the old fixed STROKE_COLORS: replay accepts any palette color.
+const STROKE_COLORS = PLAYER_PALETTES[0]!.colors;
 
 describe('web stroke serialize/replay round-trip', () => {
   it('round-trips a sketch through serialize + parse', () => {
