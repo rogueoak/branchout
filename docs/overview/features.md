@@ -192,11 +192,11 @@ What the product does for users, grouped by area. Each capability maps to one or
       authoritative sim (board deltas + turn/pass state), not guessed (WS8a). It is a **strict 2-player**
       game: `PLAYER_LIMITS.reversi = { min: 2, max: 2 }` (protocol) plus the plugin capabilities are the
       single source of truth, so the lobby/gate/picker all show exactly 2. **PUBLIC as of WS9** (spec
-      `0070`): Reversi graduated from insider to `visibility: 'public'`, so it now appears on the public
-      picker, the `/games` index, its `/games/reversi` feature page, the sitemap, and the home hero
-      carousel (spec `0067`) - the third public game after Trivia and Liar Liar. It ships a 3:4 portrait
-      hero (`assets/hero-reversi-portrait.svg`) for the carousel, wired through the brand package like
-      the other portrait heroes.
+      `0070`): Reversi graduated from insider to `visibility: 'public'`, so it appears on the public
+      picker, the `/games` index, its `/games/reversi` feature page, and the sitemap. It ships a 3:4
+      portrait hero (`assets/hero-reversi-portrait.svg`), wired through the brand package like the other
+      portrait heroes. It rode the home hero carousel when first promoted, but is **no longer featured**
+      (spec `0073`) - it stays fully public + playable, just off the curated carousel.
 - [~] Chess (insider-only) - classic two-player chess, the correctness-heaviest board game, reusing the
       `@branchout/game-board` harness (spec `0056`). Full standard rules: all six pieces, castling
       (both sides with the through/into/out-of-check conditions), en passant (the one-move window),
@@ -231,10 +231,11 @@ What the product does for users, grouped by area. Each capability maps to one or
       brief turn-start popup pops ("Your turn" / "you must jump" on a forced capture), and a host "See
       available moves" advanced toggle (default on) gates the legal-move hints. **PUBLIC as of WS14**
       (spec `0071`): `visibility: 'public'` in BOTH the web module and the engine plugin manifest, so
-      Checkers appears on the public picker, the `/games` index, its `/games/checkers` feature page, the
-      sitemap, and the home hero carousel (the fourth public game after Trivia, Liar Liar, and Reversi).
-      It ships a 3:4 portrait hero (`assets/hero-checkers-portrait.svg`) wired through the brand package,
-      and `PLAYER_LIMITS.checkers = { min: 2, max: 2 }` now matches the plugin caps (cross-checked).
+      Checkers appears on the public picker, the `/games` index, its `/games/checkers` feature page, and
+      the sitemap. It ships a 3:4 portrait hero (`assets/hero-checkers-portrait.svg`) wired through the
+      brand package, and `PLAYER_LIMITS.checkers = { min: 2, max: 2 }` now matches the plugin caps
+      (cross-checked). Like Reversi it rode the carousel when first promoted but is **no longer featured**
+      (spec `0073`) - fully public + playable, just off the curated home hero carousel.
 - [x] Per-player private payloads - the hidden-information seam the next wave of games (spymaster
       key, hidden role, private hand) build on (spec `0052`). A lifecycle result may carry an optional
       `private` map (playerId -> opaque secret); the engine delivers each entry ONLY to that player's
@@ -341,8 +342,9 @@ What the product does for users, grouped by area. Each capability maps to one or
       bird scores for surviving or for naming the roost. Ships as `@branchout/game-odd-bird` with a
       ~30-roost sample bank (`validateRoostBank`: schema, `<category>-NNN` id, distinct perches),
       insider-gated by surface (spec `0043`), 3-8 players (`@branchout/game-odd-bird`, spec `0059`).
-- [~] Fourth game (insider-only) - Lone Leaf: a COOPERATIVE single-clue word game for 3-7 players and
-      the first game built on the per-player private channel (spec `0057`). Each round one player is the
+- [~] Fourth game (PUBLIC, promoted from insider - spec `0073`) - Lone Leaf: a COOPERATIVE single-clue
+      word game for 3-7 players and the first game built on the per-player private channel (spec `0057`).
+      Each round one player is the
       Seeker (the role rotates by seat) and must guess a hidden mystery word - the seed - that they
       alone cannot see; every other player secretly writes ONE one-word clue (a leaf). Before the Seeker
       looks, matching or invalid leaves wilt (are cleared, both of a duplicate pair, folding case and a
@@ -351,11 +353,21 @@ What the product does for users, grouped by area. Each capability maps to one or
       standing. The seed rides the spec `0052` private channel to the non-Seekers ONLY and never the
       broadcast prompt/viewer/reveal, so the Seeker's device never receives it (a unit test proves the
       Seeker is absent from the private map, and the e2e proves the seed shows on a non-Seeker's device
-      but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled ~60-word
-      sample seed bank (`@branchout/game-lone-leaf`). Host pacing mirrors Trivia (spec `0068`): rounds
-      from presets (Fast 5 / Standard 10 / Long 20 / Marathon 40, default 10) or a custom number, an
-      auto-advance toggle with an advance-after dwell, and configurable clue and guess windows
-      (default 60s each) in an Advanced panel.
+      but nowhere on the Seeker's). Insider-only by surface (feedback `0029`), with a bundled sample
+      seed bank (`@branchout/game-lone-leaf`); the full bank lives in the private data repo. Nine
+      themes: the six single-word ones (nature, everyday, places, food, animals, feelings) plus three
+      proper-noun ones that allow MULTI-WORD seeds - `celebrities` ("Famous People"), `movies`, and
+      `historical` ("Historical Figures", e.g. "albert einstein"). It is now public and FEATURED on the
+      home hero carousel (the third featured game after Trivia and Liar Liar), with a 3:4 portrait hero
+      (`assets/hero-loneleaf-portrait.svg`) wired through the brand package. A multi-word guess resolves
+      regardless of case/spacing. **Difficulty by word obscurity**: every seed carries an optional
+      obscurity rating 1-10 (missing treated as 5), and the host picks a difficulty band reusing
+      Trivia's scale and label-only presets (Easy 1-4 / Medium 3-6 default / Moderate 4-8 / Hard
+      6-10); each round draws an in-band seed, widening to the nearest rating only when the band is
+      exhausted. Host pacing mirrors Trivia (spec `0068`): rounds from presets (Fast 5 / Standard 10 /
+      Long 20 / Marathon 40, default 10) or a custom number, an auto-advance toggle with an
+      advance-after dwell, and configurable clue and guess windows (default 60s each) in an Advanced
+      panel.
 - [~] Fifth game (insider-only) - Same Branch: a spectrum-guessing party game (2-8 players) on the
       round-based lifecycle (`@branchout/game-same-branch`, spec `0058`). Each round shows a branch
       running between two opposites (the **branch**); a hidden target (the **bud**) sits on it. One
@@ -374,14 +386,18 @@ What the product does for users, grouped by area. Each capability maps to one or
 
 - [x] Marketing landing page - hero (carousel + tagline + CTA), "how it works" three steps, games
       teaser, footer. The hero opens with a **portrait hero carousel** (spec `0067`): it rotates
-      through one tall (3:4) on-brand card per public game (Trivia, Liar Liar - insider games stay
-      gated off the home page), with the `where game night grows` tagline and the CTA row reading as
-      its caption directly below. Built on canopy's `Carousel` (embla) + the new `CarouselDots` pager
-      + `embla-carousel-autoplay` (5s, paused on hover/focus/drag, dropped under
-      `prefers-reduced-motion`); tapping a card goes to that game's feature page (`/games/[slug]`).
+      through one tall (3:4) on-brand card per **FEATURED** game (Trivia, Liar Liar, Lone Leaf - spec
+      `0073`), with the `where game night grows` tagline and the CTA row reading as its caption directly
+      below. The carousel is a CURATED subset, not every public game: `featured` is a flag on the
+      marketing catalog entry and `FEATURED_GAME_CATALOG` is the derived list the landing carousel
+      reads, so as the public roster grows the hero stays a spotlight. Reversi and Checkers are public-
+      but-not-featured - they keep their `/games` cards and feature pages but are off the carousel; the
+      insider games stay gated off the home page entirely. Built on canopy's `Carousel` (embla) + the
+      new `CarouselDots` pager + `embla-carousel-autoplay` (5s, paused on hover/focus/drag, dropped
+      under `prefers-reduced-motion`); tapping a card goes to that game's feature page (`/games/[slug]`).
       The portrait art is new `@branchout/brand` `hero-portrait-*` exports (600x800, gold-root rule
       kept); the slides come from the same shared catalog reader (`getGameCard`, now carrying an
-      optional `heroPortrait`) as the teaser grid, so a new public game adds a slide with no carousel
+      optional `heroPortrait`) as the teaser grid, so a new featured game adds a slide with no carousel
       edits. Dark theme by default; pricing/tier content is dropped for now. The games teaser renders the ONE
       unified `GameCard` (spec `0065`) - the same configurable card used across the home teaser, the
       `/games` index, the insider landing, and the lobby/room picker, so the surfaces cannot drift.

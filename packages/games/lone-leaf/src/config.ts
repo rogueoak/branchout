@@ -3,13 +3,22 @@
 // `validateConfig` is the plugin manifest's config schema: the engine runs it at the `/sessions`
 // handoff boundary, so a bad config is a 400, not a broken game.
 
-import { CATEGORIES } from './seeds';
+import { CATEGORIES, MAX_DIFFICULTY, MIN_DIFFICULTY } from './seeds';
 
 export const MIN_ROUNDS = 1;
 export const MAX_ROUNDS = 100;
 export const DEFAULT_ROUNDS = 10;
 export const MIN_CATEGORIES = 1;
 export const MAX_CATEGORIES = 3;
+
+/**
+ * Difficulty band (obscurity) the host plays within, reusing Trivia's 1-10 scale and its default
+ * `Medium` band (3-6). Each round draws a seed rated inside [difficultyMin, difficultyMax], widening
+ * to the nearest rating only when the band is exhausted (see selection.ts). Re-exported from `seeds`.
+ */
+export { MIN_DIFFICULTY, MAX_DIFFICULTY } from './seeds';
+export const DEFAULT_DIFFICULTY_MIN = 3;
+export const DEFAULT_DIFFICULTY_MAX = 6;
 
 /** Auto-advance defaults (spec 0057 pacing): on, with a 5s dwell for each hop. */
 export const DEFAULT_AUTO_ADVANCE = true;
@@ -33,6 +42,10 @@ export interface LoneLeafConfig {
   categories?: string[] | 'random';
   /** 1-100, default 10. */
   rounds?: number;
+  /** Difficulty band floor, 1-10, default 3. Seeds rated in [difficultyMin, difficultyMax] are drawn. */
+  difficultyMin?: number;
+  /** Difficulty band ceiling, 1-10, default 6. Must be >= difficultyMin. */
+  difficultyMax?: number;
   /** Auto-advance the reveal/leaderboard on to the next round. Default true. */
   autoAdvance?: boolean;
   /** Dwell before each auto-advance hop, in seconds. Default 5, range 1-60. */
@@ -47,6 +60,9 @@ export interface LoneLeafConfig {
 export interface ResolvedLoneLeafConfig {
   categories: string[] | 'random';
   rounds: number;
+  /** Difficulty band the round draw stays within, widening to nearest when exhausted. */
+  difficultyMin: number;
+  difficultyMax: number;
   autoAdvance: boolean;
   /** Resolved dwell in ms (`advanceAfterSeconds * 1000`). */
   advanceAfterMs: number;
@@ -117,6 +133,27 @@ export function validateConfig(config: unknown): ResolvedLoneLeafConfig {
 
   const rounds = resolveIntInRange(cfg.rounds, DEFAULT_ROUNDS, MIN_ROUNDS, MAX_ROUNDS, 'rounds');
 
+  // Difficulty band: both bounds must sit inside 1-10 and min <= max (matching Trivia's authority).
+  const difficultyMin = resolveIntInRange(
+    cfg.difficultyMin,
+    DEFAULT_DIFFICULTY_MIN,
+    MIN_DIFFICULTY,
+    MAX_DIFFICULTY,
+    'difficultyMin',
+  );
+  const difficultyMax = resolveIntInRange(
+    cfg.difficultyMax,
+    DEFAULT_DIFFICULTY_MAX,
+    MIN_DIFFICULTY,
+    MAX_DIFFICULTY,
+    'difficultyMax',
+  );
+  if (difficultyMin > difficultyMax) {
+    throw new Error(
+      `lone-leaf difficultyMin (${difficultyMin}) must not exceed difficultyMax (${difficultyMax})`,
+    );
+  }
+
   const autoAdvance = cfg.autoAdvance ?? DEFAULT_AUTO_ADVANCE;
   if (typeof autoAdvance !== 'boolean') {
     throw new Error(
@@ -154,6 +191,8 @@ export function validateConfig(config: unknown): ResolvedLoneLeafConfig {
   return {
     categories,
     rounds,
+    difficultyMin,
+    difficultyMax,
     autoAdvance,
     advanceAfterMs: advanceAfterSeconds * 1000,
     clueMs: clueSeconds * 1000,

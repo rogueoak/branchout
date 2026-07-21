@@ -5,7 +5,12 @@
 'use client';
 
 import { Badge, buttonVariants } from '@rogueoak/canopy';
-import { PUBLIC_GAME_CATALOG, getGameCard, startGameHref } from '../lib/games/catalog';
+import {
+  FEATURED_GAME_CATALOG,
+  PUBLIC_GAME_CATALOG,
+  getGameCard,
+  startGameHref,
+} from '../lib/games/catalog';
 import type { Viewer } from '../lib/session';
 import { Footer } from './Footer';
 import { GameCard } from './game/GameCard';
@@ -42,11 +47,13 @@ export function LandingContent({ viewer }: LandingContentProps) {
     ? { label: 'Play now', href: '/games' }
     : { label: 'Sign up free', href: '/signup' };
 
-  // One slide per public game (spec 0067), sourced from the same shared catalog reader as the teaser
-  // grid so the carousel never drifts. Each slide carries both hero shapes: the portrait (3:4) for
-  // phones and the wide (16:9) hero for md+. A public game always ships a portrait, but we fall back
-  // to its wide hero defensively so a new public game can never render an empty portrait slide.
-  const heroSlides: HomeHeroSlide[] = PUBLIC_GAME_CATALOG.flatMap((entry) => {
+  // One slide per FEATURED game (spec 0073) - the curated carousel subset, not every public game, so
+  // the hero stays a spotlight as the roster grows (Reversi and Checkers stay public + playable on the
+  // teaser grid and /games below, just off the carousel). Sourced from the shared catalog reader so the
+  // slides never drift from the cards. Each slide carries both hero shapes: the portrait (3:4) for
+  // phones and the wide (16:9) hero for md+. A featured game always ships a portrait, but we fall back
+  // to its wide hero defensively so a new featured game can never render an empty portrait slide.
+  const heroSlides: HomeHeroSlide[] = FEATURED_GAME_CATALOG.flatMap((entry) => {
     const game = getGameCard(entry.slug);
     if (!game) return [];
     return [

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SITE_URL } from '../site';
 import { GAME_UI_LIST } from './registry';
 import {
+  FEATURED_GAME_CATALOG,
   GAME_CATALOG,
   PUBLIC_GAME_CATALOG,
   absoluteUrl,
@@ -79,23 +80,66 @@ describe('getFeatureEntry (surface-aware resolution, spec 0030)', () => {
   });
 
   it('resolves an insider game ONLY on the insider surface (404s on the apex)', () => {
-    // lone-leaf is insider-only; it must not exist publicly but renders behind the insider gate.
-    expect(getFeatureEntry('lone-leaf', { insider: false })).toBeUndefined();
-    expect(getFeatureEntry('lone-leaf', { insider: true })?.visibility).toBe('insider');
+    // teeter-tower is insider-only; it must not exist publicly but renders behind the insider gate.
+    expect(getFeatureEntry('teeter-tower', { insider: false })).toBeUndefined();
+    expect(getFeatureEntry('teeter-tower', { insider: true })?.visibility).toBe('insider');
+  });
+
+  it('resolves Lone Leaf publicly now that it is promoted (spec 0073)', () => {
+    // Lone Leaf graduated from insider to public: it resolves on the apex like any public game.
+    expect(getFeatureEntry('lone-leaf', { insider: false })?.visibility).toBe('public');
+    expect(getCatalogEntry('lone-leaf')?.name).toBe('Lone Leaf');
   });
 
   it('returns undefined for an unknown slug on either surface, and never weakens getCatalogEntry', () => {
     expect(getFeatureEntry('nope', { insider: true })).toBeUndefined();
     // The public-only guarantee is unchanged: getCatalogEntry never resolves an insider game.
-    expect(getCatalogEntry('lone-leaf')).toBeUndefined();
+    expect(getCatalogEntry('teeter-tower')).toBeUndefined();
+  });
+});
+
+describe('FEATURED_GAME_CATALOG (curated home hero carousel, spec 0073)', () => {
+  it('features Trivia, Liar Liar, and Lone Leaf - the curated carousel subset', () => {
+    expect(FEATURED_GAME_CATALOG.map((g) => g.slug)).toEqual(['trivia', 'liar-liar', 'lone-leaf']);
+  });
+
+  it('excludes public-but-not-featured games (Reversi, Checkers stay off the carousel)', () => {
+    const slugs = FEATURED_GAME_CATALOG.map((g) => g.slug);
+    expect(slugs).not.toContain('reversi');
+    expect(slugs).not.toContain('checkers');
+    // But they are still public: they remain on the /games index and keep their feature pages.
+    expect(PUBLIC_GAME_CATALOG.map((g) => g.slug)).toEqual(
+      expect.arrayContaining(['reversi', 'checkers']),
+    );
+  });
+
+  it('is a subset of the public catalog (only a public game can be featured)', () => {
+    const publicSlugs = new Set(PUBLIC_GAME_CATALOG.map((g) => g.slug));
+    for (const game of FEATURED_GAME_CATALOG) {
+      expect(publicSlugs.has(game.slug)).toBe(true);
+      expect(game.featured).toBe(true);
+    }
+  });
+
+  it('never features an insider game (guards the "public.filter" derivation directly)', () => {
+    // The subset test above only bites if an insider game actually set featured: true (none does).
+    // These assert the invariant at its source instead: every FEATURED entry is public visibility,
+    // so a regression that derived FEATURED from GAME_CATALOG (the full list) instead of
+    // PUBLIC_GAME_CATALOG would fail here even before any insider game opts in.
+    for (const game of FEATURED_GAME_CATALOG) {
+      expect(game.visibility).toBe('public');
+    }
+    expect(GAME_CATALOG.filter((g) => g.visibility === 'insider').some((g) => g.featured)).toBe(
+      false,
+    );
   });
 });
 
 describe('insiderFeatureMetadata (SEO only where public, spec 0030)', () => {
   it('is noindex/nofollow with a title/description but NO canonical or share card', () => {
-    const entry = getFeatureEntry('lone-leaf', { insider: true })!;
+    const entry = getFeatureEntry('teeter-tower', { insider: true })!;
     const meta = insiderFeatureMetadata(entry);
-    expect(String(meta.title)).toContain('Lone Leaf');
+    expect(String(meta.title)).toContain('Teeter Tower');
     expect(meta.robots).toEqual({ index: false, follow: false });
     expect(meta.alternates).toBeUndefined();
     expect(meta.openGraph).toBeUndefined();

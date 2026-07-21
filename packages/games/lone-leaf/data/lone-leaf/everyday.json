@@ -1,12 +1,12 @@
 [
-  { "id": "everyday-001", "word": "umbrella", "category": "everyday" },
-  { "id": "everyday-002", "word": "coffee", "category": "everyday" },
-  { "id": "everyday-003", "word": "pillow", "category": "everyday" },
-  { "id": "everyday-004", "word": "ladder", "category": "everyday" },
-  { "id": "everyday-005", "word": "candle", "category": "everyday" },
-  { "id": "everyday-006", "word": "mirror", "category": "everyday" },
-  { "id": "everyday-007", "word": "bicycle", "category": "everyday" },
-  { "id": "everyday-008", "word": "wallet", "category": "everyday" },
-  { "id": "everyday-009", "word": "toothbrush", "category": "everyday" },
-  { "id": "everyday-010", "word": "blanket", "category": "everyday" }
+  { "id": "everyday-001", "word": "Umbrella", "category": "everyday", "difficulty": 1 },
+  { "id": "everyday-002", "word": "Coffee", "category": "everyday", "difficulty": 1 },
+  { "id": "everyday-003", "word": "Pillow", "category": "everyday", "difficulty": 1 },
+  { "id": "everyday-004", "word": "Ladder", "category": "everyday", "difficulty": 2 },
+  { "id": "everyday-005", "word": "Candle", "category": "everyday", "difficulty": 2 },
+  { "id": "everyday-006", "word": "Mirror", "category": "everyday", "difficulty": 2 },
+  { "id": "everyday-007", "word": "Bicycle", "category": "everyday", "difficulty": 2 },
+  { "id": "everyday-008", "word": "Wallet", "category": "everyday", "difficulty": 1 },
+  { "id": "everyday-009", "word": "Toothbrush", "category": "everyday", "difficulty": 3 },
+  { "id": "everyday-010", "word": "Blanket", "category": "everyday", "difficulty": 2 }
 ]

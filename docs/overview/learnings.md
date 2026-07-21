@@ -792,3 +792,14 @@ Capture durable lessons as they emerge.
   only where it is consumed, so a stale/garbage value degrades to the safe default before any consumer
   sees it. The review persona caught this as a blocker; both fixes are one-liners once the distinction
   is named. (Feedback `0040`, spec `0063`.)
+- **Loosening a data invariant silently breaks every consumer that assumed it - re-audit them all.**
+  Lone Leaf's difficulty rework relaxed the seed `word` validator from single-word to also allow
+  multi-word proper nouns. That was correct, but a downstream consumer - the wilt's seed-match guard
+  (`sameLeaf(leaf, seedWord)`) - had quietly depended on seeds being one word: it compares WHOLE
+  normalized strings, so a one-word leaf "einstein" no longer matched the multi-word seed "albert
+  einstein" and survived, handing the Seeker a chunk of the secret answer. The fix (`leafRevealsSeed`:
+  for a multi-word seed, wilt any leaf matching a single token) was cheap; the lesson is the process.
+  When you relax a validation/shape invariant, grep every place that read the old guarantee (matching,
+  dedupe, splitting, indexing) and prove each still holds under the wider input - an invariant is a
+  contract other code silently leans on, and widening it is a breaking change even when nothing throws.
+  (Spec `0057`.)

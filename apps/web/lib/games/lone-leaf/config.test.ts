@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { defaultLoneLeafConfig, validateLoneLeafConfig, type LoneLeafHostConfig } from './config';
+import {
+  categoryLabel,
+  defaultLoneLeafConfig,
+  difficultyPresetId,
+  validateLoneLeafConfig,
+  type LoneLeafHostConfig,
+} from './config';
 
 /** Build a full host config from the defaults, overriding just the fields under test. */
 function cfg(overrides: Partial<LoneLeafHostConfig> = {}): LoneLeafHostConfig {
@@ -12,12 +18,43 @@ describe('validateLoneLeafConfig', () => {
     expect(config).toMatchObject({
       categories: 'random',
       rounds: 10,
+      difficultyMin: 3,
+      difficultyMax: 6,
       autoAdvance: true,
       advanceAfterSeconds: 5,
       clueSeconds: 60,
       guessSeconds: 60,
     });
     expect(validateLoneLeafConfig(config)).toEqual([]);
+  });
+
+  it('defaults difficulty to the Medium band (3-6)', () => {
+    expect(difficultyPresetId(3, 6)).toBe('medium');
+    // Read BOTH default bounds back so a regression in either default fails here.
+    const d = defaultLoneLeafConfig();
+    expect(difficultyPresetId(d.difficultyMin, d.difficultyMax)).toBe('medium');
+  });
+
+  it('accepts a valid difficulty band and rejects an out-of-range or inverted one', () => {
+    expect(validateLoneLeafConfig(cfg({ difficultyMin: 6, difficultyMax: 10 }))).toEqual([]);
+    expect(
+      validateLoneLeafConfig(cfg({ difficultyMin: 0 })).some((e) => e.field === 'difficulty'),
+    ).toBe(true);
+    expect(
+      validateLoneLeafConfig(cfg({ difficultyMax: 11 })).some((e) => e.field === 'difficulty'),
+    ).toBe(true);
+    expect(
+      validateLoneLeafConfig(cfg({ difficultyMin: 7, difficultyMax: 3 })).some(
+        (e) => e.field === 'difficulty',
+      ),
+    ).toBe(true);
+  });
+
+  it('maps the three new category slugs to friendly labels', () => {
+    expect(categoryLabel('celebrities')).toBe('Famous People');
+    expect(categoryLabel('historical')).toBe('Historical Figures');
+    expect(categoryLabel('movies')).toBe('Movies');
+    expect(categoryLabel('nature')).toBe('Nature');
   });
 
   it('accepts 1-3 distinct known themes', () => {

@@ -1,0 +1,20 @@
+[
+  { "id": "celebrities-001", "word": "Oprah Winfrey", "category": "celebrities", "difficulty": 2 },
+  { "id": "celebrities-002", "word": "Taylor Swift", "category": "celebrities", "difficulty": 1 },
+  { "id": "celebrities-003", "word": "Keanu Reeves", "category": "celebrities", "difficulty": 3 },
+  {
+    "id": "celebrities-004",
+    "word": "Serena Williams",
+    "category": "celebrities",
+    "difficulty": 3
+  },
+  {
+    "id": "celebrities-005",
+    "word": "David Attenborough",
+    "category": "celebrities",
+    "difficulty": 5
+  },
+  { "id": "celebrities-006", "word": "Lionel Messi", "category": "celebrities", "difficulty": 2 },
+  { "id": "celebrities-007", "word": "Zendaya", "category": "celebrities", "difficulty": 4 },
+  { "id": "celebrities-008", "word": "Tom Hanks", "category": "celebrities", "difficulty": 2 }
+]

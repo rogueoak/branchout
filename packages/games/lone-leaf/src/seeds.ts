@@ -2,27 +2,63 @@
 // mystery word the Seeker must guess from the surviving leaves. The public repo ships a small SAMPLE
 // under data/lone-leaf/*.json; the full bank would later live in the private data repo mounted at
 // GAME_DATA_DIR (spec 0041). `validateSeedBank` checks per-item STRUCTURE only (schema, id
-// format + uniqueness, single-word seeds, no duplicate word in a category) - there is no per-category
-// count gate, because the bank grows over time and its category spread is deliberately uneven.
+// format + uniqueness, a non-empty word, an optional 1-10 difficulty, no duplicate word in a
+// category) - there is no per-category count gate, because the bank grows over time and its category
+// spread is deliberately uneven.
+//
+// Words may be a SINGLE word (the original six themes) or MULTIPLE words for the proper-noun themes
+// added in the difficulty rework (famous people, movies, historical figures) - e.g. "albert einstein".
+// Matching (matching.ts) normalizes case and collapses internal whitespace so a Seeker's guess still
+// resolves regardless of spacing/case. `difficulty` is an OPTIONAL obscurity rating (1 = universally
+// known, 10 = obscure): the code treats a missing value as {@link DEFAULT_DIFFICULTY}, so seeds
+// without it still load - this decouples the engine from the data, which fills the ratings in.
 
 import type { AssetLoader } from '@branchout/game-sdk';
 
-/** One seed: the mystery word the Seeker guesses, tagged by theme. */
+/** One seed: the mystery word the Seeker guesses, tagged by theme, with an optional obscurity rating. */
 export interface LoneLeafSeed {
   /** Unique id, conventionally `<category>-NNN`. */
   id: string;
   /** One of {@link CATEGORIES}. */
   category: string;
-  /** The mystery word (a single word) the non-Seekers write leaves for. */
+  /** The mystery word the non-Seekers write leaves for. One word, or several for proper-noun themes. */
   word: string;
   /** Extra accepted spellings of the word, so a correct guess is recognized robustly. */
   aliases?: string[];
+  /** Obscurity rating 1-10 (1 = universally known, 10 = obscure). Optional; missing defaults to 5. */
+  difficulty?: number;
 }
 
-/** The seed categories a host may choose from (1-3, or `random` across all). */
-export const CATEGORIES = ['nature', 'everyday', 'places', 'food', 'animals', 'feelings'] as const;
+/**
+ * The seed categories a host may choose from (1-3, or `random` across all). The first six are the
+ * single-word themes; `celebrities`/`movies`/`historical` are the proper-noun themes (multi-word
+ * words allowed) added by the difficulty rework. Slugs are the wire contract shared with the web
+ * mirror and the private data repo, so they must not drift.
+ */
+export const CATEGORIES = [
+  'nature',
+  'everyday',
+  'places',
+  'food',
+  'animals',
+  'feelings',
+  'celebrities',
+  'movies',
+  'historical',
+] as const;
 
 export type LoneLeafCategory = (typeof CATEGORIES)[number];
+
+/** Difficulty bounds (obscurity), shared with the host config's band. Mirrors Trivia's 1-10 scale. */
+export const MIN_DIFFICULTY = 1;
+export const MAX_DIFFICULTY = 10;
+/** A seed with no explicit rating is treated as mid-scale, so undated data still selects sensibly. */
+export const DEFAULT_DIFFICULTY = 5;
+
+/** The seed's effective obscurity rating: its `difficulty`, or {@link DEFAULT_DIFFICULTY} when absent. */
+export function seedDifficulty(seed: LoneLeafSeed): number {
+  return seed.difficulty ?? DEFAULT_DIFFICULTY;
+}
 
 /** Id convention: `<category>-NNN` (3-digit zero-padded suffix). */
 const ID_PATTERN = /^[a-z]+-\d{3}$/;
@@ -54,9 +90,10 @@ export async function loadSeedBank(assets: AssetLoader): Promise<LoneLeafSeed[]>
  * Per-item rules enforced:
  * 1. `id` is present, unique across the bank, and matches `<category>-NNN` (3-digit suffix).
  * 2. `category` is one of {@link CATEGORIES}.
- * 3. `word` is a non-empty single word (no inner whitespace).
+ * 3. `word` is a non-empty string. One OR many words are allowed (multi-word proper nouns).
  * 4. `aliases` (optional) is an array of non-empty strings.
- * 5. No duplicate `word` within a single category.
+ * 5. `difficulty` (optional) is an integer in [1, 10] when present.
+ * 6. No duplicate `word` within a single category (compared case-insensitively, whitespace-collapsed).
  */
 export function validateSeedBank(seeds: readonly LoneLeafSeed[]): void {
   const seen = new Set<string>();
@@ -91,11 +128,10 @@ export function validateSeedBank(seeds: readonly LoneLeafSeed[]): void {
       );
     }
 
+    // The word may be one word or several (multi-word proper nouns for the celebrities/movies/
+    // historical themes); only an empty/blank word is rejected. Matching collapses case + whitespace.
     if (typeof seed.word !== 'string' || seed.word.trim().length === 0) {
       throw new Error(`lone-leaf seed bank: ${pos} has an empty word`);
-    }
-    if (seed.word.trim().includes(' ')) {
-      throw new Error(`lone-leaf seed bank: ${pos} word "${seed.word}" must be a single word`);
     }
     if (seed.aliases !== undefined) {
       if (
@@ -107,14 +143,30 @@ export function validateSeedBank(seeds: readonly LoneLeafSeed[]): void {
         );
       }
     }
+    // Difficulty is optional (missing -> DEFAULT_DIFFICULTY at read time); when present it must be an
+    // integer inside the supported 1-10 obscurity scale, so a malformed rating fails fast at boot.
+    if (seed.difficulty !== undefined) {
+      if (
+        typeof seed.difficulty !== 'number' ||
+        !Number.isInteger(seed.difficulty) ||
+        seed.difficulty < MIN_DIFFICULTY ||
+        seed.difficulty > MAX_DIFFICULTY
+      ) {
+        throw new Error(
+          `lone-leaf seed bank: ${pos} difficulty must be an integer ${MIN_DIFFICULTY}-${MAX_DIFFICULTY}, ` +
+            `got ${JSON.stringify(seed.difficulty)}`,
+        );
+      }
+    }
 
-    // No duplicate words within a category.
+    // No duplicate words within a category. Collapse internal whitespace so a multi-word seed compares
+    // by its canonical spacing ("albert  einstein" == "albert einstein").
     let seenWords = wordsByCategory.get(seed.category);
     if (!seenWords) {
       seenWords = new Set<string>();
       wordsByCategory.set(seed.category, seenWords);
     }
-    const normalized = seed.word.trim().toLowerCase();
+    const normalized = seed.word.trim().replace(/\s+/g, ' ').toLowerCase();
     if (seenWords.has(normalized)) {
       throw new Error(
         `lone-leaf seed bank: duplicate word in category "${seed.category}": "${seed.word}"`,
