@@ -133,6 +133,19 @@ Capture durable lessons as they emerge.
   so it clicked a button that no longer existed and timed out. A missed spec fails only in the
   deploy-gating e2e job, after merge. Grep `e2e/tests/` for the removed control's text/role before
   merging a flow change. (Feedback `0035`.)
+- **A flaky web test is a deploy blocker, and a timer-driven UI assertion under fake timers must
+  order its state writes inside `act` - never advance-then-assert synchronously.** `release.yml`
+  runs the web suite before it deploys, so an intermittent unit test (here RoomsHome's "setup
+  timeout" test, `Unable to find role "alert"`) aborts prod releases, not just PR CI. The cause is
+  React 18's `createRoot`: a `setState` fired from a timer/promise callback OUTSIDE `act` commits on
+  the Scheduler's MessageChannel (a macrotask), which `vi.advanceTimersByTimeAsync` does not
+  deterministically flush - so a synchronous `getByRole` races the commit. When two writers touch
+  the same state (the auto-create's `setError(null)` at ~0 and the safety timeout's
+  `setError(msg)` at 8s), drain them in explicit order, each inside `act` (which, in
+  testing-library's act environment, flushes commits synchronously via microtasks): flush the first
+  writer, then advance the timeout so its write is the unambiguous last one. The "not wrapped in
+  act(...)" warning is the tell that a state update is being committed off-act and can race your
+  assertion. (Feedback `0040`.)
 
 ## Services and state
 
