@@ -34,7 +34,7 @@ const roster: SessionPlayer[] = [
 // A real palette color, so it survives collectMove's per-player validation (this roster claims no
 // palette, so the lenient union - which includes every palette color - applies).
 const sketch: Sketch = {
-  strokes: [{ color: PLAYER_PALETTES[0].colors[0], points: [0, 0, 500, 500, 1000, 0] }],
+  strokes: [{ color: PLAYER_PALETTES[0]!.colors[0], points: [0, 0, 500, 500, 1000, 0] }],
 };
 
 describe('Sketchy full cycle', () => {

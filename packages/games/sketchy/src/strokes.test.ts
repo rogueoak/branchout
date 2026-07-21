@@ -14,7 +14,7 @@ import {
 
 // A concrete palette's three colors stand in for the old fixed STROKE_COLORS: a sketch is drawn with
 // one player's palette, so the tests use a real palette's trio (all three in the default allowed set).
-const STROKE_COLORS = PLAYER_PALETTES[0].colors;
+const STROKE_COLORS = PLAYER_PALETTES[0]!.colors;
 
 describe('stroke serialize/replay round-trip', () => {
   it('round-trips a multi-stroke sketch unchanged', () => {
@@ -94,8 +94,8 @@ describe('parseSketch bounding + validation', () => {
 });
 
 describe('per-player palette enforcement (spec 0063)', () => {
-  const mine = PLAYER_PALETTES[0].colors; // my three claimed colors
-  const theirs = PLAYER_PALETTES[5].colors; // a different palette's colors
+  const mine = PLAYER_PALETTES[0]!.colors; // my three claimed colors
+  const theirs = PLAYER_PALETTES[5]!.colors; // a different palette's colors
 
   it('keeps strokes drawn in my palette when validated against it', () => {
     const raw = JSON.stringify({

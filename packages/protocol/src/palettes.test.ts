@@ -64,7 +64,7 @@ describe('player palettes', () => {
     // rng pinned to 0 selects the first free palette.
     const first = pickAvailablePalette([], () => 0);
     expect(first).toBe(PLAYER_PALETTE_IDS[0]);
-    const second = pickAvailablePalette([PLAYER_PALETTE_IDS[0]], () => 0);
+    const second = pickAvailablePalette([PLAYER_PALETTE_IDS[0]!], () => 0);
     expect(second).toBe(PLAYER_PALETTE_IDS[1]);
   });
 

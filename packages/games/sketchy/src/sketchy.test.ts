@@ -48,7 +48,7 @@ function ctxOf(
 // Drawn in a real palette color so it survives per-player validation (the roster above claims no
 // palette, so collectMove validates against the lenient union that includes every palette color).
 const sampleSketch: Sketch = {
-  strokes: [{ color: PLAYER_PALETTES[0].colors[0], points: [10, 10, 500, 500, 900, 100] }],
+  strokes: [{ color: PLAYER_PALETTES[0]!.colors[0], points: [10, 10, 500, 500, 900, 100] }],
 };
 
 describe('stageForRound', () => {
@@ -80,7 +80,7 @@ describe('per-player seed secrecy (spec 0052)', () => {
     for (const seed of seeds) expect(BANK.map((s) => s.text)).toContain(seed);
 
     // Crucially: p2's private payload never contains p1's or p3's seed.
-    const p2Blob = JSON.stringify(priv.p2);
+    const p2Blob = JSON.stringify(priv.p2!);
     expect(p2Blob).toContain(priv.p2!.seed);
     expect(p2Blob).not.toContain(priv.p1!.seed);
     expect(p2Blob).not.toContain(priv.p3!.seed);
@@ -305,9 +305,9 @@ describe('sketch round: decoys, dedupe, truth rejection, scoring', () => {
 describe('per-player palettes (spec 0063)', () => {
   // A roster where each player claimed a distinct palette.
   const palettedRoster: SessionPlayer[] = [
-    { player: 'p1', nickname: 'Ada', connected: true, paletteId: PLAYER_PALETTES[0].id },
-    { player: 'p2', nickname: 'Bo', connected: true, paletteId: PLAYER_PALETTES[5].id },
-    { player: 'p3', nickname: 'Cy', connected: true, paletteId: PLAYER_PALETTES[9].id },
+    { player: 'p1', nickname: 'Ada', connected: true, paletteId: PLAYER_PALETTES[0]!.id },
+    { player: 'p2', nickname: 'Bo', connected: true, paletteId: PLAYER_PALETTES[5]!.id },
+    { player: 'p3', nickname: 'Cy', connected: true, paletteId: PLAYER_PALETTES[9]!.id },
   ];
   function pctx(
     round: number,
@@ -332,9 +332,9 @@ describe('per-player palettes (spec 0063)', () => {
       palettes: Record<string, string>;
     };
     expect(scratch.palettes).toEqual({
-      p1: PLAYER_PALETTES[0].id,
-      p2: PLAYER_PALETTES[5].id,
-      p3: PLAYER_PALETTES[9].id,
+      p1: PLAYER_PALETTES[0]!.id,
+      p2: PLAYER_PALETTES[5]!.id,
+      p3: PLAYER_PALETTES[9]!.id,
     });
   });
 
@@ -343,10 +343,10 @@ describe('per-player palettes (spec 0063)', () => {
     let scratch = game.configure({ rounds: 1 }, palettedRoster).scratch;
     const started = game.startRound(pctx(1, 'collecting', scratch));
     const priv = started.private as Record<string, { seed: string; palette: string[] }>;
-    expect(priv.p1.palette).toEqual([...PLAYER_PALETTES[0].colors]);
-    expect(priv.p2.palette).toEqual([...PLAYER_PALETTES[5].colors]);
+    expect(priv.p1!.palette).toEqual([...PLAYER_PALETTES[0]!.colors]);
+    expect(priv.p2!.palette).toEqual([...PLAYER_PALETTES[5]!.colors]);
     // No player's private payload carries another player's palette.
-    expect(priv.p1.palette).not.toEqual([...PLAYER_PALETTES[5].colors]);
+    expect(priv.p1!.palette).not.toEqual([...PLAYER_PALETTES[5]!.colors]);
     scratch = started.scratch;
   });
 
@@ -355,7 +355,7 @@ describe('per-player palettes (spec 0063)', () => {
     let scratch = game.configure({ rounds: 1 }, palettedRoster).scratch;
     scratch = game.startRound(pctx(1, 'collecting', scratch)).scratch;
     const mine: Sketch = {
-      strokes: [{ color: PLAYER_PALETTES[0].colors[1], points: [1, 2, 3, 4] }],
+      strokes: [{ color: PLAYER_PALETTES[0]!.colors[1], points: [1, 2, 3, 4] }],
     };
     const res = game.collectMove(pctx(1, 'collecting', scratch), 'p1', serializeSketch(mine));
     expect(res.rejected).toBeUndefined();
@@ -368,7 +368,7 @@ describe('per-player palettes (spec 0063)', () => {
     scratch = game.startRound(pctx(1, 'collecting', scratch)).scratch;
     // p1 tries to draw with p2's palette color: the off-palette stroke is dropped, leaving nothing.
     const stolen: Sketch = {
-      strokes: [{ color: PLAYER_PALETTES[5].colors[0], points: [1, 2, 3, 4] }],
+      strokes: [{ color: PLAYER_PALETTES[5]!.colors[0], points: [1, 2, 3, 4] }],
     };
     const res = game.collectMove(pctx(1, 'collecting', scratch), 'p1', serializeSketch(stolen));
     expect(res.rejected?.reason).toMatch(/draw something/);
@@ -381,15 +381,15 @@ describe('per-player palettes (spec 0063)', () => {
     scratch = game.startRound(pctx(1, 'collecting', scratch)).scratch;
     const mixed: Sketch = {
       strokes: [
-        { color: PLAYER_PALETTES[0].colors[0], points: [1, 2, 3, 4] }, // mine -> kept
-        { color: PLAYER_PALETTES[5].colors[0], points: [5, 6, 7, 8] }, // not mine -> dropped
+        { color: PLAYER_PALETTES[0]!.colors[0], points: [1, 2, 3, 4] }, // mine -> kept
+        { color: PLAYER_PALETTES[5]!.colors[0], points: [5, 6, 7, 8] }, // not mine -> dropped
       ],
     };
     const res = game.collectMove(pctx(1, 'collecting', scratch), 'p1', serializeSketch(mixed));
     expect(res.rejected).toBeUndefined();
-    const banked = (res.scratch as { sketches: Record<string, string> }).sketches.p1;
+    const banked = (res.scratch as { sketches: Record<string, string> }).sketches.p1!;
     const parsed = JSON.parse(banked) as { strokes: { color: string }[] };
     expect(parsed.strokes).toHaveLength(1);
-    expect(parsed.strokes[0].color).toBe(PLAYER_PALETTES[0].colors[0]);
+    expect(parsed.strokes[0]!.color).toBe(PLAYER_PALETTES[0]!.colors[0]);
   });
 });
