@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The rooms home drives the create flow: a plain create routes to the pick step; a `?game=` deep
@@ -132,8 +132,20 @@ describe('RoomsHome create flow', () => {
     try {
       vi.mocked(roomApi.createRoom).mockReturnValue(new Promise(() => {}) as never);
       render(<RoomsHome viewer={{ signedIn: true }} initialGame="liar-liar" />);
-      // Flush the identity resolve + auto-create kickoff, then run out the setup timeout (8s).
-      await vi.advanceTimersByTimeAsync(8000);
+      // Two writers touch `error`: the auto-create's setError(null) (fires as soon as identity
+      // resolves, ~clock 0) and the safety timer's setError('taking longer') at 8s. They must settle
+      // in that order or the test races them - the flake. Advancing straight to 8s fires the timer
+      // BEFORE the pending identity microtask, so setError(null) would land last and strand the setup
+      // screen. So drain in two steps, each INSIDE act (in the act environment testing-library sets,
+      // React flushes commits synchronously via microtasks, not the MessageChannel scheduler):
+      // first flush the identity resolve + auto-create kickoff (enters the creating setup state)...
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      // ...then run out the setup safety timeout, making its message the unambiguous last write.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(8000);
+      });
       expect(screen.getByRole('alert').textContent).toMatch(/taking longer than expected/i);
       expect(screen.getByRole('button', { name: /create a room/i })).toBeDefined();
       expect(hoisted.replace).not.toHaveBeenCalled();
