@@ -8,6 +8,8 @@
 // Kept deliberately minimal: no pressure, no timing, no bezier smoothing - a straight polyline per
 // stroke is enough to read a doodle and is trivial to round-trip and to unit test.
 
+import { ALL_PALETTE_COLORS } from '@branchout/protocol';
+
 /** The fixed logical extent of the drawing surface on each axis. Points are clamped to [0, SIZE]. */
 export const CANVAS_SIZE = 1000;
 
@@ -15,11 +17,6 @@ export const CANVAS_SIZE = 1000;
 export const MAX_STROKES = 400;
 export const MAX_POINTS_PER_STROKE = 1000;
 export const MAX_TOTAL_POINTS = 20_000;
-
-/** The small fixed palette a player draws with. The first entry is the default twig color. */
-export const STROKE_COLORS = ['#0d0a15', '#d2a463', '#7c3aed', '#ec4899', '#22c55e'] as const;
-
-export type StrokeColor = (typeof STROKE_COLORS)[number];
 
 /** One stroke: a color and a flat `[x0, y0, x1, y1, ...]` array of integer logical coordinates. */
 export interface Stroke {
@@ -47,20 +44,22 @@ function clampCoord(value: number): number {
   return Math.max(0, Math.min(CANVAS_SIZE, Math.round(value)));
 }
 
-function isColor(value: unknown): value is string {
-  return typeof value === 'string' && (STROKE_COLORS as readonly string[]).includes(value);
+function isColor(value: unknown, allowed: ReadonlySet<string>): value is string {
+  return typeof value === 'string' && allowed.has(value);
 }
 
 /**
  * Coerce one raw stroke into a bounded, validated {@link Stroke}, or null when it is unusable. Points
  * are clamped to the logical canvas and truncated to {@link MAX_POINTS_PER_STROKE} (a whole even
- * count, so no dangling x with no y). A stroke with fewer than two coordinates (no drawn point) is a
- * null - it is dropped by {@link parseSketch}.
+ * count, so no dangling x with no y). A stroke whose color is not in `allowed`, or with fewer than
+ * two coordinates (no drawn point), is a null - it is dropped by {@link parseSketch}. `allowed` is
+ * the set of colors a stroke may use: the drawing player's own palette when the engine validates a
+ * submission, so an off-palette color is dropped rather than trusted.
  */
-function coerceStroke(raw: unknown): Stroke | null {
+function coerceStroke(raw: unknown, allowed: ReadonlySet<string>): Stroke | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const { color, points } = raw as { color?: unknown; points?: unknown };
-  if (!isColor(color) || !Array.isArray(points)) return null;
+  if (!isColor(color, allowed) || !Array.isArray(points)) return null;
   // Truncate to an even count so points always pair into (x, y). Cap the length up front.
   const capped = points.slice(0, MAX_POINTS_PER_STROKE);
   const even = capped.length - (capped.length % 2);
@@ -86,8 +85,17 @@ export function serializeSketch(sketch: Sketch): string {
  * dropped; the stroke count is capped at {@link MAX_STROKES} and the total point count at
  * {@link MAX_TOTAL_POINTS} (later strokes past the cap are dropped). A well-formed but empty sketch
  * parses to `{ strokes: [] }` (the caller decides whether an empty sketch is acceptable).
+ *
+ * `allowed` is the set of colors a stroke may use. The engine passes the DRAWING PLAYER's own
+ * palette colors, so a client that sends an off-palette color has that stroke DROPPED - this is the
+ * server-authoritative per-player palette enforcement. It defaults to the union of every palette's
+ * colors ({@link ALL_PALETTE_COLORS}) for the lenient case (replaying a stored sketch that may use
+ * any player's palette), where the strict per-player check has already happened at collection.
  */
-export function parseSketch(raw: string): Sketch | null {
+export function parseSketch(
+  raw: string,
+  allowed: ReadonlySet<string> = ALL_PALETTE_COLORS,
+): Sketch | null {
   let value: unknown;
   try {
     value = JSON.parse(raw);
@@ -102,7 +110,7 @@ export function parseSketch(raw: string): Sketch | null {
   let totalPoints = 0;
   for (const rawStroke of strokesRaw) {
     if (strokes.length >= MAX_STROKES) break;
-    const stroke = coerceStroke(rawStroke);
+    const stroke = coerceStroke(rawStroke, allowed);
     if (!stroke) continue;
     if (totalPoints + stroke.points.length > MAX_TOTAL_POINTS) break;
     totalPoints += stroke.points.length;

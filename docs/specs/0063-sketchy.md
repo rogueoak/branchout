@@ -171,6 +171,36 @@ scoring are unchanged):
   count and disables when exhausted, and Clear requires a confirm dialog (it wipes the drawing and
   spends the single clear).
 
+### Per-player palettes
+
+Every player draws with their OWN reserved 3-color palette instead of a single shared 5-color set, so
+each player's strokes are visually their own and the engine can enforce who drew what color.
+
+- **Presets.** ~24 distinct palettes, each a stable id + display name + a trio of hex colors that read
+  together and stay visible on the white bark. They step around the hue wheel so a palette's dominant
+  color is distinguishable palette-to-palette. Defined ONCE in `@branchout/protocol`
+  (`PLAYER_PALETTES`, like `PLAYER_LIMITS`), so the web lobby/canvas, the engine's stroke validation,
+  and the control-plane's reservation all read one definition and cannot drift (no engine/web mirror).
+- **Claim + reservation (the seam).** A palette is per-player lobby state, stored on the control-plane
+  `RoomMember` (`paletteId`), mirroring how `mode` is stored and broadcast. On join a player is given a
+  RANDOM still-available palette (server-authoritative default); they may switch to any other free one
+  via `PATCH /rooms/:code/palette`. The service RESERVES it: a palette held by another member is
+  refused (`palette_taken`), so two players racing for the same palette cannot both win. Claims reach
+  every device on the existing 3s lobby member poll (no new push channel); the picker shows a taken
+  palette disabled and names its holder. A game UI module opts in via `usesPalettes` so only Sketchy
+  shows the picker.
+- **Engine enforcement (the security core).** `paletteId` is threaded to the engine on the start
+  handoff (`HandoffPlayer.paletteId` -> `SessionPlayer.paletteId`), snapshotted per player into Sketchy
+  scratch at `configure` (fixed for the game, so a mid-game roster change can't reassign colors). At
+  draw collect, `collectMove` validates the submitted sketch against ONLY that player's three colors:
+  `parseSketch` drops any off-palette stroke, so a crafted client sending another palette's color has
+  it dropped. Each player's own colors are delivered to their remote in the private draw payload
+  (alongside the secret seed), so the toolbar shows exactly their three. Read-only replay of any
+  player's sketch validates against the lenient union of all palette colors.
+- **Enough for everyone.** With 24 palettes and at most 8 playing members, every player always gets a
+  distinct palette; only a >24-member room (many viewers) could exhaust the pool, in which case the
+  extra member simply has no palette and the engine falls back to the lenient union for them.
+
 ## Acceptance
 
 - An insider host can configure and start Sketchy with 3-8 players; a non-insider cannot see or start
@@ -196,4 +226,10 @@ scoring are unchanged):
 - Undo (3) and Clear (1) are per-game allowances that persist across rounds, show remaining counts,
   disable when exhausted, and Clear is gated by a confirm dialog (unit tests).
 - typecheck, lint, unit tests, and the web build pass; the brand mark carries the gold root #d2a463.
+- Each player draws with their OWN reserved 3-color palette: the lobby shows a palette picker where a
+  palette claimed by one player is disabled for others (named with its holder), a joiner defaults to a
+  random free palette, and a claim races are resolved server-side (the loser is refused). The in-game
+  toolbar shows exactly the player's three claimed colors; the engine drops any off-palette stroke a
+  client submits (unit tests for reservation, distinctness, and per-player stroke validation; the
+  multiplayer e2e asserts the picker, a reservation, and the 3-color toolbar).
 </content>

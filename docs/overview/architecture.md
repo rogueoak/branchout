@@ -570,8 +570,12 @@ mapping and the engine verifies (spec `0064`, see "Engine-join authentication" b
   (prompt/reveal/standings) so `join` can replay them as ordered catch-up - pub/sub only reaches
   devices subscribed at publish time, so a late joiner would otherwise never see the question
   (feedback `0014`). The roster carries `isHost` (from the handoff) so the engine auto-pauses while
-  the host is disconnected. Per-session operations are serialized in-process so concurrent frames
-  cannot lose an update; cross-instance locking is a future concern.
+  the host is disconnected, and an optional per-player `paletteId` (spec `0063`, additive handoff
+  field): the palette a player reserved in the lobby, snapshotted per player at `configure` so a game
+  (Sketchy) validates that player's strokes against only their claimed colors. Like `isHost`, it is
+  engine-internal and never projected onto the wire `state` frame. Per-session operations are
+  serialized in-process so concurrent frames cannot lose an update; cross-instance locking is a future
+  concern.
 - **Streaming over Redis pub/sub** - the engine publishes server frames to a per-session channel;
   each connected device subscribes and forwards them to its socket. A device also subscribes to its
   own per-player private channel (spec `0052`) for targeted hidden-information frames. Both the store

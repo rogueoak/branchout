@@ -47,8 +47,11 @@ async function joinInsiderAsGuest(
   return page;
 }
 
-/** Draw a few strokes on the sketch canvas with pointer moves, then submit. */
+/** Draw a few strokes on the sketch canvas with pointer moves, then submit. Also asserts the twig
+ * toolbar shows exactly the player's THREE claimed palette colors (spec 0063), not a global set. */
 async function drawAndSubmit(page: Page): Promise<void> {
+  const twigs = page.getByRole('group', { name: /twig color/i }).getByRole('button');
+  await expect(twigs).toHaveCount(3);
   const canvas = page.getByLabel(/draw your seed on the bark/i);
   const box = await canvas.boundingBox();
   if (!box) throw new Error('draw canvas has no bounding box');
@@ -95,6 +98,26 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
     const player2 = await joinInsiderAsGuest(p2Ctx, code, 'Player Two');
     const player3 = await joinInsiderAsGuest(p3Ctx, code, 'Player Three');
     const players = [host, player2, player3];
+
+    // Per-player palettes (spec 0063): the lobby shows a palette picker, and every player was auto-
+    // assigned a distinct reserved palette on join. Confirm the host sees the picker with its own
+    // palette marked "Yours", then claim a specific free palette and confirm it sticks.
+    await expect(host.getByRole('group', { name: /choose your palette/i })).toBeVisible();
+    await expect(host.getByRole('button', { name: /palette - yours/i })).toBeVisible();
+    // Switch to the first still-free palette and confirm the claim sticks (server reserves it). Using
+    // "the first free one" avoids picking a palette a player was already auto-assigned (flaky).
+    const freePalette = host.getByRole('button', { name: /palette - free/i }).first();
+    const freeName = (await freePalette.getAttribute('aria-label'))?.split(' palette')[0] ?? '';
+    await freePalette.click();
+    await expect(
+      host.getByRole('button', { name: new RegExp(`^${freeName} palette - yours$`, 'i') }),
+    ).toBeVisible();
+    // Exactly one palette is "yours" at a time (the claim moved, not duplicated).
+    await expect(host.getByRole('button', { name: /palette - yours/i })).toHaveCount(1);
+    // A guest sees the host's claim as reserved on the next member poll (cross-device reservation).
+    await expect(
+      player2.getByRole('button', { name: new RegExp(`${freeName} palette - taken`, 'i') }),
+    ).toBeVisible({ timeout: 10_000 });
 
     // One cycle keeps the run short: rounds now default to a "Standard" preset, so pick Custom to
     // reveal the number field and set a single round.

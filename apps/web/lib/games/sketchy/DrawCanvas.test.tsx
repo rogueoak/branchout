@@ -1,7 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PLAYER_PALETTES } from '@branchout/protocol';
 import { CLEAR_ALLOWANCE, DrawCanvas, UNDO_ALLOWANCE } from './DrawCanvas';
 import type { Sketch } from './strokes';
+
+// The player's own claimed palette (spec 0063): the exact three colors the toolbar offers.
+const PALETTE = [...PLAYER_PALETTES[0]!.colors];
 
 // canopy's ResponsiveDialog (the Clear confirm) reads useIsMobile() -> matchMedia, which jsdom does
 // not implement. Stub it so the desktop (modal) form mounts deterministically. Radix portals into
@@ -38,6 +42,7 @@ function renderCanvas(props: Partial<React.ComponentProps<typeof DrawCanvas>> = 
     <DrawCanvas
       sketch={drawn}
       onChange={noop}
+      palette={PALETTE}
       undosRemaining={UNDO_ALLOWANCE}
       clearsRemaining={CLEAR_ALLOWANCE}
       onUndo={noop}
@@ -46,6 +51,20 @@ function renderCanvas(props: Partial<React.ComponentProps<typeof DrawCanvas>> = 
     />,
   );
 }
+
+describe('DrawCanvas palette (spec 0063)', () => {
+  it('shows exactly the three claimed palette colors as twig swatches', () => {
+    renderCanvas();
+    const swatches = screen.getByRole('group', { name: /twig color/i }).querySelectorAll('button');
+    expect(swatches).toHaveLength(PALETTE.length);
+    for (const color of PALETTE) {
+      expect(screen.getByRole('button', { name: `Draw in ${color}` })).toBeDefined();
+    }
+    // A color from ANOTHER palette is never offered.
+    const other = PLAYER_PALETTES[5]!.colors[0];
+    expect(screen.queryByRole('button', { name: `Draw in ${other}` })).toBeNull();
+  });
+});
 
 describe('DrawCanvas allowances', () => {
   it('shows the remaining undo/clear counts and the whole-game scope copy', () => {
@@ -62,7 +81,7 @@ describe('DrawCanvas allowances', () => {
     renderCanvas({ sketch: twoStrokes, onChange, onUndo, undosRemaining: 2 });
     fireEvent.click(screen.getByRole('button', { name: 'Undo (2 left)' }));
     // Only the last stroke is dropped - the first survives, which distinguishes undo from clear.
-    expect(onChange).toHaveBeenCalledWith({ strokes: [twoStrokes.strokes[0]] });
+    expect(onChange).toHaveBeenCalledWith({ strokes: [twoStrokes.strokes[0]!] });
     expect(onUndo).toHaveBeenCalledTimes(1);
   });
 

@@ -31,6 +31,7 @@ import {
 } from '../../lib/room-api';
 import { GameCard } from './GameCard';
 import { OptionSelector, type SelectorOption } from './OptionSelector';
+import { PalettePicker } from './PalettePicker';
 import { ShareLink } from './ShareLink';
 
 interface LobbyProps {
@@ -59,6 +60,8 @@ interface LobbyProps {
   startError: string | null;
   onModeChange: (mode: Mode) => void;
   onKick: (sessionId: string) => void;
+  /** Claim a drawing palette (spec 0063). Only wired for games that use palettes (Sketchy). */
+  onClaimPalette?: (paletteId: string) => void;
 }
 
 /** The three modes with the copy shown in the picker (spec 0050). */
@@ -108,6 +111,7 @@ export function Lobby({
   startError,
   onModeChange,
   onKick,
+  onClaimPalette,
 }: LobbyProps) {
   // Resolve the selected game's UI module. `game` is always a registered id (the picker only sets
   // ids from GAME_UI_LIST); fall back to the first registered game for an unexpected value.
@@ -122,6 +126,20 @@ export function Lobby({
   // HERE from the same module the standard panel came from, so one game's setup resolves in one place.
   // An explicit `advanced` prop still overrides it (used by tests). When neither exists, the accordion
   // is omitted so no game shows an empty disclosure.
+  // Per-player palettes (spec 0063): shown only for a game that uses them (Sketchy). Build the
+  // "who holds what" map from the roster so every device sees claims (they arrive on the member poll),
+  // and read the local player's own claim by matching `me` to its roster row.
+  const usesPalettes = activeModule.usesPalettes === true && !!onClaimPalette;
+  const claimedBy: Record<string, string> = {};
+  if (usesPalettes) {
+    for (const member of members) {
+      if (member.paletteId) claimedBy[member.paletteId] = member.nickname;
+    }
+  }
+  const myPaletteId = usesPalettes
+    ? members.find((member) => member.playerId === me)?.paletteId
+    : undefined;
+
   const AdvancedConfigPanel = activeModule.AdvancedConfigPanel;
   const advancedContent =
     advanced ??
@@ -222,6 +240,22 @@ export function Lobby({
           ))}
         </ul>
       </section>
+
+      {usesPalettes && onClaimPalette ? (
+        <section aria-label="Your palette" className="flex flex-col gap-3">
+          <h2 className="text-h4 text-text">Your palette</h2>
+          <p className="text-body-sm text-text-muted">
+            You draw with these three colors - each player gets their own. Tap a free palette to
+            make it yours; one a friend already claimed is locked to them.
+          </p>
+          <PalettePicker
+            myPaletteId={myPaletteId}
+            claimedBy={claimedBy}
+            onClaim={onClaimPalette}
+            disabled={starting}
+          />
+        </section>
+      ) : null}
 
       {isHost ? (
         <section aria-label="Game setup" className="flex flex-col gap-4">

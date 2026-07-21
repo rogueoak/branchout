@@ -182,6 +182,10 @@ export class GameEngine {
         connected: false,
         // Absent flag defaults to false (additive handoff field, spec 0014).
         isHost: p.isHost ?? false,
+        // The player's reserved drawing palette (spec 0063); absent for a palette-less game. Kept on
+        // the SessionPlayer so a game module (Sketchy) can snapshot it at configure and validate
+        // strokes against only that player's colors. Engine-internal - never projected to the wire.
+        ...(p.paletteId ? { paletteId: p.paletteId } : {}),
       }));
       const cfg = await runtime.configure(req.config, players);
       if (!Number.isInteger(cfg.rounds) || cfg.rounds < 1) {

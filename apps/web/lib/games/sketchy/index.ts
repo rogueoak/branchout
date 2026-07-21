@@ -12,6 +12,8 @@ import { defaultSketchyConfig, validateSketchyConfig, type SketchyHostConfig } f
 export const sketchyGameUi: GameUiModule = {
   id: 'sketchy',
   visibility: 'insider',
+  // Each player claims a reserved 3-color palette in the lobby and draws with only those (spec 0063).
+  usesPalettes: true,
   name: 'Sketchy',
   tagline: 'Draw the daft seed, then bluff your friends with decoys.',
   icon: sketchySvg,

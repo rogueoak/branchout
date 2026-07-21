@@ -14,14 +14,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** The local player's own secret seed for a draw round (spec 0052 private payload). */
+/** The local player's own secret seed + their claimed palette for a draw round (spec 0052/0063). */
 export interface SketchySeedSecret {
   seed: string;
+  /** The player's OWN palette colors (spec 0063), delivered per-player so the toolbar shows only
+   * these three. Absent/empty when the player had no claimed palette (the caller supplies a default). */
+  palette: string[];
 }
 
 export function asSketchySeedSecret(value: unknown): SketchySeedSecret | null {
   if (!isRecord(value)) return null;
-  return typeof value.seed === 'string' ? { seed: value.seed } : null;
+  if (typeof value.seed !== 'string') return null;
+  const palette = Array.isArray(value.palette)
+    ? value.palette.filter((c): c is string => typeof c === 'string')
+    : [];
+  return { seed: value.seed, palette };
 }
 
 /** The draw-round prompt (no seed - the seed is delivered privately). */

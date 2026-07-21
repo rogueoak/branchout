@@ -74,6 +74,12 @@ export interface GameUiModule {
    * remote split. Branch on this flag, never on the game id.
    */
   singleSurface?: boolean;
+  /**
+   * When true, this game gives each player a reserved drawing palette claimed in the lobby (spec
+   * 0063, Sketchy). The lobby shows a per-player palette picker for it; other games omit it. Branch
+   * on this flag, never on the game id.
+   */
+  usesPalettes?: boolean;
   /** The display name shown in the host's game picker. */
   name: string;
   /** A short tagline for the picker. */

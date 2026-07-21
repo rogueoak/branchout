@@ -221,7 +221,9 @@ describe('host plays as a player', () => {
     const stored = await membership.get(room.id, host.id);
     const roster = engine.starts[0]!.players;
     const hostSlot = roster.find((p) => p.player === stored?.playerId);
-    expect(hostSlot).toEqual({ player: stored?.playerId, nickname: 'Ada', isHost: true });
+    // The host slot carries its identity + host flag, plus its reserved palette id (spec 0063).
+    expect(hostSlot).toMatchObject({ player: stored?.playerId, nickname: 'Ada', isHost: true });
+    expect(typeof hostSlot?.paletteId).toBe('string');
     // The observer is excluded from the roster.
     expect(roster.some((p) => p.nickname === 'Watcher')).toBe(false);
   });
@@ -527,6 +529,73 @@ describe('members roster', () => {
     expect(playerView.every((m) => m.sessionId === undefined)).toBe(true);
 
     await expect(h.service.members(room.code, anon())).rejects.toThrow();
+  });
+});
+
+describe('per-player palettes (spec 0063)', () => {
+  it('assigns every joiner a palette, and all are distinct (reserved)', async () => {
+    const { service, membership } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await service.join(room.code, anon('Bo'), { nickname: 'Bo', mode: 'remote' });
+    await service.join(room.code, anon('Cy'), { nickname: 'Cy', mode: 'remote' });
+    const members = await membership.list(room.id);
+    const palettes = members.map((m) => m.paletteId);
+    expect(palettes.every((p) => typeof p === 'string')).toBe(true);
+    expect(new Set(palettes).size).toBe(members.length); // no two share a palette
+  });
+
+  it('lets a member switch to any free palette', async () => {
+    const { service, membership } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    const before = (await membership.get(room.id, host.id))!.paletteId;
+    // Pick a palette the host does not already hold.
+    const target = before === 'ember' ? 'rose' : 'ember';
+    await service.setPalette(room.code, host, target);
+    expect((await membership.get(room.id, host.id))!.paletteId).toBe(target);
+  });
+
+  it('refuses a palette already reserved by another member (race resolution)', async () => {
+    const { service, membership } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    const bo = anon('Bo');
+    await service.join(room.code, bo, { nickname: 'Bo', mode: 'remote' });
+    // Host claims 'ember'; Bo then tries the same -> rejected, so the two can never collide.
+    await service.setPalette(room.code, host, 'ember');
+    await expect(service.setPalette(room.code, bo, 'ember')).rejects.toMatchObject({
+      code: 'palette_taken',
+    });
+    // Bo keeps whatever it had; the host holds ember.
+    expect((await membership.get(room.id, host.id))!.paletteId).toBe('ember');
+  });
+
+  it('rejects an unknown palette id', async () => {
+    const { service } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await expect(service.setPalette(room.code, host, 'not-a-palette')).rejects.toMatchObject({
+      code: 'invalid',
+    });
+  });
+
+  it('re-claiming the palette I already hold is an idempotent no-op', async () => {
+    const { service, membership } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    const mine = (await membership.get(room.id, host.id))!.paletteId!;
+    await expect(service.setPalette(room.code, host, mine)).resolves.toBeUndefined();
+    expect((await membership.get(room.id, host.id))!.paletteId).toBe(mine);
+  });
+
+  it('a non-member cannot claim a palette', async () => {
+    const { service } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    await expect(service.setPalette(room.code, anon(), 'ember')).rejects.toMatchObject({
+      code: 'not_member',
+    });
   });
 });
 

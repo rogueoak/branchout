@@ -13,6 +13,7 @@
 // It never runs a timer or tallies; it sends frames and reflects the phase the engine reports.
 
 import { Badge, Button, Input } from '@rogueoak/canopy';
+import { PLAYER_PALETTES } from '@branchout/protocol';
 import { useEffect, useState } from 'react';
 import type { GameRemoteProps } from '../registry';
 import { FinalResults } from '../../../components/game/FinalResults';
@@ -72,6 +73,11 @@ export function SketchyRemote({
     ) : (
       <p className="text-body-sm text-text-subtle">Waiting for your secret seed...</p>
     );
+    // Draw with the player's OWN claimed palette (spec 0063), delivered in the private payload. If it
+    // is missing (a player who somehow reached the draw with no claim), fall back to the first preset
+    // so they can still draw - the engine will validate against whatever it recorded for them.
+    const palette =
+      secret && secret.palette.length > 0 ? secret.palette : [...PLAYER_PALETTES[0]!.colors];
     const submitLabel = submitted ? 'Resend sketch' : 'Submit sketch';
     const drawFooter = submitted ? (
       <p role="status" className="text-body-sm text-success">
@@ -91,6 +97,7 @@ export function SketchyRemote({
         <DrawCanvas
           sketch={sketch}
           onChange={setSketch}
+          palette={palette}
           disabled={submitted}
           undosRemaining={undosLeft}
           clearsRemaining={clearsLeft}

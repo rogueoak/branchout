@@ -32,6 +32,7 @@ import {
   resumeRoom,
   selectGame,
   setMode,
+  setPalette,
   startGame,
   kickMember,
   type Mode,
@@ -304,6 +305,30 @@ export function RoomClient({
     [code],
   );
 
+  // Claim a drawing palette (spec 0063). Optimistically reflect it on the local roster row so the
+  // picker responds instantly, then persist. If the server refuses (someone won the race, or an
+  // invalid id), re-sync the roster from the authority so the UI corrects, and surface the reason.
+  const onClaimPalette = useCallback(
+    async (paletteId: string) => {
+      setMembers((prev) =>
+        prev.map((member) => (member.playerId === me ? { ...member, paletteId } : member)),
+      );
+      try {
+        await setPalette(code, paletteId);
+      } catch (error) {
+        if (error instanceof RoomApiError) {
+          setLoadError(error.message);
+          try {
+            setMembers(await listMembers(code));
+          } catch {
+            // A failed re-sync leaves the next poll to correct the roster.
+          }
+        }
+      }
+    },
+    [code, me],
+  );
+
   // Pick a game in the setup wizard: set it locally, select it on the room (so the share-card
   // preview and roster resolve it), then drop into the lobby (the share link lives there now).
   // Stays on the picker if the selection call fails.
@@ -548,6 +573,7 @@ export function RoomClient({
             startError={startError}
             onModeChange={onModeChange}
             onKick={onKick}
+            onClaimPalette={onClaimPalette}
           />
         )}
       </div>

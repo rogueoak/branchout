@@ -265,3 +265,33 @@ describe('Lobby', () => {
     expect(screen.getByText(/this game is full at 4 players/i)).toBeDefined();
   });
 });
+
+describe('per-player palettes (spec 0063)', () => {
+  it('shows the palette picker for a palette game with the local claim marked, and claims a free one', () => {
+    const onClaimPalette = vi.fn();
+    const host = { ...hostMember('interactive'), paletteId: 'ember' };
+    const bo = { ...member('Bo', 'remote'), paletteId: 'rose' };
+    renderLobby({
+      game: 'sketchy',
+      members: [host, bo],
+      onClaimPalette,
+    });
+    // The section renders.
+    expect(screen.getByRole('group', { name: /choose your palette/i })).toBeDefined();
+    // My palette (ember) is marked as mine (aria-pressed).
+    const mine = screen.getByRole('button', { name: /ember palette - yours/i });
+    expect(mine.getAttribute('aria-pressed')).toBe('true');
+    // Rose is taken by Bo -> disabled, and names the holder.
+    const taken = screen.getByRole('button', { name: /rose palette - taken by bo/i });
+    expect(taken).toHaveProperty('disabled', true);
+    // A free palette is claimable.
+    const free = screen.getByRole('button', { name: /grape palette - free/i });
+    fireEvent.click(free);
+    expect(onClaimPalette).toHaveBeenCalledWith('grape');
+  });
+
+  it('omits the palette picker for a game that does not use palettes', () => {
+    renderLobby({ game: 'trivia', onClaimPalette: vi.fn() });
+    expect(screen.queryByRole('group', { name: /choose your palette/i })).toBeNull();
+  });
+});

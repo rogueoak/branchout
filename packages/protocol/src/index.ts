@@ -6,6 +6,19 @@ export { API_VERSION, V1_PREFIX, ENGINE_ROUNDS_SUBPATH, ENGINE_COMPLETE_SUBPATH 
 // picker's clamp and the server's join enforcement use one source of truth.
 export { PLAYER_LIMITS, DEFAULT_PLAYER_LIMITS, playerLimits, type PlayerLimits } from './games';
 
+// Per-player drawing palettes (spec 0063, Sketchy palettes) - one definition shared by the web
+// lobby/canvas, the engine's stroke validation, and the control-plane's server-side reservation.
+export {
+  PLAYER_PALETTES,
+  PLAYER_PALETTE_IDS,
+  ALL_PALETTE_COLORS,
+  isPaletteId,
+  getPalette,
+  paletteColors,
+  pickAvailablePalette,
+  type PlayerPalette,
+} from './palettes';
+
 // Shared domain types and version stamp.
 export {
   PROTOCOL_VERSION,

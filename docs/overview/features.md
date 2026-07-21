@@ -304,8 +304,20 @@ What the product does for users, grouped by area. Each capability maps to one or
       one canvas per mode (interactive suppresses the viewer's copy via the generic
       `sharesDeviceWithRemote` flag since the remote already shows it); the replay display background is
       a prop (default white, strokes carry none); and Undo (3) + Clear (1) are per-GAME allowances shown
-      on the buttons, disabled when spent, Clear behind a confirm dialog. Heaviest UI in the wave; a real
-      3-player e2e drives draw -> decoy -> guess -> score at a 360px viewport.
+      on the buttons, disabled when spent, Clear behind a confirm dialog. Per-player palettes (spec
+      `0063`): instead of one shared 5-color set, each player claims their OWN reserved 3-color palette
+      from ~24 presets defined once in `@branchout/protocol` (`PLAYER_PALETTES`, like `PLAYER_LIMITS`).
+      The claim is per-player lobby state on the control-plane `RoomMember` (`paletteId`, stored +
+      broadcast like `mode`): a joiner gets a random free palette, may switch via
+      `PATCH /rooms/:code/palette`, and the server RESERVES it (a palette held by another member is
+      refused, `palette_taken`, resolving races); the lobby picker (gated by a game module's
+      `usesPalettes` flag) shows a taken palette disabled + names its holder, updating on the 3s member
+      poll. `paletteId` is threaded to the engine on the start handoff and snapshotted per player at
+      `configure`; at draw collect the engine validates each sketch against ONLY that player's three
+      colors (`parseSketch` drops off-palette strokes - the security core), and delivers each player's
+      colors to their own remote in the private draw payload so the toolbar shows exactly their three.
+      Heaviest UI in the wave; a real 3-player e2e drives draw -> decoy -> guess -> score at a 360px
+      viewport and asserts the palette picker, a reservation, and the 3-color toolbar.
 - [~] Fourth game (insider-only) - Whispergrove: a two-team word-grid deduction game (spec `0062`).
       A 5x5 grove of 25 word leaves; a secret key marks 9 leaves for the starting grove, 8 for the
       other, 7 neutral saplings, and 1 instant-loss Deadwood. Each grove has one Whisperer who ALONE

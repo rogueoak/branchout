@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PLAYER_PALETTES } from '@branchout/protocol';
 import {
   asSketchyOptions,
   asSketchyPrompt,
@@ -9,17 +10,19 @@ import {
   pickResult,
 } from './protocol';
 
+// A real palette color, so replay's color validation keeps the strokes in these fixtures.
+const INK = PLAYER_PALETTES[0]!.colors[0];
 const drawPrompt = { round: 1, stage: 'draw' };
 const sketchPrompt = {
   round: 2,
   stage: 'sketch',
   featured: 'p1',
-  sketch: { strokes: [{ color: '#0d0a15', points: [0, 0, 100, 100] }] },
+  sketch: { strokes: [{ color: INK, points: [0, 0, 100, 100] }] },
 };
 const gallery = {
   round: 1,
   stage: 'draw',
-  gallery: [{ player: 'p1', sketch: { strokes: [{ color: '#0d0a15', points: [1, 2, 3, 4] }] } }],
+  gallery: [{ player: 'p1', sketch: { strokes: [{ color: INK, points: [1, 2, 3, 4] }] } }],
 };
 const optionsReveal = {
   round: 2,
@@ -46,9 +49,23 @@ const resultReveal = {
 
 describe('asSketchySeedSecret', () => {
   it('decodes a private seed payload and rejects the wrong shape', () => {
-    expect(asSketchySeedSecret({ seed: 'a cat' })).toEqual({ seed: 'a cat' });
+    // A payload with no palette decodes with an empty palette (the caller supplies a default).
+    expect(asSketchySeedSecret({ seed: 'a cat' })).toEqual({ seed: 'a cat', palette: [] });
     expect(asSketchySeedSecret({ nope: 1 })).toBeNull();
     expect(asSketchySeedSecret(null)).toBeNull();
+  });
+
+  it('decodes the player own palette colors when present (spec 0063)', () => {
+    const colors = [...PLAYER_PALETTES[3]!.colors];
+    expect(asSketchySeedSecret({ seed: 'a cat', palette: colors })).toEqual({
+      seed: 'a cat',
+      palette: colors,
+    });
+    // Non-string palette entries are filtered out.
+    expect(asSketchySeedSecret({ seed: 'a cat', palette: ['#781717', 5, null] })).toEqual({
+      seed: 'a cat',
+      palette: ['#781717'],
+    });
   });
 });
 
