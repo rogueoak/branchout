@@ -779,3 +779,16 @@ Capture durable lessons as they emerge.
   upfront (the broadcast frame here carries only an aggregate answered count), lean on the engine's
   rejection to lock reactively and say so - the score is safe regardless of what the client shows.
   (Feedback `0038`, spec `0069`.)
+- **An empty allow-set is a lock, not the absence of one - a derived restriction whose lookup can miss
+  must fall back to the PERMISSIVE default, and validate the id at the trust boundary it crosses.**
+  Sketchy's per-player palette validation built the allowed-color set from a palette id snapshotted at
+  configure; an unresolved id gave `paletteColors(id) === []`, so the "allowed" set was EMPTY and
+  `parseSketch` dropped every stroke - soft-locking the player out of drawing, the opposite of the
+  intended "no palette -> lenient union" fallback. Two rules generalize: (1) when a per-item
+  restriction comes from a lookup that can miss, distinguish "no restriction" (fall back to the
+  permissive default) from "restrict to nothing" (an empty allow-list that blocks the actor) - never
+  let an unresolved key land in the blocking bucket; (2) validate an identifier at the boundary it
+  crosses (here the control-plane -> engine handoff ingress, `isPaletteId` in `requirePlayers`), not
+  only where it is consumed, so a stale/garbage value degrades to the safe default before any consumer
+  sees it. The review persona caught this as a blocker; both fixes are one-liners once the distinction
+  is named. (Feedback `0040`, spec `0063`.)
