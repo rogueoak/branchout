@@ -9,9 +9,16 @@ private channel (spec 0052) end to end. We want a short, warm, phone-first party
 point is a secret one player must not see - and a proof that the secret really is kept from that
 player's device.
 
+> **Status update (spec 0073):** Lone Leaf has graduated from insider to **public** and is a
+> **featured** game on the home hero carousel. Its plugin manifest and web module now default to
+> public visibility; the marketing copy dropped the "insider testing" framing; and it ships a 3:4
+> portrait hero for the carousel. The mechanics below are unchanged - only its visibility moved. See
+> `docs/specs/0073-lone-leaf-public.md` for the promotion.
+
 ## Outcome
 
-Lone Leaf: a cooperative single-clue word game for 3 to 7 players, `visibility: 'insider'`. Each
+Lone Leaf: a cooperative single-clue word game for 3 to 7 players (originally `visibility: 'insider'`;
+now public - see the status note above). Each
 round one player is the Seeker (the role rotates so everyone takes a turn) and must guess a hidden
 mystery word - the seed - that they alone cannot see. Every other player secretly writes ONE one-word
 clue (a leaf). Before the Seeker looks, matching or invalid leaves wilt (are cleared): if two players

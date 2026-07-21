@@ -25,9 +25,17 @@ test.describe('home hero carousel (spec 0067) at 360px', () => {
     await expect(carousel.locator('svg[viewBox="0 0 600 800"]').first()).toBeVisible();
     await expect(carousel.locator('svg[viewBox="0 0 800 450"]').first()).toBeHidden();
 
-    // One dot per public game (Trivia, Liar Liar) - the pager reflects the slide count.
+    // One dot per FEATURED game (Trivia, Liar Liar, Lone Leaf) - the curated carousel subset (spec
+    // 0073), NOT every public game. Reversi and Checkers are public but not featured, so they never
+    // appear in the carousel (asserted below), and the pager reflects the featured slide count.
     const dots = page.getByRole('button', { name: /^Go to slide/ });
-    await expect(dots).toHaveCount(2);
+    await expect(dots).toHaveCount(3);
+
+    // The demoted public games (Reversi, Checkers) are absent from the curated carousel (spec 0073).
+    await expect(carousel.getByRole('link', { name: 'Reversi - game details' })).toHaveCount(0);
+    await expect(carousel.getByRole('link', { name: 'Checkers - game details' })).toHaveCount(0);
+    // Lone Leaf, newly featured, IS present in the carousel.
+    await expect(carousel.getByRole('link', { name: 'Lone Leaf - game details' })).toHaveCount(1);
 
     // Paging to the second slide marks its dot current.
     await page.getByRole('button', { name: 'Go to slide 2' }).click();

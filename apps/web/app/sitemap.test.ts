@@ -10,6 +10,7 @@ describe('sitemap', () => {
       '/games',
       '/games/trivia',
       '/games/liar-liar',
+      '/games/lone-leaf',
       '/games/reversi',
       '/games/checkers',
       '/privacy',
@@ -30,7 +31,7 @@ describe('sitemap', () => {
     // The sitemap enumerates PUBLIC_GAME_CATALOG, so an insider-only slug must be absent - it must
     // never exist on the public site. A regression that enumerated the full catalog would leak these.
     const urls = sitemap().map((entry) => entry.url);
-    for (const insiderSlug of ['teeter-tower', 'lone-leaf']) {
+    for (const insiderSlug of ['teeter-tower', 'zinger']) {
       expect(urls).not.toContain(`${SITE_URL}/games/${insiderSlug}`);
       expect(urls.some((u) => u.includes(`/games/${insiderSlug}`))).toBe(false);
     }

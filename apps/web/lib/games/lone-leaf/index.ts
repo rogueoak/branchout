@@ -1,6 +1,8 @@
 // The Lone Leaf browser UI module (spec 0057): plugs the cooperative single-clue word game's config
 // panel, viewer, and remote into the generic game shell, keyed by the engine game id 'lone-leaf'.
-// Insider-only (spec 0043), mirroring the engine manifest's visibility.
+// Public (promoted from insider in spec 0073), so it defaults to public visibility - the same as
+// Trivia and Liar Liar - and appears on the public /games index, its feature page, and the featured
+// home hero carousel.
 
 import { loneLeafSvg } from '@branchout/brand/loneleaf';
 import type { GameUiModule } from '../registry';
@@ -12,7 +14,6 @@ import { defaultLoneLeafConfig, validateLoneLeafConfig, type LoneLeafHostConfig 
 
 export const loneLeafGameUi: GameUiModule = {
   id: 'lone-leaf',
-  visibility: 'insider',
   name: 'Lone Leaf',
   tagline: 'One word each helps the Seeker - but matching clues cancel out.',
   icon: loneLeafSvg,

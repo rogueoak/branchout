@@ -2,11 +2,13 @@ import { expect, test } from '@playwright/test';
 import { joinRoom, signUp, spanSessionToInsider } from '../lib/helpers';
 import { INSIDER_URL, WEB_PORT, grantCredits, grantInsider } from '../lib/stack';
 
-// End-to-end proof of Lone Leaf (spec 0057): the insider-only, COOPERATIVE single-clue word game. It
-// drives the real browser -> control-plane -> game-engine loop through a full one-round game with THREE
-// players (the minimum) in three browser contexts: an insider host creates + picks the gated game on
-// the insider surface; two others join by code; the two NON-Seekers each write a one-word leaf; the
-// Seeker guesses the seed; the whole grove shares the co-op result (final standings on every screen).
+// End-to-end proof of Lone Leaf (spec 0057; promoted to public in spec 0073): the COOPERATIVE
+// single-clue word game. It drives the real browser -> control-plane -> game-engine loop through a full
+// one-round game with THREE players (the minimum) in three browser contexts. Lone Leaf is now public
+// (playable on the apex too), but this lane still exercises it on the insider surface it was written
+// for - an insider sees every game, so the picker still lists it there. An insider host creates + picks
+// the game; two others join by code; the two NON-Seekers each write a one-word leaf; the Seeker guesses
+// the seed; the whole grove shares the co-op result (final standings on every screen).
 //
 // The critical secrecy guarantee is asserted directly: the SEEKER's device never shows the seed word,
 // while a NON-Seeker's device does - proving the seed rides the per-player private channel (spec 0052)

@@ -44,6 +44,14 @@ interface GameMarketing {
   /** SEO title + meta description for the feature page. */
   seoTitle: string;
   seoDescription: string;
+  /**
+   * Whether this game is FEATURED in the home hero carousel (spec 0073). The carousel is a curated
+   * subset, not "every public game" - a public game is always on the `/games` index and has a feature
+   * page, but only a featured one leads the landing page. Omitted (falsy) means public-but-not-featured
+   * (e.g. Reversi and Checkers stay public + playable, just off the carousel). Only public games can be
+   * featured; {@link FEATURED_GAME_CATALOG} derives from {@link PUBLIC_GAME_CATALOG}.
+   */
+  featured?: boolean;
 }
 
 // Keyed by slug (== registry id). Adding a game means adding its registry module AND one entry here;
@@ -72,6 +80,7 @@ const MARKETING: Record<string, GameMarketing> = {
     shareImage: '/share-trivia.png',
     shareAlt: 'Branch Out Trivia',
     badge: { label: 'Featured', variant: 'info' },
+    featured: true,
     seoTitle: 'Trivia - a fast free-text party game | Branch Out Games',
     seoDescription:
       'Play Branch Out Trivia free in your browser: 1,600 questions across 8 categories, free-text ' +
@@ -109,21 +118,23 @@ const MARKETING: Record<string, GameMarketing> = {
     shareImage: '/share-liarliar.png',
     shareAlt: 'Branch Out Liar Liar',
     badge: { label: 'New', variant: 'success' },
+    featured: true,
     seoTitle: 'Liar Liar - an online bluffing party game | Branch Out Games',
     seoDescription:
       'Play Liar Liar free in your browser: a Fibbage-style bluffing game. Write a fake answer to a ' +
       'wild-but-true clue, then pick the real one hidden among the lies. Start a room - no app.',
   },
-  // Lone Leaf is insider-only (spec 0057): the entry exists so the build-time "every registered game
-  // needs marketing copy" check passes, but PUBLIC_GAME_CATALOG excludes it, so it never appears on
-  // the public /games index, feature pages, or sitemap. Its share card reuses the trivia placeholder
-  // (no public raster is generated for an insider game).
+  // Lone Leaf is PUBLIC (spec 0057, promoted from insider in spec 0073): it appears on the public
+  // /games index, its feature page, the sitemap, and - as a FEATURED game - the home hero carousel. It
+  // ships a dedicated 3:4 portrait hero (assets/hero-loneleaf-portrait.svg) for that carousel. It still
+  // reuses the Trivia share card as a placeholder Open Graph raster (a dedicated /share-loneleaf.png is
+  // a separate follow-up, the same as Reversi and Checkers); that satisfies the shareImage shape check.
   'lone-leaf': {
     description:
       'Lone Leaf is a cooperative single-clue word game for phones. One player is the Seeker and ' +
       'must guess a hidden word they cannot see; everyone else writes a single one-word clue. ' +
       'Matching clues cancel out before the Seeker looks - so think alike, but not too alike. ' +
-      'The Seeker takes one guess, and the whole group shares the result. Still in testing.',
+      'The Seeker takes one guess, and the whole group shares the result.',
     howToPlay: [
       {
         title: 'Deal the word',
@@ -141,11 +152,12 @@ const MARKETING: Record<string, GameMarketing> = {
     categories: ['Nature', 'Everyday', 'Places', 'Food', 'Animals', 'Feelings'],
     shareImage: '/share-trivia.png',
     shareAlt: 'Branch Out Lone Leaf',
-    badge: { label: 'Insider', variant: 'primary' },
+    badge: { label: 'New', variant: 'success' },
+    featured: true,
     seoTitle: 'Lone Leaf - a cooperative single-clue word game | Branch Out Games',
     seoDescription:
-      'Lone Leaf is a phone-first cooperative word game in insider testing. Give the Seeker a ' +
-      'single one-word clue - but matching clues cancel out - and guess the hidden word together.',
+      'Play Branch Out Lone Leaf free in your browser: a phone-first cooperative word game. Give the ' +
+      'Seeker a single one-word clue - but matching clues cancel out - and guess the hidden word together.',
   },
   // Teeter Tower is insider-only (spec 0043): the entry exists so the build-time "every registered
   // game needs marketing copy" check passes, but the PUBLIC_GAME_CATALOG below excludes it, so it
@@ -339,9 +351,10 @@ const MARKETING: Record<string, GameMarketing> = {
       'alone sees the secret key gives one-word whispers; your grove taps leaves to link them first.',
   },
   // Reversi is PUBLIC (spec 0054, promoted in WS9 / spec 0070): it appears on the public /games index,
-  // its feature page, the sitemap, and the home hero carousel (PUBLIC_GAME_CATALOG now includes it). It
-  // still reuses the Trivia share card as a placeholder Open Graph raster (a dedicated /share-reversi.png
-  // is a separate follow-up); that satisfies the shareImage shape check.
+  // its feature page, and the sitemap. It is NOT featured (spec 0073), so it is absent from the curated
+  // home hero carousel while staying fully public + playable. It still reuses the Trivia share card as a
+  // placeholder Open Graph raster (a dedicated /share-reversi.png is a separate follow-up); that
+  // satisfies the shareImage shape check.
   reversi: {
     description:
       'Reversi is the classic disc-flip strategy game for two, built for phones. Place a Violet or ' +
@@ -433,9 +446,10 @@ const MARKETING: Record<string, GameMarketing> = {
       'roost hidden.',
   },
   // Checkers is PUBLIC (spec 0055, promoted in WS14 / spec 0071): it appears on the public /games index,
-  // its feature page, the sitemap, and the home hero carousel (PUBLIC_GAME_CATALOG now includes it). It
-  // still reuses the Trivia share card as a placeholder Open Graph raster (a dedicated /share-checkers.png
-  // is a separate follow-up); that satisfies the shareImage shape check.
+  // its feature page, and the sitemap. It is NOT featured (spec 0073), so it is absent from the curated
+  // home hero carousel while staying fully public + playable. It still reuses the Trivia share card as a
+  // placeholder Open Graph raster (a dedicated /share-checkers.png is a separate follow-up); that
+  // satisfies the shareImage shape check.
   checkers: {
     description:
       'Checkers (English draughts) is the classic strategy game for two, built for phones. Move your ' +
@@ -545,6 +559,18 @@ export const GAME_CATALOG: readonly GameCatalogEntry[] = GAME_UI_LIST.map(toEntr
  */
 export const PUBLIC_GAME_CATALOG: readonly GameCatalogEntry[] =
   GAME_UI_LIST.filter(isPublicGame).map(toEntry);
+
+/**
+ * The FEATURED catalog: the curated subset that leads the home hero carousel (spec 0073). The carousel
+ * is intentionally NOT "every public game" - as the public roster grows (Trivia, Liar Liar, Lone Leaf,
+ * Reversi, Checkers, ...) a filmstrip of all of them dilutes the hero, so the landing page spotlights a
+ * hand-picked few (the `featured` flag in MARKETING) while the full public roster still lives on the
+ * `/games` index and each game keeps its own feature page. Derived from PUBLIC_GAME_CATALOG so a
+ * featured game is always public; an insider game can never be featured even if the flag were set.
+ */
+export const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = PUBLIC_GAME_CATALOG.filter(
+  (entry) => entry.featured,
+);
 
 /**
  * Resolve a PUBLIC catalog entry by slug, or undefined for an unknown or insider-only game. Public
