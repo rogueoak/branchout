@@ -26,6 +26,9 @@ describe('lone leaf catalog + library entries', () => {
     // The entry is in the full catalog (so the registry<->catalog completeness check holds)...
     const entry = GAME_CATALOG.find((e) => e.slug === 'lone-leaf');
     expect(entry?.howToPlay).toHaveLength(3);
+    // The badge pill flipped Insider -> New now that it is public (a public game still reading
+    // "Insider" would look broken); pin it like the reversi/checkers promotion suites do.
+    expect(entry?.badge.label).toBe('New');
     expect(entry?.featured).toBe(true);
     // ...it is public (the /games index, the feature page, and the sitemap enumerate this list)...
     expect(PUBLIC_GAME_CATALOG.some((e) => e.slug === 'lone-leaf')).toBe(true);

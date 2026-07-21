@@ -79,6 +79,9 @@ const MARKETING: Record<string, GameMarketing> = {
     categories: ['Nature', 'Food', 'Animals', 'Science', 'People', 'Places', 'Things', 'History'],
     shareImage: '/share-trivia.png',
     shareAlt: 'Branch Out Trivia',
+    // Note: `badge.label` here is a DISPLAY pill on the card ("Featured") and is unrelated to the
+    // `featured` curation flag below (the carousel-subset axis). They coincide by name on Trivia only -
+    // Liar Liar and Lone Leaf are `featured: true` but badged "New". Don't conflate the two.
     badge: { label: 'Featured', variant: 'info' },
     featured: true,
     seoTitle: 'Trivia - a fast free-text party game | Branch Out Games',

@@ -120,6 +120,19 @@ describe('FEATURED_GAME_CATALOG (curated home hero carousel, spec 0073)', () => 
       expect(game.featured).toBe(true);
     }
   });
+
+  it('never features an insider game (guards the "public.filter" derivation directly)', () => {
+    // The subset test above only bites if an insider game actually set featured: true (none does).
+    // These assert the invariant at its source instead: every FEATURED entry is public visibility,
+    // so a regression that derived FEATURED from GAME_CATALOG (the full list) instead of
+    // PUBLIC_GAME_CATALOG would fail here even before any insider game opts in.
+    for (const game of FEATURED_GAME_CATALOG) {
+      expect(game.visibility).toBe('public');
+    }
+    expect(GAME_CATALOG.filter((g) => g.visibility === 'insider').some((g) => g.featured)).toBe(
+      false,
+    );
+  });
 });
 
 describe('insiderFeatureMetadata (SEO only where public, spec 0030)', () => {
