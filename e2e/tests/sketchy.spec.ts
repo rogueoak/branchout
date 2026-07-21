@@ -99,9 +99,10 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
     const player3 = await joinInsiderAsGuest(p3Ctx, code, 'Player Three');
     const players = [host, player2, player3];
 
-    // Per-player palettes (spec 0063): the lobby shows a palette picker, and every player was auto-
-    // assigned a distinct reserved palette on join. Confirm the host sees the picker with its own
-    // palette marked "Yours", then claim a specific free palette and confirm it sticks.
+    // Per-player palettes (spec 0063): every player was auto-assigned a distinct reserved palette on
+    // join. The picker is a collapsed accordion (so it does not bury Start); open it, confirm the host
+    // sees its own palette marked "Yours", then claim a specific free palette and confirm it sticks.
+    await host.getByRole('button', { name: /your palette/i }).click();
     await expect(host.getByRole('group', { name: /choose your palette/i })).toBeVisible();
     await expect(host.getByRole('button', { name: /palette - yours/i })).toBeVisible();
     // Switch to the first still-free palette and confirm the claim sticks (server reserves it). Using
@@ -114,7 +115,9 @@ test('three insiders play a full Sketchy round: draw, decoy, guess, and score', 
     ).toBeVisible();
     // Exactly one palette is "yours" at a time (the claim moved, not duplicated).
     await expect(host.getByRole('button', { name: /palette - yours/i })).toHaveCount(1);
-    // A guest sees the host's claim as reserved on the next member poll (cross-device reservation).
+    // A guest (with its own picker opened) sees the host's claim as reserved on the next member poll
+    // (cross-device reservation).
+    await player2.getByRole('button', { name: /your palette/i }).click();
     await expect(
       player2.getByRole('button', { name: new RegExp(`${freeName} palette - taken`, 'i') }),
     ).toBeVisible({ timeout: 10_000 });

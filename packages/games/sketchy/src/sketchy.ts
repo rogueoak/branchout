@@ -309,8 +309,12 @@ export function createSketchyGame(
         // so a client sending an off-palette color cannot smuggle it in. A player without a claimed
         // palette falls back to the full palette-color union (the parseSketch default). Reject a
         // malformed or blank drawing (nothing left after dropping off-palette strokes).
-        const claimed = current.palettes[player];
-        const allowed = claimed ? new Set(paletteColors(claimed)) : undefined;
+        // Resolve the player's own palette colors. An unknown/empty palette (an unrecognized id, or a
+        // player with no claim) yields no colors: fall back to `undefined` so parseSketch uses the
+        // lenient all-palette union - NOT an empty allowed-set, which would drop every stroke and
+        // soft-lock the player out of ever submitting.
+        const colors = paletteColors(current.palettes[player]);
+        const allowed = colors.length > 0 ? new Set(colors) : undefined;
         const sketch = parseSketch(move, allowed);
         if (!sketch || !isDrawn(sketch)) {
           return { scratch: unchanged, rejected: { reason: 'draw something first' } };

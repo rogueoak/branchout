@@ -332,11 +332,14 @@ export class RoomService {
   }
 
   /**
-   * Claim a drawing palette (spec 0063, Sketchy palettes). Server-authoritative RESERVATION: a
-   * palette already held by ANOTHER member is refused (`palette_taken`), so two players racing for
-   * the same palette cannot both win - the loser's read-modify-write sees the winner's claim and is
-   * rejected, and its client falls back to another free one. An unknown palette id is rejected as
-   * `invalid`. Any member (host or not) may claim, mirroring `setMode`.
+   * Claim a drawing palette (spec 0063, Sketchy palettes). Best-effort server-side RESERVATION: a
+   * palette already held by ANOTHER member is refused (`palette_taken`), so a player racing a
+   * moment behind sees the winner's claim and is rejected, and its client falls back to another free
+   * one. The check is a read-then-write over the (non-transactional) membership store, so two truly
+   * simultaneous claims could both pass and briefly share a palette; the blast radius is only a
+   * duplicate drawing color (no auth or data-integrity impact), and the next member poll re-syncs
+   * every device - the same posture as `setMode`. An unknown palette id is rejected as `invalid`.
+   * Any member (host or not) may claim, mirroring `setMode`.
    */
   async setPalette(code: string, session: Session, paletteId: string): Promise<void> {
     const room = await this.requireRoom(code);

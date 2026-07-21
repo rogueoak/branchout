@@ -19,7 +19,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@rogueoak/canopy/branches';
-import { playerLimits } from '@branchout/protocol';
+import { getPalette, playerLimits } from '@branchout/protocol';
 import { getGameCard } from '../../lib/games/catalog';
 import { DEFAULT_GAME_UI, getGameUi } from '../../lib/games/registry';
 import {
@@ -62,6 +62,8 @@ interface LobbyProps {
   onKick: (sessionId: string) => void;
   /** Claim a drawing palette (spec 0063). Only wired for games that use palettes (Sketchy). */
   onClaimPalette?: (paletteId: string) => void;
+  /** A palette-claim error to show inline near the picker (e.g. a lost reservation race). */
+  paletteError?: string | null;
 }
 
 /** The three modes with the copy shown in the picker (spec 0050). */
@@ -112,6 +114,7 @@ export function Lobby({
   onModeChange,
   onKick,
   onClaimPalette,
+  paletteError,
 }: LobbyProps) {
   // Resolve the selected game's UI module. `game` is always a registered id (the picker only sets
   // ids from GAME_UI_LIST); fall back to the first registered game for an unexpected value.
@@ -139,6 +142,7 @@ export function Lobby({
   const myPaletteId = usesPalettes
     ? members.find((member) => member.playerId === me)?.paletteId
     : undefined;
+  const myPalette = myPaletteId ? getPalette(myPaletteId) : undefined;
 
   const AdvancedConfigPanel = activeModule.AdvancedConfigPanel;
   const advancedContent =
@@ -242,18 +246,40 @@ export function Lobby({
       </section>
 
       {usesPalettes && onClaimPalette ? (
+        // Collapsed by default (like "Your mode"): every player already gets a random palette on join,
+        // so the 24-swatch picker is an optional change, not a required step - keeping it closed stops
+        // the long grid from burying the host's Game Setup + Start. The trigger carries the current
+        // palette name so a player sees their claim without opening it.
         <section aria-label="Your palette" className="flex flex-col gap-3">
-          <h2 className="text-h4 text-text">Your palette</h2>
-          <p className="text-body-sm text-text-muted">
-            You draw with these three colors - each player gets their own. Tap a free palette to
-            make it yours; one a friend already claimed is locked to them.
-          </p>
-          <PalettePicker
-            myPaletteId={myPaletteId}
-            claimedBy={claimedBy}
-            onClaim={onClaimPalette}
-            disabled={starting}
-          />
+          <Accordion type="single" collapsible>
+            <AccordionItem value="your-palette">
+              <AccordionTrigger>
+                <span className="flex items-center gap-2 text-h4 text-text">
+                  Your palette
+                  {myPalette ? <Badge variant="neutral">{myPalette.name}</Badge> : null}
+                </span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="flex flex-col gap-3 pt-1">
+                  <p className="text-body-sm text-text-muted">
+                    You draw with these three colors - each player gets their own. Tap a free
+                    palette to make it yours; one a friend already claimed is locked to them.
+                  </p>
+                  {paletteError ? (
+                    <p role="status" className="text-body-sm text-danger">
+                      {paletteError}
+                    </p>
+                  ) : null}
+                  <PalettePicker
+                    myPaletteId={myPaletteId}
+                    claimedBy={claimedBy}
+                    onClaim={onClaimPalette}
+                    disabled={starting}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </section>
       ) : null}
 

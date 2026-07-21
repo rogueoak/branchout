@@ -267,7 +267,7 @@ describe('Lobby', () => {
 });
 
 describe('per-player palettes (spec 0063)', () => {
-  it('shows the palette picker for a palette game with the local claim marked, and claims a free one', () => {
+  it('shows the collapsed picker with the current palette named, opens it, and claims a free one', () => {
     const onClaimPalette = vi.fn();
     const host = { ...hostMember('interactive'), paletteId: 'ember' };
     const bo = { ...member('Bo', 'remote'), paletteId: 'rose' };
@@ -276,7 +276,14 @@ describe('per-player palettes (spec 0063)', () => {
       members: [host, bo],
       onClaimPalette,
     });
-    // The section renders.
+    // The section is a collapsed accordion whose trigger names the current palette (Ember), so the
+    // grid does not bury the Start button; the picker is unmounted until opened.
+    const trigger = screen.getByRole('button', { name: /your palette/i });
+    expect(trigger).toBeDefined();
+    expect(screen.getByText('Ember')).toBeDefined();
+    expect(screen.queryByRole('group', { name: /choose your palette/i })).toBeNull();
+    // Open it.
+    fireEvent.click(trigger);
     expect(screen.getByRole('group', { name: /choose your palette/i })).toBeDefined();
     // My palette (ember) is marked as mine (aria-pressed).
     const mine = screen.getByRole('button', { name: /ember palette - yours/i });
@@ -290,8 +297,20 @@ describe('per-player palettes (spec 0063)', () => {
     expect(onClaimPalette).toHaveBeenCalledWith('grape');
   });
 
+  it('surfaces a claim error inline in the picker', () => {
+    const host = { ...hostMember('interactive'), paletteId: 'ember' };
+    renderLobby({
+      game: 'sketchy',
+      members: [host],
+      onClaimPalette: vi.fn(),
+      paletteError: 'Someone just took that palette. Pick another.',
+    });
+    fireEvent.click(screen.getByRole('button', { name: /your palette/i }));
+    expect(screen.getByText(/someone just took that palette/i)).toBeDefined();
+  });
+
   it('omits the palette picker for a game that does not use palettes', () => {
     renderLobby({ game: 'trivia', onClaimPalette: vi.fn() });
-    expect(screen.queryByRole('group', { name: /choose your palette/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /your palette/i })).toBeNull();
   });
 });

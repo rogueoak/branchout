@@ -24,17 +24,24 @@ describe('player palettes', () => {
     }
   });
 
-  it('keeps every color visible on white (never near-white)', () => {
-    // A palette drawn on a white bark must never be near-invisible: reject any color whose channels
-    // are all very light.
+  it('keeps every color visible on white (real luminance gap from white)', () => {
+    // A palette drawn on a white bark (luminance 255) must read clearly: require each color's
+    // relative luminance to sit a real margin below white, not merely "not pure white". The
+    // brightest presets (the yellow-greens) land around ~216, so a <= 235 ceiling is a genuine,
+    // non-tautological contrast floor that a washed-out near-white color would fail.
+    const luminance = (hex: string) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
     for (const p of PLAYER_PALETTES) {
       for (const c of p.colors) {
-        const r = parseInt(c.slice(1, 3), 16);
-        const g = parseInt(c.slice(3, 5), 16);
-        const b = parseInt(c.slice(5, 7), 16);
-        expect(Math.min(r, g, b) < 230 || Math.max(r, g, b) < 235).toBe(true);
+        expect(luminance(c)).toBeLessThanOrEqual(235);
       }
     }
+    // Guard the guard: a near-white color would breach the same threshold.
+    expect(luminance('#f5f5f5')).toBeGreaterThan(235);
   });
 
   it('resolves ids to palettes and colors, and rejects unknown ids', () => {

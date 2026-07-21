@@ -61,10 +61,10 @@ export function PalettePicker({ myPaletteId, claimedBy, onClaim, disabled }: Pal
                   />
                 ))}
               </span>
-              <span className="flex flex-col">
+              <span className="flex min-w-0 flex-col">
                 <span className="text-body-sm font-medium text-text">{palette.name}</span>
                 <span
-                  className={`text-caption ${mine ? 'text-primary' : 'text-text-subtle'}`}
+                  className={`break-words text-caption ${mine ? 'text-primary' : 'text-text-subtle'}`}
                   role={mine ? 'status' : undefined}
                 >
                   {mine ? 'Yours' : takenByOther ? `Taken - ${holder}` : 'Tap to claim'}

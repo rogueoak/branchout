@@ -59,8 +59,9 @@ export interface RoomMember {
   connected: boolean;
   /**
    * This member's reserved drawing palette id (spec 0063, Sketchy palettes). Assigned a random still-
-   * available palette on join (server-authoritative default) and changeable to any other free one;
-   * RESERVED, so no two members in the room hold the same id. Threaded to the engine at start so a
+   * available palette on join (server-side default) and changeable to any other free one; reserved
+   * best-effort so members almost never share a palette (a taken one is refused; only two truly
+   * simultaneous claims over the non-transactional store could briefly collide). Threaded to the engine at start so a
    * game (Sketchy) validates the member's strokes against only their palette. Optional: rooms
    * predating the field, or the astronomically rare case of every palette being taken by other
    * members, leave it absent.

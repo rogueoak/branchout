@@ -1,5 +1,5 @@
 import type { GameCompleteReport, RoundReport, Standing } from '@branchout/protocol';
-import { PROTOCOL_VERSION } from '@branchout/protocol';
+import { PLAYER_PALETTE_IDS, PROTOCOL_VERSION } from '@branchout/protocol';
 import { describe, expect, it } from 'vitest';
 import { CreditLedger } from '../credits/ledger';
 import { InMemoryLedgerRepository } from '../credits/repository.memory';
@@ -596,6 +596,60 @@ describe('per-player palettes (spec 0063)', () => {
     await expect(service.setPalette(room.code, anon(), 'ember')).rejects.toMatchObject({
       code: 'not_member',
     });
+  });
+
+  it('a rejoining member keeps its palette when it is still free', async () => {
+    const { service, membership } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    const before = (await membership.get(room.id, host.id))!.paletteId;
+    // Rejoin on the same session (a reconnect): the palette must be stable, not re-rolled.
+    await service.join(room.code, host, { nickname: 'Host', mode: 'interactive' });
+    expect((await membership.get(room.id, host.id))!.paletteId).toBe(before);
+  });
+
+  it('re-rolls a rejoining member to a free palette when its old one was taken in the gap', async () => {
+    const { service, membership } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    const bo = anon('Bo');
+    await service.join(room.code, bo, { nickname: 'Bo', mode: 'remote' });
+    // Force a collision: make Bo hold the host's palette (as if a race had briefly let them collide).
+    const hostRow = (await membership.get(room.id, host.id))!;
+    const boRow = (await membership.get(room.id, bo.id))!;
+    const contested = hostRow.paletteId!;
+    boRow.paletteId = contested;
+    await membership.put(room.id, boRow);
+    // The host rejoins: its old palette is now Bo's, so it is reassigned to a different free one.
+    await service.join(room.code, host, { nickname: 'Host', mode: 'interactive' });
+    const after = (await membership.get(room.id, host.id))!.paletteId;
+    expect(after).toBeDefined();
+    expect(after).not.toBe(contested);
+  });
+
+  it('a joiner still joins when every palette is already taken (no palette assigned)', async () => {
+    const { service, membership } = harness({ host_acct: 'party' });
+    const host = account('Host', 'host_acct');
+    const { room } = await service.createRoom(host);
+    // Seed 24 viewer members each holding a distinct palette so the pool is exhausted. Viewers do not
+    // fill playing seats, so this does not trip the room-full clamp - it isolates palette exhaustion.
+    for (let i = 0; i < PLAYER_PALETTE_IDS.length; i++) {
+      await membership.put(room.id, {
+        sessionId: `seed_${i}`,
+        playerId: `pid_${i}`,
+        isHost: false,
+        mode: 'viewer',
+        nickname: `Seed${i}`,
+        connected: true,
+        paletteId: PLAYER_PALETTE_IDS[i],
+      });
+    }
+    const late = anon('Late');
+    await expect(
+      service.join(room.code, late, { nickname: 'Late', mode: 'remote' }),
+    ).resolves.toBeDefined();
+    // The join succeeds but the late member simply gets no palette (the engine falls back for them).
+    expect((await membership.get(room.id, late.id))!.paletteId).toBeUndefined();
   });
 });
 

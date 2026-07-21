@@ -64,6 +64,41 @@ describe('DrawCanvas palette (spec 0063)', () => {
     const other = PLAYER_PALETTES[5]!.colors[0];
     expect(screen.queryByRole('button', { name: `Draw in ${other}` })).toBeNull();
   });
+
+  it('resets the selected twig to the first color when the palette changes (a late-arriving claim)', () => {
+    const A = [...PLAYER_PALETTES[0]!.colors];
+    const B = [...PLAYER_PALETTES[5]!.colors];
+    const { rerender } = render(
+      <DrawCanvas
+        sketch={drawn}
+        onChange={noop}
+        palette={A}
+        undosRemaining={UNDO_ALLOWANCE}
+        clearsRemaining={CLEAR_ALLOWANCE}
+        onUndo={noop}
+        onClear={noop}
+      />,
+    );
+    // The first color of A starts selected.
+    expect(
+      screen.getByRole('button', { name: `Draw in ${A[0]}` }).getAttribute('aria-pressed'),
+    ).toBe('true');
+    // The palette swaps to B (none of A's colors remain); the selection falls back to B[0].
+    rerender(
+      <DrawCanvas
+        sketch={drawn}
+        onChange={noop}
+        palette={B}
+        undosRemaining={UNDO_ALLOWANCE}
+        clearsRemaining={CLEAR_ALLOWANCE}
+        onUndo={noop}
+        onClear={noop}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: `Draw in ${B[0]}` }).getAttribute('aria-pressed'),
+    ).toBe('true');
+  });
 });
 
 describe('DrawCanvas allowances', () => {
