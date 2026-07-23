@@ -54,7 +54,9 @@ test.describe('game feature pages (spec 0030) at 360px', () => {
     // Hero art: the wide 16:9 hero SVG (viewBox 0 0 800 450) leads the page.
     await expect(page.locator('svg[viewBox="0 0 800 450"]').first()).toBeVisible();
     await expect(page.getByRole('heading', { name: /^rules$/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /ready to play trivial matters\?/i })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /ready to play trivial matters\?/i }),
+    ).toBeVisible();
     // The two removed sections are gone.
     await expect(page.getByRole('heading', { name: /how to play/i })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: /^categories$/i })).toHaveCount(0);
