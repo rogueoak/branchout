@@ -66,6 +66,11 @@ function distanceToRange(rating: number, min: number, max: number): number {
  * only when every question in the pool is used - in practice unreachable: a game runs at most 100
  * rounds against 200 questions per category. `rng` selects within the candidate pool so ordering is
  * uniform and deterministic under a seeded rng.
+ *
+ * `accept`, when given, restricts the draw to questions it returns true for (spec 0074: the round's
+ * type - an open round accepts any recall item, a multiple-choice round only a choice-bearing recall
+ * item, a true/false round only a true/false item). It composes with the used-id and difficulty
+ * rules: the type filter applies first, then widening runs within the accepted set.
  */
 export function pickQuestion(
   index: QuestionIndex,
@@ -74,11 +79,12 @@ export function pickQuestion(
   max: number,
   usedIds: ReadonlySet<string>,
   rng: () => number,
+  accept?: (q: TriviaQuestion) => boolean,
 ): TriviaQuestion | null {
   const pool = poolFor(index, categories);
   if (pool.length === 0) return null;
 
-  const available = pool.filter((q) => !usedIds.has(q.id));
+  const available = pool.filter((q) => !usedIds.has(q.id) && (accept ? accept(q) : true));
   if (available.length === 0) return null;
 
   // Prefer in-range questions (distance 0); if none remain, fall to the nearest rating outside it.

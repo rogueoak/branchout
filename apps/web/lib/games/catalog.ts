@@ -59,35 +59,48 @@ interface GameMarketing {
 const MARKETING: Record<string, GameMarketing> = {
   trivia: {
     description:
-      'Branch Out Trivia is a fast, free-text trivia party game built for phones. 1,600 questions ' +
-      'across eight categories, a 60-second round timer, and a quick group vote to settle the close ' +
-      'calls - so the debate ends on the scoreboard, not in an argument.',
+      'Trivial Matters is a fast trivia party game built for phones. It mixes three question types, ' +
+      'multiple choice, true or false, and open answer, across ten categories. Pick a duration from ' +
+      'Fast to Marathon; open rounds still go to a quick group vote on a close call, so the debate ' +
+      'ends on the scoreboard, not in an argument.',
     howToPlay: [
       {
         title: 'Start a room',
-        body: 'Host a room, pick your categories and round count, and share the join code.',
+        body: 'Host a room, pick your categories and a duration, and share the join code.',
       },
       {
-        title: 'Answer in your own words',
-        body: 'Everyone types a free-text answer before the timer runs out - no multiple choice.',
+        title: 'Answer three ways',
+        body: 'Tap a multiple-choice option, judge a true-or-false statement, or type an open answer before the timer runs out.',
       },
       {
         title: 'Reveal, vote, and score',
-        body: 'Answers reveal together; a close call goes to a group vote, and points settle it.',
+        body: 'Answers reveal together; a close call on an open round goes to a group vote, and points settle it.',
       },
     ],
-    categories: ['Nature', 'Food', 'Animals', 'Science', 'People', 'Places', 'Things', 'History'],
+    categories: [
+      'Nature',
+      'Food',
+      'Animals',
+      'Science',
+      'People',
+      'Places',
+      'Things',
+      'History',
+      'Movies',
+      'Music',
+    ],
     shareImage: '/share-trivia.png',
-    shareAlt: 'Branch Out Trivia',
+    shareAlt: 'Branch Out Trivial Matters',
     // Note: `badge.label` here is a DISPLAY pill on the card ("Featured") and is unrelated to the
-    // `featured` curation flag below (the carousel-subset axis). They coincide by name on Trivia only -
-    // Liar Liar and Lone Leaf are `featured: true` but badged "New". Don't conflate the two.
+    // `featured` curation flag below (the carousel-subset axis). They coincide by name on Trivial
+    // Matters only; Liar Liar and Lone Leaf are `featured: true` but badged "New". Don't conflate them.
     badge: { label: 'Featured', variant: 'info' },
     featured: true,
-    seoTitle: 'Trivia - a fast free-text party game | Branch Out Games',
+    seoTitle: 'Trivial Matters - a fast trivia party game | Branch Out Games',
     seoDescription:
-      'Play Branch Out Trivia free in your browser: 1,600 questions across 8 categories, free-text ' +
-      'answers, and a group vote for the close calls. Start a room and share the code - no app.',
+      'Play Trivial Matters free in your browser: multiple choice, true or false, and open-answer ' +
+      'questions across ten categories, with a group vote for the close calls. Start a room and ' +
+      'share the code, no app.',
   },
   'liar-liar': {
     description:

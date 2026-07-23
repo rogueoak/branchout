@@ -79,6 +79,10 @@ export function RemotePane({
     setDisputedRound(null);
   }, [round]);
 
+  // The current round's question type (spec 0074) drives which answer control is shown. A missing
+  // prompt (a phase with no question) falls back to open - the pre-0074 free-text shape.
+  const promptType = prompt?.type ?? 'open';
+
   const wasMarkedWrong = reveal?.wrong.includes(me) ?? false;
   const submitted = submittedRound === round;
   const gaveUp = gaveUpRound === round;
@@ -127,6 +131,14 @@ export function RemotePane({
     setSubmittedRound(round);
   }
 
+  // A tap-to-answer submission (spec 0074): multiple-choice sends the chosen option text, true-false
+  // sends "True"/"False". Objectively scored by the engine, so - unlike open answers - there is no
+  // give-up and no dispute. Locks the player in exactly like a normal submit.
+  function choose(option: string) {
+    onMove(round, option);
+    setSubmittedRound(round);
+  }
+
   // "I don't know": a give-up. Submit the reserved empty answer (scored wrong, no points) and lock in,
   // exactly like a normal submit - no resubmit.
   function giveUp() {
@@ -166,6 +178,55 @@ export function RemotePane({
         <p className="text-body-sm text-text-subtle">
           Waiting for the round to close - the answer is on its way.
         </p>
+      </div>
+    );
+  } else if (promptType === 'multiple-choice') {
+    // Multiple choice (spec 0074): four tappable option buttons. Tapping submits the chosen option
+    // text immediately - no separate Submit, no give-up, no dispute (it is objectively scored).
+    answerPanel = (
+      <div className="flex flex-col gap-3" role="group" aria-label="Choose your answer">
+        <p className="text-body-sm font-medium text-text">Tap your answer</p>
+        <div className="flex flex-col gap-2">
+          {(prompt?.choices ?? []).map((choice) => (
+            <Button
+              key={choice}
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() => choose(choice)}
+              disabled={timeUp}
+            >
+              {choice}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  } else if (promptType === 'true-false') {
+    // True / false (spec 0074): two tappable buttons that submit "True" / "False".
+    answerPanel = (
+      <div className="flex flex-col gap-3" role="group" aria-label="Choose your answer">
+        <p className="text-body-sm font-medium text-text">True or false?</p>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="primary"
+            className="flex-1"
+            onClick={() => choose('True')}
+            disabled={timeUp}
+          >
+            True
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            className="flex-1"
+            onClick={() => choose('False')}
+            disabled={timeUp}
+          >
+            False
+          </Button>
+        </div>
       </div>
     );
   } else {
@@ -246,7 +307,15 @@ export function RemotePane({
       ) : phase === 'disputing' ? (
         <div className="flex flex-col gap-3">
           {revealCard}
-          {canDispute ? (
+          {/* Disputes run ONLY on open rounds (spec 0074): multiple-choice and true-false are
+              objectively scored, so their reveal offers no dispute affordance at all. */}
+          {reveal?.type !== 'open' ? (
+            <p className="text-body-sm text-text-muted">
+              {showResults
+                ? 'On to the next question.'
+                : 'The answer is on the viewer. The next question is coming up.'}
+            </p>
+          ) : canDispute ? (
             <>
               <p className="text-body text-text">
                 Your answer was marked wrong. Think it should count? Dispute quickly - the window is

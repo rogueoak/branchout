@@ -89,6 +89,7 @@ describe('ViewerPane answer display', () => {
       answered: 1,
       prompt: {
         round: 1,
+        type: 'open',
         category: 'People',
         difficulty: 5,
         question: 'Who developed relativity?',
@@ -99,5 +100,26 @@ describe('ViewerPane answer display', () => {
     const timer = screen.getByRole('timer');
     expect(timer.getAttribute('aria-label')).toBe('42 seconds left to answer');
     expect(timer.textContent).toBe('42');
+  });
+
+  it('shows the multiple-choice options on the shared viewer while collecting (spec 0074)', () => {
+    const state = build({
+      phase: 'collecting',
+      moveMsRemaining: 20_000,
+      moveWindowMs: 20_000,
+      answered: 0,
+      prompt: {
+        round: 1,
+        type: 'multiple-choice',
+        category: 'Animals',
+        difficulty: 3,
+        question: 'Fastest land animal?',
+        choices: ['Lion', 'Cheetah', 'Pronghorn', 'Greyhound'],
+      },
+    });
+    render(<ViewerPane state={state} me="p1" />);
+    expect(screen.getByRole('list', { name: /answer options/i })).toBeDefined();
+    expect(screen.getByText('Cheetah')).toBeDefined();
+    expect(screen.getByText('Multiple choice')).toBeDefined();
   });
 });

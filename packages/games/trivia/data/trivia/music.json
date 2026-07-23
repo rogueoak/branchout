@@ -1,0 +1,144 @@
+[
+  {
+    "id": "music-001",
+    "category": "Music",
+    "prompt": "How many strings does a standard guitar have?",
+    "answers": ["6", "Six"],
+    "choices": ["4", "5", "12"],
+    "difficulty": 2
+  },
+  {
+    "id": "music-002",
+    "category": "Music",
+    "prompt": "Which British band released the album Abbey Road?",
+    "answers": ["The Beatles", "Beatles"],
+    "choices": ["The Rolling Stones", "The Who", "Led Zeppelin"],
+    "difficulty": 2
+  },
+  {
+    "id": "music-003",
+    "category": "Music",
+    "prompt": "What Italian musical term instructs a musician to play softly?",
+    "answers": ["Piano"],
+    "choices": ["Forte", "Allegro", "Vivace"],
+    "difficulty": 4
+  },
+  {
+    "id": "music-004",
+    "category": "Music",
+    "prompt": "Which keyboard instrument has 88 keys in its standard modern form?",
+    "answers": ["Piano"],
+    "choices": ["Organ", "Harpsichord", "Accordion"],
+    "difficulty": 3
+  },
+  {
+    "id": "music-005",
+    "category": "Music",
+    "prompt": "How many musicians perform together in a quartet?",
+    "answers": ["4", "Four"],
+    "choices": ["2", "3", "5"],
+    "difficulty": 3
+  },
+  {
+    "id": "music-006",
+    "category": "Music",
+    "prompt": "Which composer wrote the Ninth Symphony, which includes the 'Ode to Joy'?",
+    "answers": ["Ludwig van Beethoven", "Beethoven"],
+    "choices": ["Wolfgang Amadeus Mozart", "Johann Sebastian Bach", "Franz Schubert"],
+    "difficulty": 4
+  },
+  {
+    "id": "music-007",
+    "category": "Music",
+    "prompt": "To which family of instruments does the violin belong?",
+    "answers": ["String", "Strings", "String Family"],
+    "choices": ["Brass", "Woodwind", "Percussion"],
+    "difficulty": 3
+  },
+  {
+    "id": "music-008",
+    "category": "Music",
+    "prompt": "Which American singer is widely known as the 'King of Rock and Roll'?",
+    "answers": ["Elvis Presley", "Elvis"],
+    "choices": ["Chuck Berry", "Little Richard", "Buddy Holly"],
+    "difficulty": 2
+  },
+  {
+    "id": "music-009",
+    "category": "Music",
+    "prompt": "What is the highest of the standard female singing voice types?",
+    "answers": ["Soprano"],
+    "choices": ["Alto", "Mezzo-Soprano", "Contralto"],
+    "difficulty": 5
+  },
+  {
+    "id": "music-010",
+    "category": "Music",
+    "prompt": "Which small four-stringed instrument is strongly associated with Hawaiian music?",
+    "answers": ["Ukulele"],
+    "choices": ["Banjo", "Mandolin", "Sitar"],
+    "difficulty": 3
+  },
+  {
+    "id": "music-011",
+    "category": "Music",
+    "prompt": "Who composed the opera The Magic Flute?",
+    "answers": ["Wolfgang Amadeus Mozart", "Mozart"],
+    "difficulty": 6
+  },
+  {
+    "id": "music-012",
+    "category": "Music",
+    "prompt": "What musical term describes the speed or pace at which a piece is played?",
+    "answers": ["Tempo"],
+    "difficulty": 4
+  },
+  {
+    "id": "music-013",
+    "type": "true-false",
+    "category": "Music",
+    "prompt": "A standard modern piano has 88 keys.",
+    "isTrue": true,
+    "difficulty": 3
+  },
+  {
+    "id": "music-014",
+    "type": "true-false",
+    "category": "Music",
+    "prompt": "The Beatles were formed in Liverpool, England.",
+    "isTrue": true,
+    "difficulty": 3
+  },
+  {
+    "id": "music-015",
+    "type": "true-false",
+    "category": "Music",
+    "prompt": "The trumpet is classified as a woodwind instrument.",
+    "isTrue": false,
+    "difficulty": 3
+  },
+  {
+    "id": "music-016",
+    "type": "true-false",
+    "category": "Music",
+    "prompt": "Wolfgang Amadeus Mozart composed music during the Classical period.",
+    "isTrue": true,
+    "difficulty": 4
+  },
+  {
+    "id": "music-017",
+    "type": "true-false",
+    "category": "Music",
+    "prompt": "A drum is a percussion instrument.",
+    "isTrue": true,
+    "difficulty": 2
+  },
+  {
+    "id": "music-018",
+    "type": "true-false",
+    "category": "Music",
+    "prompt": "A modern saxophone is typically made of brass.",
+    "isTrue": true,
+    "difficulty": 5
+  }
+]

@@ -17,6 +17,7 @@ import {
 } from '@rogueoak/canopy/branches';
 import { Card, CardContent } from '@rogueoak/canopy/twigs';
 import type { TriviaDisputeReveal, TriviaRoundReveal } from './protocol';
+import { roundTypeLabel } from './config';
 import { CheckIcon, CrossIcon } from '../../../components/game/icons';
 
 interface AnswerRevealProps {
@@ -79,6 +80,11 @@ export function AnswerReveal({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* The round type (spec 0074) + the question text as a caption, so the reveal reads in context
+          (which of the four was right, or whether the statement was true). */}
+      <p className="text-caption uppercase tracking-wide text-text-subtle">
+        {roundTypeLabel(reveal.type)}
+      </p>
       {reveal.question ? <p className="text-body-sm text-text-muted">{reveal.question}</p> : null}
 
       <Card className={`w-full border ${answerBorder}`}>

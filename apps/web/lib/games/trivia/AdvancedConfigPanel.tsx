@@ -1,17 +1,23 @@
 'use client';
 
-// Trivia's ADVANCED host config (spec 0068), rendered into the lobby's collapsed "Advanced settings"
-// slot: auto-advance on/off, the advance-after dwell, and the answer time limit. Same controlled
-// `GameConfigPanelProps` contract as the standard panel. These map to the engine pacing:
-// auto-advance + advance-after drive the answer-screen/leaderboard dwells, time limit is the answer
-// window (move window). Mobile-first: single-column, legible at 360px.
+// Trivial Matters' ADVANCED host config (spec 0068, spec 0074), rendered into the lobby's collapsed
+// "Advanced settings" slot: auto-advance on/off, the advance-after dwell, and the three per-type
+// answer timers (a tap needs less time than typing, so multiple-choice / true-false / open each get
+// their own window). Same controlled `GameConfigPanelProps` contract as the standard panel. These map
+// to the engine pacing: auto-advance + advance-after drive the answer-screen/leaderboard dwells; each
+// timer is that round type's answer window (move window). Mobile-first: single-column, legible at
+// 360px.
 
 import { Input, Label } from '@rogueoak/canopy';
 import {
   MAX_ADVANCE_AFTER_SECONDS,
-  MAX_TIME_LIMIT_SECONDS,
+  MAX_MC_TIME_LIMIT_SECONDS,
+  MAX_OPEN_TIME_LIMIT_SECONDS,
+  MAX_TF_TIME_LIMIT_SECONDS,
   MIN_ADVANCE_AFTER_SECONDS,
-  MIN_TIME_LIMIT_SECONDS,
+  MIN_MC_TIME_LIMIT_SECONDS,
+  MIN_OPEN_TIME_LIMIT_SECONDS,
+  MIN_TF_TIME_LIMIT_SECONDS,
   validateTriviaConfig,
   type ConfigError,
   type TriviaHostConfig,
@@ -82,27 +88,79 @@ export function TriviaAdvancedConfigPanel({ value, onChange, disabled }: GameCon
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="trivia-time-limit">Time limit (seconds)</Label>
+        <Label>Time limits (seconds)</Label>
         <p className="text-body-sm text-text-muted">
-          How long players have to answer each question.
+          How long players have to answer each type of question - a tap needs less time than typing.
         </p>
-        <Input
-          id="trivia-time-limit"
-          type="number"
-          inputMode="numeric"
-          min={MIN_TIME_LIMIT_SECONDS}
-          max={MAX_TIME_LIMIT_SECONDS}
-          disabled={disabled}
-          value={Number.isNaN(config.timeLimitSeconds) ? '' : config.timeLimitSeconds}
-          onChange={(event) => set({ timeLimitSeconds: event.target.valueAsNumber })}
-          aria-invalid={errorFor(errors, 'timeLimit') !== null}
-          aria-describedby={errorFor(errors, 'timeLimit') ? 'trivia-time-limit-error' : undefined}
-        />
-        {errorFor(errors, 'timeLimit') ? (
-          <p id="trivia-time-limit-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'timeLimit')}
-          </p>
-        ) : null}
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="trivia-mc-time-limit">Multiple choice</Label>
+          <Input
+            id="trivia-mc-time-limit"
+            type="number"
+            inputMode="numeric"
+            min={MIN_MC_TIME_LIMIT_SECONDS}
+            max={MAX_MC_TIME_LIMIT_SECONDS}
+            disabled={disabled}
+            value={Number.isNaN(config.mcTimeLimitSeconds) ? '' : config.mcTimeLimitSeconds}
+            onChange={(event) => set({ mcTimeLimitSeconds: event.target.valueAsNumber })}
+            aria-invalid={errorFor(errors, 'mcTimeLimit') !== null}
+            aria-describedby={
+              errorFor(errors, 'mcTimeLimit') ? 'trivia-mc-time-limit-error' : undefined
+            }
+          />
+          {errorFor(errors, 'mcTimeLimit') ? (
+            <p id="trivia-mc-time-limit-error" role="alert" className="text-body-sm text-danger">
+              {errorFor(errors, 'mcTimeLimit')}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="trivia-tf-time-limit">True or false</Label>
+          <Input
+            id="trivia-tf-time-limit"
+            type="number"
+            inputMode="numeric"
+            min={MIN_TF_TIME_LIMIT_SECONDS}
+            max={MAX_TF_TIME_LIMIT_SECONDS}
+            disabled={disabled}
+            value={Number.isNaN(config.tfTimeLimitSeconds) ? '' : config.tfTimeLimitSeconds}
+            onChange={(event) => set({ tfTimeLimitSeconds: event.target.valueAsNumber })}
+            aria-invalid={errorFor(errors, 'tfTimeLimit') !== null}
+            aria-describedby={
+              errorFor(errors, 'tfTimeLimit') ? 'trivia-tf-time-limit-error' : undefined
+            }
+          />
+          {errorFor(errors, 'tfTimeLimit') ? (
+            <p id="trivia-tf-time-limit-error" role="alert" className="text-body-sm text-danger">
+              {errorFor(errors, 'tfTimeLimit')}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="trivia-open-time-limit">Open answer</Label>
+          <Input
+            id="trivia-open-time-limit"
+            type="number"
+            inputMode="numeric"
+            min={MIN_OPEN_TIME_LIMIT_SECONDS}
+            max={MAX_OPEN_TIME_LIMIT_SECONDS}
+            disabled={disabled}
+            value={Number.isNaN(config.openTimeLimitSeconds) ? '' : config.openTimeLimitSeconds}
+            onChange={(event) => set({ openTimeLimitSeconds: event.target.valueAsNumber })}
+            aria-invalid={errorFor(errors, 'openTimeLimit') !== null}
+            aria-describedby={
+              errorFor(errors, 'openTimeLimit') ? 'trivia-open-time-limit-error' : undefined
+            }
+          />
+          {errorFor(errors, 'openTimeLimit') ? (
+            <p id="trivia-open-time-limit-error" role="alert" className="text-body-sm text-danger">
+              {errorFor(errors, 'openTimeLimit')}
+            </p>
+          ) : null}
+        </div>
       </div>
     </div>
   );

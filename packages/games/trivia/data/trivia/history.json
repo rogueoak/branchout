@@ -4,6 +4,7 @@
     "category": "History",
     "prompt": "In which year did World War II end?",
     "answers": ["1945"],
+    "choices": ["1944", "1946", "1943"],
     "difficulty": 1
   },
   {
@@ -18,6 +19,7 @@
     "category": "History",
     "prompt": "Who was the first President of the United States?",
     "answers": ["George Washington"],
+    "choices": ["Thomas Jefferson", "John Adams", "Benjamin Franklin"],
     "difficulty": 1
   },
   {
@@ -25,6 +27,7 @@
     "category": "History",
     "prompt": "In which year was the United States Declaration of Independence signed?",
     "answers": ["1776"],
+    "choices": ["1783", "1774", "1789"],
     "difficulty": 2
   },
   {
@@ -39,6 +42,7 @@
     "category": "History",
     "prompt": "In which year did Christopher Columbus first reach the Americas?",
     "answers": ["1492"],
+    "choices": ["1488", "1500", "1512"],
     "difficulty": 2
   },
   {
@@ -53,6 +57,31 @@
     "category": "History",
     "prompt": "Which ancient Egyptian queen formed a political alliance with Julius Caesar?",
     "answers": ["Cleopatra", "Cleopatra VII"],
+    "choices": ["Nefertiti", "Hatshepsut", "Nefertari"],
     "difficulty": 2
+  },
+  {
+    "id": "history-009",
+    "type": "true-false",
+    "category": "History",
+    "prompt": "World War I began in the year 1914.",
+    "isTrue": true,
+    "difficulty": 3
+  },
+  {
+    "id": "history-010",
+    "type": "true-false",
+    "category": "History",
+    "prompt": "The Magna Carta was sealed in the year 1215.",
+    "isTrue": true,
+    "difficulty": 5
+  },
+  {
+    "id": "history-011",
+    "type": "true-false",
+    "category": "History",
+    "prompt": "The ancient Olympic Games were originally held in Rome.",
+    "isTrue": false,
+    "difficulty": 4
   }
 ]

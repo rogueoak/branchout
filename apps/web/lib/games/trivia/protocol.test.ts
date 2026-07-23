@@ -7,16 +7,63 @@ describe('asTriviaPrompt', () => {
     // migration. The decoder accepts a number here.
     const prompt = asTriviaPrompt({
       round: 1,
+      type: 'open',
       category: 'Things',
       difficulty: 7,
       question: 'What tool applies paint?',
     });
     expect(prompt).toEqual({
       round: 1,
+      type: 'open',
       category: 'Things',
       difficulty: 7,
       question: 'What tool applies paint?',
     });
+  });
+
+  it('decodes a multiple-choice prompt with its four shuffled options (spec 0074)', () => {
+    const prompt = asTriviaPrompt({
+      round: 2,
+      type: 'multiple-choice',
+      category: 'Animals',
+      difficulty: 3,
+      question: 'What is the fastest land animal?',
+      choices: ['Lion', 'Cheetah', 'Pronghorn', 'Greyhound'],
+    });
+    expect(prompt).toEqual({
+      round: 2,
+      type: 'multiple-choice',
+      category: 'Animals',
+      difficulty: 3,
+      question: 'What is the fastest land animal?',
+      choices: ['Lion', 'Cheetah', 'Pronghorn', 'Greyhound'],
+    });
+  });
+
+  it('decodes a true-false prompt as a statement with no choices (spec 0074)', () => {
+    const prompt = asTriviaPrompt({
+      round: 3,
+      type: 'true-false',
+      category: 'Animals',
+      difficulty: 4,
+      question: "A shrimp's heart is located in its head.",
+    });
+    expect(prompt).toMatchObject({ type: 'true-false' });
+    expect(prompt?.choices).toBeUndefined();
+  });
+
+  it('defaults a legacy prompt with no type to open, and ignores stray choices off MC', () => {
+    // A pre-0074 peer omits `type`; it must render as the free-text open round it always was.
+    const prompt = asTriviaPrompt({
+      round: 1,
+      category: 'Things',
+      difficulty: 7,
+      question: 'x',
+      choices: ['a', 'b'],
+    });
+    expect(prompt?.type).toBe('open');
+    // Choices only ride a multiple-choice prompt; on an open round they are dropped.
+    expect(prompt?.choices).toBeUndefined();
   });
 
   it('rejects a prompt that is missing a field or malformed', () => {
@@ -36,9 +83,10 @@ describe('asTriviaPrompt', () => {
 });
 
 describe('asTriviaRoundReveal', () => {
-  it('decodes an answer-round reveal, including per-player submissions', () => {
+  it('decodes an answer-round reveal, including its type and per-player submissions', () => {
     const reveal = asTriviaRoundReveal({
       round: 1,
+      type: 'open',
       question: 'What is H2O?',
       answers: ['Water'],
       correct: ['p1'],
@@ -50,6 +98,7 @@ describe('asTriviaRoundReveal', () => {
     });
     expect(reveal).toMatchObject({
       round: 1,
+      type: 'open',
       answers: ['Water'],
       correct: ['p1'],
       wrong: ['p2'],
@@ -60,7 +109,19 @@ describe('asTriviaRoundReveal', () => {
     });
   });
 
-  it('defaults submissions to [] when a pre-0017 payload omits them', () => {
+  it('decodes a multiple-choice reveal type', () => {
+    const reveal = asTriviaRoundReveal({
+      round: 2,
+      type: 'multiple-choice',
+      question: 'Fastest land animal?',
+      answers: ['Cheetah'],
+      correct: ['p1'],
+      wrong: [],
+    });
+    expect(reveal?.type).toBe('multiple-choice');
+  });
+
+  it('defaults type to open and submissions to [] when a legacy payload omits them', () => {
     const reveal = asTriviaRoundReveal({
       round: 1,
       question: 'x',
@@ -68,6 +129,7 @@ describe('asTriviaRoundReveal', () => {
       correct: [],
       wrong: [],
     });
+    expect(reveal?.type).toBe('open');
     expect(reveal?.submissions).toEqual([]);
   });
 

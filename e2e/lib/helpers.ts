@@ -74,17 +74,55 @@ export async function createRoom(page: Page): Promise<string> {
 }
 
 /**
- * Set an exact Trivia round count in the host lobby (spec 0068). Rounds are chosen by preset
- * (Fast/Medium/Long) or Custom; the specs that need a specific count (e.g. a single-round fast game)
- * pick Custom, which reveals the number field, then fill it. Scoped to the "Number of rounds"
+ * Set a Custom Trivial Matters mix in the host lobby (spec 0074). Duration is chosen by preset
+ * (Fast/Standard/Long/Marathon) or Custom; the specs that need an exact composition pick Custom,
+ * which reveals the three per-type count inputs, and fill them. Scoped to the "Game duration"
  * radiogroup so it never collides with the difficulty selector's own Custom option.
  */
-export async function setTriviaRounds(page: Page, count: number): Promise<void> {
+export async function setTriviaCustom(
+  page: Page,
+  counts: { multipleChoice: number; trueFalse: number; open: number },
+): Promise<void> {
   await page
-    .getByRole('radiogroup', { name: 'Number of rounds' })
+    .getByRole('radiogroup', { name: 'Game duration' })
     .getByRole('radio', { name: /custom/i })
     .click();
-  await page.locator('#trivia-rounds').fill(String(count));
+  await page.locator('#trivia-custom-mc').fill(String(counts.multipleChoice));
+  await page.locator('#trivia-custom-tf').fill(String(counts.trueFalse));
+  await page.locator('#trivia-custom-open').fill(String(counts.open));
+}
+
+/**
+ * Answer whatever question type the current round is showing on a player's controller (spec 0074),
+ * returning which type it was so a test can assert coverage. Open -> free text + Submit;
+ * true-false -> tap True; multiple-choice -> tap the first option. The round-close is all-submitted,
+ * so both players calling this closes the round without waiting on the per-type timer.
+ */
+export async function answerCurrentQuestion(
+  page: Page,
+  openText = 'branch out',
+): Promise<'open' | 'true-false' | 'multiple-choice'> {
+  // Scope to `:visible` elements: a just-finished round leaves its (now hidden) answer group in the
+  // DOM, so an unscoped locator can resolve to that stale node and miss the live control.
+  const openInput = page.locator('#answer-input:visible');
+  const choices = page.locator('[role="group"][aria-label="Choose your answer"]:visible');
+  await expect(openInput.or(choices).first()).toBeVisible({ timeout: 30_000 });
+
+  if (await openInput.isVisible().catch(() => false)) {
+    await openInput.fill(openText);
+    await page.getByRole('button', { name: /^submit$/i }).click();
+    return 'open';
+  }
+  // A true-false round's answer group is exactly a True and a False button; a multiple-choice round's
+  // group is the option-text buttons. Distinguish by the presence of a literal False button (option
+  // texts are answers, never the word "False"), which is layout- and copy-independent.
+  const falseButton = choices.getByRole('button', { name: /^false$/i });
+  if ((await falseButton.count()) > 0) {
+    await choices.getByRole('button', { name: /^true$/i }).click();
+    return 'true-false';
+  }
+  await choices.getByRole('button').first().click();
+  return 'multiple-choice';
 }
 
 /** A second player joins a room by code through the /join UI (anonymous session is minted). */

@@ -11,7 +11,7 @@ import { Badge } from '@rogueoak/canopy';
 import { Card, CardContent, CardHeader } from '@rogueoak/canopy/twigs';
 import type { GameState } from '../../game-state';
 import type { TriviaPrompt } from './protocol';
-import { difficultyBand } from './config';
+import { difficultyBand, roundTypeLabel } from './config';
 import { countdownTone } from './countdown';
 import { useMoveCountdown } from '../../use-move-countdown';
 import { usePrefersReducedMotion } from '../../use-prefers-reduced-motion';
@@ -77,6 +77,7 @@ export function TriviaQuestionCard({ state, prompt }: { state: GameState; prompt
       <Card className="w-full">
         <CardHeader className="flex flex-row flex-wrap items-center gap-2 pb-2">
           <Badge variant="info">Round {prompt.round}</Badge>
+          <Badge variant="primary">{roundTypeLabel(prompt.type)}</Badge>
           <Badge variant="neutral">{prompt.category}</Badge>
           <Badge variant="neutral">{difficultyBand(prompt.difficulty)}</Badge>
         </CardHeader>
@@ -84,6 +85,32 @@ export function TriviaQuestionCard({ state, prompt }: { state: GameState; prompt
           <h2 className="text-h2 text-text" data-testid="question-prompt">
             {prompt.question}
           </h2>
+          {/* Read-only option display so the shared viewer (and a remote-only player) can read the
+              choices; the tappable answer buttons live on the controller (Remote). Open rounds show
+              no options - the answer is free text. */}
+          {prompt.type === 'multiple-choice' && prompt.choices ? (
+            <ul className="flex flex-col gap-2" aria-label="Answer options">
+              {prompt.choices.map((choice) => (
+                <li
+                  key={choice}
+                  className="rounded-lg border border-border bg-surface-raised px-4 py-2 text-body text-text"
+                >
+                  {choice}
+                </li>
+              ))}
+            </ul>
+          ) : prompt.type === 'true-false' ? (
+            <ul className="flex gap-2" aria-label="Answer options">
+              {['True', 'False'].map((choice) => (
+                <li
+                  key={choice}
+                  className="flex-1 rounded-lg border border-border bg-surface-raised px-4 py-2 text-center text-body font-medium text-text"
+                >
+                  {choice}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </CardContent>
       </Card>
       {countdown}

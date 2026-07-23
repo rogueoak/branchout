@@ -6,6 +6,7 @@ import type { TriviaPrompt } from './protocol';
 
 const PROMPT: TriviaPrompt = {
   round: 1,
+  type: 'open',
   category: 'Science',
   difficulty: 5,
   question: 'What is H2O?',
@@ -120,6 +121,50 @@ describe('TriviaQuestionCard answered indicator', () => {
       />,
     );
     expect(screen.queryByText(/answered$/)).toBeNull();
+  });
+});
+
+describe('TriviaQuestionCard question types (spec 0074)', () => {
+  it('shows a round-type badge for the current question', () => {
+    render(<TriviaQuestionCard state={build({ moveMsRemaining: 30_000 })} prompt={PROMPT} />);
+    expect(screen.getByText('Open answer')).toBeDefined();
+  });
+
+  it('lists the four options (read-only) on a multiple-choice round', () => {
+    const prompt: TriviaPrompt = {
+      round: 2,
+      type: 'multiple-choice',
+      category: 'Animals',
+      difficulty: 3,
+      question: 'Fastest land animal?',
+      choices: ['Lion', 'Cheetah', 'Pronghorn', 'Greyhound'],
+    };
+    render(<TriviaQuestionCard state={build({ moveMsRemaining: 30_000 })} prompt={prompt} />);
+    const options = screen.getByRole('list', { name: /answer options/i });
+    expect(options).toBeDefined();
+    for (const choice of prompt.choices ?? []) {
+      expect(screen.getByText(choice)).toBeDefined();
+    }
+    expect(screen.getByText('Multiple choice')).toBeDefined();
+  });
+
+  it('shows True / False options on a true-false round', () => {
+    const prompt: TriviaPrompt = {
+      round: 3,
+      type: 'true-false',
+      category: 'Animals',
+      difficulty: 4,
+      question: "A shrimp's heart is in its head.",
+    };
+    render(<TriviaQuestionCard state={build({ moveMsRemaining: 30_000 })} prompt={prompt} />);
+    expect(screen.getByText('True')).toBeDefined();
+    expect(screen.getByText('False')).toBeDefined();
+    expect(screen.getByText('True or false')).toBeDefined();
+  });
+
+  it('shows no options on an open round', () => {
+    render(<TriviaQuestionCard state={build({ moveMsRemaining: 30_000 })} prompt={PROMPT} />);
+    expect(screen.queryByRole('list', { name: /answer options/i })).toBeNull();
   });
 });
 

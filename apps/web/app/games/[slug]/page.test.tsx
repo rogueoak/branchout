@@ -56,7 +56,7 @@ describe('game feature page (spec 0030 hero-first rework)', () => {
     expect(container.innerHTML).toContain('viewBox="0 0 800 450"');
     // Icon (the 512x512 mark) + the title inline beneath the hero.
     expect(container.innerHTML).toContain('viewBox="0 0 512 512"');
-    expect(screen.getByRole('heading', { level: 1, name: 'Trivia' }).tagName).toBe('H1');
+    expect(screen.getByRole('heading', { level: 1, name: 'Trivial Matters' }).tagName).toBe('H1');
     // The badge + tags row: the catalog badge plus the library tag chips (matches the card). "Big
     // group" is a trivia tag label unique to the row (the title/description carry no such text).
     expect(screen.getByText('Featured')).toBeTruthy();
@@ -64,7 +64,7 @@ describe('game feature page (spec 0030 hero-first rework)', () => {
     // The rules section renders (objective + headed sections, spec 0051).
     expect(screen.getByRole('heading', { name: /^rules$/i })).toBeTruthy();
     // The closing "Ready to play" CTA starts the game.
-    expect(screen.getByRole('heading', { name: /ready to play trivia\?/i })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /ready to play trivial matters\?/i })).toBeTruthy();
     const starts = screen.getAllByRole('link', { name: 'Start a game' });
     expect(starts.length).toBeGreaterThan(0);
     // Anonymous visitor: the CTA routes through signup, preserving the game.

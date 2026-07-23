@@ -4,6 +4,7 @@
     "category": "Science",
     "prompt": "What force attracts all objects with mass toward each other?",
     "answers": ["Gravity", "Gravitational Force", "Gravitation"],
+    "choices": ["Magnetism", "Friction", "Inertia"],
     "difficulty": 1
   },
   {
@@ -11,6 +12,7 @@
     "category": "Science",
     "prompt": "What is the SI unit of force?",
     "answers": ["Newton", "Newtons"],
+    "choices": ["Joule", "Pascal", "Watt"],
     "difficulty": 4
   },
   {
@@ -25,6 +27,7 @@
     "category": "Science",
     "prompt": "What type of energy does a moving object possess?",
     "answers": ["Kinetic Energy", "Kinetic"],
+    "choices": ["Potential Energy", "Thermal Energy", "Chemical Energy"],
     "difficulty": 4
   },
   {
@@ -46,6 +49,7 @@
     "category": "Science",
     "prompt": "What color of visible light has the longest wavelength?",
     "answers": ["Red"],
+    "choices": ["Violet", "Blue", "Green"],
     "difficulty": 4
   },
   {
@@ -53,6 +57,31 @@
     "category": "Science",
     "prompt": "What is the SI unit of electrical resistance?",
     "answers": ["Ohm", "Ohms"],
+    "choices": ["Volt", "Ampere", "Farad"],
     "difficulty": 5
+  },
+  {
+    "id": "science-009",
+    "type": "true-false",
+    "category": "Science",
+    "prompt": "The chemical symbol for gold is Au.",
+    "isTrue": true,
+    "difficulty": 3
+  },
+  {
+    "id": "science-010",
+    "type": "true-false",
+    "category": "Science",
+    "prompt": "Light travels faster than sound.",
+    "isTrue": true,
+    "difficulty": 2
+  },
+  {
+    "id": "science-011",
+    "type": "true-false",
+    "category": "Science",
+    "prompt": "A healthy adult human has four lungs.",
+    "isTrue": false,
+    "difficulty": 2
   }
 ]

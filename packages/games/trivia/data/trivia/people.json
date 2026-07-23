@@ -4,6 +4,7 @@
     "category": "People",
     "prompt": "Who painted the Mona Lisa?",
     "answers": ["Leonardo da Vinci", "Da Vinci", "Leonardo"],
+    "choices": ["Michelangelo", "Raphael", "Sandro Botticelli"],
     "difficulty": 1
   },
   {
@@ -11,6 +12,7 @@
     "category": "People",
     "prompt": "Who developed the theory of relativity?",
     "answers": ["Albert Einstein", "Einstein"],
+    "choices": ["Isaac Newton", "Niels Bohr", "Max Planck"],
     "difficulty": 1
   },
   {
@@ -25,6 +27,7 @@
     "category": "People",
     "prompt": "Who wrote the play Hamlet?",
     "answers": ["William Shakespeare", "Shakespeare"],
+    "choices": ["Christopher Marlowe", "Ben Jonson", "Geoffrey Chaucer"],
     "difficulty": 1
   },
   {
@@ -39,6 +42,7 @@
     "category": "People",
     "prompt": "Who was the 16th President of the United States?",
     "answers": ["Abraham Lincoln", "Lincoln"],
+    "choices": ["Andrew Johnson", "Ulysses S. Grant", "James Buchanan"],
     "difficulty": 2
   },
   {
@@ -53,6 +57,31 @@
     "category": "People",
     "prompt": "Who was the first person to walk on the Moon?",
     "answers": ["Neil Armstrong", "Armstrong"],
+    "choices": ["Buzz Aldrin", "Michael Collins", "Yuri Gagarin"],
     "difficulty": 1
+  },
+  {
+    "id": "people-009",
+    "type": "true-false",
+    "category": "People",
+    "prompt": "Marie Curie won Nobel Prizes in two different sciences.",
+    "isTrue": true,
+    "difficulty": 4
+  },
+  {
+    "id": "people-010",
+    "type": "true-false",
+    "category": "People",
+    "prompt": "Thomas Edison invented the telephone.",
+    "isTrue": false,
+    "difficulty": 3
+  },
+  {
+    "id": "people-011",
+    "type": "true-false",
+    "category": "People",
+    "prompt": "The painter Vincent van Gogh was Dutch.",
+    "isTrue": true,
+    "difficulty": 4
   }
 ]

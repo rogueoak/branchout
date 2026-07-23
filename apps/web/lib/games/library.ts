@@ -77,23 +77,25 @@ const GAME_LIBRARY: Record<string, GameLibraryEntry> = {
         {
           heading: 'Setup',
           body: [
-            'The host picks the categories, a difficulty range, and how many rounds to play, then ' +
-              'shares the join code. Everyone joins on their own phone.',
+            'The host picks the categories, a difficulty range, and a duration from Fast to Marathon, ' +
+              'then shares the join code. Everyone joins on their own phone.',
           ],
         },
         {
           heading: 'On each round',
           body: [
-            'A question appears for everyone at once. Type your answer in your own words before the ' +
-              '60-second timer runs out - there is no multiple choice.',
+            'A question appears for everyone at once in one of three shapes. Tap an option on a ' +
+              'multiple-choice question, judge a true-or-false statement, or type your own words on ' +
+              'an open question. Each type has its own answer timer.',
           ],
         },
         {
           heading: 'Reveal and dispute',
           body: [
-            'Answers reveal together and a correct one scores 100 points. If you were marked wrong ' +
-              'but think you were right, dispute it in the short window and the group votes to settle ' +
-              'it. Winning the vote scores 50.',
+            'Answers reveal together. A correct multiple choice scores 100, a true or false scores ' +
+              '75, and an open answer scores 150. Only open rounds can be disputed: if you were ' +
+              'marked wrong but think you were right, dispute it in the short window and the group ' +
+              'votes to settle it. Winning the vote scores 50.',
           ],
         },
         {

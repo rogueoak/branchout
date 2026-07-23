@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createRoom, setTriviaRounds, signUpHost } from '../lib/helpers';
+import { createRoom, setTriviaCustom, signUpHost } from '../lib/helpers';
 
 // The game library + help sheet e2e (spec 0051), at the 360px phone viewport per non-negotiable 1.
 // Two flows: (1) the /games index search narrows the list; (2) inside a live game, the always-present
@@ -40,7 +40,7 @@ test('in a live game, the help icon opens the rules sheet and the game stays liv
     await createRoom(host);
 
     // A solo interactive host is already a viewer, so a single round can start straight away.
-    await setTriviaRounds(host, 1);
+    await setTriviaCustom(host, { multipleChoice: 0, trueFalse: 0, open: 1 });
     await host.getByRole('button', { name: /start game/i }).click();
 
     // The game is live: the first question is on screen.

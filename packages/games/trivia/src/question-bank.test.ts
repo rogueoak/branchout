@@ -8,6 +8,9 @@ import { createFsAssetLoaderFactory } from '@branchout/game-sdk';
 import {
   loadQuestionBank,
   validateQuestionBank,
+  isRecallQuestion,
+  isTrueFalseQuestion,
+  isMultipleChoiceCapable,
   CATEGORIES,
   type TriviaQuestion,
 } from './question-bank.js';
@@ -46,7 +49,8 @@ describe('question-bank - sample data', () => {
     const questions = await loadQuestionBank(assets);
     expect(questions.length).toBeGreaterThan(0);
 
-    const sample = questions[0]!;
+    // The first sample item is a recall question, so its `answers` array is present.
+    const sample = questions.find(isRecallQuestion)!;
     expect(typeof sample.id).toBe('string');
     expect(typeof sample.prompt).toBe('string');
     expect(Array.isArray(sample.answers)).toBe(true);
@@ -88,13 +92,13 @@ describe('validateQuestionBank - structural violations', () => {
 
   it('accepts Title-Case answers (casing is not enforced; matching is case-insensitive)', () => {
     const bank = makeValidBank();
-    bank[0] = { ...bank[0]!, answers: ['Carbon Dioxide', 'CO2'] };
+    bank[0] = { ...bank[0]!, answers: ['Carbon Dioxide', 'CO2'] } as TriviaQuestion;
     expect(() => validateQuestionBank(bank)).not.toThrow();
   });
 
   it('throws on a blank answer', () => {
     const bank = makeValidBank();
-    bank[0] = { ...bank[0]!, answers: [''] };
+    bank[0] = { ...bank[0]!, answers: [''] } as TriviaQuestion;
     expect(() => validateQuestionBank(bank)).toThrow('blank answer');
   });
 
@@ -116,5 +120,100 @@ describe('validateQuestionBank - structural violations', () => {
     // normalization, so a dropped .toLowerCase() would fail this test.
     bank[1] = { ...bank[1]!, id: 'nature-002', prompt: `  ${bank[0]!.prompt.toUpperCase()}  ` };
     expect(() => validateQuestionBank(bank)).toThrow('duplicate prompt');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-type shapes (spec 0074): recall + choices, and true/false
+// ---------------------------------------------------------------------------
+
+describe('validateQuestionBank - multi-type shapes (spec 0074)', () => {
+  it('accepts a recall item carrying >= 3 choices (MC-eligible)', () => {
+    const bank = makeValidBank();
+    bank[0] = {
+      ...(bank[0] as { id: string; category: string; prompt: string }),
+      answers: ['Cheetah'],
+      choices: ['Lion', 'Pronghorn', 'Greyhound'],
+      difficulty: 2,
+    } as TriviaQuestion;
+    expect(() => validateQuestionBank(bank)).not.toThrow();
+  });
+
+  it('throws when choices are present but fewer than 3', () => {
+    const bank = makeValidBank();
+    (bank[0] as { choices?: string[] }).choices = ['Only', 'Two'];
+    expect(() => validateQuestionBank(bank)).toThrow('fewer than 3');
+  });
+
+  it('throws on a blank choice', () => {
+    const bank = makeValidBank();
+    (bank[0] as { choices?: string[] }).choices = ['A', 'B', ''];
+    expect(() => validateQuestionBank(bank)).toThrow('blank choice');
+  });
+
+  it('throws when a distractor equals an accepted answer (case-insensitively)', () => {
+    // A distractor equal to the answer would duplicate an MC option and let a player score by tapping
+    // the "distractor" (engineer review, PR #174).
+    const bank = makeValidBank();
+    const item = bank[0] as { answers: string[]; choices?: string[] };
+    item.choices = [item.answers[0]!.toUpperCase(), 'Some Distractor', 'Another Distractor'];
+    expect(() => validateQuestionBank(bank)).toThrow('distractor equal to an accepted answer');
+  });
+
+  it('accepts a true/false item with a boolean isTrue and no answers', () => {
+    const bank = makeValidBank();
+    bank[0] = {
+      id: 'nature-001',
+      type: 'true-false',
+      category: 'Nature',
+      prompt: 'Lightning is hotter than the surface of the Sun.',
+      isTrue: true,
+      difficulty: 6,
+    };
+    expect(() => validateQuestionBank(bank)).not.toThrow();
+  });
+
+  it('throws when a true/false item has a non-boolean isTrue', () => {
+    const bank = makeValidBank();
+    bank[0] = {
+      id: 'nature-001',
+      type: 'true-false',
+      category: 'Nature',
+      prompt: 'A statement.',
+      // @ts-expect-error - deliberately wrong shape for the negative test
+      isTrue: 'yes',
+      difficulty: 3,
+    };
+    expect(() => validateQuestionBank(bank)).toThrow('isTrue');
+  });
+});
+
+describe('question type guards (spec 0074)', () => {
+  const recall: TriviaQuestion = {
+    id: 'nature-001',
+    category: 'Nature',
+    prompt: 'q?',
+    answers: ['A'],
+    difficulty: 2,
+  };
+  const recallMc: TriviaQuestion = { ...recall, id: 'nature-002', choices: ['B', 'C', 'D'] };
+  const trueFalse: TriviaQuestion = {
+    id: 'nature-003',
+    type: 'true-false',
+    category: 'Nature',
+    prompt: 's.',
+    isTrue: false,
+    difficulty: 2,
+  };
+
+  it('classifies recall (default and explicit), MC-capable, and true/false items', () => {
+    expect(isRecallQuestion(recall)).toBe(true);
+    expect(isRecallQuestion(recallMc)).toBe(true);
+    expect(isRecallQuestion(trueFalse)).toBe(false);
+    expect(isTrueFalseQuestion(trueFalse)).toBe(true);
+    expect(isTrueFalseQuestion(recall)).toBe(false);
+    expect(isMultipleChoiceCapable(recallMc)).toBe(true);
+    expect(isMultipleChoiceCapable(recall)).toBe(false); // no choices -> open-only
+    expect(isMultipleChoiceCapable(trueFalse)).toBe(false);
   });
 });

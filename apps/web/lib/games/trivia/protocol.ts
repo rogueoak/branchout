@@ -6,9 +6,18 @@
 // can stream several reveals, so the UI reads whichever shape it recognizes rather than a single
 // last-write-wins slot.
 
+/** The runtime round types a question is drawn as (spec 0074). */
+export type TriviaRoundType = 'multiple-choice' | 'true-false' | 'open';
+
 /** The prompt payload Trivia streams on `startRound`. */
 export interface TriviaPrompt {
   round: number;
+  /**
+   * The round's question type (spec 0074): multiple-choice (four `choices`), true-false (the
+   * `question` is a statement judged True/False), or open (free-text recall). A legacy prompt with no
+   * `type` decodes as `'open'` - the only shape the pre-0074 engine sent.
+   */
+  type: TriviaRoundType;
   category: string;
   /**
    * The drawn question's difficulty rating - an integer 1-10 (spec 0016). The engine puts
@@ -18,6 +27,8 @@ export interface TriviaPrompt {
    */
   difficulty: number;
   question: string;
+  /** The four shuffled options, present ONLY for a `multiple-choice` round (spec 0074). */
+  choices?: string[];
 }
 
 /** One player's submitted answer for the round, with its verdict (spec 0017). */
@@ -30,6 +41,11 @@ export interface TriviaSubmission {
 /** The reveal payload Trivia streams when the answer round closes (`reveal`). */
 export interface TriviaRoundReveal {
   round: number;
+  /**
+   * The round's question type (spec 0074). A legacy reveal with no `type` decodes as `'open'`. Only
+   * open rounds populate the dispute-eligible `wrong` set; MC/TF reveals leave it empty.
+   */
+  type: TriviaRoundType;
   /** The question prompt text (echoed from the prompt), or null if the round had no question. */
   question: string | null;
   /** The accepted answers; the first is the canonical answer, the rest are also accepted. */
@@ -61,6 +77,14 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
+/**
+ * Decode a round `type`, defaulting a legacy payload (no `type`) to `'open'` - the only shape the
+ * pre-0074 engine sent, so an in-flight peer that has not upgraded still renders as a free-text round.
+ */
+function asRoundType(value: unknown): TriviaRoundType {
+  return value === 'multiple-choice' || value === 'true-false' || value === 'open' ? value : 'open';
+}
+
 /** Decode the optional per-player submissions list, tolerating a pre-0017 payload that omits it. */
 function asSubmissions(value: unknown): TriviaSubmission[] {
   if (!Array.isArray(value)) return [];
@@ -81,14 +105,24 @@ function asSubmissions(value: unknown): TriviaSubmission[] {
 /** Decode a `prompt` payload as a Trivia prompt, or null if it is not one. */
 export function asTriviaPrompt(value: unknown): TriviaPrompt | null {
   if (!isRecord(value)) return null;
-  const { round, category, difficulty, question } = value;
+  const { round, category, difficulty, question, choices } = value;
   if (
     typeof round === 'number' &&
     typeof category === 'string' &&
     typeof difficulty === 'number' &&
     typeof question === 'string'
   ) {
-    return { round, category, difficulty, question };
+    const type = asRoundType(value.type);
+    return {
+      round,
+      type,
+      category,
+      difficulty,
+      question,
+      // `choices` rides only on a multiple-choice prompt; ignore it otherwise so a stray field never
+      // lights up option buttons on a non-MC round.
+      ...(type === 'multiple-choice' && isStringArray(choices) ? { choices } : {}),
+    };
   }
   return null;
 }
@@ -106,6 +140,7 @@ export function asTriviaRoundReveal(value: unknown): TriviaRoundReveal | null {
   ) {
     return {
       round,
+      type: asRoundType(value.type),
       question,
       answers,
       correct,
