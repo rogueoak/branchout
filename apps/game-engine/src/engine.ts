@@ -204,6 +204,7 @@ export class GameEngine {
         disputeWindowMs: cfg.disputeWindowMs ?? 0,
         decisionWindowMs: 0,
         moveWindowMs: cfg.moveWindowMs ?? 0,
+        baseMoveWindowMs: cfg.moveWindowMs ?? 0,
         leaderboardWindowMs: cfg.leaderboardWindowMs ?? 0,
         // A live/turn game (implements `tick`) advances itself on each move and never uses a host
         // "Next"; a round game the host drives does. Fixed here so the `state` frame can tell the
@@ -573,8 +574,11 @@ export class GameEngine {
     // Per-round move window (spec 0074): a game may set this round's answer window on `startRound`
     // (e.g. Trivia's per-question-type timers), overriding the single window fixed at configure time.
     // Applied BEFORE the deadline is computed, so the timer, the pause/resume math, and the client
-    // `state` frame all report the current round's window. Absent leaves the configure-time window.
-    if (result.moveWindowMs !== undefined) state.moveWindowMs = result.moveWindowMs;
+    // `state` frame all report the current round's window. Absent RESETS to the configure-time window
+    // (`baseMoveWindowMs`) so a prior round's override never sticks into a round that set none
+    // (architect review, PR #174). The final `?? state.moveWindowMs` keeps a game that was in-flight
+    // across this deploy (its persisted state predates `baseMoveWindowMs`) on its existing window.
+    state.moveWindowMs = result.moveWindowMs ?? state.baseMoveWindowMs ?? state.moveWindowMs;
     state.moveDeadline =
       !live && state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));
@@ -796,6 +800,7 @@ export class GameEngine {
     state.disputeWindowMs = cfg.disputeWindowMs ?? 0;
     state.decisionWindowMs = 0;
     state.moveWindowMs = cfg.moveWindowMs ?? 0;
+    state.baseMoveWindowMs = cfg.moveWindowMs ?? 0;
     state.leaderboardWindowMs = cfg.leaderboardWindowMs ?? 0;
     state.paused = false;
     state.hostPaused = false;

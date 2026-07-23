@@ -491,11 +491,21 @@ function poolCounts(pool: readonly TriviaQuestion[]): {
   return { recall, mcCapable, trueFalse };
 }
 
-/** The accept predicate for a round type's draw (spec 0074). */
-function acceptFor(type: RoundType): (q: TriviaQuestion) => boolean {
-  if (type === 'true-false') return isTrueFalseQuestion;
-  if (type === 'multiple-choice') return isMultipleChoiceCapable;
-  return isRecallQuestion; // open: any recall item
+/**
+ * The accept-predicate CHAIN for a round type's draw (spec 0074), tried in order so an earlier, more
+ * specific pool is preferred. Open rounds prefer open-ONLY recall (reserving the choice-bearing,
+ * MC-capable recall for the multiple-choice rounds that require it), and only fall back to any recall
+ * once the open-only pool is exhausted. This keeps the draw from starving a later MC round: because
+ * open borrows an MC-capable item only after open-only is gone, at most `max(0, open - openOnly)` are
+ * borrowed, leaving `min(mcCapable, recall - open) >= mc` for MC whenever configure's guard
+ * (`mcCapable >= mc` and `recall >= mc + open`) held - so a game that passed configure never dies
+ * mid-play (engineer/architect/tester review, PR #174).
+ */
+function acceptChainFor(type: RoundType): Array<(q: TriviaQuestion) => boolean> {
+  if (type === 'true-false') return [isTrueFalseQuestion];
+  if (type === 'multiple-choice') return [isMultipleChoiceCapable];
+  // open: open-only recall first, then any recall as a fallback.
+  return [(q) => isRecallQuestion(q) && !isMultipleChoiceCapable(q), isRecallQuestion];
 }
 
 /** Build the persisted per-round question snapshot from a drawn bank item, per its round type. */
@@ -604,15 +614,20 @@ export function createTriviaGame(
       const key = String(ctx.round);
       const type = scratch.plan[ctx.round - 1] ?? 'open';
       const used = new Set(scratch.usedIds);
-      const question = pickQuestion(
-        index,
-        scratch.categories,
-        scratch.difficultyMin,
-        scratch.difficultyMax,
-        used,
-        rng,
-        acceptFor(type),
-      );
+      // Try each accepted pool in preference order (open: open-only recall, then any recall).
+      let question: TriviaQuestion | null = null;
+      for (const accept of acceptChainFor(type)) {
+        question = pickQuestion(
+          index,
+          scratch.categories,
+          scratch.difficultyMin,
+          scratch.difficultyMax,
+          used,
+          rng,
+          accept,
+        );
+        if (question) break;
+      }
       if (!question) {
         const label =
           scratch.categories.length === 0 ? RANDOM_CATEGORY : scratch.categories.join(', ');

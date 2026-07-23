@@ -30,8 +30,14 @@ export interface SessionState {
    * the dispute window, not frozen like the move window.
    */
   decisionWindowMs: number;
-  /** Move-window duration in ms (0 = no timer). The per-round deadline derives from it. */
+  /**
+   * Move-window duration in ms for the round in play (0 = no timer). The per-round deadline derives
+   * from it. A round may override it via `StartRoundResult.moveWindowMs` (spec 0074); when a round
+   * does NOT, it resets to {@link baseMoveWindowMs} so an override never sticks past its round.
+   */
   moveWindowMs: number;
+  /** The configure-time move window (spec 0074): the default a round with no per-round override uses. */
+  baseMoveWindowMs: number;
   /**
    * Leaderboard-window duration in ms (spec 0068, 0 = host advances manually). When positive, the
    * engine advances the `leaderboard` phase to the next round after this delay; re-armed across

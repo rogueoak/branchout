@@ -151,6 +151,15 @@ describe('validateQuestionBank - multi-type shapes (spec 0074)', () => {
     expect(() => validateQuestionBank(bank)).toThrow('blank choice');
   });
 
+  it('throws when a distractor equals an accepted answer (case-insensitively)', () => {
+    // A distractor equal to the answer would duplicate an MC option and let a player score by tapping
+    // the "distractor" (engineer review, PR #174).
+    const bank = makeValidBank();
+    const item = bank[0] as { answers: string[]; choices?: string[] };
+    item.choices = [item.answers[0]!.toUpperCase(), 'Some Distractor', 'Another Distractor'];
+    expect(() => validateQuestionBank(bank)).toThrow('distractor equal to an accepted answer');
+  });
+
   it('accepts a true/false item with a boolean isTrue and no answers', () => {
     const bank = makeValidBank();
     bank[0] = {

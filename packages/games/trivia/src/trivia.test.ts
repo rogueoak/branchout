@@ -366,6 +366,67 @@ describe('draw by round type (spec 0074)', () => {
     }
   });
 
+  it('open rounds never starve a later MC round in a tight pool (PR #174 review)', () => {
+    // Standard = 6 MC + 4 TF + 2 open. A single-category in-band pool of EXACTLY 6 MC-capable, 2
+    // open-only, and 4 TF recall passes configure (mcCapable 6 >= 6, recall 8 >= mc+open 8), yet
+    // buildRoundPlan puts an open at position 6 - BEFORE the MC rounds at 7-11. If open drew any
+    // recall it could grab an MC-capable item and strand a later MC round; because it prefers
+    // open-only recall, every full game completes. Only rating 5 falls in the default 3-6 band.
+    const bank = makeBank(0, {
+      mcPerRating: 6,
+      openPerRating: 2,
+      tfPerRating: 4,
+      categories: ['Science'],
+    });
+    for (const seed of [1, 7, 42, 99, 123, 2024]) {
+      const game = createTriviaGame(bank, mulberry32(seed));
+      let scratch = game.configure(
+        { duration: 'standard', categories: ['Science'] },
+        players,
+      ).scratch;
+      const plan = (scratch as { plan: RoundType[] }).plan;
+      for (let round = 1; round <= 12; round += 1) {
+        const started = game.startRound(ctx(scratch, { round }));
+        scratch = started.scratch;
+        // Each round draws its planned type; no round throws "ran out of ... questions".
+        expect(storedAt(scratch, round).type).toBe(plan[round - 1]);
+      }
+    }
+  });
+
+  it('shuffles the MC options so the canonical answer is not pinned to the first slot', () => {
+    // A no-op shuffle (canonical always choices[0]) would pass the "contains canonical" checks but
+    // ship "the answer is always button A". Assert every MC round's options are a permutation of the
+    // canonical + its three distractors, and that across the game the canonical is NOT always first.
+    const bank = makeBank(0, {
+      mcPerRating: 8,
+      openPerRating: 0,
+      tfPerRating: 0,
+      categories: ['Food'],
+    });
+    const game = createTriviaGame(bank, mulberry32(3));
+    let scratch = game.configure(
+      {
+        duration: 'custom',
+        custom: { multipleChoice: 6, trueFalse: 0, open: 0 },
+        categories: ['Food'],
+      },
+      players,
+    ).scratch;
+    let canonicalNotFirst = false;
+    for (let round = 1; round <= 6; round += 1) {
+      const started = game.startRound(ctx(scratch, { round }));
+      scratch = started.scratch;
+      const prompt = started.prompt as TriviaPromptView;
+      const stored = storedAt(scratch, round);
+      const canonical = stored.answers[0]!;
+      const expected = [canonical, `${stored.id}-d1`, `${stored.id}-d2`, `${stored.id}-d3`];
+      expect([...prompt.choices!].sort()).toEqual([...expected].sort());
+      if (prompt.choices![0] !== canonical) canonicalNotFirst = true;
+    }
+    expect(canonicalNotFirst).toBe(true);
+  });
+
   it('returns the round type window via StartRoundResult.moveWindowMs', () => {
     const game = createTriviaGame(makeBank(4), mulberry32(5));
     const cfg = {

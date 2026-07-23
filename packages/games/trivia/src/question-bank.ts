@@ -131,11 +131,15 @@ export async function loadQuestionBank(assets: AssetLoader): Promise<TriviaQuest
       if (!Array.isArray(parsed)) {
         throw new Error(`question-bank: ${filename} must be a JSON array`);
       }
-      // Unchecked cast: validateQuestionBank() enforces the schema at runtime.
       return parsed;
     }),
   );
-  return perCategory.flat();
+  const bank = perCategory.flat();
+  // Fail fast at load (boot) rather than let a malformed item crash `startRound` mid-game: a recall
+  // item missing `answers`, a bad `type`, or a distractor equal to its answer throws here (security
+  // review, PR #174). Data is first-party, so a throw is a deploy-time signal, not a player path.
+  validateQuestionBank(bank);
+  return bank;
 }
 
 // ---------------------------------------------------------------------------
@@ -210,9 +214,19 @@ export function validateQuestionBank(questions: TriviaQuestion[]): void {
               ` (got ${JSON.stringify(recall.choices)})`,
           );
         }
+        // Distractors must be wrong: a choice equal (case-insensitively) to any accepted answer would
+        // yield a duplicate multiple-choice option and let a player score correct by tapping the
+        // "distractor" (engineer review, PR #174).
+        const answerSet = new Set(recall.answers.map((a) => a.toLowerCase()));
         for (const choice of recall.choices) {
           if (typeof choice !== 'string' || choice.length === 0) {
             throw new Error(`question-bank validation failed: ${pos} has a blank choice`);
+          }
+          if (answerSet.has(choice.toLowerCase())) {
+            throw new Error(
+              `question-bank validation failed: ${pos} has a distractor equal to an accepted answer` +
+                ` (${JSON.stringify(choice)})`,
+            );
           }
         }
       }

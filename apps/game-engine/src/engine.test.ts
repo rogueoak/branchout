@@ -594,6 +594,53 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
   });
 
+  it('resets to the configure-time window when a later round sets no override (spec 0074)', async () => {
+    // Round 1 overrides to 30s; round 2 sets no override (roundWindowsMs[1] = null), so it must fall
+    // back to the configure-time 60s, NOT stick on round 1's 30s (architect review, PR #174).
+    await h.engine.start(
+      handoff({
+        config: {
+          rounds: 2,
+          secrets: ['blue', 'green'],
+          moveWindowMs: 60_000,
+          roundWindowsMs: [30_000, null],
+        },
+      }),
+    );
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(30_000);
+
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p1', 1, 'blue');
+    await h.engine.submitMove('r1', STUB_GAME_ID, 'p2', 1, 'blue');
+    await playRoundNoDispute(h.engine, 'r1');
+    await h.engine.control('r1', STUB_GAME_ID, 'advance');
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.round).toBe(2);
+    // Round 2 reset to 60s, proving the round-1 override did not leak forward.
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(60_000);
+  });
+
+  it('holds and resumes a per-round move window like the configure-time one (spec 0074)', async () => {
+    // The per-round 30s window (not the configure-time 60s) must survive pause/resume.
+    await h.engine.start(
+      handoff({
+        config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000, roundWindowsMs: [30_000] },
+      }),
+    );
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(30_000);
+    h.clock.advance(10_000); // 20s left on the per-round window
+    await h.engine.control('r1', STUB_GAME_ID, 'pause');
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(20_000);
+    h.clock.advance(100_000);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+    await h.engine.control('r1', STUB_GAME_ID, 'pause'); // resume
+    h.clock.advance(19_999);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+    h.clock.advance(1);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+  });
+
   it('holds the answer countdown while paused and continues from the time left on resume', async () => {
     await h.engine.start(
       handoff({ config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000 } }),
