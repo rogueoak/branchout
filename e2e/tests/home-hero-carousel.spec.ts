@@ -72,7 +72,7 @@ test.describe('home hero carousel (spec 0067) at 360px', () => {
     // (scaled) box must stay within the clipping viewport's top/bottom edges.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    const card = page.getByRole('link', { name: 'Trivia - game details' });
+    const card = page.getByRole('link', { name: 'Trivial Matters - game details' });
     await expect(card).toBeVisible();
 
     // The clip region is the nearest `overflow-hidden` ancestor (canopy's embla viewport).
