@@ -833,3 +833,13 @@ Capture durable lessons as they emerge.
   before arming the timer is fully additive - pause/resume math and the client `state` frame then
   report the current round's window for free, and every existing game (which never sets it) is
   unchanged (spec `0074`).
+
+- A guard that proves an allocation EXISTS over aggregate counts does not make a greedy, ordered
+  allocator FIND it. Trivial Matters' `configure` proved enough MC-capable + recall existed for the
+  round plan, but the runtime open-round draw consumed any recall (including choice-bearing) from a
+  shared `usedIds` pool, so an open placed before an MC round could strand it -> mid-game throw
+  despite a passing guard (spec `0074`, feedback `0041`). Fix: give the flexible consumer a preference
+  chain that reserves the constrained consumer's supply (open prefers open-only recall, borrows
+  MC-capable only when open-only is exhausted). Rule: when you add an up-front feasibility guard,
+  the allocator that runs later must honor the same priority the guard assumed, and the test must hit
+  the tight boundary where the guard is exactly satisfied - not just the roomy happy path.
