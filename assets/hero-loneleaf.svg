@@ -19,19 +19,18 @@
   <!-- the lone leaf: a single oak-shaped leaf, its stem trailing down to the gold root -->
   <g transform="translate(324 24)">
     <path d="M256 96
-             C 178 128, 152 232, 200 316
-             C 232 300, 300 300, 312 232
-             C 320 176, 300 124, 256 96 Z"
+             C 182 122, 150 236, 236 320
+             C 306 296, 330 172, 256 96 Z"
           fill="url(#hll-leaf)" stroke="#2f7a3c" stroke-width="6"/>
     <g stroke="#2f7a3c" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.85">
-      <path d="M256 120 L 232 300"/>
-      <path d="M250 168 L 210 190"/>
-      <path d="M247 214 L 208 238"/>
-      <path d="M258 168 L 300 186"/>
-      <path d="M256 214 L 300 232"/>
+      <path d="M254 120 L 238 314"/>
+      <path d="M248 170 L 206 194"/>
+      <path d="M244 218 L 202 242"/>
+      <path d="M258 170 L 302 190"/>
+      <path d="M252 218 L 298 240"/>
     </g>
-    <!-- the stem falling to the single gold root node -->
-    <path d="M232 300 C 244 348, 258 372, 256 400" fill="none" stroke="#6b4f2a" stroke-width="9" stroke-linecap="round"/>
+    <!-- the stem: starts at the leaf's bottom tip and falls to the single gold root node -->
+    <path d="M236 318 C 244 352, 256 378, 256 400" fill="none" stroke="#6b4f2a" stroke-width="9" stroke-linecap="round"/>
     <circle cx="256" cy="404" r="18" fill="#d2a463" stroke="#a97e3f" stroke-width="5"/>
   </g>
 
