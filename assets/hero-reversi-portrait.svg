@@ -4,7 +4,7 @@
       <stop offset="0" stop-color="#0f2019"/>
       <stop offset="1" stop-color="#08120c"/>
     </radialGradient>
-    <radialGradient id="hrvp-glow" cx="0.5" cy="0.38" r="0.55">
+    <radialGradient id="hrvp-glow" cx="0.5" cy="0.5" r="0.46">
       <stop offset="0" stop-color="#c9a24b" stop-opacity="0.30"/>
       <stop offset="1" stop-color="#c9a24b" stop-opacity="0"/>
     </radialGradient>
@@ -22,7 +22,7 @@
     </radialGradient>
   </defs>
   <rect width="600" height="800" fill="url(#hrvp-bg)"/>
-  <circle cx="300" cy="300" r="340" fill="url(#hrvp-glow)"/>
+  <circle cx="300" cy="290" r="300" fill="url(#hrvp-glow)"/>
 
   <!-- The Reversi disc-flip board motif, recomposed upright: the shared 800x450 scene's tilted board,
        recentered on the portrait column (translate/scale/rotate wrap keeps the exact brand geometry). -->

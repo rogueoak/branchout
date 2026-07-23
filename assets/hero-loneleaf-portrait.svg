@@ -4,7 +4,7 @@
       <stop offset="0" stop-color="#132015"/>
       <stop offset="1" stop-color="#0d0a15"/>
     </radialGradient>
-    <radialGradient id="hllp-glow" cx="0.5" cy="0.36" r="0.55">
+    <radialGradient id="hllp-glow" cx="0.5" cy="0.5" r="0.46">
       <stop offset="0" stop-color="#7CC77C" stop-opacity="0.30"/>
       <stop offset="1" stop-color="#7CC77C" stop-opacity="0"/>
     </radialGradient>
@@ -14,26 +14,25 @@
     </linearGradient>
   </defs>
   <rect width="600" height="800" fill="url(#hllp-bg)"/>
-  <circle cx="300" cy="290" r="330" fill="url(#hllp-glow)"/>
+  <circle cx="300" cy="290" r="300" fill="url(#hllp-glow)"/>
 
   <!-- The lone leaf motif: the brand mark's single oak leaf on a stem to the gold root, recentered
        upright on the portrait column. The translate/scale wrap keeps the exact brand geometry so the
        portrait card never drifts from the 512x512 mark or the 800x450 landscape hero. -->
-  <g transform="translate(300 300) scale(1.4) translate(-236 -259)">
+  <g transform="translate(300 264) scale(1.25) translate(-236 -259)">
     <path d="M256 96
-             C 178 128, 152 232, 200 316
-             C 232 300, 300 300, 312 232
-             C 320 176, 300 124, 256 96 Z"
+             C 182 122, 150 236, 236 320
+             C 306 296, 330 172, 256 96 Z"
           fill="url(#hllp-leaf)" stroke="#2f7a3c" stroke-width="6"/>
     <g stroke="#2f7a3c" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.85">
-      <path d="M256 120 L 232 300"/>
-      <path d="M250 168 L 210 190"/>
-      <path d="M247 214 L 208 238"/>
-      <path d="M258 168 L 300 186"/>
-      <path d="M256 214 L 300 232"/>
+      <path d="M254 120 L 238 314"/>
+      <path d="M248 170 L 206 194"/>
+      <path d="M244 218 L 202 242"/>
+      <path d="M258 170 L 302 190"/>
+      <path d="M252 218 L 298 240"/>
     </g>
-    <!-- the stem falling to the single gold root node (the family gold-root mark) -->
-    <path d="M232 300 C 244 348, 258 372, 256 404" fill="none" stroke="#6b4f2a" stroke-width="9" stroke-linecap="round"/>
+    <!-- the stem: starts at the leaf's bottom tip and falls to the single gold root node -->
+    <path d="M236 318 C 244 352, 256 380, 256 404" fill="none" stroke="#6b4f2a" stroke-width="9" stroke-linecap="round"/>
     <circle cx="256" cy="408" r="18" fill="#d2a463" stroke="#a97e3f" stroke-width="5"/>
   </g>
 

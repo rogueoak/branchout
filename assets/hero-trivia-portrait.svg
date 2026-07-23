@@ -10,13 +10,13 @@
       <stop offset="1" stop-color="#120c08"/>
     </radialGradient>
     <!-- Glow centred on the icon and faded to 0 inside the frame (no hard edge). -->
-    <radialGradient id="htvp-glow" cx="0.5" cy="0.5" r="0.5">
+    <radialGradient id="htvp-glow" cx="0.5" cy="0.5" r="0.46">
       <stop offset="0" stop-color="#e8b04b" stop-opacity="0.32"/>
       <stop offset="1" stop-color="#e8b04b" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="600" height="800" fill="url(#htvp-bg)"/>
-  <circle cx="315" cy="245" r="330" fill="url(#htvp-glow)"/>
+  <circle cx="300" cy="290" r="300" fill="url(#htvp-glow)"/>
   <!-- The question-mark motif, recentred on the portrait column (the same geometry as the wide hero,
        wrapped in a transform). -->
   <g transform="translate(300 272) scale(1.25) translate(-518 -244)">
