@@ -15,10 +15,12 @@
   </defs>
   <rect width="512" height="512" fill="url(#ll-bg)"/>
   <circle cx="256" cy="200" r="210" fill="url(#ll-glow)"/>
-  <!-- The stick the mask is held on: a branch stem down to the gold root (two-pass gold stroke). -->
-  <g stroke-linecap="round" fill="none" stroke="url(#ll-gold)">
-    <path d="M256 292 L256 404" stroke-width="16" opacity="0.18"/>
-    <path d="M256 292 L256 404" stroke-width="7"/>
+  <!-- The stick the mask is held on: a branch stem from up under the chin down to the gold root (two-
+       pass gold stroke). It starts inside the mask body so the mask covers its top and it reads as one
+       connected handle, not a floating dot. -->
+  <g stroke-linecap="round" fill="none" stroke="#d5a03a">
+    <path d="M256 256 L256 400" stroke-width="20" opacity="0.18"/>
+    <path d="M256 256 L256 400" stroke-width="9"/>
   </g>
   <!-- Venetian cat-eye mask (spec 0074): filigree crown, almond eye-holes, bridge jewel, one teardrop.
        Drawn in a 0-100 space and scaled/placed so it centres on the 512 canvas above the stick. -->
