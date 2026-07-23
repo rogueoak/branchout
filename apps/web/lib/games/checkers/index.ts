@@ -26,6 +26,35 @@ export const checkersGameUi: GameUiModule = {
     'The classic game of checkers (English draughts) for two. Move your pieces diagonally forward, ' +
     'jump an opponent to capture (and chain multi-jumps), and crown a King when you reach the far ' +
     'row. Capture every piece, or leave your opponent no move, to win.',
+  // Classic Red (spec 0075): cream and forest checkerboard, red versus charcoal pieces, a gold crown
+  // for kings. The board squares and pieces are themed via these tokens in the Viewer.
+  skin: {
+    bg: '#14110f',
+    surface: '#201a16',
+    surfaceRaised: '#2a221c',
+    text: '#f3ece0',
+    textMuted: '#b9a894',
+    border: '#352a20',
+    primary: '#c6303a',
+    primaryForeground: '#f3ece0',
+    secondary: '#e8c15a',
+    accent: '#e8c15a',
+    // The board canvas (board-render.ts) reads primitive tokens: the honey ramp for the checkerboard
+    // squares, the grape / sunbeam ramps for the two piece colours, honey-300 for the king crown, and
+    // grape-400 for the move highlight. Re-point them to a cream-and-forest board with red-versus-
+    // charcoal pieces and a gold crown, matching Classic Red.
+    vars: {
+      '--color-honey-800': '#e8dcc0', // light (cream) square
+      '--color-honey-950': '#3a5a44', // dark (forest) square
+      '--color-honey-900': '#2c4636', // grid line
+      '--color-honey-300': '#e8c15a', // king crown -> gold
+      '--color-grape-500': '#cf3a3a', // "violet" side -> red piece
+      '--color-grape-700': '#9e2a2a', // red piece rim
+      '--color-grape-400': '#e88a94', // move highlight -> soft red
+      '--color-sunbeam-400': '#26221e', // "amber" side -> charcoal piece
+      '--color-sunbeam-600': '#0e0d0b', // charcoal piece rim
+    },
+  },
   visibility: 'public',
   singleSurface: true,
   defaultConfig: () => defaultCheckersConfig(),

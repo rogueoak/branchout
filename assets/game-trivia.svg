@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Trivial Matters">
   <defs>
     <linearGradient id="tv-spark" gradientUnits="userSpaceOnUse" x1="150" y1="400" x2="360" y2="110">
-      <stop offset="0"    stop-color="#FBBF24"/>
-      <stop offset="0.5"  stop-color="#EC4899"/>
-      <stop offset="1"    stop-color="#7C3AED"/>
+      <stop offset="0"    stop-color="#f0cf82"/>
+      <stop offset="0.5"  stop-color="#e5397e"/>
+      <stop offset="1"    stop-color="#2bb7a3"/>
     </linearGradient>
     <radialGradient id="tv-bg" cx="0.5" cy="0.45" r="0.75">
-      <stop offset="0" stop-color="#221836"/>
-      <stop offset="1" stop-color="#0d0a15"/>
+      <stop offset="0" stop-color="#2a2018"/>
+      <stop offset="1" stop-color="#120c08"/>
     </radialGradient>
     <radialGradient id="tv-glow" cx="0.5" cy="0.42" r="0.5">
-      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.30"/>
-      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+      <stop offset="0" stop-color="#e8b04b" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#e8b04b" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="512" height="512" fill="url(#tv-bg)"/>
@@ -27,25 +27,25 @@
   </g>
   <!-- leaf-node halos -->
   <g opacity="0.20">
-    <circle cx="172" cy="122" r="22" fill="#A78BFA"/>
-    <circle cx="224" cy="100" r="22" fill="#F472B6"/>
-    <circle cx="288" cy="104" r="22" fill="#FDE047"/>
-    <circle cx="332" cy="150" r="22" fill="#4ADE80"/>
-    <circle cx="316" cy="208" r="22" fill="#22D3EE"/>
-    <circle cx="262" cy="236" r="22" fill="#FB7185"/>
-    <circle cx="256" cy="396" r="20" fill="#d2a463"/>
+    <circle cx="172" cy="122" r="22" fill="#e8b04b"/>
+    <circle cx="224" cy="100" r="22" fill="#e5397e"/>
+    <circle cx="288" cy="104" r="22" fill="#ffd166"/>
+    <circle cx="332" cy="150" r="22" fill="#2bb7a3"/>
+    <circle cx="316" cy="208" r="22" fill="#2bb7a3"/>
+    <circle cx="262" cy="236" r="22" fill="#e5397e"/>
+    <circle cx="256" cy="396" r="20" fill="#e8b04b"/>
   </g>
   <!-- inner junction nodes -->
-  <g fill="#c9d2da">
+  <g fill="#fff3d6">
     <circle cx="150" cy="168" r="6"/> <circle cx="256" cy="288" r="6"/> <circle cx="256" cy="322" r="6"/>
   </g>
   <!-- leaf-node cores -->
-  <circle cx="172" cy="122" r="13" fill="#A78BFA"/>
-  <circle cx="224" cy="100" r="13" fill="#F472B6"/>
-  <circle cx="288" cy="104" r="13" fill="#FDE047"/>
-  <circle cx="332" cy="150" r="13" fill="#4ADE80"/>
-  <circle cx="316" cy="208" r="13" fill="#22D3EE"/>
-  <circle cx="262" cy="236" r="13" fill="#FB7185"/>
+  <circle cx="172" cy="122" r="13" fill="#e8b04b"/>
+  <circle cx="224" cy="100" r="13" fill="#e5397e"/>
+  <circle cx="288" cy="104" r="13" fill="#ffd166"/>
+  <circle cx="332" cy="150" r="13" fill="#2bb7a3"/>
+  <circle cx="316" cy="208" r="13" fill="#2bb7a3"/>
+  <circle cx="262" cy="236" r="13" fill="#e5397e"/>
   <!-- highlights -->
   <g fill="#ffffff" opacity="0.55">
     <circle cx="168" cy="118" r="5"/> <circle cx="220" cy="96" r="5"/>
@@ -53,5 +53,5 @@
     <circle cx="312" cy="204" r="5"/> <circle cx="258" cy="232" r="5"/>
   </g>
   <!-- gold root node: the dot of the question mark -->
-  <circle cx="256" cy="396" r="11" fill="#d2a463"/>
+  <circle cx="256" cy="396" r="11" fill="#e8b04b"/>
 </svg>

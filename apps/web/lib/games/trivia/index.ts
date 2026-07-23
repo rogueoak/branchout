@@ -22,6 +22,20 @@ export const triviaGameUi: GameUiModule = {
   icon: triviaSvg,
   summary:
     'A trivia party game that mixes three question types - multiple choice, true or false, and open answer - across 10 categories. Pick a duration from Fast to Marathon; open rounds still go to a group vote on a close call.',
+  // Marquee Gold (spec 0075): a game-show palette - brass and spotlight cream on warm espresso, with
+  // a magenta pop and a teal accent.
+  skin: {
+    bg: '#1a140f',
+    surface: '#241a10',
+    surfaceRaised: '#2a2018',
+    text: '#fff3d6',
+    textMuted: '#d8c199',
+    border: '#40331f',
+    primary: '#e8b04b',
+    primaryForeground: '#1a140f',
+    secondary: '#e5397e',
+    accent: '#2bb7a3',
+  },
   defaultConfig: () => defaultTriviaConfig(),
   validateConfig: (config) => {
     const errors = validateTriviaConfig(config as TriviaHostConfig);

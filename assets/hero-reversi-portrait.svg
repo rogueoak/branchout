@@ -1,24 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Branch out Reversi">
   <defs>
     <radialGradient id="hrvp-bg" cx="0.5" cy="0.38" r="0.9">
-      <stop offset="0" stop-color="#221836"/>
-      <stop offset="1" stop-color="#0d0a15"/>
+      <stop offset="0" stop-color="#0f2019"/>
+      <stop offset="1" stop-color="#08120c"/>
     </radialGradient>
     <radialGradient id="hrvp-glow" cx="0.5" cy="0.38" r="0.55">
-      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.30"/>
-      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+      <stop offset="0" stop-color="#c9a24b" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#c9a24b" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="hrvp-wood" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4a3524"/>
-      <stop offset="1" stop-color="#2e2016"/>
+      <stop offset="0" stop-color="#26795a"/>
+      <stop offset="1" stop-color="#1c5a43"/>
     </linearGradient>
     <radialGradient id="hrvp-violet" cx="0.38" cy="0.34" r="0.75">
-      <stop offset="0" stop-color="#C4B5FD"/>
-      <stop offset="1" stop-color="#6D28D9"/>
+      <stop offset="0" stop-color="#14100c"/>
+      <stop offset="1" stop-color="#050403"/>
     </radialGradient>
     <radialGradient id="hrvp-amber" cx="0.38" cy="0.34" r="0.75">
-      <stop offset="0" stop-color="#FDE047"/>
-      <stop offset="1" stop-color="#CA8A04"/>
+      <stop offset="0" stop-color="#f2ebda"/>
+      <stop offset="1" stop-color="#cdbf9f"/>
     </radialGradient>
   </defs>
   <rect width="600" height="800" fill="url(#hrvp-bg)"/>
@@ -27,8 +27,8 @@
   <!-- The Reversi disc-flip board motif, recomposed upright: the shared 800x450 scene's tilted board,
        recentered on the portrait column (translate/scale/rotate wrap keeps the exact brand geometry). -->
   <g transform="translate(300 300) scale(1.35) rotate(-6) translate(-580 -225)">
-    <rect x="452" y="97" width="256" height="256" rx="22" fill="url(#hrvp-wood)" stroke="#1c130c" stroke-width="5"/>
-    <g stroke="#1c130c" stroke-width="3" opacity="0.55">
+    <rect x="452" y="97" width="256" height="256" rx="22" fill="url(#hrvp-wood)" stroke="#123f2e" stroke-width="5"/>
+    <g stroke="#123f2e" stroke-width="3" opacity="0.55">
       <line x1="516" y1="97" x2="516" y2="353"/>
       <line x1="580" y1="97" x2="580" y2="353"/>
       <line x1="644" y1="97" x2="644" y2="353"/>
@@ -38,34 +38,34 @@
     </g>
 
     <!-- gold root node (the single family gold root) -->
-    <circle cx="580" cy="225" r="17" fill="#d2a463" stroke="#a97e46" stroke-width="4"/>
+    <circle cx="580" cy="225" r="17" fill="#c9a24b" stroke="#9a7a38" stroke-width="4"/>
 
     <!-- violet discs -->
-    <circle cx="516" cy="161" r="25" fill="url(#hrvp-violet)" stroke="#4C1D95" stroke-width="4"/>
-    <circle cx="516" cy="289" r="25" fill="url(#hrvp-violet)" stroke="#4C1D95" stroke-width="4"/>
-    <circle cx="644" cy="225" r="25" fill="url(#hrvp-violet)" stroke="#4C1D95" stroke-width="4"/>
+    <circle cx="516" cy="161" r="25" fill="url(#hrvp-violet)" stroke="#050403" stroke-width="4"/>
+    <circle cx="516" cy="289" r="25" fill="url(#hrvp-violet)" stroke="#050403" stroke-width="4"/>
+    <circle cx="644" cy="225" r="25" fill="url(#hrvp-violet)" stroke="#050403" stroke-width="4"/>
 
     <!-- amber discs -->
-    <circle cx="644" cy="161" r="25" fill="url(#hrvp-amber)" stroke="#854D0E" stroke-width="4"/>
-    <circle cx="644" cy="289" r="25" fill="url(#hrvp-amber)" stroke="#854D0E" stroke-width="4"/>
-    <circle cx="516" cy="225" r="25" fill="url(#hrvp-amber)" stroke="#854D0E" stroke-width="4"/>
+    <circle cx="644" cy="161" r="25" fill="url(#hrvp-amber)" stroke="#cdbf9f" stroke-width="4"/>
+    <circle cx="644" cy="289" r="25" fill="url(#hrvp-amber)" stroke="#cdbf9f" stroke-width="4"/>
+    <circle cx="516" cy="225" r="25" fill="url(#hrvp-amber)" stroke="#cdbf9f" stroke-width="4"/>
 
     <!-- discs mid-flip: half violet, half amber (the signature turn) -->
     <g transform="translate(580 289)">
       <path d="M -25 0 A 25 25 0 0 1 25 0 Z" fill="url(#hrvp-violet)"/>
       <path d="M 25 0 A 25 25 0 0 1 -25 0 Z" fill="url(#hrvp-amber)"/>
-      <circle cx="0" cy="0" r="25" fill="none" stroke="#1c130c" stroke-width="4"/>
+      <circle cx="0" cy="0" r="25" fill="none" stroke="#123f2e" stroke-width="4"/>
     </g>
     <g transform="translate(580 161)">
       <path d="M -25 0 A 25 25 0 0 1 25 0 Z" fill="url(#hrvp-amber)"/>
       <path d="M 25 0 A 25 25 0 0 1 -25 0 Z" fill="url(#hrvp-violet)"/>
-      <circle cx="0" cy="0" r="25" fill="none" stroke="#1c130c" stroke-width="4"/>
+      <circle cx="0" cy="0" r="25" fill="none" stroke="#123f2e" stroke-width="4"/>
     </g>
   </g>
 
   <!-- Wordmark + tagline, centered at the base (system-font stack; the sharp pipeline embeds no fonts). -->
   <text x="300" y="572" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-        font-size="72" font-weight="700" fill="#f4f1fb">Reversi</text>
+        font-size="72" font-weight="700" fill="#edf3ec">Reversi</text>
   <text x="300" y="618" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-        font-size="26" font-weight="500" fill="#b9b2cf">Bracket a line. Flip the board.</text>
+        font-size="26" font-weight="500" fill="#9db7a6">Bracket a line. Flip the board.</text>
 </svg>

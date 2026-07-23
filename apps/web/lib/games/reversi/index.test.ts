@@ -18,8 +18,8 @@ describe('reversiGameUi module', () => {
 
   it('has a brand mark, tagline, and one-line summary', () => {
     expect(reversiGameUi.icon).toContain('<svg');
-    // The single family gold root is on the mark.
-    expect(reversiGameUi.icon).toContain('#d2a463');
+    // The brass accent from the Emerald Parlour skin (spec 0075) is on the mark.
+    expect(reversiGameUi.icon).toContain('#c9a24b');
     expect(reversiGameUi.tagline.length).toBeGreaterThan(0);
     expect(reversiGameUi.summary.length).toBeGreaterThan(40);
   });
