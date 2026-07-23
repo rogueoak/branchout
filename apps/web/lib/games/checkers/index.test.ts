@@ -18,8 +18,8 @@ describe('checkersGameUi module', () => {
 
   it('has a brand mark, tagline, and one-line summary', () => {
     expect(checkersGameUi.icon).toContain('<svg');
-    // The single family gold root is on the mark.
-    expect(checkersGameUi.icon).toContain('#d2a463');
+    // The gold crown from the Classic Red skin (spec 0075) is on the mark.
+    expect(checkersGameUi.icon).toContain('#e8c15a');
     expect(checkersGameUi.tagline.length).toBeGreaterThan(0);
     expect(checkersGameUi.summary.length).toBeGreaterThan(40);
   });

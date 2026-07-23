@@ -205,6 +205,23 @@ canopy component re-themes with no component changes, in light and dark, AA-veri
 ships upstream as `@rogueoak/roots/brand` (canopy PR #37 - a `buildBrand()` function + a
 `roots-brand` CLI); `packages/theme` consumes it once released. See spec `0002`.
 
+### Per-game colour skins (spec 0075)
+
+A game can declare a small colour `skin` on its `GameUiModule`. `GameStage` maps it onto the
+semantic `--color-*` roles as inline custom properties on the stage's outer `<div>`
+(`data-game-skin`), so canopy components and the game surfaces re-colour for that subtree with no
+per-component edits - the same re-point the `.dark` class does, scoped to a game instead of the
+document (`lib/games/skin.ts`, `skinToVars`). The skin owns the structural and brand roles (grounds,
+text, borders, primary / secondary / accent); status roles (success / warning / danger / info) stay
+global so their meaning holds in every game. The canvas board games (Reversi, Checkers) read
+PRIMITIVE tokens (`--color-honey-*` squares, `--color-grape-*` / `--color-sunbeam-*` sides) off the
+board element, so the skin's optional `vars` escape hatch re-points those primitives for the board.
+Portalled overlays (canopy Dialog / Sheet / Toast) mount at `<body>`, so `GameStage` also mirrors the
+skin onto `document.documentElement` in an effect while a skinned game is mounted (removed on exit), so
+overlays inherit it; the room route has no global nav, so this only tints the room and reverts for the
+lobby. Five games ship a skin (Trivia, Liar Liar, Lone Leaf, Reversi, Checkers); their marks and hero
+art are recoloured to match, and the Liar Liar mark is redrawn as a Venetian mask.
+
 ## Open Graph share cards (spec 0025)
 
 Link unfurls are driven by pre-rendered static images, not a runtime renderer. `packages/brand`

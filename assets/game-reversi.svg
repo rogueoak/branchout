@@ -1,29 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Branch out Reversi">
   <defs>
     <radialGradient id="rv-bg" cx="0.5" cy="0.42" r="0.8">
-      <stop offset="0" stop-color="#221836"/>
-      <stop offset="1" stop-color="#0d0a15"/>
+      <stop offset="0" stop-color="#0f2019"/>
+      <stop offset="1" stop-color="#08120c"/>
     </radialGradient>
     <linearGradient id="rv-wood" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4a3524"/>
-      <stop offset="1" stop-color="#2e2016"/>
+      <stop offset="0" stop-color="#26795a"/>
+      <stop offset="1" stop-color="#1c5a43"/>
     </linearGradient>
     <radialGradient id="rv-violet" cx="0.38" cy="0.34" r="0.75">
-      <stop offset="0" stop-color="#C4B5FD"/>
-      <stop offset="1" stop-color="#6D28D9"/>
+      <stop offset="0" stop-color="#14100c"/>
+      <stop offset="1" stop-color="#050403"/>
     </radialGradient>
     <radialGradient id="rv-amber" cx="0.38" cy="0.34" r="0.75">
-      <stop offset="0" stop-color="#FDE047"/>
-      <stop offset="1" stop-color="#CA8A04"/>
+      <stop offset="0" stop-color="#f2ebda"/>
+      <stop offset="1" stop-color="#cdbf9f"/>
     </radialGradient>
   </defs>
   <rect width="512" height="512" fill="url(#rv-bg)"/>
 
   <!-- the wood-grain board, tilted for depth -->
   <g transform="rotate(-6 256 268)">
-    <rect x="96" y="108" width="320" height="320" rx="26" fill="url(#rv-wood)" stroke="#1c130c" stroke-width="6"/>
+    <rect x="96" y="108" width="320" height="320" rx="26" fill="url(#rv-wood)" stroke="#123f2e" stroke-width="6"/>
     <!-- grid lines: a 4x4 hint of the 8x8 board -->
-    <g stroke="#1c130c" stroke-width="3" opacity="0.55">
+    <g stroke="#123f2e" stroke-width="3" opacity="0.55">
       <line x1="176" y1="108" x2="176" y2="428"/>
       <line x1="256" y1="108" x2="256" y2="428"/>
       <line x1="336" y1="108" x2="336" y2="428"/>
@@ -34,28 +34,28 @@
 
     <!-- the oak skeleton bent to the board: a central gold root sprouting a two-tone canopy of discs -->
     <!-- gold root node (the single family gold root) -->
-    <circle cx="256" cy="268" r="20" fill="#d2a463" stroke="#a97e46" stroke-width="4"/>
+    <circle cx="256" cy="268" r="20" fill="#c9a24b" stroke="#9a7a38" stroke-width="4"/>
 
     <!-- violet leaf discs (one canopy side) -->
-    <circle cx="176" cy="188" r="30" fill="url(#rv-violet)" stroke="#4C1D95" stroke-width="4"/>
-    <circle cx="176" cy="348" r="30" fill="url(#rv-violet)" stroke="#4C1D95" stroke-width="4"/>
-    <circle cx="336" cy="268" r="30" fill="url(#rv-violet)" stroke="#4C1D95" stroke-width="4"/>
+    <circle cx="176" cy="188" r="30" fill="url(#rv-violet)" stroke="#050403" stroke-width="4"/>
+    <circle cx="176" cy="348" r="30" fill="url(#rv-violet)" stroke="#050403" stroke-width="4"/>
+    <circle cx="336" cy="268" r="30" fill="url(#rv-violet)" stroke="#050403" stroke-width="4"/>
 
     <!-- amber leaf discs (the other canopy side) -->
-    <circle cx="336" cy="188" r="30" fill="url(#rv-amber)" stroke="#854D0E" stroke-width="4"/>
-    <circle cx="336" cy="348" r="30" fill="url(#rv-amber)" stroke="#854D0E" stroke-width="4"/>
-    <circle cx="176" cy="268" r="30" fill="url(#rv-amber)" stroke="#854D0E" stroke-width="4"/>
+    <circle cx="336" cy="188" r="30" fill="url(#rv-amber)" stroke="#cdbf9f" stroke-width="4"/>
+    <circle cx="336" cy="348" r="30" fill="url(#rv-amber)" stroke="#cdbf9f" stroke-width="4"/>
+    <circle cx="176" cy="268" r="30" fill="url(#rv-amber)" stroke="#cdbf9f" stroke-width="4"/>
 
     <!-- a disc mid-flip: half violet, half amber (the game's signature turn) -->
     <g transform="translate(256 348)">
       <path d="M -30 0 A 30 30 0 0 1 30 0 Z" fill="url(#rv-violet)"/>
       <path d="M 30 0 A 30 30 0 0 1 -30 0 Z" fill="url(#rv-amber)"/>
-      <circle cx="0" cy="0" r="30" fill="none" stroke="#1c130c" stroke-width="4"/>
+      <circle cx="0" cy="0" r="30" fill="none" stroke="#123f2e" stroke-width="4"/>
     </g>
     <g transform="translate(256 188)">
       <path d="M -30 0 A 30 30 0 0 1 30 0 Z" fill="url(#rv-amber)"/>
       <path d="M 30 0 A 30 30 0 0 1 -30 0 Z" fill="url(#rv-violet)"/>
-      <circle cx="0" cy="0" r="30" fill="none" stroke="#1c130c" stroke-width="4"/>
+      <circle cx="0" cy="0" r="30" fill="none" stroke="#123f2e" stroke-width="4"/>
     </g>
   </g>
 </svg>

@@ -1,24 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Branch out Checkers">
   <defs>
     <radialGradient id="hck-bg" cx="0.55" cy="0.4" r="0.85">
-      <stop offset="0" stop-color="#221836"/>
-      <stop offset="1" stop-color="#0d0a15"/>
+      <stop offset="0" stop-color="#14110f"/>
+      <stop offset="1" stop-color="#0a0806"/>
     </radialGradient>
     <linearGradient id="hck-wood" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4a3524"/>
-      <stop offset="1" stop-color="#2e2016"/>
+      <stop offset="0" stop-color="#e8dcc0"/>
+      <stop offset="1" stop-color="#3a5a44"/>
     </linearGradient>
     <radialGradient id="hck-violet" cx="0.38" cy="0.34" r="0.75">
-      <stop offset="0" stop-color="#C4B5FD"/>
-      <stop offset="1" stop-color="#6D28D9"/>
+      <stop offset="0" stop-color="#e57a7a"/>
+      <stop offset="1" stop-color="#cf3a3a"/>
     </radialGradient>
     <radialGradient id="hck-amber" cx="0.38" cy="0.34" r="0.75">
-      <stop offset="0" stop-color="#FDE047"/>
-      <stop offset="1" stop-color="#CA8A04"/>
+      <stop offset="0" stop-color="#45403a"/>
+      <stop offset="1" stop-color="#23201d"/>
     </radialGradient>
     <radialGradient id="hck-glow" cx="0.66" cy="0.42" r="0.5">
-      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.30"/>
-      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+      <stop offset="0" stop-color="#cf3a3a" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#cf3a3a" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="800" height="450" fill="url(#hck-bg)"/>
@@ -26,8 +26,8 @@
 
   <!-- the wood-grain board, tilted for depth -->
   <g transform="rotate(-6 580 225)">
-    <rect x="452" y="97" width="256" height="256" rx="22" fill="url(#hck-wood)" stroke="#1c130c" stroke-width="5"/>
-    <g stroke="#1c130c" stroke-width="3" opacity="0.55">
+    <rect x="452" y="97" width="256" height="256" rx="22" fill="url(#hck-wood)" stroke="#2c4636" stroke-width="5"/>
+    <g stroke="#2c4636" stroke-width="3" opacity="0.55">
       <line x1="516" y1="97" x2="516" y2="353"/>
       <line x1="580" y1="97" x2="580" y2="353"/>
       <line x1="644" y1="97" x2="644" y2="353"/>
@@ -37,28 +37,28 @@
     </g>
 
     <!-- gold root node (the single family gold root) -->
-    <circle cx="580" cy="321" r="17" fill="#d2a463" stroke="#a97e46" stroke-width="4"/>
+    <circle cx="580" cy="321" r="17" fill="#e8c15a" stroke="#b8923e" stroke-width="4"/>
 
     <!-- amber men (lower rows) -->
-    <ellipse cx="516" cy="289" rx="25" ry="18" fill="url(#hck-amber)" stroke="#854D0E" stroke-width="4"/>
-    <ellipse cx="644" cy="289" rx="25" ry="18" fill="url(#hck-amber)" stroke="#854D0E" stroke-width="4"/>
-    <ellipse cx="580" cy="225" rx="25" ry="18" fill="url(#hck-amber)" stroke="#854D0E" stroke-width="4"/>
+    <ellipse cx="516" cy="289" rx="25" ry="18" fill="url(#hck-amber)" stroke="#0e0d0b" stroke-width="4"/>
+    <ellipse cx="644" cy="289" rx="25" ry="18" fill="url(#hck-amber)" stroke="#0e0d0b" stroke-width="4"/>
+    <ellipse cx="580" cy="225" rx="25" ry="18" fill="url(#hck-amber)" stroke="#0e0d0b" stroke-width="4"/>
 
     <!-- violet men -->
-    <ellipse cx="516" cy="225" rx="25" ry="18" fill="url(#hck-violet)" stroke="#4C1D95" stroke-width="4"/>
-    <ellipse cx="644" cy="225" rx="25" ry="18" fill="url(#hck-violet)" stroke="#4C1D95" stroke-width="4"/>
+    <ellipse cx="516" cy="225" rx="25" ry="18" fill="url(#hck-violet)" stroke="#9e2a2a" stroke-width="4"/>
+    <ellipse cx="644" cy="225" rx="25" ry="18" fill="url(#hck-violet)" stroke="#9e2a2a" stroke-width="4"/>
 
     <!-- a crowned KING: a stacked violet piece with a gold-root crown ring -->
     <g transform="translate(580 150)">
-      <ellipse cx="0" cy="7" rx="28" ry="20" fill="url(#hck-violet)" stroke="#4C1D95" stroke-width="4"/>
-      <ellipse cx="0" cy="-5" rx="28" ry="20" fill="url(#hck-violet)" stroke="#4C1D95" stroke-width="4"/>
-      <ellipse cx="0" cy="-5" rx="15" ry="10" fill="none" stroke="#d2a463" stroke-width="5"/>
+      <ellipse cx="0" cy="7" rx="28" ry="20" fill="url(#hck-violet)" stroke="#9e2a2a" stroke-width="4"/>
+      <ellipse cx="0" cy="-5" rx="28" ry="20" fill="url(#hck-violet)" stroke="#9e2a2a" stroke-width="4"/>
+      <ellipse cx="0" cy="-5" rx="15" ry="10" fill="none" stroke="#e8c15a" stroke-width="5"/>
     </g>
   </g>
 
   <!-- Wordmark, in the system-font stack (the raster pipeline embeds no fonts). -->
   <text x="60" y="235" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-        font-size="64" font-weight="700" fill="#f4f1fb">Checkers</text>
+        font-size="64" font-weight="700" fill="#f3ece0">Checkers</text>
   <text x="62" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-        font-size="26" font-weight="500" fill="#b9b2cf">Jump, chain, and crown a King.</text>
+        font-size="26" font-weight="500" fill="#b9a894">Jump, chain, and crown a King.</text>
 </svg>

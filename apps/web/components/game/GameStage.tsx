@@ -18,6 +18,7 @@ import type { Mode } from '../../lib/room-api';
 import type { ConnectionStatus, GameState } from '../../lib/game-state';
 import { isComplete } from '../../lib/game-state';
 import { getGameUi } from '../../lib/games/registry';
+import { skinToVars } from '../../lib/games/skin';
 import { FeedbackDialog } from './FeedbackDialog';
 
 /** Every host control the browser can issue, including `advance` (proxied by the control-plane). */
@@ -150,6 +151,25 @@ export function GameStage({
   // mode sees, and the player acts on it directly. It has no separate remote pane and no two-column
   // split. Branch on the flag, never on the game id, so adding another single-surface game is free.
   const singleSurface = ui?.singleSurface === true;
+  // The game's colour skin (spec 0075), applied as semantic `--color-*` overrides on the stage
+  // subtree. Undefined for an unskinned game, which then inherits the global Confetti palette. The
+  // inline style keeps the in-flow surfaces skinned from the first paint (no SSR flash).
+  const skin = ui?.skin;
+  const skinStyle = skinToVars(skin);
+  // Portalled overlays (canopy Dialog / Sheet / Toast) mount at <body>, OUTSIDE this subtree, so the
+  // inline style above never reaches them. Mirror the skin onto the document root while a skinned game
+  // is mounted, so the whole in-room surface - including portalled overlays - carries the skin, and
+  // clean it off on exit / game change so the lobby and the rest of the app stay on the global palette.
+  // The room route has no global nav of its own, so scoping to the document root only tints the room.
+  useEffect(() => {
+    if (!skin) return;
+    const root = document.documentElement;
+    const entries = Object.entries(skinToVars(skin) as Record<string, string>);
+    for (const [key, value] of entries) root.style.setProperty(key, value);
+    return () => {
+      for (const [key] of entries) root.style.removeProperty(key);
+    };
+  }, [skin]);
   // Layout from mode (spec 0050): interactive shows both panes; remote shows the controller only; a
   // viewer sees the game only. `remote` is the only mode with no game screen of its own.
   const remoteVisible = !singleSurface && (mode === 'remote' || mode === 'interactive');
@@ -171,7 +191,11 @@ export function GameStage({
     // A single-surface game (Teeter) fills the viewport height so the page does not scroll (feedback
     // 0027): the stage is a min-h-0 flex column, the viewer flexes to fill, the host bar sits below.
     // Multi-surface games keep the normal auto-height, scrolling layout.
-    <div className={singleSurface ? 'flex min-h-0 flex-1 flex-col gap-2' : 'flex flex-col gap-4'}>
+    <div
+      data-game-skin={ui?.skin ? game : undefined}
+      style={skinStyle}
+      className={singleSurface ? 'flex min-h-0 flex-1 flex-col gap-2' : 'flex flex-col gap-4'}
+    >
       {/* "How to play" now lives inline with the room code in the room header (spec 0068), reachable
           at any time - including mid-round - without its own toolbar row here. */}
       {connectionNote ? (

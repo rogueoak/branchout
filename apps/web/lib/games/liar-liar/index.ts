@@ -15,6 +15,20 @@ export const liarLiarGameUi: GameUiModule = {
   icon: liarLiarSvg,
   summary:
     'Write a convincing fake answer to a wild-but-true clue, then pick the real one hidden among all the lies.',
+  // Masquerade (spec 0075): aubergine and gold leaf with a crimson jewel and an emerald accent -
+  // opulent and theatrical, the ground the Venetian mask mark was drawn for.
+  skin: {
+    bg: '#1c0f22',
+    surface: '#2c1836',
+    surfaceRaised: '#372449',
+    text: '#f3e9f0',
+    textMuted: '#c9a9c0',
+    border: '#3d2448',
+    primary: '#d9a441',
+    primaryForeground: '#1c0f22',
+    secondary: '#d23a55',
+    accent: '#2e9e6b',
+  },
   defaultConfig: () => defaultLiarLiarConfig(),
   validateConfig: (config) => {
     const errors = validateLiarLiarConfig(config as LiarLiarHostConfig);

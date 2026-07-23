@@ -6,6 +6,7 @@
 
 import type { ComponentType } from 'react';
 import type { GameState } from '../game-state';
+import type { GameSkin } from './skin';
 
 /** Read-side props every game viewer receives: the folded state and the local player id. */
 export interface GameViewProps {
@@ -90,6 +91,12 @@ export interface GameUiModule {
   /** One plain sentence of what the game is - the detail card's body and the single source a later
    * feature page (spec 0030) can share, so the picker and the marketing page never drift. */
   summary: string;
+  /**
+   * The game's colour skin (spec 0074): a handful of brand colours the shell maps onto the semantic
+   * `--color-*` roles for the in-game subtree, re-colouring canopy + the game surfaces with no
+   * per-component edits. Optional - a game without a skin renders on the global Confetti palette.
+   */
+  skin?: GameSkin;
   /** The default config a fresh lobby starts from. */
   defaultConfig: () => unknown;
   /** Validate a host config against the game's rules (mirrors the engine; the engine re-checks). */
