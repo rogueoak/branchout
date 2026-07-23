@@ -99,7 +99,7 @@ describe('Lobby', () => {
     const onChangeGame = vi.fn();
     renderLobby({ game: 'trivia', onChangeGame });
     // The chosen game is shown as a detail card (name + summary), not a row of title buttons.
-    expect(screen.getByRole('heading', { name: 'Trivia' })).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Trivial Matters' })).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /change game/i }));
     expect(onChangeGame).toHaveBeenCalled();
   });
@@ -178,7 +178,12 @@ describe('Lobby', () => {
 
   it('gates Start on an invalid Trivia config too', () => {
     const onStart = vi.fn();
-    renderLobby({ game: 'trivia', config: { ...defaultTriviaConfig(), rounds: 0 }, onStart });
+    // An out-of-range difficulty makes the config invalid (spec 0074 replaced `rounds` with duration).
+    renderLobby({
+      game: 'trivia',
+      config: { ...defaultTriviaConfig(), difficultyMin: 0 },
+      onStart,
+    });
     fireEvent.click(screen.getByRole('button', { name: /start game/i }));
     expect(onStart).not.toHaveBeenCalled();
   });

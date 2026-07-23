@@ -570,6 +570,11 @@ export class GameEngine {
     // A fresh round starts with nobody answered yet (spec 0069); the live count grows on each move.
     // Undefined for a game that does not report a count, which keeps the field off its `state` frame.
     state.answered = await runtime.answeredCount(this.context(state));
+    // Per-round move window (spec 0074): a game may set this round's answer window on `startRound`
+    // (e.g. Trivia's per-question-type timers), overriding the single window fixed at configure time.
+    // Applied BEFORE the deadline is computed, so the timer, the pause/resume math, and the client
+    // `state` frame all report the current round's window. Absent leaves the configure-time window.
+    if (result.moveWindowMs !== undefined) state.moveWindowMs = result.moveWindowMs;
     state.moveDeadline =
       !live && state.moveWindowMs > 0 ? this.clock() + state.moveWindowMs : undefined;
     await this.publish(state, this.promptMessage(state, result.prompt));

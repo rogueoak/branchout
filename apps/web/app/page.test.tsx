@@ -54,7 +54,7 @@ describe('home page - anonymous visitor', () => {
   it('renders the games teaser with Trivia, Liar Liar, and Reversi', () => {
     render(<LandingContent viewer={{ signedIn: false }} />);
     screen.getByRole('heading', { name: /what you can play/i });
-    screen.getByRole('heading', { name: 'Trivia' });
+    screen.getByRole('heading', { name: 'Trivial Matters' });
     screen.getByRole('heading', { name: 'Liar Liar' });
     // Reversi is public as of WS9 (spec 0070), so it now has its own teaser card heading.
     screen.getByRole('heading', { name: 'Reversi' });
@@ -91,7 +91,7 @@ describe('home page - anonymous visitor', () => {
 
   it('sends a signed-in player straight into the room deep link on Play (spec 0065)', () => {
     render(<LandingContent viewer={{ signedIn: true, gamerTag: 'CoolCat' }} />);
-    const playTrivia = screen.getByRole('link', { name: /play trivia now/i });
+    const playTrivia = screen.getByRole('link', { name: /play trivial matters now/i });
     expect(playTrivia).toHaveProperty('href', expect.stringContaining('/rooms?game=trivia'));
     // The Details link to the feature page is still present for everyone.
     expect(screen.getByRole('link', { name: /details about trivia/i })).toBeDefined();
@@ -101,7 +101,7 @@ describe('home page - anonymous visitor', () => {
     render(<LandingContent viewer={{ signedIn: false }} />);
     // Play now shows for everyone now; an anonymous visitor (who cannot host yet) is carried to signup
     // first, with the intended game preserved as a validated internal next.
-    const playTrivia = screen.getByRole('link', { name: /play trivia now/i });
+    const playTrivia = screen.getByRole('link', { name: /play trivial matters now/i });
     expect(playTrivia.getAttribute('href')).toContain('/signup');
   });
 

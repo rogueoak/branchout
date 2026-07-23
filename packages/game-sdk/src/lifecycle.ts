@@ -68,6 +68,15 @@ export interface StartRoundResult {
   /** Opaque, game-defined prompt payload streamed to devices. */
   prompt: unknown;
   /**
+   * Per-round override of the engine move window, in ms (spec 0074). When set, the engine uses THIS
+   * round's window to arm the move-timer, the pause/resume math, and the client `state` frame's
+   * countdown, instead of the single window fixed at {@link ConfigureResult.moveWindowMs} configure
+   * time. Absent (the default) means "use the configure-time window" - additive and backward
+   * compatible, so a game that never sets it is unchanged. Lets a game vary the answer window by round
+   * (e.g. Trivia's per-question-type timers: a quick tap vs. typing a full answer).
+   */
+  moveWindowMs?: number;
+  /**
    * Per-player secret payloads for this frame: playerId -> that player's opaque private data. The
    * engine delivers each entry ONLY to that player's device(s) (never broadcast), persists the latest
    * per player for join catch-up, and clears it when the next round starts. A player absent from the

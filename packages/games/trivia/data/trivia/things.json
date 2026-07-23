@@ -4,6 +4,7 @@
     "category": "Things",
     "prompt": "What device tells you which direction is north using a magnetic needle?",
     "answers": ["Compass", "A Compass", "Magnetic Compass"],
+    "choices": ["Barometer", "Sundial", "Gyroscope"],
     "difficulty": 1
   },
   {
@@ -11,6 +12,7 @@
     "category": "Things",
     "prompt": "What instrument measures the temperature of its surroundings using mercury or a digital sensor?",
     "answers": ["Thermometer", "A Thermometer"],
+    "choices": ["Barometer", "Hygrometer", "Altimeter"],
     "difficulty": 1
   },
   {
@@ -32,6 +34,7 @@
     "category": "Things",
     "prompt": "What wall-mounted or tabletop device displays the current time using hands or a digital display?",
     "answers": ["Clock", "A Clock"],
+    "choices": ["Calendar", "Compass", "Metronome"],
     "difficulty": 1
   },
   {
@@ -39,6 +42,7 @@
     "category": "Things",
     "prompt": "What communication device converts voice into electrical signals to transmit speech over long distances?",
     "answers": ["Telephone", "A Telephone", "Phone", "A Phone"],
+    "choices": ["Telegraph", "Radio", "Television"],
     "difficulty": 1
   },
   {
@@ -53,6 +57,31 @@
     "category": "Things",
     "prompt": "What two-wheeled, pedal-powered vehicle is steered with handlebars and ridden for transportation or sport?",
     "answers": ["Bicycle", "A Bicycle", "Bike", "A Bike"],
+    "choices": ["Motorcycle", "Scooter", "Tricycle"],
     "difficulty": 1
+  },
+  {
+    "id": "things-009",
+    "type": "true-false",
+    "category": "Things",
+    "prompt": "A barometer is an instrument used to measure atmospheric pressure.",
+    "isTrue": true,
+    "difficulty": 4
+  },
+  {
+    "id": "things-010",
+    "type": "true-false",
+    "category": "Things",
+    "prompt": "The needle of a magnetic compass points toward magnetic north.",
+    "isTrue": true,
+    "difficulty": 3
+  },
+  {
+    "id": "things-011",
+    "type": "true-false",
+    "category": "Things",
+    "prompt": "A telescope is designed to view very small nearby objects up close.",
+    "isTrue": false,
+    "difficulty": 3
   }
 ]

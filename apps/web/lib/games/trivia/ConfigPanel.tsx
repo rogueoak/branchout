@@ -1,25 +1,29 @@
 'use client';
 
-// Trivia's STANDARD host config form (spec 0023, reworked spec 0068): categories (Random or a
-// subset), rounds (presets + custom), and difficulty (label-only presets). Form-only and controlled -
+// Trivial Matters' STANDARD host config form (spec 0023, reworked spec 0068, spec 0074): categories
+// (Random or a subset of the ten), a duration preset (Fast / Standard / Long / Marathon / Custom that
+// reveals three per-type count inputs), and difficulty (label-only presets). Form-only and controlled -
 // the parent (the lobby shell) owns the value and the Start button/gating, so this panel matches the
-// generic `GameConfigPanelProps`. The auto-advance/time-limit fields live in a separate
+// generic `GameConfigPanelProps`. The per-type timers + auto-advance live in a separate
 // AdvancedConfigPanel rendered into the lobby's Advanced slot. The numeric 1-10 difficulty ranking is
 // never shown - difficulty is chosen by label via the same option selector the lobby "Your mode"
 // picker uses.
 
-import { useState } from 'react';
 import { Input, Label } from '@rogueoak/canopy';
 import { OptionSelector, type SelectorOption } from '../../../components/game/OptionSelector';
 import {
   CATEGORIES,
   DIFFICULTY_PRESETS,
-  MAX_ROUNDS,
-  MIN_ROUNDS,
-  ROUND_PRESETS,
+  DURATION_PRESETS,
+  MAX_CUSTOM_PER_TYPE,
+  MIN_CUSTOM_PER_TYPE,
+  compositionOf,
   difficultyPresetId,
+  totalRoundsOf,
   validateTriviaConfig,
+  type Composition,
   type ConfigError,
+  type Duration,
   type TriviaHostConfig,
 } from './config';
 import type { GameConfigPanelProps } from '../registry';
@@ -42,29 +46,38 @@ export function TriviaConfigPanel({ value, onChange, disabled }: GameConfigPanel
     set({ categories: next });
   };
 
-  // Rounds: a preset selector plus a custom number field. A round count that matches no preset (or an
-  // explicit "Custom" choice) reveals the number field.
-  const roundsPreset = ROUND_PRESETS.find((preset) => preset.value === config.rounds);
-  const [customRounds, setCustomRounds] = useState(!roundsPreset);
-  const roundsValue = roundsPreset && !customRounds ? String(config.rounds) : 'custom';
-  const roundOptions: SelectorOption<string>[] = [
-    ...ROUND_PRESETS.map((preset) => ({
-      value: String(preset.value),
-      // Name reads cleanly (Fast / Medium / Long); the round count lives in the description line
-      // below, never bracketed into the name (WS12).
+  // Duration: a preset selector plus a Custom escape hatch. Choosing Custom reveals three per-type
+  // count inputs (mirrors the Rounds preset+custom pattern the game used before spec 0074).
+  const durationOptions: SelectorOption<Duration>[] = [
+    ...DURATION_PRESETS.map((preset) => ({
+      value: preset.id as Duration,
+      // Name reads cleanly (Fast / Standard / ...); the question count lives in the description below.
       label: preset.label,
       description: preset.description,
     })),
-    { value: 'custom', label: 'Custom', description: 'Set your own number of rounds.' },
+    {
+      value: 'custom' as Duration,
+      label: 'Custom',
+      description: 'Set your own mix of question types.',
+    },
   ];
-  const onRoundsSelect = (next: string) => {
+  const onDurationSelect = (next: Duration) => {
     if (next === 'custom') {
-      setCustomRounds(true);
+      // Seed the custom counts from whatever mix the current preset ran, so Custom opens on a sane,
+      // in-range starting point rather than all zeros.
+      const seed = config.custom ?? compositionOf(config);
+      set({ duration: 'custom', custom: { ...seed } });
       return;
     }
-    setCustomRounds(false);
-    set({ rounds: Number(next) });
+    set({ duration: next });
   };
+
+  const setCustom = (patch: Partial<Composition>) => {
+    const current = config.custom ?? { multipleChoice: 0, trueFalse: 0, open: 0 };
+    set({ custom: { ...current, ...patch } });
+  };
+  const custom = config.custom ?? { multipleChoice: 0, trueFalse: 0, open: 0 };
+  const customError = errorFor(errors, 'custom');
 
   // Difficulty: label-only presets. A band matching no preset (e.g. a legacy 4-6 room) shows a
   // read-only "Custom" option so the selection still reads coherently without exposing the numbers.
@@ -86,12 +99,15 @@ export function TriviaConfigPanel({ value, onChange, disabled }: GameConfigPanel
     if (preset) set({ difficultyMin: preset.min, difficultyMax: preset.max });
   };
 
+  // A live total under the Custom inputs so the host can see how long their mix runs.
+  const customTotal = totalRoundsOf({ ...config, duration: 'custom', custom });
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <Label>Categories</Label>
         <p className="text-body-sm text-text-muted">
-          Pick Random for all eight, or choose one or more categories to play.
+          Pick Random for all ten, or choose one or more categories to play.
         </p>
         <div className="flex flex-col gap-2">
           <button
@@ -107,7 +123,7 @@ export function TriviaConfigPanel({ value, onChange, disabled }: GameConfigPanel
           >
             Random
             <span className="block text-body-sm font-normal text-text-muted">
-              Draw from all eight categories.
+              Draw from all ten categories.
             </span>
           </button>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Pick categories">
@@ -140,34 +156,78 @@ export function TriviaConfigPanel({ value, onChange, disabled }: GameConfigPanel
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label>Rounds</Label>
+        <Label>Duration</Label>
         <OptionSelector
-          ariaLabel="Number of rounds"
-          value={roundsValue}
-          options={roundOptions}
-          onChange={onRoundsSelect}
+          ariaLabel="Game duration"
+          value={config.duration}
+          options={durationOptions}
+          onChange={onDurationSelect}
           disabled={disabled}
         />
-        {roundsValue === 'custom' ? (
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="trivia-rounds">Custom rounds</Label>
-            <Input
-              id="trivia-rounds"
-              type="number"
-              inputMode="numeric"
-              min={MIN_ROUNDS}
-              max={MAX_ROUNDS}
-              disabled={disabled}
-              value={Number.isNaN(config.rounds) ? '' : config.rounds}
-              onChange={(event) => set({ rounds: event.target.valueAsNumber })}
-              aria-invalid={errorFor(errors, 'rounds') !== null}
-              aria-describedby={errorFor(errors, 'rounds') ? 'trivia-rounds-error' : undefined}
-            />
+        {config.duration === 'custom' ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-body-sm text-text-muted">
+              Choose how many of each question type to play.
+            </p>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="trivia-custom-mc">Multiple choice</Label>
+              <Input
+                id="trivia-custom-mc"
+                type="number"
+                inputMode="numeric"
+                min={MIN_CUSTOM_PER_TYPE}
+                max={MAX_CUSTOM_PER_TYPE}
+                disabled={disabled}
+                value={Number.isNaN(custom.multipleChoice) ? '' : custom.multipleChoice}
+                onChange={(event) => setCustom({ multipleChoice: event.target.valueAsNumber })}
+                aria-invalid={customError !== null}
+                aria-describedby={customError ? 'trivia-custom-error' : undefined}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="trivia-custom-tf">True or false</Label>
+              <Input
+                id="trivia-custom-tf"
+                type="number"
+                inputMode="numeric"
+                min={MIN_CUSTOM_PER_TYPE}
+                max={MAX_CUSTOM_PER_TYPE}
+                disabled={disabled}
+                value={Number.isNaN(custom.trueFalse) ? '' : custom.trueFalse}
+                onChange={(event) => setCustom({ trueFalse: event.target.valueAsNumber })}
+                aria-invalid={customError !== null}
+                aria-describedby={customError ? 'trivia-custom-error' : undefined}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="trivia-custom-open">Open answer</Label>
+              <Input
+                id="trivia-custom-open"
+                type="number"
+                inputMode="numeric"
+                min={MIN_CUSTOM_PER_TYPE}
+                max={MAX_CUSTOM_PER_TYPE}
+                disabled={disabled}
+                value={Number.isNaN(custom.open) ? '' : custom.open}
+                onChange={(event) => setCustom({ open: event.target.valueAsNumber })}
+                aria-invalid={customError !== null}
+                aria-describedby={customError ? 'trivia-custom-error' : undefined}
+              />
+            </div>
+            {customError ? (
+              <p id="trivia-custom-error" role="alert" className="text-body-sm text-danger">
+                {customError}
+              </p>
+            ) : (
+              <p className="text-body-sm text-text-muted" role="status">
+                {customTotal} {customTotal === 1 ? 'question' : 'questions'} total.
+              </p>
+            )}
           </div>
         ) : null}
-        {errorFor(errors, 'rounds') ? (
-          <p id="trivia-rounds-error" role="alert" className="text-body-sm text-danger">
-            {errorFor(errors, 'rounds')}
+        {errorFor(errors, 'duration') ? (
+          <p id="trivia-duration-error" role="alert" className="text-body-sm text-danger">
+            {errorFor(errors, 'duration')}
           </p>
         ) : null}
       </div>

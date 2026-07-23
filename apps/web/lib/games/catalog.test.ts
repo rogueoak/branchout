@@ -49,7 +49,7 @@ describe('game catalog', () => {
   });
 
   it('resolves a known slug and returns undefined for an unknown one', () => {
-    expect(getCatalogEntry('trivia')?.name).toBe('Trivia');
+    expect(getCatalogEntry('trivia')?.name).toBe('Trivial Matters');
     expect(getCatalogEntry('liar-liar')?.slug).toBe('liar-liar');
     expect(getCatalogEntry('nope')).toBeUndefined();
     expect(getCatalogEntry(null)).toBeUndefined();
@@ -75,8 +75,8 @@ describe('game catalog', () => {
 
 describe('getFeatureEntry (surface-aware resolution, spec 0030)', () => {
   it('resolves a public game on both the apex and the insider surface', () => {
-    expect(getFeatureEntry('trivia', { insider: false })?.name).toBe('Trivia');
-    expect(getFeatureEntry('trivia', { insider: true })?.name).toBe('Trivia');
+    expect(getFeatureEntry('trivia', { insider: false })?.name).toBe('Trivial Matters');
+    expect(getFeatureEntry('trivia', { insider: true })?.name).toBe('Trivial Matters');
   });
 
   it('resolves an insider game ONLY on the insider surface (404s on the apex)', () => {

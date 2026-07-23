@@ -4,6 +4,7 @@
     "category": "Nature",
     "prompt": "What gas do plants absorb from the air during photosynthesis?",
     "answers": ["Carbon Dioxide", "CO2"],
+    "choices": ["Oxygen", "Nitrogen", "Hydrogen"],
     "difficulty": 2
   },
   {
@@ -11,6 +12,7 @@
     "category": "Nature",
     "prompt": "What is the largest ocean on Earth?",
     "answers": ["Pacific Ocean", "Pacific"],
+    "choices": ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean"],
     "difficulty": 2
   },
   {
@@ -18,6 +20,7 @@
     "category": "Nature",
     "prompt": "What is the hardest natural mineral on Earth?",
     "answers": ["Diamond"],
+    "choices": ["Quartz", "Corundum", "Topaz"],
     "difficulty": 2
   },
   {
@@ -39,6 +42,7 @@
     "category": "Nature",
     "prompt": "What is the most abundant gas in Earth's atmosphere?",
     "answers": ["Nitrogen"],
+    "choices": ["Oxygen", "Carbon Dioxide", "Argon"],
     "difficulty": 5
   },
   {
@@ -53,6 +57,31 @@
     "category": "Nature",
     "prompt": "What is the name for molten rock after it erupts onto Earth's surface?",
     "answers": ["Lava"],
+    "choices": ["Magma", "Basalt", "Obsidian"],
     "difficulty": 2
+  },
+  {
+    "id": "nature-009",
+    "type": "true-false",
+    "category": "Nature",
+    "prompt": "A bolt of lightning is hotter than the surface of the Sun.",
+    "isTrue": true,
+    "difficulty": 6
+  },
+  {
+    "id": "nature-010",
+    "type": "true-false",
+    "category": "Nature",
+    "prompt": "Sound travels faster through water than through air.",
+    "isTrue": true,
+    "difficulty": 5
+  },
+  {
+    "id": "nature-011",
+    "type": "true-false",
+    "category": "Nature",
+    "prompt": "The Sahara is the largest desert on Earth.",
+    "isTrue": false,
+    "difficulty": 6
   }
 ]

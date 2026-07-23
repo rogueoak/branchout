@@ -126,6 +126,16 @@ What the product does for users, grouped by area. Each capability maps to one or
       100 points for a correct answer; a 10s dispute window with a majority vote of the other
       players awarding 50; between-round leaderboard, host-advance, and final standings for stars
       (spec `0008`). Registered in the engine registry alongside the lifecycle stub.
+- [x] Trivial Matters - Trivia reworked into three question types (spec `0074`): multiple choice
+      (four shuffled options incl. the canonical answer, 100 pts), true/false (a statement judged
+      against `isTrue`, 75 pts), and open answer (today's free-text recall, 150 pts, the only type
+      that keeps the dispute vote). A recall bank item gains optional `choices` distractors to become
+      MC-capable; true/false is a distinct `type` item. The host picks a Duration - Fast (6),
+      Standard (12), Long (24), Marathon (48), or Custom (per-type counts) - which builds an ordered
+      round plan (open answers evenly spaced, always ending on one); category (now 10, +Movies +Music)
+      and difficulty presets remain. Each type has its own answer window (MC 20s / TF 15s / open 60s)
+      delivered via a per-round `StartRoundResult.moveWindowMs`. Display name only - the id, slug, and
+      data folder stay `trivia`. Covered by an e2e that plays one of each type to the finale.
 - [x] Trivia gameplay screens - the three in-game screens as designed surfaces (spec `0069`): the
       in-round question in a `Card`, then a small SEPARATE countdown `Card` just below it whose number
       is a step under the question size and colours by percentage of the configured time limit (neutral,

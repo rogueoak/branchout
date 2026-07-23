@@ -32,6 +32,13 @@ export interface StubConfig {
   /** The correct answer for each round; the last entry repeats if there are more rounds. */
   secrets?: string[];
   /**
+   * Per-round move-window overrides in ms (spec 0074), indexed by round (0-based). `startRound`
+   * returns `roundWindowsMs[round - 1]` as its {@link StartRoundResult.moveWindowMs} when set, so a
+   * test can prove the engine arms the per-round window instead of the configure-time one. An absent
+   * or `null`/`undefined` entry returns no override (the round keeps the configure-time window).
+   */
+  roundWindowsMs?: (number | null)[];
+  /**
    * Per-player private (hidden-information) payloads to hand out at each round's start (spec 0052),
    * indexed by round (0-based). `startRound` returns `privates[round - 1]` as its `private` map, so a
    * test can prove the engine delivers `{ A: secretA, B: secretB }` to A and B alone. Omitted by the
@@ -42,6 +49,7 @@ export interface StubConfig {
 
 interface StubScratch {
   secrets: string[];
+  roundWindowsMs: (number | null)[];
   privates: Record<string, unknown>[];
   submitted: Record<string, Record<string, string>>;
   correct: Record<string, string[]>;
@@ -56,6 +64,7 @@ function asScratch(scratch: Readonly<Record<string, unknown>>): StubScratch {
   const s = scratch as Partial<StubScratch>;
   return {
     secrets: s.secrets ?? [],
+    roundWindowsMs: s.roundWindowsMs ?? [],
     privates: s.privates ?? [],
     submitted: s.submitted ?? {},
     correct: s.correct ?? {},
@@ -87,6 +96,7 @@ export const stubGame: GameModule = {
     const secrets = cfg.secrets ?? Array.from({ length: rounds }, () => 'answer');
     const scratch: StubScratch = {
       secrets,
+      roundWindowsMs: cfg.roundWindowsMs ?? [],
       privates: cfg.privates ?? [],
       submitted: {},
       correct: {},
@@ -109,10 +119,14 @@ export const stubGame: GameModule = {
     // Deal this round's per-player secret map when the config supplied one (spec 0052). Omitted (the
     // default) leaves `private` undefined, so the stub still drives the unchanged no-secret path.
     const privatePayloads = scratch.privates[ctx.round - 1];
+    // Per-round move window (spec 0074): return this round's override when the config supplied one,
+    // so the engine arms it instead of the configure-time window. A null/undefined entry omits it.
+    const roundWindow = scratch.roundWindowsMs[ctx.round - 1];
     return {
       scratch: scratch as unknown as Record<string, unknown>,
       prompt: { round: ctx.round, question: `stub round ${ctx.round}` },
       ...(privatePayloads ? { private: privatePayloads } : {}),
+      ...(roundWindow != null ? { moveWindowMs: roundWindow } : {}),
     };
   },
 

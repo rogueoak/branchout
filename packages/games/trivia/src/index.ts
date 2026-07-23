@@ -1,4 +1,4 @@
-// Public surface of the Trivia game module (spec 0008).
+// Public surface of the Trivial Matters game module (spec 0008, multi-type rearchitect spec 0074).
 
 export {
   createTriviaGame,
@@ -9,16 +9,34 @@ export {
   MIN_ROUNDS,
   MAX_ROUNDS,
   DEFAULT_ROUNDS,
+  DURATIONS,
+  DEFAULT_DURATION,
+  DURATION_COMPOSITIONS,
+  MIN_CUSTOM_COUNT,
+  MAX_CUSTOM_COUNT,
+  MIN_CUSTOM_TOTAL,
+  MAX_CUSTOM_TOTAL,
   DEFAULT_AUTO_ADVANCE,
   DEFAULT_ADVANCE_AFTER_SECONDS,
   MIN_ADVANCE_AFTER_SECONDS,
   MAX_ADVANCE_AFTER_SECONDS,
+  DEFAULT_MC_TIME_LIMIT_SECONDS,
+  DEFAULT_TF_TIME_LIMIT_SECONDS,
+  DEFAULT_OPEN_TIME_LIMIT_SECONDS,
   DEFAULT_TIME_LIMIT_SECONDS,
-  MIN_TIME_LIMIT_SECONDS,
+  MIN_TAP_TIME_LIMIT_SECONDS,
+  MIN_OPEN_TIME_LIMIT_SECONDS,
   MAX_TIME_LIMIT_SECONDS,
+  MC_POINTS,
+  TF_POINTS,
+  OPEN_POINTS,
+  TF_TRUE,
+  TF_FALSE,
+  type Duration,
   type TriviaConfig,
   type ResolvedTriviaConfig,
 } from './trivia';
+export { buildRoundPlan, shuffleInPlace, type RoundType, type Composition } from './plan';
 export { normalizeAnswer, isCorrectAnswer, levenshtein, FUZZY_MIN_LENGTH } from './matching';
 export {
   isValidDifficultyBound,
@@ -32,8 +50,13 @@ export { indexQuestions, pickQuestion, RANDOM_CATEGORY, type QuestionIndex } fro
 export {
   loadQuestionBank,
   validateQuestionBank,
+  isRecallQuestion,
+  isTrueFalseQuestion,
+  isMultipleChoiceCapable,
   CATEGORIES,
   DIFFICULTY_MIN,
   DIFFICULTY_MAX,
   type TriviaQuestion,
+  type RecallQuestion,
+  type TrueFalseQuestion,
 } from './question-bank';

@@ -11,6 +11,7 @@ const players = [
 function reveal(overrides: Partial<TriviaRoundReveal>): TriviaRoundReveal {
   return {
     round: 1,
+    type: 'open',
     question: 'What is H2O?',
     answers: ['Water'],
     correct: ['p1'],
@@ -71,6 +72,55 @@ describe('AnswerReveal answers table', () => {
     // Each row carries the verdict in its accessible label (a check / x icon sits beside it).
     expect(screen.getByLabelText('Ada answered water, correct')).toBeDefined();
     expect(screen.getByLabelText('Bo answered juice, wrong')).toBeDefined();
+  });
+});
+
+describe('AnswerReveal round type (spec 0074)', () => {
+  it('labels the round type and shows the canonical option as the answer on a multiple-choice reveal', () => {
+    render(
+      <AnswerReveal
+        reveal={reveal({
+          type: 'multiple-choice',
+          question: 'Fastest land animal?',
+          answers: ['Cheetah'],
+          correct: ['p1'],
+          wrong: [],
+          submissions: [
+            { player: 'p1', answer: 'Cheetah', correct: true },
+            { player: 'p2', answer: 'Lion', correct: false },
+          ],
+        })}
+        players={players}
+        phase="disputing"
+        disputeResult={null}
+        dwellSecondsLeft={null}
+      />,
+    );
+    expect(screen.getByText('Multiple choice')).toBeDefined();
+    expect(screen.getByTestId('reveal-answer').textContent).toBe('Cheetah');
+    expect(screen.getByLabelText('Ada answered Cheetah, correct')).toBeDefined();
+    expect(screen.getByLabelText('Bo answered Lion, wrong')).toBeDefined();
+  });
+
+  it('labels a true-false reveal and shows the correct verdict as the answer', () => {
+    render(
+      <AnswerReveal
+        reveal={reveal({
+          type: 'true-false',
+          question: "A shrimp's heart is in its head.",
+          answers: ['True'],
+          correct: ['p1'],
+          wrong: [],
+          submissions: [{ player: 'p1', answer: 'True', correct: true }],
+        })}
+        players={players}
+        phase="disputing"
+        disputeResult={null}
+        dwellSecondsLeft={null}
+      />,
+    );
+    expect(screen.getByText('True or false')).toBeDefined();
+    expect(screen.getByTestId('reveal-answer').textContent).toBe('True');
   });
 });
 

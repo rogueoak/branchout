@@ -108,6 +108,91 @@ describe('RemotePane answer reveal (WS12)', () => {
   });
 });
 
+describe('RemotePane multiple choice + true/false (spec 0074)', () => {
+  const mcCollecting = (): GameState =>
+    build({
+      phase: 'collecting',
+      players: [{ player: 'p1', nickname: 'Ada', connected: true }],
+      moveMsRemaining: 20_000,
+      moveWindowMs: 20_000,
+      prompt: {
+        round: 1,
+        type: 'multiple-choice',
+        category: 'Animals',
+        difficulty: 3,
+        question: 'Fastest land animal?',
+        choices: ['Lion', 'Cheetah', 'Pronghorn', 'Greyhound'],
+      },
+    });
+
+  const tfCollecting = (): GameState =>
+    build({
+      phase: 'collecting',
+      players: [{ player: 'p1', nickname: 'Ada', connected: true }],
+      moveMsRemaining: 15_000,
+      moveWindowMs: 15_000,
+      prompt: {
+        round: 1,
+        type: 'true-false',
+        category: 'Animals',
+        difficulty: 4,
+        question: "A shrimp's heart is in its head.",
+      },
+    });
+
+  it('offers four option buttons and submits the chosen option text (no free-text field)', () => {
+    const onMove = vi.fn();
+    render(<RemotePane state={mcCollecting()} me="p1" onMove={onMove} onVote={noop} />);
+    expect(screen.queryByLabelText('Your answer')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Cheetah' }));
+    expect(onMove).toHaveBeenCalledWith(1, 'Cheetah');
+    // Locked in after one tap - no give-up, no resubmit.
+    expect(screen.queryByRole('button', { name: 'Cheetah' })).toBeNull();
+    expect(screen.getByText('Answer locked in.')).toBeDefined();
+  });
+
+  it('offers True / False buttons and submits the judged value', () => {
+    const onMove = vi.fn();
+    render(<RemotePane state={tfCollecting()} me="p1" onMove={onMove} onVote={noop} />);
+    expect(screen.getByRole('button', { name: 'True' })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'False' }));
+    expect(onMove).toHaveBeenCalledWith(1, 'False');
+  });
+
+  it('shows no give-up affordance on a tap-to-answer round', () => {
+    render(<RemotePane state={mcCollecting()} me="p1" onMove={noop} onVote={noop} />);
+    expect(screen.queryByRole('button', { name: "I don't know" })).toBeNull();
+  });
+
+  it('offers no dispute on a multiple-choice reveal (objectively scored)', () => {
+    // MC/TF never populate `wrong`, and the reveal must not stream a dispute affordance at all.
+    const state = build({
+      phase: 'disputing',
+      players: [
+        { player: 'p1', nickname: 'Ada', connected: true },
+        { player: 'p2', nickname: 'Bo', connected: true },
+      ],
+      reveals: [
+        {
+          round: 1,
+          type: 'multiple-choice',
+          question: 'Fastest land animal?',
+          answers: ['Cheetah'],
+          correct: ['p2'],
+          wrong: [],
+          submissions: [
+            { player: 'p1', answer: 'Lion', correct: false },
+            { player: 'p2', answer: 'Cheetah', correct: true },
+          ],
+        },
+      ],
+    });
+    render(<RemotePane state={state} me="p1" showResults onMove={noop} onVote={noop} />);
+    expect(screen.queryByRole('button', { name: 'Dispute' })).toBeNull();
+    expect(screen.queryByText(/may go to a vote/i)).toBeNull();
+  });
+});
+
 describe('RemotePane answer countdown', () => {
   afterEach(() => vi.useRealTimers());
 

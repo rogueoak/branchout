@@ -816,3 +816,20 @@ Capture durable lessons as they emerge.
   dedupe, splitting, indexing) and prove each still holds under the wider input - an invariant is a
   contract other code silently leans on, and widening it is a breaking change even when nothing throws.
   (Spec `0057`.)
+
+- A multi-round, multi-player Playwright flow must drive each device with its OWN concurrent loop
+  (a `Promise.all` of per-page drivers), not answer players sequentially in one loop. With
+  auto-advance and short per-type answer windows, a sequential driver lets the second player fall a
+  round behind until the game ends without it. Two gotchas found the hard way while building the
+  Trivial Matters e2e (spec `0074`): (1) a `:visible`-scoped answer-control locator that is later
+  reused in a `waitFor({state:'hidden'})` will re-match the NEXT round's control and block through
+  it - use the reveal as the round-closed signal instead; (2) the control-plane signup endpoint is
+  rate-limited PER IP in Redis, so ~15 local e2e iterations trip a 429 that survives a control-plane
+  restart - `redis-cli FLUSHALL` (or wait out the window) to reset. Also: run the local e2e against
+  an already-running dev stack with `E2E_SKIP_STACK=1 E2E_WEB_PORT/CONTROL_PLANE_PORT/GAME_ENGINE_PORT`
+  pointed at the dev ports to reuse the full mounted data bank instead of the bundled sample.
+- Per-round answer windows: the engine's move window was a single value fixed at `configure`. Adding
+  an optional `StartRoundResult.moveWindowMs` that `startRoundInto` writes into `state.moveWindowMs`
+  before arming the timer is fully additive - pause/resume math and the client `state` frame then
+  report the current round's window for free, and every existing game (which never sets it) is
+  unchanged (spec `0074`).

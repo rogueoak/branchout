@@ -37,6 +37,9 @@ export default defineConfig({
       testMatch: [
         'share-unfurl.spec.ts',
         'trivia-round.spec.ts',
+        // Trivial Matters multi-type flow (spec 0074): one multiple-choice, one true-false, and one
+        // open-answer question played to the finale. Pinned to a 360px viewport in the spec per rule 1.
+        'trivial-matters-types.spec.ts',
         'profile.spec.ts',
         // Insider subdomain gate + surface (spec 0035); includes its own 360px phone check.
         'insider.spec.ts',

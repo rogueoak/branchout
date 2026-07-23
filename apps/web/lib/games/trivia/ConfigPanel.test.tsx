@@ -23,6 +23,12 @@ describe('TriviaConfigPanel categories', () => {
     );
   });
 
+  it('offers the two new categories (Movies, Music)', () => {
+    renderPanel();
+    expect(screen.getByRole('button', { name: 'Movies' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Music' })).toBeDefined();
+  });
+
   it('adds a category to the subset when a chip is tapped', () => {
     const onChange = renderPanel({ categories: [] });
     fireEvent.click(screen.getByRole('button', { name: 'Science' }));
@@ -31,7 +37,6 @@ describe('TriviaConfigPanel categories', () => {
 
   it('ACCUMULATES onto a non-empty subset rather than overwriting it (multi-select)', () => {
     const onChange = renderPanel({ categories: ['Science'] });
-    // Science is already selected; tapping Food must append, not replace.
     fireEvent.click(screen.getByRole('button', { name: 'Food' }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ categories: ['Science', 'Food'] }),
@@ -51,37 +56,67 @@ describe('TriviaConfigPanel categories', () => {
   });
 });
 
-describe('TriviaConfigPanel rounds', () => {
-  it('sets rounds from a preset', () => {
-    const onChange = renderPanel({ rounds: 10 });
-    fireEvent.click(screen.getByRole('radio', { name: /long/i }));
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ rounds: 40 }));
+describe('TriviaConfigPanel duration', () => {
+  it('sets the duration from a preset', () => {
+    const onChange = renderPanel({ duration: 'standard' });
+    // "Long" is unique to the duration selector (matched by its description line).
+    fireEvent.click(screen.getByRole('radio', { name: /a longer game/i }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ duration: 'long' }));
   });
 
-  it('reveals a custom number field when Custom is chosen', () => {
-    renderPanel({ rounds: 10 });
-    expect(screen.queryByLabelText(/custom rounds/i)).toBeNull();
-    fireEvent.click(screen.getByRole('radio', { name: /set your own number of rounds/i }));
-    expect(screen.getByLabelText(/custom rounds/i)).toBeDefined();
-  });
-
-  it('shows the custom field for a non-preset round count', () => {
-    renderPanel({ rounds: 13 });
-    expect(screen.getByLabelText(/custom rounds/i)).toBeDefined();
-  });
-
-  it('names presets cleanly (no bracketed count) and keeps the count in the description (WS12)', () => {
-    renderPanel({ rounds: 10 });
-    // The name is the clean word only - no "Fast (10)" bracket in the label.
-    expect(screen.queryByText('Fast (10)')).toBeNull();
-    expect(screen.queryByText('Medium (20)')).toBeNull();
-    expect(screen.queryByText('Long (40)')).toBeNull();
+  it('names presets cleanly with the question count on the description line', () => {
+    renderPanel({ duration: 'standard' });
     expect(screen.getByText('Fast')).toBeDefined();
-    expect(screen.getByText('Long')).toBeDefined();
-    // The round count still reads on the description line under each name.
-    expect(screen.getByText(/10 rounds/i)).toBeDefined();
-    expect(screen.getByText(/20 rounds/i)).toBeDefined();
-    expect(screen.getByText(/40 rounds/i)).toBeDefined();
+    expect(screen.getByText('Marathon')).toBeDefined();
+    // The count reads on the description, not bracketed into the name.
+    expect(screen.getByText(/6 questions/i)).toBeDefined();
+    expect(screen.getByText(/48 questions/i)).toBeDefined();
+  });
+
+  it('selecting Custom emits a custom duration seeded from the current preset mix', () => {
+    const onChange = renderPanel({ duration: 'standard' });
+    fireEvent.click(screen.getByRole('radio', { name: /set your own mix/i }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        duration: 'custom',
+        custom: { multipleChoice: 6, trueFalse: 4, open: 2 },
+      }),
+    );
+  });
+
+  it('reveals three per-type count inputs when duration is custom', () => {
+    renderPanel({ duration: 'custom', custom: { multipleChoice: 3, trueFalse: 2, open: 1 } });
+    expect(screen.getByLabelText(/multiple choice/i)).toBeDefined();
+    expect(screen.getByLabelText(/true or false/i)).toBeDefined();
+    expect(screen.getByLabelText(/open answer/i)).toBeDefined();
+  });
+
+  it('carries the 0-30 bounds on each custom count input', () => {
+    renderPanel({ duration: 'custom', custom: { multipleChoice: 3, trueFalse: 2, open: 1 } });
+    const mc = screen.getByLabelText(/multiple choice/i);
+    expect(mc.getAttribute('min')).toBe('0');
+    expect(mc.getAttribute('max')).toBe('30');
+  });
+
+  it('edits a custom count', () => {
+    const onChange = renderPanel({
+      duration: 'custom',
+      custom: { multipleChoice: 3, trueFalse: 2, open: 1 },
+    });
+    fireEvent.change(screen.getByLabelText(/multiple choice/i), { target: { value: '5' } });
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ custom: { multipleChoice: 5, trueFalse: 2, open: 1 } }),
+    );
+  });
+
+  it('flags an invalid custom mix (all zeros)', () => {
+    renderPanel({ duration: 'custom', custom: { multipleChoice: 0, trueFalse: 0, open: 0 } });
+    expect(screen.getByRole('alert').textContent).toMatch(/total/i);
+  });
+
+  it('shows a live total for a valid custom mix', () => {
+    renderPanel({ duration: 'custom', custom: { multipleChoice: 3, trueFalse: 2, open: 1 } });
+    expect(screen.getByText(/6 questions total/i)).toBeDefined();
   });
 });
 
@@ -90,11 +125,8 @@ describe('TriviaConfigPanel difficulty', () => {
     const { container } = render(
       <TriviaConfigPanel value={defaultTriviaConfig()} onChange={vi.fn()} disabled={false} />,
     );
-    // The default band (3-6) selects the Medium preset (matched by its description to avoid the
-    // "Medium" rounds preset, which shares the label).
     const medium = screen.getByRole('radio', { name: /a balanced mix/i });
     expect(medium.getAttribute('aria-checked')).toBe('true');
-    // No slider and no raw range text like "3-6" leaks into the difficulty UI.
     expect(container.querySelector('input[type="range"]')).toBeNull();
     expect(screen.queryByText(/3\s*-\s*6/)).toBeNull();
   });

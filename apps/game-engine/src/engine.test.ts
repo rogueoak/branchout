@@ -573,6 +573,27 @@ describe('GameEngine lifecycle', () => {
     expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(45_000);
   });
 
+  it('arms a startRound-supplied per-round move window over the configure-time one (spec 0074)', async () => {
+    // Configure a 60s window, but have the game override round 1 to 30s via StartRoundResult.
+    // The engine must arm the round's 30s window: the state frame counts down from 30s and the round
+    // force-closes at 30s, not 60s.
+    await h.engine.start(
+      handoff({
+        config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000, roundWindowsMs: [30_000] },
+      }),
+    );
+    expect((await h.engine.getSnapshot('r1', STUB_GAME_ID))?.moveMsRemaining).toBe(30_000);
+
+    // At 29.999s the round is still open; the extra second closes it - proving the deadline is the
+    // per-round 30s, not the configure-time 60s (which would still be open here).
+    h.clock.advance(29_999);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('collecting');
+    h.clock.advance(1);
+    h.scheduler.flush();
+    expect((await h.engine.getState('r1', STUB_GAME_ID))?.phase).toBe('disputing');
+  });
+
   it('holds the answer countdown while paused and continues from the time left on resume', async () => {
     await h.engine.start(
       handoff({ config: { rounds: 1, secrets: ['blue'], moveWindowMs: 60_000 } }),

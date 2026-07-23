@@ -4,6 +4,7 @@
     "category": "Places",
     "prompt": "What is the capital of France?",
     "answers": ["Paris"],
+    "choices": ["Lyon", "Marseille", "Nice"],
     "difficulty": 1
   },
   {
@@ -11,6 +12,7 @@
     "category": "Places",
     "prompt": "What is the capital of Japan?",
     "answers": ["Tokyo"],
+    "choices": ["Osaka", "Kyoto", "Nagoya"],
     "difficulty": 2
   },
   {
@@ -25,6 +27,7 @@
     "category": "Places",
     "prompt": "What is the capital of the United Kingdom?",
     "answers": ["London"],
+    "choices": ["Manchester", "Edinburgh", "Birmingham"],
     "difficulty": 1
   },
   {
@@ -32,6 +35,7 @@
     "category": "Places",
     "prompt": "What is the capital of Germany?",
     "answers": ["Berlin"],
+    "choices": ["Munich", "Hamburg", "Frankfurt"],
     "difficulty": 2
   },
   {
@@ -53,6 +57,31 @@
     "category": "Places",
     "prompt": "What is the capital of China?",
     "answers": ["Beijing", "Peking"],
+    "choices": ["Shanghai", "Hong Kong", "Guangzhou"],
     "difficulty": 2
+  },
+  {
+    "id": "places-009",
+    "type": "true-false",
+    "category": "Places",
+    "prompt": "Australia is both a country and a continent.",
+    "isTrue": true,
+    "difficulty": 3
+  },
+  {
+    "id": "places-010",
+    "type": "true-false",
+    "category": "Places",
+    "prompt": "The Nile is a river located in South America.",
+    "isTrue": false,
+    "difficulty": 2
+  },
+  {
+    "id": "places-011",
+    "type": "true-false",
+    "category": "Places",
+    "prompt": "Mount Everest is the highest mountain above sea level on Earth.",
+    "isTrue": true,
+    "difficulty": 3
   }
 ]

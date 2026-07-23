@@ -4,6 +4,7 @@
     "category": "Food",
     "prompt": "Which Italian dish consists of flat bread topped with tomato sauce and cheese?",
     "answers": ["Pizza"],
+    "choices": ["Lasagna", "Focaccia", "Calzone"],
     "difficulty": 1
   },
   {
@@ -18,6 +19,7 @@
     "category": "Food",
     "prompt": "Which spice, derived from the Crocus sativus flower, is the world's most expensive by weight?",
     "answers": ["Saffron"],
+    "choices": ["Vanilla", "Cardamom", "Cinnamon"],
     "difficulty": 4
   },
   {
@@ -25,6 +27,7 @@
     "category": "Food",
     "prompt": "What is the main ingredient in traditional guacamole?",
     "answers": ["Avocado", "Avocados"],
+    "choices": ["Tomato", "Lime", "Cucumber"],
     "difficulty": 2
   },
   {
@@ -32,6 +35,7 @@
     "category": "Food",
     "prompt": "Which country is the origin of the dish sushi?",
     "answers": ["Japan"],
+    "choices": ["China", "Thailand", "Korea"],
     "difficulty": 2
   },
   {
@@ -46,6 +50,7 @@
     "category": "Food",
     "prompt": "Which grain is used to make traditional Japanese sake?",
     "answers": ["Rice"],
+    "choices": ["Barley", "Wheat", "Corn"],
     "difficulty": 3
   },
   {
@@ -53,6 +58,31 @@
     "category": "Food",
     "prompt": "What is the name of the Indian bread cooked in a tandoor oven?",
     "answers": ["Naan", "Nan"],
+    "choices": ["Roti", "Paratha", "Pita"],
     "difficulty": 3
+  },
+  {
+    "id": "food-009",
+    "type": "true-false",
+    "category": "Food",
+    "prompt": "Natural honey can remain edible for years without spoiling when stored sealed.",
+    "isTrue": true,
+    "difficulty": 3
+  },
+  {
+    "id": "food-010",
+    "type": "true-false",
+    "category": "Food",
+    "prompt": "A tomato is botanically classified as a fruit.",
+    "isTrue": true,
+    "difficulty": 2
+  },
+  {
+    "id": "food-011",
+    "type": "true-false",
+    "category": "Food",
+    "prompt": "White chocolate contains cocoa solids.",
+    "isTrue": false,
+    "difficulty": 5
   }
 ]

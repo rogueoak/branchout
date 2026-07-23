@@ -1,0 +1,145 @@
+[
+  {
+    "id": "movies-001",
+    "category": "Movies",
+    "prompt": "Which 1997 film directed by James Cameron dramatizes the sinking of a famous ocean liner?",
+    "answers": ["Titanic"],
+    "choices": ["Avatar", "The Abyss", "Poseidon"],
+    "difficulty": 2
+  },
+  {
+    "id": "movies-002",
+    "category": "Movies",
+    "prompt": "Who directed the 1975 thriller Jaws?",
+    "answers": ["Steven Spielberg", "Spielberg"],
+    "choices": ["George Lucas", "Ridley Scott", "Martin Scorsese"],
+    "difficulty": 4
+  },
+  {
+    "id": "movies-003",
+    "category": "Movies",
+    "prompt": "In The Wizard of Oz, what color is the brick road Dorothy follows?",
+    "answers": ["Yellow"],
+    "choices": ["Red", "Green", "Gold"],
+    "difficulty": 2
+  },
+  {
+    "id": "movies-004",
+    "category": "Movies",
+    "prompt": "Which animation studio created the films Toy Story and Finding Nemo?",
+    "answers": ["Pixar"],
+    "choices": ["DreamWorks", "Studio Ghibli", "Blue Sky Studios"],
+    "difficulty": 3
+  },
+  {
+    "id": "movies-005",
+    "category": "Movies",
+    "prompt": "What is the name of the fictional African nation in the film Black Panther?",
+    "answers": ["Wakanda"],
+    "choices": ["Zamunda", "Genovia", "Latveria"],
+    "difficulty": 4
+  },
+  {
+    "id": "movies-006",
+    "category": "Movies",
+    "prompt": "Which 1994 film features the line 'Life is like a box of chocolates'?",
+    "answers": ["Forrest Gump"],
+    "choices": ["Pulp Fiction", "The Shawshank Redemption", "Philadelphia"],
+    "difficulty": 3
+  },
+  {
+    "id": "movies-007",
+    "category": "Movies",
+    "prompt": "Which actor played Captain Jack Sparrow in the Pirates of the Caribbean films?",
+    "answers": ["Johnny Depp", "Depp"],
+    "choices": ["Orlando Bloom", "Geoffrey Rush", "Colin Farrell"],
+    "difficulty": 3
+  },
+  {
+    "id": "movies-008",
+    "category": "Movies",
+    "prompt": "What was the first feature-length animated film released by Walt Disney in 1937?",
+    "answers": ["Snow White and the Seven Dwarfs", "Snow White"],
+    "choices": ["Pinocchio", "Fantasia", "Bambi"],
+    "difficulty": 5
+  },
+  {
+    "id": "movies-009",
+    "category": "Movies",
+    "prompt": "Which director is known for the films Pulp Fiction and Kill Bill?",
+    "answers": ["Quentin Tarantino", "Tarantino"],
+    "choices": ["Guy Ritchie", "Robert Rodriguez", "Martin Scorsese"],
+    "difficulty": 4
+  },
+  {
+    "id": "movies-010",
+    "category": "Movies",
+    "prompt": "In the Star Wars saga, what is the name of Han Solo's ship?",
+    "answers": ["Millennium Falcon", "The Millennium Falcon"],
+    "choices": ["Slave I", "Star Destroyer", "Tantive IV"],
+    "difficulty": 4
+  },
+  {
+    "id": "movies-011",
+    "category": "Movies",
+    "prompt": "Which film won the very first Academy Award for Best Picture, presented in 1929?",
+    "answers": ["Wings"],
+    "difficulty": 8
+  },
+  {
+    "id": "movies-012",
+    "category": "Movies",
+    "prompt": "In which 1999 science fiction film does the character Neo choose between a red and a blue pill?",
+    "answers": ["The Matrix", "Matrix"],
+    "choices": ["Inception", "Blade Runner", "Total Recall"],
+    "difficulty": 3
+  },
+  {
+    "id": "movies-013",
+    "type": "true-false",
+    "category": "Movies",
+    "prompt": "The 1997 film Titanic won eleven Academy Awards.",
+    "isTrue": true,
+    "difficulty": 5
+  },
+  {
+    "id": "movies-014",
+    "type": "true-false",
+    "category": "Movies",
+    "prompt": "Tom Hanks starred in the title role of the film Forrest Gump.",
+    "isTrue": true,
+    "difficulty": 2
+  },
+  {
+    "id": "movies-015",
+    "type": "true-false",
+    "category": "Movies",
+    "prompt": "Disney's The Lion King is a live-action nature documentary.",
+    "isTrue": false,
+    "difficulty": 2
+  },
+  {
+    "id": "movies-016",
+    "type": "true-false",
+    "category": "Movies",
+    "prompt": "Alfred Hitchcock directed the 1960 film Psycho.",
+    "isTrue": true,
+    "difficulty": 4
+  },
+  {
+    "id": "movies-017",
+    "type": "true-false",
+    "category": "Movies",
+    "prompt": "The original film The Godfather was first released in the 1980s.",
+    "isTrue": false,
+    "difficulty": 4
+  },
+  {
+    "id": "movies-018",
+    "type": "true-false",
+    "category": "Movies",
+    "prompt": "The 2009 film Avatar was directed by James Cameron.",
+    "isTrue": true,
+    "difficulty": 3
+  }
+]
