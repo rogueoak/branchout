@@ -130,7 +130,9 @@ describe('TriviaQuestionCard question types (spec 0074)', () => {
     expect(screen.getByText('Open answer')).toBeDefined();
   });
 
-  it('lists the four options (read-only) on a multiple-choice round', () => {
+  it('shows the type badge but NOT the options on a multiple-choice round (feedback 0042)', () => {
+    // The choices render only as tappable buttons on the controller (Remote); the question card must
+    // not duplicate them read-only.
     const prompt: TriviaPrompt = {
       round: 2,
       type: 'multiple-choice',
@@ -140,15 +142,14 @@ describe('TriviaQuestionCard question types (spec 0074)', () => {
       choices: ['Lion', 'Cheetah', 'Pronghorn', 'Greyhound'],
     };
     render(<TriviaQuestionCard state={build({ moveMsRemaining: 30_000 })} prompt={prompt} />);
-    const options = screen.getByRole('list', { name: /answer options/i });
-    expect(options).toBeDefined();
-    for (const choice of prompt.choices ?? []) {
-      expect(screen.getByText(choice)).toBeDefined();
-    }
     expect(screen.getByText('Multiple choice')).toBeDefined();
+    expect(screen.queryByRole('list', { name: /answer options/i })).toBeNull();
+    for (const choice of prompt.choices ?? []) {
+      expect(screen.queryByText(choice)).toBeNull();
+    }
   });
 
-  it('shows True / False options on a true-false round', () => {
+  it('shows the type badge but NOT True / False options on a true-false round (feedback 0042)', () => {
     const prompt: TriviaPrompt = {
       round: 3,
       type: 'true-false',
@@ -157,9 +158,11 @@ describe('TriviaQuestionCard question types (spec 0074)', () => {
       question: "A shrimp's heart is in its head.",
     };
     render(<TriviaQuestionCard state={build({ moveMsRemaining: 30_000 })} prompt={prompt} />);
-    expect(screen.getByText('True')).toBeDefined();
-    expect(screen.getByText('False')).toBeDefined();
+    // The 'True or false' type badge stays; the True/False answer options do not render here.
     expect(screen.getByText('True or false')).toBeDefined();
+    expect(screen.queryByRole('list', { name: /answer options/i })).toBeNull();
+    expect(screen.queryByText('True')).toBeNull();
+    expect(screen.queryByText('False')).toBeNull();
   });
 
   it('shows no options on an open round', () => {

@@ -102,7 +102,9 @@ describe('ViewerPane answer display', () => {
     expect(timer.textContent).toBe('42');
   });
 
-  it('shows the multiple-choice options on the shared viewer while collecting (spec 0074)', () => {
+  it('does NOT show the multiple-choice options on the viewer card while collecting (feedback 0042)', () => {
+    // The options render only as tappable buttons on the controller; the shared viewer's question
+    // card shows the prompt + type badge but not a duplicate read-only option list.
     const state = build({
       phase: 'collecting',
       moveMsRemaining: 20_000,
@@ -118,8 +120,8 @@ describe('ViewerPane answer display', () => {
       },
     });
     render(<ViewerPane state={state} me="p1" />);
-    expect(screen.getByRole('list', { name: /answer options/i })).toBeDefined();
-    expect(screen.getByText('Cheetah')).toBeDefined();
     expect(screen.getByText('Multiple choice')).toBeDefined();
+    expect(screen.queryByRole('list', { name: /answer options/i })).toBeNull();
+    expect(screen.queryByText('Cheetah')).toBeNull();
   });
 });

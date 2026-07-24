@@ -843,3 +843,10 @@ Capture durable lessons as they emerge.
   MC-capable only when open-only is exhausted). Rule: when you add an up-front feasibility guard,
   the allocator that runs later must honor the same priority the guard assumed, and the test must hit
   the tight boundary where the guard is exactly satisfied - not just the roomy happy path.
+
+- Do not render the same choice as both an interactive affordance and a passive display in one
+  viewport. Trivial Matters showed MC/TF options as a read-only list on the question card AND as the
+  tappable buttons on the controller, so an interactive player saw each choice twice - confusing
+  (feedback `0042`). The button already carries the full option text, so the card copy was redundant
+  on every real player's screen; "a pure spectator viewer might want it" did not justify the
+  duplication everyone else paid. Show each choice once, as the thing the player acts on.
