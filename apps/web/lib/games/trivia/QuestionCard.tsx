@@ -85,32 +85,10 @@ export function TriviaQuestionCard({ state, prompt }: { state: GameState; prompt
           <h2 className="text-h2 text-text" data-testid="question-prompt">
             {prompt.question}
           </h2>
-          {/* Read-only option display so the shared viewer (and a remote-only player) can read the
-              choices; the tappable answer buttons live on the controller (Remote). Open rounds show
-              no options - the answer is free text. */}
-          {prompt.type === 'multiple-choice' && prompt.choices ? (
-            <ul className="flex flex-col gap-2" aria-label="Answer options">
-              {prompt.choices.map((choice) => (
-                <li
-                  key={choice}
-                  className="rounded-lg border border-border bg-surface-raised px-4 py-2 text-body text-text"
-                >
-                  {choice}
-                </li>
-              ))}
-            </ul>
-          ) : prompt.type === 'true-false' ? (
-            <ul className="flex gap-2" aria-label="Answer options">
-              {['True', 'False'].map((choice) => (
-                <li
-                  key={choice}
-                  className="flex-1 rounded-lg border border-border bg-surface-raised px-4 py-2 text-center text-body font-medium text-text"
-                >
-                  {choice}
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          {/* The question card shows only the prompt (plus the badges + countdown). The answer
+              choices are NOT rendered here: the tappable options live solely on the controller
+              (Remote) so a player sees each choice once, as a button - showing them read-only here too
+              read as a confusing duplicate (feedback 0042). Open rounds never had options here. */}
         </CardContent>
       </Card>
       {countdown}
